@@ -90,7 +90,7 @@ function anyora_create_starter_content() {
 	if ( ! has_nav_menu( 'primary' ) ) {
 		$menu_id = wp_create_nav_menu( 'Anyora Main Menu' );
 		if ( ! is_wp_error( $menu_id ) ) {
-			foreach ( array( 'home', 'shop', 'about', 'contact' ) as $slug ) {
+			foreach ( array( 'home', 'shop', 'about', 'mission', 'activities', 'contact' ) as $slug ) {
 				if ( empty( $page_ids[ $slug ] ) ) {
 					continue;
 				}
@@ -110,6 +110,14 @@ function anyora_create_starter_content() {
 
     // 4. Create Dummy Products
     anyora_create_dummy_products();
+
+    // 5. Set Homepage Hero Image
+    if ( function_exists( 'anyora_sideload_theme_image' ) ) {
+        $hero_attach_id = anyora_sideload_theme_image( 'hero-banner.png', 'Anyora Hero Banner' );
+        if ( $hero_attach_id ) {
+            update_option( 'anyora_hero_image_id', $hero_attach_id );
+        }
+    }
 
 	update_option( 'anyora_pages_version', ANYORA_VERSION );
 	flush_rewrite_rules( false );

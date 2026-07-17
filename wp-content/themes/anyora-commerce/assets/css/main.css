@@ -110,9 +110,29 @@ img {
 	gap: 15px;
 	align-items: center;
 }
-.header-icon {
+.header-icon-btn {
 	color: var(--anyora-navy);
-	font-size: 20px;
+	transition: opacity 0.2s;
+}
+.header-icon-btn:hover {
+	opacity: 0.7;
+}
+.cart-badge {
+	position: absolute;
+	top: -7px;
+	right: -8px;
+	background-color: var(--anyora-navy);
+	color: var(--anyora-white);
+	font-size: 9px;
+	font-weight: 700;
+	width: 15px;
+	height: 15px;
+	border-radius: 50%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	line-height: 1;
+	border: 1px solid var(--anyora-white);
 }
 
 /* Hero Section */
@@ -412,79 +432,6 @@ img {
 .woocommerce form .form-row textarea {
     padding: 12px 15px;
     border: 1px solid var(--anyora-border);
-    border-radius: 8px;
-    font-family: var(--font-primary);
-}
-
-/* Buttons */
-.woocommerce a.button, 
-.woocommerce button.button, 
-.woocommerce input.button, 
-.woocommerce #respond input#submit {
-    background-color: var(--anyora-navy);
-    color: var(--anyora-white);
-    border-radius: 30px;
-    padding: 12px 24px;
-    font-weight: 600;
-    transition: background-color 0.3s;
-}
-
-.woocommerce a.button:hover, 
-.woocommerce button.button:hover, 
-.woocommerce input.button:hover, 
-.woocommerce #respond input#submit:hover {
-    background-color: var(--anyora-navy-hover);
-    color: var(--anyora-white);
-}
-
-/* Single Product */
-.woocommerce div.product {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 40px;
-}
-
-.woocommerce div.product div.images,
-.woocommerce div.product div.summary {
-    width: 48%;
-    float: none;
-}
-
-@media (max-width: 768px) {
-    .woocommerce div.product div.images,
-    .woocommerce div.product div.summary {
-        width: 100%;
-    }
-}
-
-.woocommerce div.product .product_title {
-    color: var(--anyora-navy);
-    font-size: 32px;
-    margin-bottom: 10px;
-}
-
-.woocommerce div.product p.price, 
-.woocommerce div.product span.price {
-    color: var(--anyora-text);
-    font-size: 24px;
-    font-weight: 600;
-}
-
-/* Shop Loop */
-.woocommerce ul.products li.product {
-    background: var(--anyora-white);
-    border-radius: 12px;
-    padding: 20px;
-    text-align: center;
-    transition: transform 0.3s;
-    box-sizing: border-box;
-}
-
-.woocommerce ul.products li.product:hover {
-    transform: translateY(-5px);
-}
-
-.woocommerce ul.products li.product a img {
     margin-bottom: 20px;
 }
 
@@ -531,10 +478,7 @@ img {
     color: var(--anyora-navy);
 }
 
-.woocommerce table.shop_table td {
-    border-top: 1px solid var(--anyora-border);
-    padding: 20px 15px;
-}
+
 
 .woocommerce-message, .woocommerce-info, .woocommerce-error {
     border-top-color: var(--anyora-navy);
@@ -545,4 +489,122 @@ img {
 
 .woocommerce-message::before, .woocommerce-info::before {
     color: var(--anyora-navy);
+}
+
+/* Single Product Page Styling */
+.woocommerce div.product {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 60px !important;
+}
+
+.woocommerce div.product div.images,
+.woocommerce div.product div.summary {
+    width: 47% !important;
+    float: none !important;
+}
+
+@media (max-width: 768px) {
+    .woocommerce div.product div.images,
+    .woocommerce div.product div.summary {
+        width: 100% !important;
+    }
+}
+
+.woocommerce div.product .product_title {
+    color: var(--anyora-navy) !important;
+    font-size: 42px !important;
+    font-weight: 800 !important;
+    letter-spacing: -1.5px !important;
+    margin-bottom: 15px !important;
+    line-height: 1.1 !important;
+}
+
+.woocommerce div.product p.price, 
+.woocommerce div.product span.price {
+    color: var(--anyora-navy) !important;
+    font-size: 28px !important;
+    font-weight: 700 !important;
+    margin-bottom: 25px !important;
+}
+
+.woocommerce div.product div.images img {
+    border-radius: 16px !important;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.03) !important;
+    border: 1px solid rgba(0,0,0,0.04) !important;
+    width: 100% !important;
+    height: auto !important;
+}
+
+/* Quantity input & cart form styling */
+.woocommerce .quantity {
+    display: inline-block !important;
+    margin-right: 15px !important;
+}
+
+.woocommerce .quantity .qty {
+    width: 70px !important;
+    height: 48px !important;
+    padding: 0 5px !important;
+    text-align: center !important;
+    border: 1px solid var(--anyora-border) !important;
+    border-radius: 8px !important;
+    font-size: 16px !important;
+    font-weight: 600 !important;
+    color: var(--anyora-navy) !important;
+    outline: none !important;
+    box-sizing: border-box !important;
+    background: #fff !important;
+}
+
+.woocommerce div.product form.cart {
+    display: flex !important;
+    align-items: center !important;
+    gap: 15px !important;
+    margin-top: 25px !important;
+    margin-bottom: 25px !important;
+}
+
+.woocommerce div.product form.cart .button,
+.woocommerce div.product form.cart .single_add_to_cart_button.button {
+    background-color: var(--anyora-navy) !important;
+    color: var(--anyora-white) !important;
+    border-radius: 8px !important;
+    padding: 15px 30px !important;
+    font-size: 15px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+    height: 48px !important;
+    line-height: 1 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border: none !important;
+    cursor: pointer !important;
+    transition: background-color 0.2s !important;
+    flex: 1 !important;
+    max-width: 250px !important;
+}
+
+.woocommerce div.product form.cart .button:hover,
+.woocommerce div.product form.cart .single_add_to_cart_button.button:hover {
+    background-color: var(--anyora-navy-hover) !important;
+}
+
+/* Accordion details styles */
+summary::-webkit-details-marker {
+    display: none !important;
+}
+summary {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+}
+details[open] summary .accordion-icon {
+    transform: rotate(45deg) !important;
+}
+.accordion-icon {
+    transition: transform 0.2s !important;
+    display: inline-block !important;
 }

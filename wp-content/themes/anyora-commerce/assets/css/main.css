@@ -592,19 +592,282 @@ img {
     background-color: var(--anyora-navy-hover) !important;
 }
 
-/* Accordion details styles */
-summary::-webkit-details-marker {
+/* WooCommerce Horizontal Tabs Section styling */
+.woocommerce-tabs {
+    width: 100% !important;
+    margin-top: 30px !important;
+    border-top: 1px solid var(--anyora-border) !important;
+    padding-top: 30px !important;
+    box-sizing: border-box;
+}
+
+.woocommerce-tabs ul.tabs {
+    display: flex !important;
+    justify-content: center !important;
+    list-style: none !important;
+    padding: 0 !important;
+    margin: 0 0 50px 0 !important;
+    border-bottom: 1px solid var(--anyora-border) !important;
+    gap: 40px !important;
+}
+
+.woocommerce-tabs ul.tabs li {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+    border: none !important;
+}
+
+.woocommerce-tabs ul.tabs li::before,
+.woocommerce-tabs ul.tabs li::after {
     display: none !important;
 }
-summary {
-    display: flex !important;
-    justify-content: space-between !important;
-    align-items: center !important;
-}
-details[open] summary .accordion-icon {
-    transform: rotate(45deg) !important;
-}
-.accordion-icon {
-    transition: transform 0.2s !important;
+
+.woocommerce-tabs ul.tabs li a {
     display: inline-block !important;
+    padding: 15px 0 !important;
+    font-size: 16px !important;
+    font-weight: 700 !important;
+    color: #888 !important;
+    border-bottom: 2px solid transparent !important;
+    transition: all 0.2s !important;
+    text-decoration: none !important;
+    background: transparent !important;
+}
+
+.woocommerce-tabs ul.tabs li.active a {
+    color: var(--anyora-navy) !important;
+    border-bottom-color: var(--anyora-navy) !important;
+}
+
+.woocommerce-tabs ul.tabs li a:hover {
+    color: var(--anyora-navy) !important;
+}
+
+.woocommerce-tabs .woocommerce-Tabs-panel {
+    max-width: 800px !important;
+    margin: 0 auto !important;
+    animation: anyoraFadeIn 0.3s ease !important;
+}
+
+@keyframes anyoraFadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Reviews List & Comment Form Styling */
+#reviews {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 40px !important;
+}
+
+#reviews h2 {
+    font-size: 24px !important;
+    font-weight: 800 !important;
+    color: var(--anyora-navy) !important;
+    margin-bottom: 20px !important;
+}
+
+ol.commentlist {
+    list-style: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+ol.commentlist li.comment {
+    border-bottom: 1px solid var(--anyora-border) !important;
+    padding: 30px 0 !important;
+    background: transparent !important;
+}
+
+ol.commentlist li.comment:last-child {
+    border-bottom: none !important;
+}
+
+ol.commentlist li.comment img.avatar {
+    width: 50px !important;
+    height: 50px !important;
+    border-radius: 50% !important;
+    float: left !important;
+    margin-right: 20px !important;
+}
+
+ol.commentlist li.comment .comment-text {
+    margin-left: 70px !important;
+    padding: 0 !important;
+    border: none !important;
+}
+
+ol.commentlist li.comment .comment-text .meta {
+    font-size: 14px !important;
+    color: #888 !important;
+    margin-bottom: 10px !important;
+}
+
+ol.commentlist li.comment .comment-text .meta strong {
+    color: var(--anyora-navy) !important;
+    font-size: 15px !important;
+}
+
+ol.commentlist li.comment .comment-text .description {
+    font-size: 15px !important;
+    line-height: 1.6 !important;
+    color: #444 !important;
+}
+
+.comment-text .star-rating, 
+.woocommerce div.product .star-rating {
+    float: right !important;
+    font-size: 14px !important;
+    color: #dcb37b !important;
+}
+
+#review_form_wrapper {
+    background: #fff !important;
+    border: 1px solid var(--anyora-border) !important;
+    border-radius: 16px !important;
+    padding: 35px !important;
+    box-sizing: border-box !important;
+}
+
+#review_form_wrapper h3 {
+    font-size: 20px !important;
+    font-weight: 700 !important;
+    color: var(--anyora-navy) !important;
+    margin-top: 0 !important;
+    margin-bottom: 20px !important;
+}
+
+.comment-form-rating {
+    display: flex !important;
+    align-items: center !important;
+    gap: 15px !important;
+    margin-bottom: 20px !important;
+}
+
+.comment-form-rating label {
+    font-weight: 600 !important;
+    color: var(--anyora-navy) !important;
+}
+
+.comment-form-rating select {
+    padding: 8px 12px !important;
+    border: 1px solid var(--anyora-border) !important;
+    border-radius: 8px !important;
+    outline: none !important;
+    font-family: var(--font-primary) !important;
+}
+
+.comment-form-comment label,
+.comment-form-author label,
+.comment-form-email label {
+    display: block !important;
+    font-weight: 600 !important;
+    color: var(--anyora-navy) !important;
+    margin-bottom: 8px !important;
+}
+
+.comment-form-comment textarea {
+    width: 100% !important;
+    min-height: 120px !important;
+    padding: 12px 15px !important;
+    border: 1px solid var(--anyora-border) !important;
+    border-radius: 8px !important;
+    outline: none !important;
+    font-family: var(--font-primary) !important;
+    box-sizing: border-box !important;
+    resize: vertical !important;
+}
+
+.comment-form-author input,
+.comment-form-email input {
+    width: 100% !important;
+    padding: 12px 15px !important;
+    border: 1px solid var(--anyora-border) !important;
+    border-radius: 8px !important;
+    outline: none !important;
+    font-family: var(--font-primary) !important;
+    box-sizing: border-box !important;
+}
+
+.comment-form-author, .comment-form-email {
+    width: 48% !important;
+    display: inline-block !important;
+    margin-bottom: 20px !important;
+}
+
+.comment-form-author {
+    margin-right: 4% !important;
+}
+
+@media (max-width: 600px) {
+    .comment-form-author, .comment-form-email {
+        width: 100% !important;
+        margin-right: 0 !important;
+    }
+}
+
+#respond input#submit {
+    background-color: var(--anyora-navy) !important;
+    color: var(--anyora-white) !important;
+    border: none !important;
+    border-radius: 8px !important;
+    padding: 12px 30px !important;
+    font-weight: 700 !important;
+    cursor: pointer !important;
+    transition: background-color 0.2s !important;
+}
+
+#respond input#submit:hover {
+    background-color: var(--anyora-navy-hover) !important;
+}
+
+/* =========================================
+   Responsive Single Product Page Tweaks
+   ========================================= */
+
+@media (max-width: 768px) {
+    .woocommerce div.product {
+        gap: 30px !important;
+    }
+}
+
+@media (max-width: 600px) {
+    .woocommerce-tabs ul.tabs {
+        gap: 20px !important;
+        margin-bottom: 30px !important;
+        flex-wrap: wrap !important;
+    }
+    .woocommerce-tabs ul.tabs li a {
+        font-size: 14px !important;
+        padding: 10px 0 !important;
+    }
+    
+    ol.commentlist li.comment img.avatar {
+        float: none !important;
+        margin-bottom: 15px !important;
+        display: block !important;
+    }
+    ol.commentlist li.comment .comment-text {
+        margin-left: 0 !important;
+    }
+}
+
+@media (max-width: 360px) {
+    .woocommerce div.product form.cart {
+        flex-wrap: wrap !important;
+    }
+    .woocommerce div.product form.cart .quantity {
+        margin-right: 0 !important;
+        width: 100% !important;
+    }
+    .woocommerce .quantity .qty {
+        width: 100% !important;
+    }
+    .woocommerce div.product form.cart .button,
+    .woocommerce div.product form.cart .single_add_to_cart_button.button {
+        max-width: 100% !important;
+        width: 100% !important;
+    }
 }

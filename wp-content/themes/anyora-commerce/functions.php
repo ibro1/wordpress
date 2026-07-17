@@ -163,13 +163,38 @@ function anyora_register_required_plugins() {
 // Remove trailing slashes from all URLs
 add_filter('user_trailingslashit', 'untrailingslashit');
 
-// 1. Add Rating Mockup on Single Product page
+// 1. Add Dynamic Rating on Single Product page
 add_action( 'woocommerce_single_product_summary', 'anyora_single_product_rating_mockup', 9 );
 function anyora_single_product_rating_mockup() {
-    echo '<div style="display: flex; align-items: center; gap: 5px; margin-bottom: 15px; font-size: 14px; color: #dcb37b; box-sizing: border-box;">';
-    echo '★★★★★';
-    echo '<span style="color: #666; font-size: 13px; margin-left: 5px;">4.9 (18 reviews)</span>';
-    echo '</div>';
+    global $product;
+    if ( ! is_a( $product, 'WC_Product' ) ) {
+        return;
+    }
+    
+    $rating_count = $product->get_rating_count();
+    $review_count = $product->get_review_count();
+    $average      = $product->get_average_rating();
+    
+    if ( $rating_count > 0 ) {
+        $stars = '';
+        $int_rating = floor($average);
+        for ($i = 1; $i <= 5; $i++) {
+            if ($i <= $int_rating) {
+                $stars .= '★';
+            } else {
+                $stars .= '☆';
+            }
+        }
+        echo '<div class="anyora-dynamic-rating" style="display: flex; align-items: center; gap: 5px; margin-bottom: 15px; font-size: 14px; color: #dcb37b; box-sizing: border-box;">';
+        echo esc_html( $stars );
+        echo '<span style="color: #666; font-size: 13px; margin-left: 5px;">' . esc_html( number_format( $average, 1 ) ) . ' (' . esc_html( $review_count ) . ' ' . esc_html( _n( 'review', 'reviews', $review_count, 'anyora-commerce' ) ) . ')</span>';
+        echo '</div>';
+    } else {
+        echo '<div class="anyora-dynamic-rating" style="display: flex; align-items: center; gap: 5px; margin-bottom: 15px; font-size: 14px; color: #ccc; box-sizing: border-box;">';
+        echo '☆☆☆☆☆';
+        echo '<span style="color: #888; font-size: 13px; margin-left: 5px;">No reviews yet</span>';
+        echo '</div>';
+    }
 }
 
 // 2. Add Stock & Shipping Message below price
@@ -199,41 +224,63 @@ function anyora_single_product_trust_badges() {
     ';
 }
 
-// Remove standard tabs
-remove_action( 'woocommerce_after_single_product_summary', 'woocommerce_output_product_data_tabs', 10 );
-
-// Add modern accordion tabs in the summary column
-add_action( 'woocommerce_single_product_summary', 'anyora_single_product_accordions', 38 );
-function anyora_single_product_accordions() {
-    global $product;
-    $desc = get_the_content();
-    if ( empty( $desc ) ) {
-        $desc = "Organize your space with this practical and high-quality " . esc_html($product->get_name()) . ". Crafted from premium, durable materials and designed to fit seamlessly into any modern home layout.";
+// Customize single product tabs (horizontal section below the product)
+add_filter( 'woocommerce_product_tabs', 'anyora_custom_product_tabs' );
+function anyora_custom_product_tabs( $tabs ) {
+    // Rename Description to Product Details
+    if ( isset( $tabs['description'] ) ) {
+        $tabs['description']['title'] = __( 'Product Details', 'anyora-commerce' );
+        $tabs['description']['priority'] = 10;
     }
+    
+    // Add custom Shipping & Returns tab
+    $tabs['shipping_returns'] = array(
+        'title'    => __( 'Shipping & Returns', 'anyora-commerce' ),
+        'priority' => 20,
+        'callback' => 'anyora_shipping_returns_tab_content'
+    );
+    
+    // Ensure Reviews tab is active and has priority 30
+    if ( isset( $tabs['reviews'] ) ) {
+        $tabs['reviews']['priority'] = 30;
+    }
+    
+    // Remove default additional information tab if present
+    unset( $tabs['additional_information'] );
+    
+    return $tabs;
+}
+
+// Shipping & Returns Tab Callback
+function anyora_shipping_returns_tab_content() {
     ?>
-    <div style="margin-top: 30px; display: flex; flex-direction: column; border-top: 1px solid var(--anyora-border); box-sizing: border-box;">
-        <!-- Details Accordion -->
-        <details style="padding: 15px 0; border-bottom: 1px solid var(--anyora-border); outline: none; cursor: pointer;">
-            <summary style="font-weight: 700; color: var(--anyora-navy); font-size: 15px; display: flex; justify-content: space-between; align-items: center; list-style: none;">
-                Product details
-                <span class="accordion-icon" style="font-weight: 300; font-size: 18px;">+</span>
-            </summary>
-            <div style="padding-top: 12px; font-size: 14px; color: #555; line-height: 1.6; cursor: default;">
-                <?php echo wp_kses_post( wpautop($desc) ); ?>
-            </div>
-        </details>
-        
-        <!-- Shipping & Returns Accordion -->
-        <details style="padding: 15px 0; border-bottom: 1px solid var(--anyora-border); outline: none; cursor: pointer;">
-            <summary style="font-weight: 700; color: var(--anyora-navy); font-size: 15px; display: flex; justify-content: space-between; align-items: center; list-style: none;">
-                Shipping & returns
-                <span class="accordion-icon" style="font-weight: 300; font-size: 18px;">+</span>
-            </summary>
-            <div style="padding-top: 12px; font-size: 14px; color: #555; line-height: 1.6; cursor: default;">
-                <p style="margin: 0 0 10px 0;"><strong>Delivery:</strong> Free UK standard delivery on orders over £50. Orders under £50 incur a shipping charge of £3.99. Dispatched from Bilston facility within 24 hours.</p>
-                <p style="margin: 0;"><strong>Returns:</strong> 30-day hassle-free returns. Simply contact support@anyora.uk to request a return shipping label.</p>
-            </div>
-        </details>
+    <div class="anyora-tab-content-wrapper" style="max-width: 800px; line-height: 1.7; color: #555;">
+        <p style="margin: 0 0 15px 0;"><strong>Fulfillment & Delivery:</strong> All orders are stored, packed, and dispatched directly from our dedicated facility in Bilston, United Kingdom. We offer free standard UK delivery on all orders over £50. Standard delivery normally takes 3-5 working days.</p>
+        <p style="margin: 0;"><strong>Hassle-Free Returns:</strong> We offer a 30-day return policy. If you are not completely satisfied with your storage products, please email support@anyora.uk to request a returns authorization and prepaid shipping label.</p>
     </div>
     <?php
+}
+
+// AJAX Add to Cart handler for Single Product Page
+add_action( 'wp_ajax_woocommerce_ajax_add_to_cart', 'anyora_ajax_add_to_cart_handler' );
+add_action( 'wp_ajax_nopriv_woocommerce_ajax_add_to_cart', 'anyora_ajax_add_to_cart_handler' );
+function anyora_ajax_add_to_cart_handler() {
+    $product_id = apply_filters( 'woocommerce_add_to_cart_product_id', absint( $_POST['product_id'] ) );
+    $quantity = empty( $_POST['quantity'] ) ? 1 : wc_stock_amount( $_POST['quantity'] );
+    $passed_validation = apply_filters( 'woocommerce_add_to_cart_validation', true, $product_id, $quantity );
+    $product_status = get_post_status( $product_id );
+    
+    if ( $passed_validation && WC()->cart->add_to_cart( $product_id, $quantity ) && 'publish' === $product_status ) {
+        do_action( 'woocommerce_ajax_added_to_cart', $product_id );
+        if ( 'yes' === get_option( 'woocommerce_cart_redirect_after_add' ) ) {
+            wc_add_to_cart_message( array( $product_id => $quantity ), true );
+        }
+        WC_AJAX::get_refreshed_fragments();
+    } else {
+        wp_send_json_error( array(
+            'error' => true,
+            'product_url' => apply_filters( 'woocommerce_cart_redirect_after_error', get_permalink( $product_id ), $product_id )
+        ) );
+    }
+    wp_die();
 }

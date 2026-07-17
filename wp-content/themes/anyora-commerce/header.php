@@ -11,8 +11,15 @@
 <header class="site-header" style="position: relative;">
 	<div class="container header-inner">
 		<div class="site-branding" style="display: flex; align-items: center;">
-			<a href="<?php echo esc_url( home_url( '/' ) ); ?>" style="display: flex; align-items: center;">
-				<img src="/wp-content/themes/anyora-commerce/assets/images/anyora-logo.png" alt="Anyora Logo" style="height: 28px; width: auto; display: block;">
+			<a href="<?php echo esc_url( home_url( '/' ) ); ?>" style="display: flex; align-items: center; text-decoration: none;">
+				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 38" width="150" height="34" fill="none">
+					<path d="M8 30 L18 8 L28 30" stroke="#081d34" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+					<line x1="12" y1="20" x2="24" y2="20" stroke="#6fbdbd" stroke-width="2.5" stroke-linecap="round"/>
+					<line x1="9.5" y1="25.5" x2="26.5" y2="25.5" stroke="#6fbdbd" stroke-width="2.5" stroke-linecap="round"/>
+					<rect x="14" y="21" width="8" height="4.5" rx="1" fill="#081d34"/>
+					<rect x="16.5" y="15.5" width="5" height="4.5" rx="1" fill="#6fbdbd"/>
+					<text x="36" y="28" font-family="'Outfit', 'Inter', system-ui, sans-serif" font-weight="800" font-size="22" fill="#081d34" letter-spacing="-0.5px">anyora</text>
+				</svg>
 			</a>
 		</div>
 		<nav class="main-navigation">

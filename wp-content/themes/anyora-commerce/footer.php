@@ -36,7 +36,14 @@
 		
 		<!-- Col 1 -->
 		<div>
-			<h2 style="font-size: 32px; font-weight: 800; margin: 0 0 20px 0; letter-spacing: -1px;">Anyora</h2>
+			<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 38" width="150" height="34" fill="none" style="margin-bottom: 20px; display: block;">
+				<path d="M8 30 L18 8 L28 30" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+				<line x1="12" y1="20" x2="24" y2="20" stroke="#6fbdbd" stroke-width="2.5" stroke-linecap="round"/>
+				<line x1="9.5" y1="25.5" x2="26.5" y2="25.5" stroke="#6fbdbd" stroke-width="2.5" stroke-linecap="round"/>
+				<rect x="14" y="21" width="8" height="4.5" rx="1" fill="#ffffff"/>
+				<rect x="16.5" y="15.5" width="5" height="4.5" rx="1" fill="#6fbdbd"/>
+				<text x="36" y="28" font-family="'Outfit', 'Inter', system-ui, sans-serif" font-weight="800" font-size="22" fill="#ffffff" letter-spacing="-0.5px">anyora</text>
+			</svg>
 			<p style="font-size: 15px; line-height: 1.6; color: #a0b0c0; margin-bottom: 30px; padding-right: 20px;">
 				Anyora is a UK private-label home-storage brand and online retailer operated by Anyora Limited. We offer practical storage products selected to help make everyday spaces tidier and easier to use.
 			</p>

@@ -14,9 +14,15 @@ get_header(); ?>
 			<a href="<?php echo esc_url( home_url( '/shop/' ) ); ?>" class="btn">Shop all storage</a>
 		</div>
 		<div class="container">
-			<div class="hero-image-wrap" style="background: #e9ece6; height: 500px; display: flex; align-items: center; justify-content: center; position: relative;">
-				<!-- Placeholder for hero image -->
+			<?php
+			$hero_id = get_option('anyora_hero_image_id');
+			$hero_url = $hero_id ? wp_get_attachment_url($hero_id) : '';
+			$hero_style = $hero_url ? 'background: url(' . esc_url($hero_url) . ') center/cover no-repeat;' : 'background: #e9ece6;';
+			?>
+			<div class="hero-image-wrap" style="<?php echo $hero_style; ?> height: 500px; display: flex; align-items: center; justify-content: center; position: relative;">
+				<?php if ( ! $hero_url ) : ?>
 				<span style="color: #999; font-size: 24px;">Hero Image (Storage Shelves)</span>
+				<?php endif; ?>
 				<div class="hero-search">
 					<span aria-hidden="true">🔍</span>
 					<input type="text" placeholder="Search for products...">
@@ -61,17 +67,21 @@ get_header(); ?>
 						?>
 						<div class="product-card">
 							<div class="product-image">
-								<?php 
-								if ( has_post_thumbnail() ) {
-									the_post_thumbnail( 'woocommerce_thumbnail' );
-								} else {
-									echo '<div style="background:#f4f5f0; width:100%; height:100%; display:flex; align-items:center; justify-content:center; color:#999;">Image</div>';
-								}
-								?>
+								<a href="<?php the_permalink(); ?>">
+									<?php 
+									if ( has_post_thumbnail() ) {
+										the_post_thumbnail( 'woocommerce_thumbnail' );
+									} else {
+										echo '<div style="background:#f4f5f0; width:100%; height:100%; display:flex; align-items:center; justify-content:center; color:#999;">Image</div>';
+									}
+									?>
+								</a>
 							</div>
-							<h3 class="product-title"><?php the_title(); ?></h3>
+							<h3 class="product-title"><a href="<?php the_permalink(); ?>" style="text-decoration:none; color:inherit;"><?php the_title(); ?></a></h3>
 							<div class="product-price"><?php echo $product->get_price_html(); ?></div>
-							<a href="<?php the_permalink(); ?>" class="btn btn-outline" style="width: 100%; box-sizing: border-box;">View product</a>
+							<div style="margin-top: 15px;">
+								<?php woocommerce_template_loop_add_to_cart(); ?>
+							</div>
 						</div>
 						<?php
 					endwhile;
@@ -120,8 +130,15 @@ get_header(); ?>
 
 	<!-- How it works Section -->
 	<section class="container" style="padding: 60px 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center;">
-		<div style="background: #e9ece6; border-radius: 20px; height: 400px; display: flex; align-items: center; justify-content: center; color: #999;">
+		<?php
+		$feature_id = get_option('anyora_feature_image_id');
+		$feature_url = $feature_id ? wp_get_attachment_url($feature_id) : '';
+		$feature_style = $feature_url ? 'background: url(' . esc_url($feature_url) . ') center/cover no-repeat;' : 'background: #e9ece6;';
+		?>
+		<div style="<?php echo $feature_style; ?> border-radius: 20px; height: 400px; display: flex; align-items: center; justify-content: center; color: #999; overflow: hidden;">
+			<?php if ( ! $feature_url ) : ?>
 			Video / Image Placeholder
+			<?php endif; ?>
 		</div>
 		<div>
 			<div class="section-kicker">How it works</div>
@@ -187,24 +204,7 @@ get_header(); ?>
 		</div>
 	</section>
 
-	<!-- Newsletter Section -->
-	<section class="newsletter-section">
-		<div class="container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center;">
-			<div>
-				<h2 style="font-size: 48px; margin: 0 0 20px 0; line-height: 1.1;">More organisation.<br>Less clutter.</h2>
-				<p style="font-size: 18px; opacity: 0.8; margin: 0;">Join our newsletter to receive tips on home organization and exclusive early access to new collections.</p>
-			</div>
-			<div class="newsletter-box">
-				<h3 style="margin: 0 0 10px 0;">Join our community</h3>
-				<p style="margin: 0 0 20px 0; color: #666;">Get 10% off your first order when you sign up.</p>
-				<form class="newsletter-form" action="#" onsubmit="event.preventDefault(); alert('Subscribed!');">
-					<input type="email" placeholder="Email address" required>
-					<button type="submit">Sign up</button>
-				</form>
-				<p style="font-size: 12px; color: #999; margin-top: 15px;">By signing up, you agree to our Terms of Service and Privacy Policy.</p>
-			</div>
-		</div>
-	</section>
+
 
 </main>
 

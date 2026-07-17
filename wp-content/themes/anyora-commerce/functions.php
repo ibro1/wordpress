@@ -5,7 +5,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'ANYORA_VERSION', '1.0.0' );
+define( 'ANYORA_VERSION', '1.0.2' );
 define( 'ANYORA_DIR', trailingslashit( get_template_directory() ) );
 define( 'ANYORA_URI', trailingslashit( get_template_directory_uri() ) );
 
@@ -68,7 +68,7 @@ function anyora_create_starter_content() {
 			'post_status'  => 'publish',
 			'post_title'   => $page['title'],
 			'post_name'    => $slug,
-			'post_content' => '',
+			'post_content' => isset($page['content']) ? $page['content'] : '',
 		), true );
 
 		if ( ! is_wp_error( $inserted ) ) {
@@ -130,3 +130,35 @@ function anyora_woocommerce_header_add_to_cart_fragment( $fragments ) {
 	$fragments['a.cart-icon'] = ob_get_clean();
 	return $fragments;
 }
+
+/**
+ * Include the TGM Plugin Activation class.
+ */
+require_once ANYORA_DIR . 'inc/class-tgm-plugin-activation.php';
+
+add_action( 'tgmpa_register', 'anyora_register_required_plugins' );
+function anyora_register_required_plugins() {
+	$plugins = array(
+		array(
+			'name'      => 'WooCommerce',
+			'slug'      => 'woocommerce',
+			'required'  => true,
+		),
+	);
+
+	$config = array(
+		'id'           => 'anyora-commerce',
+		'default_path' => '',
+		'menu'         => 'tgmpa-install-plugins',
+		'has_notices'  => true,
+		'dismissable'  => true,
+		'dismiss_msg'  => '',
+		'is_automatic' => false,
+		'message'      => '',
+	);
+
+	tgmpa( $plugins, $config );
+}
+
+// Remove trailing slashes from all URLs
+add_filter('user_trailingslashit', 'untrailingslashit');

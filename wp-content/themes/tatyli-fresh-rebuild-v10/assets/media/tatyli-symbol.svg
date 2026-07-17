@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" role="img" aria-label="Tatyli symbol">
+  <defs>
+    <linearGradient id="g" x1="20" y1="15" x2="140" y2="150" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#f6d18b"/>
+      <stop offset="0.5" stop-color="#c28a2e"/>
+      <stop offset="1" stop-color="#0f6463"/>
+    </linearGradient>
+  </defs>
+  <circle cx="80" cy="80" r="72" fill="none" stroke="url(#g)" stroke-width="8"/>
+  <path d="M80 24c15 24 33 37 56 43-25 8-42 24-51 55-13-25-32-40-61-44 27-10 44-27 56-54z" fill="url(#g)" opacity=".95"/>
+  <circle cx="80" cy="80" r="18" fill="#fff8ee"/>
+  <path d="M43 116c22-20 52-22 76-1" fill="none" stroke="#fff8ee" stroke-width="9" stroke-linecap="round" opacity=".9"/>
+</svg>

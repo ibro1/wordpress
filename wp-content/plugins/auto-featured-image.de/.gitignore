@@ -1,0 +1,47 @@
+# WordPress
+wp-config.php
+wp-content/uploads/
+wp-content/cache/
+wp-content/backup-db/
+wp-content/advanced-cache.php
+wp-content/wp-cache-config.php
+
+# Plugin specific
+*.log
+*.tmp
+.DS_Store
+Thumbs.db
+
+# Development
+node_modules/
+.sass-cache/
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Composer
+vendor/
+composer.lock
+
+# NPM
+package-lock.json
+yarn.lock
+
+# Build files
+dist/
+build/
+*.min.js
+*.min.css
+
+# Testing
+phpunit.xml
+.phpunit.result.cache
+tests/coverage/
+
+# Environment
+.env
+.env.local
+.env.development
+.env.test
+.env.production

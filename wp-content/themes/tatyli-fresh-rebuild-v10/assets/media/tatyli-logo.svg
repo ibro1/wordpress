@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 460 140" role="img" aria-label="Tatyli">
+  <defs>
+    <linearGradient id="mark" x1="12" y1="12" x2="128" y2="128" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#f6d18b"/>
+      <stop offset="0.54" stop-color="#c28a2e"/>
+      <stop offset="1" stop-color="#0f6463"/>
+    </linearGradient>
+  </defs>
+  <g transform="translate(10 10)">
+    <circle cx="60" cy="60" r="56" fill="none" stroke="#ffffff" stroke-opacity=".72" stroke-width="5"/>
+    <path d="M60 13c12 19 28 31 48 36-22 7-35 20-43 47-11-22-27-33-52-38 23-8 38-23 47-45z" fill="url(#mark)"/>
+    <circle cx="60" cy="60" r="13" fill="#fff8ee"/>
+    <path d="M29 91c18-16 43-17 63-1" fill="none" stroke="#fff8ee" stroke-width="7" stroke-linecap="round" opacity=".95"/>
+  </g>
+  <text x="146" y="76" font-family="Georgia, 'Times New Roman', serif" font-size="58" font-weight="700" fill="#ffffff" letter-spacing="-2">Tatyli</text>
+  <text x="150" y="104" font-family="Inter, Arial, sans-serif" font-size="15" font-weight="700" fill="#ffffff" fill-opacity=".72" letter-spacing="4">CULTURAL ASSOCIATION</text>
+</svg>

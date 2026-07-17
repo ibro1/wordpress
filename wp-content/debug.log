@@ -1,0 +1,48 @@
+[08-Aug-2025 21:28:22 UTC] PHP Fatal error:  Cannot redeclare AFI_Admin::register_settings() in C:\laragon\www\wordpress\wp-content\plugins\auto-featured-image\admin\class-afi-admin.php on line 237
+[08-Aug-2025 21:28:25 UTC] PHP Fatal error:  Cannot redeclare AFI_Admin::register_settings() in C:\laragon\www\wordpress\wp-content\plugins\auto-featured-image\admin\class-afi-admin.php on line 237
+[08-Aug-2025 21:28:26 UTC] PHP Fatal error:  Cannot redeclare AFI_Admin::register_settings() in C:\laragon\www\wordpress\wp-content\plugins\auto-featured-image\admin\class-afi-admin.php on line 237
+[08-Aug-2025 21:28:46 UTC] PHP Fatal error:  Cannot redeclare AFI_Admin::register_settings() in C:\laragon\www\wordpress\wp-content\plugins\auto-featured-image\admin\class-afi-admin.php on line 237
+[08-Aug-2025 21:28:46 UTC] PHP Fatal error:  Cannot redeclare AFI_Admin::register_settings() in C:\laragon\www\wordpress\wp-content\plugins\auto-featured-image\admin\class-afi-admin.php on line 237
+[08-Aug-2025 21:28:46 UTC] PHP Fatal error:  Cannot redeclare AFI_Admin::register_settings() in C:\laragon\www\wordpress\wp-content\plugins\auto-featured-image\admin\class-afi-admin.php on line 237
+[08-Aug-2025 21:28:46 UTC] PHP Fatal error:  Cannot redeclare AFI_Admin::register_settings() in C:\laragon\www\wordpress\wp-content\plugins\auto-featured-image\admin\class-afi-admin.php on line 237
+[08-Aug-2025 21:28:46 UTC] PHP Fatal error:  Cannot redeclare AFI_Admin::register_settings() in C:\laragon\www\wordpress\wp-content\plugins\auto-featured-image\admin\class-afi-admin.php on line 237
+[08-Aug-2025 21:28:50 UTC] PHP Fatal error:  Cannot redeclare AFI_Admin::register_settings() in C:\laragon\www\wordpress\wp-content\plugins\auto-featured-image\admin\class-afi-admin.php on line 237
+[08-Aug-2025 21:28:51 UTC] PHP Fatal error:  Cannot redeclare AFI_Admin::register_settings() in C:\laragon\www\wordpress\wp-content\plugins\auto-featured-image\admin\class-afi-admin.php on line 237
+[08-Aug-2025 21:28:51 UTC] PHP Fatal error:  Cannot redeclare AFI_Admin::register_settings() in C:\laragon\www\wordpress\wp-content\plugins\auto-featured-image\admin\class-afi-admin.php on line 237
+[08-Aug-2025 21:29:47 UTC] PHP Fatal error:  Cannot redeclare AFI_Admin::register_settings() in C:\laragon\www\wordpress\wp-content\plugins\auto-featured-image\admin\class-afi-admin.php on line 237
+[08-Aug-2025 21:29:47 UTC] PHP Fatal error:  Cannot redeclare AFI_Admin::register_settings() in C:\laragon\www\wordpress\wp-content\plugins\auto-featured-image\admin\class-afi-admin.php on line 237
+[08-Aug-2025 21:29:47 UTC] PHP Fatal error:  Cannot redeclare AFI_Admin::register_settings() in C:\laragon\www\wordpress\wp-content\plugins\auto-featured-image\admin\class-afi-admin.php on line 237
+[08-Aug-2025 21:29:48 UTC] PHP Fatal error:  Cannot redeclare AFI_Admin::register_settings() in C:\laragon\www\wordpress\wp-content\plugins\auto-featured-image\admin\class-afi-admin.php on line 237
+[08-Aug-2025 21:29:48 UTC] PHP Fatal error:  Cannot redeclare AFI_Admin::register_settings() in C:\laragon\www\wordpress\wp-content\plugins\auto-featured-image\admin\class-afi-admin.php on line 237
+[08-Aug-2025 21:30:46 UTC] PHP Fatal error:  Cannot redeclare AFI_Admin::register_settings() in C:\laragon\www\wordpress\wp-content\plugins\auto-featured-image\admin\class-afi-admin.php on line 237
+[08-Aug-2025 21:30:47 UTC] PHP Fatal error:  Cannot redeclare AFI_Admin::register_settings() in C:\laragon\www\wordpress\wp-content\plugins\auto-featured-image\admin\class-afi-admin.php on line 237
+[08-Aug-2025 21:30:47 UTC] PHP Fatal error:  Cannot redeclare AFI_Admin::register_settings() in C:\laragon\www\wordpress\wp-content\plugins\auto-featured-image\admin\class-afi-admin.php on line 237
+[08-Aug-2025 21:30:47 UTC] PHP Fatal error:  Cannot redeclare AFI_Admin::register_settings() in C:\laragon\www\wordpress\wp-content\plugins\auto-featured-image\admin\class-afi-admin.php on line 237
+[08-Aug-2025 21:30:48 UTC] PHP Fatal error:  Cannot redeclare AFI_Admin::register_settings() in C:\laragon\www\wordpress\wp-content\plugins\auto-featured-image\admin\class-afi-admin.php on line 237
+[08-Aug-2025 21:30:51 UTC] PHP Fatal error:  Cannot redeclare AFI_Admin::register_settings() in C:\laragon\www\wordpress\wp-content\plugins\auto-featured-image\admin\class-afi-admin.php on line 237
+[08-Aug-2025 21:30:52 UTC] PHP Fatal error:  Cannot redeclare AFI_Admin::register_settings() in C:\laragon\www\wordpress\wp-content\plugins\auto-featured-image\admin\class-afi-admin.php on line 237
+[08-Aug-2025 21:30:52 UTC] PHP Fatal error:  Cannot redeclare AFI_Admin::register_settings() in C:\laragon\www\wordpress\wp-content\plugins\auto-featured-image\admin\class-afi-admin.php on line 237
+[08-Aug-2025 21:31:46 UTC] PHP Fatal error:  Cannot redeclare AFI_Admin::register_settings() in C:\laragon\www\wordpress\wp-content\plugins\auto-featured-image\admin\class-afi-admin.php on line 237
+[08-Aug-2025 21:31:46 UTC] PHP Fatal error:  Cannot redeclare AFI_Admin::register_settings() in C:\laragon\www\wordpress\wp-content\plugins\auto-featured-image\admin\class-afi-admin.php on line 237
+[08-Aug-2025 21:31:46 UTC] PHP Fatal error:  Cannot redeclare AFI_Admin::register_settings() in C:\laragon\www\wordpress\wp-content\plugins\auto-featured-image\admin\class-afi-admin.php on line 237
+[08-Aug-2025 21:31:46 UTC] PHP Fatal error:  Cannot redeclare AFI_Admin::register_settings() in C:\laragon\www\wordpress\wp-content\plugins\auto-featured-image\admin\class-afi-admin.php on line 237
+[08-Aug-2025 21:31:46 UTC] PHP Fatal error:  Cannot redeclare AFI_Admin::register_settings() in C:\laragon\www\wordpress\wp-content\plugins\auto-featured-image\admin\class-afi-admin.php on line 237
+[09-Aug-2025 03:14:13 UTC] PHP Warning:  wp_version_check(): An unexpected error occurred. Something may be wrong with WordPress.org or this server&#8217;s configuration. If you continue to have problems, please try the <a href="https://wordpress.org/support/forums/">support forums</a>. (WordPress could not establish a secure connection to WordPress.org. Please contact your server administrator.) in C:\laragon\www\wordpress\wp-includes\functions.php on line 6121
+[09-Aug-2025 03:14:16 UTC] PHP Warning:  wp_update_plugins(): An unexpected error occurred. Something may be wrong with WordPress.org or this server&#8217;s configuration. If you continue to have problems, please try the <a href="https://wordpress.org/support/forums/">support forums</a>. (WordPress could not establish a secure connection to WordPress.org. Please contact your server administrator.) in C:\laragon\www\wordpress\wp-includes\functions.php on line 6121
+[09-Aug-2025 03:14:16 UTC] PHP Warning:  wp_update_themes(): An unexpected error occurred. Something may be wrong with WordPress.org or this server&#8217;s configuration. If you continue to have problems, please try the <a href="https://wordpress.org/support/forums/">support forums</a>. (WordPress could not establish a secure connection to WordPress.org. Please contact your server administrator.) in C:\laragon\www\wordpress\wp-includes\functions.php on line 6121
+[09-Aug-2025 05:53:47 UTC] PHP Warning:  mysqli_real_connect(): (HY000/2002): No connection could be made because the target machine actively refused it in C:\laragon\www\wordpress\wp-includes\class-wpdb.php on line 1988
+[09-Aug-2025 05:53:47 UTC] PHP Warning:  mysqli_real_connect(): (HY000/2002): No connection could be made because the target machine actively refused it in C:\laragon\www\wordpress\wp-includes\class-wpdb.php on line 1988
+[09-Aug-2025 05:53:47 UTC] PHP Warning:  mysqli_real_connect(): (HY000/2002): No connection could be made because the target machine actively refused it in C:\laragon\www\wordpress\wp-includes\class-wpdb.php on line 1988
+[09-Aug-2025 05:53:47 UTC] PHP Warning:  mysqli_real_connect(): (HY000/2002): No connection could be made because the target machine actively refused it in C:\laragon\www\wordpress\wp-includes\class-wpdb.php on line 1988
+[09-Aug-2025 09:15:50 UTC] PHP Warning:  mysqli_real_connect(): (HY000/2002): No connection could be made because the target machine actively refused it in C:\laragon\www\wordpress\wp-includes\class-wpdb.php on line 1988
+[09-Aug-2025 09:15:50 UTC] PHP Warning:  mysqli_real_connect(): (HY000/2002): No connection could be made because the target machine actively refused it in C:\laragon\www\wordpress\wp-includes\class-wpdb.php on line 1988
+[09-Aug-2025 09:15:50 UTC] PHP Warning:  mysqli_real_connect(): (HY000/2002): No connection could be made because the target machine actively refused it in C:\laragon\www\wordpress\wp-includes\class-wpdb.php on line 1988
+[09-Aug-2025 09:15:50 UTC] PHP Warning:  mysqli_real_connect(): (HY000/2002): No connection could be made because the target machine actively refused it in C:\laragon\www\wordpress\wp-includes\class-wpdb.php on line 1988
+[11-Aug-2025 04:51:12 UTC] Automatic updates starting...
+[11-Aug-2025 04:51:17 UTC] Automatic updates complete.
+[17-Jul-2026 07:49:59 UTC] Automatic updates starting...
+[17-Jul-2026 07:50:01 UTC]   Automatic plugin updates starting...
+[17-Jul-2026 07:50:01 UTC]   Automatic plugin updates complete.
+[17-Jul-2026 07:50:02 UTC]   Automatic theme updates starting...
+[17-Jul-2026 07:50:02 UTC]   Automatic theme updates complete.
+[17-Jul-2026 07:50:02 UTC] Automatic updates complete.

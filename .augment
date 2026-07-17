@@ -1,0 +1,134 @@
+# WordPress Development AI Agent Prompt
+
+## Project Overview
+This is a WordPress installation for developing custom plugins and themes. The workspace contains a complete WordPress environment with the following structure:
+
+- **WordPress Core**: Standard WordPress installation files
+- **Plugins Directory**: `wp-content/plugins/` - Contains custom and third-party plugins
+- **Themes Directory**: `wp-content/themes/` - Contains custom and default themes
+- **Uploads Directory**: `wp-content/uploads/` - Media files and user uploads
+
+## Development Guidelines
+
+### WordPress Standards
+- Follow WordPress Coding Standards (WPCS) for PHP, JavaScript, CSS, and HTML
+- Use WordPress hooks (actions and filters) for extensibility
+- Implement proper sanitization, validation, and escaping for security
+- Follow WordPress naming conventions for functions, classes, and files
+- Use WordPress APIs and functions instead of direct database queries when possible
+
+### Plugin Development
+- **Location**: All custom plugins should be created in `wp-content/plugins/`
+- **Structure**: Each plugin should have its own directory with a main PHP file
+- **Headers**: Include proper plugin headers with Name, Description, Version, Author
+- **Activation/Deactivation**: Implement proper activation and deactivation hooks
+- **Uninstall**: Create uninstall.php for cleanup when plugin is deleted
+- **Security**: Use nonces, capability checks, and proper data validation
+- **Internationalization**: Make plugins translation-ready using WordPress i18n functions
+
+### Theme Development
+- **Location**: Custom themes should be created in `wp-content/themes/`
+- **Structure**: Follow WordPress theme hierarchy and template structure
+- **Functions**: Use functions.php for theme setup, enqueuing scripts/styles
+- **Templates**: Create appropriate template files (index.php, single.php, etc.)
+- **Responsive**: Ensure mobile-first, responsive design
+- **Accessibility**: Follow WCAG guidelines and WordPress accessibility standards
+- **Child Themes**: Consider child themes for customizing existing themes
+
+### Code Quality
+- **Documentation**: Use PHPDoc for functions and classes
+- **Error Handling**: Implement proper error handling and logging
+- **Performance**: Optimize database queries and minimize HTTP requests
+- **Caching**: Consider caching strategies for better performance
+- **Testing**: Write unit tests when possible, test across different environments
+
+### Security Best Practices
+- **Input Validation**: Validate and sanitize all user inputs
+- **Output Escaping**: Escape all outputs using WordPress functions
+- **Nonces**: Use nonces for form submissions and AJAX requests
+- **Capabilities**: Check user capabilities before allowing actions
+- **SQL Injection**: Use $wpdb->prepare() for database queries
+- **File Permissions**: Set appropriate file and directory permissions
+
+### Development Workflow
+1. **Planning**: Define requirements and functionality before coding
+2. **Environment**: Test in local development environment first
+3. **Version Control**: Use Git for tracking changes
+4. **Staging**: Test on staging environment before production
+5. **Backup**: Always backup before making changes
+6. **Documentation**: Document custom functionality and APIs
+
+### Common WordPress APIs to Use
+- **Database**: $wpdb, WP_Query, get_posts(), get_users()
+- **Options**: get_option(), update_option(), add_option()
+- **Meta**: get_post_meta(), update_post_meta(), get_user_meta()
+- **Hooks**: add_action(), add_filter(), do_action(), apply_filters()
+- **Enqueuing**: wp_enqueue_script(), wp_enqueue_style()
+- **AJAX**: wp_ajax_*, wp_localize_script()
+- **REST API**: register_rest_route(), WP_REST_Request
+
+### File Structure Examples
+
+#### Plugin Structure:
+```
+wp-content/plugins/my-plugin/
+├── my-plugin.php (main plugin file)
+├── includes/
+│   ├── class-my-plugin.php
+│   └── functions.php
+├── admin/
+│   ├── admin-page.php
+│   └── admin-styles.css
+├── public/
+│   ├── public-functions.php
+│   └── public-styles.css
+├── assets/
+│   ├── js/
+│   └── css/
+├── languages/
+├── readme.txt
+└── uninstall.php
+```
+
+#### Theme Structure:
+```
+wp-content/themes/my-theme/
+├── style.css (main stylesheet with theme header)
+├── index.php (main template)
+├── functions.php (theme functions)
+├── header.php
+├── footer.php
+├── sidebar.php
+├── single.php
+├── page.php
+├── archive.php
+├── 404.php
+├── assets/
+│   ├── js/
+│   ├── css/
+│   └── images/
+└── template-parts/
+```
+
+### Debugging and Development Tools
+- **Debug Mode**: Enable WP_DEBUG in wp-config.php for development
+- **Query Debug**: Use Query Monitor plugin for database query analysis
+- **Error Logging**: Check wp-content/debug.log for PHP errors
+- **Browser Tools**: Use browser developer tools for frontend debugging
+
+### When Working on This Project
+1. Always check existing plugins and themes before creating new ones
+2. Follow WordPress best practices and coding standards
+3. Test functionality thoroughly before considering complete
+4. Document any custom functionality or non-standard implementations
+5. Consider backwards compatibility and WordPress version requirements
+6. Use WordPress hooks and APIs instead of modifying core files
+7. Implement proper error handling and user feedback
+8. Consider performance implications of new features
+
+### Resources
+- WordPress Codex: https://codex.wordpress.org/
+- WordPress Developer Handbook: https://developer.wordpress.org/
+- WordPress Coding Standards: https://make.wordpress.org/core/handbook/best-practices/coding-standards/
+- Plugin Handbook: https://developer.wordpress.org/plugins/
+- Theme Handbook: https://developer.wordpress.org/themes/

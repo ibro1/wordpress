@@ -1,0 +1,139 @@
+:root{
+  --tat-bg:#fff8ee;
+  --tat-ink:#151313;
+  --tat-muted:#66615a;
+  --tat-line:rgba(21,19,19,.12);
+  --tat-card:#ffffff;
+  --tat-gold:#c28a2e;
+  --tat-gold-deep:#875d1c;
+  --tat-rust:#9f3f2e;
+  --tat-teal:#0f6463;
+  --tat-plum:#4b2544;
+  --tat-soft:#f4e7d3;
+  --tat-radius:28px;
+  --tat-shadow:0 22px 65px rgba(21,19,19,.12);
+  --tat-container:min(1120px,calc(100vw - 40px));
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;overflow-x:hidden}
+body{
+  margin:0;
+  font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  background:var(--tat-bg);
+  color:var(--tat-ink);
+  line-height:1.72;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+}
+a{color:inherit;text-decoration:none}
+a:hover{text-decoration:none}
+img{max-width:100%;height:auto;display:block}
+button,input,textarea{font:inherit}
+.screen-reader-text{position:absolute!important;height:1px;width:1px;overflow:hidden;clip:rect(1px,1px,1px,1px);white-space:nowrap}
+.tat-container{width:var(--tat-container);margin-inline:auto}
+.tat-site-header{position:relative;z-index:50;background:rgba(21,19,19,.96);border-bottom:1px solid rgba(255,255,255,.1)}
+.tat-header-inner{display:flex;align-items:center;justify-content:space-between;min-height:78px;gap:22px}
+.tat-brand{display:flex;align-items:center;gap:12px;color:#fff;font-weight:850;letter-spacing:.02em;min-width:max-content}
+.tat-brand img{width:auto;max-height:58px;max-width:210px;object-fit:contain}
+.tat-logo-wrap{display:flex;align-items:center;gap:12px}
+.tat-logo-mark{width:54px;height:54px;display:grid;place-items:center;border-radius:18px;background:linear-gradient(145deg,rgba(246,209,139,.2),rgba(15,100,99,.18));border:1px solid rgba(255,255,255,.18)}
+.tat-logo-mark svg{width:44px;height:44px;display:block}
+.tat-logo-ring{fill:none;stroke:#f6d18b;stroke-width:5}
+.tat-logo-star{fill:#c28a2e}
+.tat-logo-dot{fill:#fff8ee}
+.tat-logo-smile{fill:none;stroke:#fff8ee;stroke-width:6;stroke-linecap:round}
+.tat-logo-word{display:grid;line-height:1}
+.tat-logo-word span{font-family:Georgia,'Times New Roman',serif;font-size:2rem;font-weight:800;letter-spacing:-.05em;color:#fff}
+.tat-logo-word small{font-size:.62rem;text-transform:uppercase;letter-spacing:.22em;color:rgba(255,255,255,.72);font-weight:850}
+.tat-brand-text{font-size:1.6rem;line-height:1}
+.tat-nav{display:flex;align-items:center;gap:10px}
+.tat-nav ul{display:flex;align-items:center;gap:4px;list-style:none;margin:0;padding:0}
+.tat-nav a{color:rgba(255,255,255,.82);font-weight:750;font-size:.92rem;padding:11px 14px;border-radius:999px;transition:.2s ease}
+.tat-nav a:hover,.tat-nav .current-menu-item>a,.tat-nav .current_page_item>a{background:rgba(255,255,255,.12);color:#fff}
+.tat-menu-toggle{display:none;appearance:none;border:0;background:rgba(255,255,255,.12);color:#fff;border-radius:999px;padding:10px 13px;cursor:pointer;font-weight:800}
+.tat-button,.wp-block-button__link,.tat-contact-submit{display:inline-flex;align-items:center;justify-content:center;gap:.55rem;border:1px solid transparent;border-radius:999px;padding:13px 21px;font-weight:850;line-height:1.1;cursor:pointer;background:var(--tat-ink);color:#fff;box-shadow:0 14px 30px rgba(21,19,19,.16);transition:transform .2s ease,box-shadow .2s ease,background .2s ease,border-color .2s ease}
+.tat-button:hover,.wp-block-button__link:hover,.tat-contact-submit:hover{transform:translateY(-2px);box-shadow:0 18px 38px rgba(21,19,19,.22)}
+.tat-button-light{background:#fff;color:var(--tat-ink)}
+.tat-button-outline{background:transparent;color:#fff;border-color:rgba(255,255,255,.45);box-shadow:none}
+.tat-button-outline:hover{background:#fff;color:var(--tat-ink)}
+.tat-hero{position:relative;isolation:isolate;min-height:68vh;display:grid;place-items:end start;background:linear-gradient(135deg,rgba(21,19,19,.82),rgba(75,37,68,.66)),var(--tat-hero-image);background-size:cover;background-position:center;color:#fff;overflow:hidden}
+.tat-hero:before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 18% 18%,rgba(194,138,46,.5),transparent 32%),radial-gradient(circle at 76% 20%,rgba(15,100,99,.36),transparent 30%),linear-gradient(to top,rgba(21,19,19,.78),rgba(21,19,19,.05));z-index:-1}
+.tat-hero:after{content:"";position:absolute;right:-8vw;bottom:-18vw;width:45vw;height:45vw;border-radius:50%;border:1px solid rgba(255,255,255,.16);box-shadow:inset 0 0 0 4vw rgba(255,255,255,.03);z-index:-1}
+.tat-hero-small{min-height:48vh;place-items:center}
+.tat-hero-content{padding:140px 0 84px;max-width:820px}
+.tat-kicker{font-size:.84rem;text-transform:uppercase;letter-spacing:.2em;font-weight:900;color:#f6d18b;margin:0 0 18px}
+.tat-hero h1{font-size:clamp(3rem,8vw,7.8rem);line-height:.91;letter-spacing:-.07em;margin:0 0 26px;max-width:920px}
+.tat-hero p{font-size:clamp(1.04rem,2vw,1.25rem);color:rgba(255,255,255,.86);max-width:700px;margin:0 0 30px;font-weight:550}
+.tat-hero-actions{display:flex;flex-wrap:wrap;gap:14px}
+.tat-section{padding:110px 0}
+.tat-section-tight{padding:80px 0}
+.tat-section-alt{background:#fff;border-block:1px solid var(--tat-line)}
+.tat-section-head{max-width:790px;margin:0 auto 48px;text-align:center}
+.tat-section-head .tat-kicker{color:var(--tat-gold-deep)}
+.tat-section-head h2,.tat-rich h2{font-size:clamp(2rem,4.7vw,4.6rem);line-height:1;letter-spacing:-.06em;margin:0 0 22px}
+.tat-section-head p{font-size:1.1rem;color:var(--tat-muted);margin:0}
+.tat-split{display:grid;grid-template-columns:1fr 1fr;gap:58px;align-items:center}
+.tat-panel{background:var(--tat-card);border:1px solid var(--tat-line);border-radius:var(--tat-radius);box-shadow:var(--tat-shadow);padding:44px}
+.tat-wide-panel{max-width:920px;margin-inline:auto}
+.tat-panel h2{font-size:clamp(2rem,4.2vw,4.8rem);line-height:.98;letter-spacing:-.06em;margin:0 0 24px}
+.tat-panel h3{font-size:clamp(1.6rem,3vw,2.7rem);line-height:1.05;letter-spacing:-.04em;margin:0 0 18px}
+.tat-panel p{color:var(--tat-muted);margin:0 0 18px;font-size:1.05rem}
+.tat-panel p:last-child{margin-bottom:0}
+.tat-art-panel{position:relative;min-height:500px;border-radius:38px;overflow:hidden;background:linear-gradient(145deg,#171313,#4b2544 58%,#0f6463);box-shadow:var(--tat-shadow);isolation:isolate;border:1px solid rgba(255,255,255,.22)}
+.tat-art-panel:before{content:"";position:absolute;inset:0;background:url('../media/tatyli-hero.svg') center/cover no-repeat;opacity:.92;mix-blend-mode:screen}
+.tat-art-panel:after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 28% 22%,rgba(246,209,139,.6),transparent 28%),linear-gradient(to top,rgba(21,19,19,.72),rgba(21,19,19,.05));z-index:1}
+.tat-art-orbit{position:absolute;border:1px solid rgba(255,255,255,.28);border-radius:50%;z-index:2}
+.tat-art-orbit-one{width:330px;height:330px;left:-88px;top:60px}
+.tat-art-orbit-two{width:230px;height:230px;right:-40px;bottom:75px}
+.tat-art-mark{position:absolute;left:50%;top:45%;transform:translate(-50%,-50%);width:145px;height:145px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);backdrop-filter:blur(8px);z-index:3;padding:24px}
+.tat-art-caption{position:absolute;left:24px;bottom:24px;right:24px;color:#fff;background:rgba(21,19,19,.55);border:1px solid rgba(255,255,255,.18);backdrop-filter:blur(10px);border-radius:22px;padding:20px;z-index:4}
+.tat-art-caption strong{display:block;font-size:1.08rem;line-height:1.2;margin-bottom:6px}
+.tat-art-caption span{display:block;color:rgba(255,255,255,.76);font-size:.96rem}
+.tat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+.tat-card{background:#fff;border:1px solid var(--tat-line);border-radius:24px;padding:28px;box-shadow:0 16px 45px rgba(21,19,19,.08);position:relative;overflow:hidden}
+.tat-card:before{content:"";position:absolute;width:80px;height:80px;border-radius:50%;right:-22px;top:-22px;background:rgba(194,138,46,.14)}
+.tat-card h3,.tat-card h4{font-size:1.25rem;line-height:1.15;margin:0 0 12px;letter-spacing:-.025em;position:relative}
+.tat-card p{margin:0;color:var(--tat-muted);font-size:.98rem;position:relative}
+.tat-number{font-size:2.3rem;line-height:1;font-weight:950;letter-spacing:-.05em;color:var(--tat-gold-deep);display:block;margin-bottom:8px;position:relative}
+.tat-activities{grid-template-columns:repeat(2,1fr);counter-reset:activity}
+.tat-activity{padding:34px 30px 32px 94px;min-height:190px;display:block}
+.tat-activity:after{counter-increment:activity;content:counter(activity, decimal-leading-zero);position:absolute;left:26px;top:32px;font-size:1.15rem;font-weight:950;color:var(--tat-gold-deep);background:var(--tat-soft);width:48px;height:48px;border-radius:999px;display:grid;place-items:center}
+.tat-activity h4{margin:0 0 11px;font-size:1.35rem}
+.tat-contact-wrap{display:grid;grid-template-columns:.9fr 1.1fr;gap:26px;align-items:start}
+.tat-contact-list{display:grid;gap:14px;margin-top:26px}
+.tat-contact-item{display:flex;gap:13px;align-items:flex-start;color:var(--tat-muted);background:rgba(194,138,46,.08);border:1px solid rgba(194,138,46,.18);padding:15px;border-radius:18px}
+.tat-contact-item strong{display:block;color:var(--tat-ink);line-height:1.2}
+.tat-contact-form{display:grid;gap:14px}
+.tat-contact-form label{display:grid;gap:8px;font-weight:800;color:var(--tat-ink)}
+.tat-contact-form input,.tat-contact-form textarea{width:100%;border:1px solid var(--tat-line);background:#fff;color:var(--tat-ink);border-radius:16px;padding:14px 16px;outline:none;transition:border-color .2s ease,box-shadow .2s ease}
+.tat-contact-form input:focus,.tat-contact-form textarea:focus{border-color:var(--tat-gold);box-shadow:0 0 0 4px rgba(194,138,46,.15)}
+.tat-contact-form textarea{min-height:170px;resize:vertical}
+.tat-alert{border-radius:16px;padding:14px 16px;margin:0 0 18px;background:#eaf8ef;border:1px solid #bde2c8;color:#1e5631;font-weight:750}
+.tat-rich{background:#fff;border:1px solid var(--tat-line);border-radius:var(--tat-radius);padding:50px;box-shadow:var(--tat-shadow)}
+.tat-rich h1{font-size:clamp(2.4rem,5vw,4.6rem);line-height:1;letter-spacing:-.06em;margin:0 0 28px}
+.tat-rich h2{margin-top:44px;font-size:clamp(1.6rem,3vw,2.7rem)}
+.tat-rich h3{font-size:1.35rem;margin:32px 0 10px;line-height:1.2}
+.tat-rich p,.tat-rich li{color:var(--tat-muted);font-size:1.02rem}
+.tat-rich ul{padding-left:1.25rem}
+.tat-cta{position:relative;overflow:hidden;background:linear-gradient(135deg,var(--tat-ink),var(--tat-plum));color:#fff;border-radius:40px;padding:54px;display:flex;align-items:center;justify-content:space-between;gap:26px;box-shadow:var(--tat-shadow)}
+.tat-cta:before{content:"";position:absolute;inset:auto -10% -45% auto;width:380px;height:380px;border-radius:50%;background:rgba(194,138,46,.3)}
+.tat-cta h2{font-size:clamp(2rem,4vw,4rem);line-height:.98;letter-spacing:-.06em;margin:0 0 10px;position:relative}
+.tat-cta p{margin:0;color:rgba(255,255,255,.78);max-width:650px;position:relative}
+.tat-site-footer{background:#151313;color:#fff;padding:52px 0 28px}
+.tat-footer-grid{display:grid;grid-template-columns:1.2fr repeat(3,.8fr);gap:28px;margin-bottom:36px}
+.tat-footer-grid h3,.tat-footer-grid h4{margin:0 0 12px;line-height:1.1}
+.tat-footer-grid p,.tat-footer-grid a{color:rgba(255,255,255,.72);font-size:.96rem}
+.tat-footer-grid a:hover{color:#fff}
+.tat-footer-links{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.tat-footer-bottom{border-top:1px solid rgba(255,255,255,.12);padding-top:22px;color:rgba(255,255,255,.58);font-size:.9rem;display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.entry-content>*:first-child{margin-top:0}.entry-content>*:last-child{margin-bottom:0}
+.tat-default-page{padding:80px 0}.tat-default-page .entry-title{font-size:clamp(2.2rem,5vw,4.4rem);line-height:1;letter-spacing:-.06em;margin:0 0 26px}.tat-default-page .entry-content{background:#fff;border:1px solid var(--tat-line);border-radius:var(--tat-radius);padding:42px;box-shadow:var(--tat-shadow)}
+@media (max-width:900px){
+  .tat-menu-toggle{display:inline-flex}.tat-nav{position:absolute;left:20px;right:20px;top:calc(100% + 8px);display:none;background:rgba(21,19,19,.97);border:1px solid rgba(255,255,255,.14);border-radius:22px;padding:12px;box-shadow:var(--tat-shadow)}.tat-nav.is-open{display:block}.tat-nav ul{display:grid;gap:4px}.tat-nav a{display:block}.tat-header-inner{min-height:68px}.tat-split,.tat-contact-wrap{grid-template-columns:1fr}.tat-grid,.tat-activities{grid-template-columns:1fr}.tat-hero-content{padding:110px 0 64px}.tat-section{padding:74px 0}.tat-panel,.tat-rich{padding:30px}.tat-footer-grid{grid-template-columns:1fr 1fr}.tat-cta{display:grid;padding:34px}.tat-art-panel{min-height:370px}.tat-art-mark{width:112px;height:112px}
+}
+@media (max-width:600px){
+  :root{--tat-container:min(100vw - 28px,1120px)}.tat-brand img{max-width:136px}.tat-logo-mark{width:46px;height:46px;border-radius:15px}.tat-logo-mark svg{width:38px;height:38px}.tat-logo-word span{font-size:1.55rem}.tat-logo-word small{font-size:.5rem;letter-spacing:.16em}.tat-brand-text{font-size:1.25rem}.tat-hero h1{font-size:3.2rem}.tat-hero-small{min-height:38vh}.tat-panel,.tat-rich{padding:24px;border-radius:22px}.tat-activity{padding:86px 24px 26px 24px;min-height:auto}.tat-activity:after{top:24px;left:24px}.tat-activity h4{font-size:1.12rem}.tat-footer-grid{grid-template-columns:1fr}.tat-footer-bottom{display:grid}.tat-contact-item{font-size:.95rem}.tat-art-caption{left:18px;right:18px;bottom:18px}
+}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+
+.tat-honeypot{position:absolute!important;left:-10000px!important;top:auto!important;width:1px!important;height:1px!important;overflow:hidden!important}

@@ -132,51 +132,72 @@ get_header(); ?>
 		</div>
 	</section>
 
-	<!-- Categories List Section -->
-	<section class="container" style="padding: 40px 20px; max-width: 1200px; margin: 0 auto;">
+	<!-- Categories Grid Section -->
+	<section style="padding: 80px 20px; max-width: 1200px; margin: 0 auto;">
 		<div class="section-header text-center">
 			<div class="section-kicker">Organise Every Space</div>
 			<h2 class="section-title">Explore Our Categories</h2>
+			<p style="color:#666; font-size:17px; max-width:560px; margin:16px auto 0;">Everything you need to bring calm and order to every corner of your home.</p>
 		</div>
-		<div class="categories-list" style="margin-top: 40px;">
-			<?php
-			$categories = array(
-				array(
-					'icon' => '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #6fbdbd;"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>',
-					'title' => 'Storage solutions',
-					'desc' => 'Smart storage for every room'
-				),
-				array(
-					'icon' => '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #6fbdbd;"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>',
-					'title' => 'Home accessories',
-					'desc' => 'Finishing touches that make a house a home'
-				),
-				array(
-					'icon' => '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #6fbdbd;"><path d="M12 22a7 7 0 0 0 7-7H5a7 7 0 0 0 7 7zM12 2a3 3 0 0 0-3 3v3h6V5a3 3 0 0 0-3-3z"></path></svg>',
-					'title' => 'Bathroom storage',
-					'desc' => 'Keep your bathroom neat and tidy'
-				),
-				array(
-					'icon' => '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #6fbdbd;"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>',
-					'title' => 'Office & Desk',
-					'desc' => 'Organise your workspace'
-				),
-			);
-			foreach ( $categories as $cat ) {
-				?>
-				<div class="cat-item">
-					<div class="cat-info">
-						<div class="cat-icon" style="display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; background: white; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.02);"><?php echo $cat['icon']; ?></div>
-						<div>
-							<div class="cat-title"><?php echo $cat['title']; ?></div>
-							<div class="cat-desc"><?php echo $cat['desc']; ?></div>
-						</div>
-					</div>
-					<div class="cat-arrow">➔</div>
+
+		<div class="anyora-cat-grid">
+
+			<!-- Card 1 -->
+			<a href="<?php echo esc_url( home_url('/shop/') ); ?>" class="anyora-cat-card" style="--cat-color:#e8f4f4; --cat-accent:#6fbdbd;">
+				<div class="cat-card-icon-wrap">
+					<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#6fbdbd" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
 				</div>
-				<?php
-			}
-			?>
+				<div class="cat-card-body">
+					<h3 class="cat-card-title">Storage Solutions</h3>
+					<p class="cat-card-desc">Smart storage for every room — from drawer organisers to shelving units.</p>
+				</div>
+				<div class="cat-card-arrow">
+					<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+				</div>
+			</a>
+
+			<!-- Card 2 -->
+			<a href="<?php echo esc_url( home_url('/shop/') ); ?>" class="anyora-cat-card" style="--cat-color:#fef6ec; --cat-accent:#dcb37b;">
+				<div class="cat-card-icon-wrap">
+					<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#dcb37b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+				</div>
+				<div class="cat-card-body">
+					<h3 class="cat-card-title">Home Accessories</h3>
+					<p class="cat-card-desc">Finishing touches that elevate every space and make your house feel like home.</p>
+				</div>
+				<div class="cat-card-arrow" style="color: #dcb37b;">
+					<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+				</div>
+			</a>
+
+			<!-- Card 3 -->
+			<a href="<?php echo esc_url( home_url('/shop/') ); ?>" class="anyora-cat-card" style="--cat-color:#edf4fb; --cat-accent:#5b9ecf;">
+				<div class="cat-card-icon-wrap">
+					<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#5b9ecf" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M5 12a7 7 0 0 0 7 7"/><path d="M5 12a7 7 0 0 1 7-7"/><circle cx="12" cy="12" r="3"/></svg>
+				</div>
+				<div class="cat-card-body">
+					<h3 class="cat-card-title">Bathroom Storage</h3>
+					<p class="cat-card-desc">Keep your bathroom neat and tidy with clever cabinet and counter solutions.</p>
+				</div>
+				<div class="cat-card-arrow" style="color: #5b9ecf;">
+					<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+				</div>
+			</a>
+
+			<!-- Card 4 -->
+			<a href="<?php echo esc_url( home_url('/shop/') ); ?>" class="anyora-cat-card" style="--cat-color:#f0f0f8; --cat-accent:#7b7bcc;">
+				<div class="cat-card-icon-wrap">
+					<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#7b7bcc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+				</div>
+				<div class="cat-card-body">
+					<h3 class="cat-card-title">Office &amp; Desk</h3>
+					<p class="cat-card-desc">Organise your workspace and boost productivity with premium desk solutions.</p>
+				</div>
+				<div class="cat-card-arrow" style="color: #7b7bcc;">
+					<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+				</div>
+			</a>
+
 		</div>
 	</section>
 

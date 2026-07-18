@@ -292,3 +292,105 @@ function anyora_ajax_add_to_cart_handler() {
     }
     wp_die();
 }
+
+// Enqueue Custom Checkout Funnel CSS
+add_action( 'wp_enqueue_scripts', 'anyora_enqueue_checkout_funnel_css', 15 );
+function anyora_enqueue_checkout_funnel_css() {
+    if ( is_page( 'checkout' ) || is_page_template( 'page-checkout.php' ) ||
+         is_page( 'cart' )     || is_page_template( 'page-cart.php' ) ) {
+        wp_enqueue_style( 'anyora-checkout-funnel', ANYORA_URI . 'assets/css/checkout-funnel.css', array(), ANYORA_VERSION );
+    }
+}
+
+// Custom WordPress Login Page styling
+add_action( 'login_enqueue_scripts', 'anyora_custom_login_styles' );
+function anyora_custom_login_styles() {
+    $custom_logo_id = get_theme_mod( 'custom_logo' );
+    $logo_url = '';
+    if ( $custom_logo_id ) {
+        $logo_url = wp_get_attachment_image_url( $custom_logo_id, 'full' );
+    }
+    ?>
+    <style type="text/css">
+        body.login {
+            background-color: #f4f5f0 !important;
+            font-family: 'Inter', sans-serif !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+        }
+        #login {
+            background: #ffffff !important;
+            padding: 40px !important;
+            border-radius: 20px !important;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.03) !important;
+            border: 1px solid rgba(0,0,0,0.04) !important;
+            width: 320px !important;
+        }
+        body.login h1 a {
+            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 38' width='150' height='34' fill='none'><path d='M8 30 L18 8 L28 30' stroke='%23081d34' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/><line x1='12' y1='20' x2='24' y2='20' stroke='%236fbdbd' stroke-width='2.5' stroke-linecap='round'/><line x1='9.5' y1='25.5' x2='26.5' y2='25.5' stroke='%236fbdbd' stroke-width='2.5' stroke-linecap='round'/><rect x='14' y='21' width='8' height='4.5' rx='1' fill='%23081d34'/><rect x='16.5' y='15.5' width='5' height='4.5' rx='1' fill='%236fbdbd'/><text x='36' y='28' font-family='\'Outfit\', \'Inter\', system-ui, sans-serif' font-weight='800' font-size='22' fill='%23081d34' letter-spacing='-0.5px'>anyora</text></svg>") !important;
+            background-size: contain !important;
+            background-position: center !important;
+            width: 200px !important;
+            height: 60px !important;
+            display: block !important;
+        }
+        .login form {
+            background: none !important;
+            border: none !important;
+            padding: 0 !important;
+            box-shadow: none !important;
+        }
+        .login label {
+            font-weight: 600 !important;
+            color: #081d34 !important;
+        }
+        .login input[type="text"], .login input[type="password"] {
+            border-radius: 12px !important;
+            border: 1px solid #ddd !important;
+            padding: 12px !important;
+            font-size: 16px !important;
+            background: #fdfdfd !important;
+            box-shadow: none !important;
+            margin-top: 5px !important;
+        }
+        .login input[type="text"]:focus, .login input[type="password"]:focus {
+            border-color: #081d34 !important;
+            box-shadow: 0 0 0 3px rgba(8, 29, 52, 0.1) !important;
+            outline: none !important;
+        }
+        .login input[type="submit"] {
+            background-color: #081d34 !important;
+            color: #fff !important;
+            border-radius: 12px !important;
+            font-weight: 700 !important;
+            padding: 12px !important;
+            font-size: 16px !important;
+            border: none !important;
+            box-shadow: 0 5px 15px rgba(8, 29, 52, 0.15) !important;
+            width: 100% !important;
+            text-shadow: none !important;
+            height: auto !important;
+        }
+        .login input[type="submit"]:hover {
+            background-color: #6fbdbd !important;
+            color: #081d34 !important;
+        }
+        .login #nav a, .login #backtoblog a {
+            color: #081d34 !important;
+            font-weight: 600 !important;
+        }
+    </style>
+    <?php
+}
+
+add_filter( 'login_headerurl', 'anyora_login_logo_url' );
+function anyora_login_logo_url() {
+    return home_url();
+}
+
+add_filter( 'login_headertext', 'anyora_login_logo_url_title' );
+function anyora_login_logo_url_title() {
+    return get_bloginfo( 'name' );
+}
+

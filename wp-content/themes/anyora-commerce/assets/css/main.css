@@ -81,6 +81,20 @@ img {
 	top: 0;
 	z-index: 100;
 }
+/* Offset sticky header when WP Admin Bar is present */
+.admin-bar .site-header {
+	top: 32px;
+}
+@media screen and (max-width: 782px) {
+	.admin-bar .site-header {
+		top: 46px;
+	}
+}
+@media screen and (max-width: 600px) {
+	.admin-bar .site-header {
+		top: 0; /* WP Admin bar becomes absolute or disappears on small viewports depending on configuration */
+	}
+}
 .header-inner {
 	display: flex;
 	justify-content: space-between;
@@ -701,7 +715,7 @@ img {
     overflow: hidden !important;
     box-shadow: 0 20px 40px rgba(0,0,0,0.03) !important;
     border: 1px solid rgba(0,0,0,0.04) !important;
-    background: #fff !important;
+    background: #f4f5f0 !important;
 }
 
 .woocommerce div.product div.images .woocommerce-product-gallery__wrapper,
@@ -713,6 +727,8 @@ img {
 .woocommerce div.product div.images img {
     width: 100% !important;
     height: auto !important;
+    max-height: 75vh !important;
+    object-fit: contain !important;
     display: block !important;
 }
 
@@ -1273,3 +1289,240 @@ ol.commentlist li.comment .comment-text .description {
     line-height: 1.2;
 }
 
+/* =========================================
+   WooCommerce My Account Login & Register Page Redesign
+   ========================================= */
+.woocommerce-account .woocommerce {
+    max-width: 900px;
+    margin: 40px auto;
+}
+.woocommerce-account .u-columns {
+    display: flex;
+    gap: 40px;
+    flex-wrap: wrap;
+}
+.woocommerce-account .u-column1,
+.woocommerce-account .u-column2 {
+    flex: 1 1 400px;
+    background: #fff;
+    padding: 40px;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.02);
+    border: 1px solid rgba(0,0,0,0.04);
+}
+.woocommerce-account h2 {
+    font-size: 24px;
+    font-weight: 800;
+    color: #081d34;
+    margin-bottom: 25px;
+    letter-spacing: -0.5px;
+}
+.woocommerce-account form .form-row label {
+    font-weight: 600;
+    color: #081d34;
+    margin-bottom: 8px;
+    display: block;
+}
+.woocommerce-account form input.input-text {
+    border-radius: 12px !important;
+    border: 1px solid #ddd !important;
+    padding: 14px !important;
+    font-size: 16px !important;
+    background: #fdfdfd !important;
+    transition: all 0.3s ease !important;
+    height: auto !important;
+}
+.woocommerce-account form input.input-text:focus {
+    border-color: #081d34 !important;
+    box-shadow: 0 0 0 4px rgba(8, 29, 52, 0.08) !important;
+    outline: none !important;
+    background: #fff !important;
+}
+.woocommerce-account form button.button {
+    background-color: #081d34 !important;
+    color: #fff !important;
+    border-radius: 12px !important;
+    font-weight: 700 !important;
+    padding: 14px 24px !important;
+    font-size: 16px !important;
+    transition: all 0.3s ease !important;
+    border: none !important;
+    text-transform: none !important;
+    box-shadow: 0 5px 15px rgba(8, 29, 52, 0.15) !important;
+    width: 100%;
+}
+.woocommerce-account form button.button:hover {
+    background-color: #6fbdbd !important;
+    color: #081d34 !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 8px 20px rgba(111, 189, 189, 0.25) !important;
+}
+.woocommerce-account .woocommerce-LostPassword a {
+    color: #081d34;
+    font-weight: 600;
+    text-decoration: none;
+    font-size: 14px;
+}
+.woocommerce-account .woocommerce-LostPassword a:hover {
+    color: #6fbdbd;
+}
+
+/* =========================================
+   Add to Cart — Loading, Added, & View Cart
+   ========================================= */
+
+/* Spinner keyframe */
+@keyframes anyora-spin {
+    0%   { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Loading state — WooCommerce adds .loading during AJAX */
+a.add_to_cart_button.loading {
+    pointer-events: none !important;
+    color: transparent !important;
+    position: relative;
+}
+a.add_to_cart_button.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 18px;
+    height: 18px;
+    margin: -9px 0 0 -9px;
+    border: 2.5px solid rgba(8, 29, 52, 0.15);
+    border-top-color: #081d34;
+    border-radius: 50%;
+    animation: anyora-spin 0.7s linear infinite;
+}
+
+/* Added state — WooCommerce adds .added after success */
+a.add_to_cart_button.added {
+    background-color: #2e7d32 !important;
+    border-color: #2e7d32 !important;
+    color: #fff !important;
+}
+
+/* "View cart" link that appears after add to cart */
+a.added_to_cart,
+.added_to_cart.wc-forward {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 10px !important;
+    width: 100%;
+    padding: 10px 16px !important;
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    color: #081d34 !important;
+    background: transparent !important;
+    border: 1.5px solid #081d34 !important;
+    border-radius: 14px !important;
+    text-decoration: none !important;
+    transition: all 0.25s ease !important;
+    letter-spacing: 0.3px;
+    box-sizing: border-box;
+}
+a.added_to_cart:hover,
+.added_to_cart.wc-forward:hover {
+    background: #081d34 !important;
+    color: #fff !important;
+}
+
+/* =========================================
+   Category Cards Grid (Homepage)
+   ========================================= */
+
+.anyora-cat-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-top: 48px;
+}
+
+.anyora-cat-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+    padding: 32px;
+    background: var(--cat-color, #e8f4f4);
+    border-radius: 20px;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    border: 1.5px solid transparent;
+    position: relative;
+    overflow: hidden;
+}
+.anyora-cat-card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 20px;
+    border: 1.5px solid var(--cat-accent, #6fbdbd);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+.anyora-cat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 16px 40px rgba(0,0,0,0.08);
+}
+.anyora-cat-card:hover::after {
+    opacity: 1;
+}
+
+.cat-card-icon-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 60px;
+    height: 60px;
+    background: #ffffff !important;
+    border-radius: 16px;
+    flex-shrink: 0;
+    transition: transform 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+}
+.anyora-cat-card:hover .cat-card-icon-wrap {
+    transform: scale(1.08) rotate(-3deg);
+}
+
+.cat-card-body {
+    flex: 1;
+}
+.cat-card-title {
+    font-size: 18px;
+    font-weight: 800;
+    color: #081d34;
+    margin: 0 0 8px;
+    letter-spacing: -0.3px;
+    line-height: 1.2;
+}
+.cat-card-desc {
+    font-size: 14px;
+    color: #666;
+    line-height: 1.6;
+    margin: 0;
+}
+
+.cat-card-arrow {
+    color: #6fbdbd;
+    display: flex;
+    align-items: center;
+    align-self: center;
+    flex-shrink: 0;
+    transition: transform 0.25s ease;
+}
+.anyora-cat-card:hover .cat-card-arrow {
+    transform: translateX(5px);
+}
+
+@media (max-width: 768px) {
+    .anyora-cat-grid {
+        grid-template-columns: 1fr;
+    }
+    .anyora-cat-card {
+        padding: 24px;
+    }
+}

@@ -8,7 +8,7 @@
 <body <?php body_class(); ?>>
 <?php wp_body_open(); ?>
 
-<header class="site-header" style="position: relative;">
+<header class="site-header">
 	<div class="container header-inner">
 		<div class="site-branding" style="display: flex; align-items: center;">
 			<a href="<?php echo esc_url( home_url( '/' ) ); ?>" style="display: flex; align-items: center; text-decoration: none;">

@@ -100,8 +100,23 @@ function wookiee_maybe_create_starter_content() {
 	if ( wp_installing() ) {
 		return;
 	}
+
 	$stored_version = get_option( 'wookiee_pages_version', '' );
-	if ( WOOKIEE_VERSION !== $stored_version ) {
+	$needs_repair    = WOOKIEE_VERSION !== $stored_version;
+
+	// Also repair if a starter page (e.g. Contact) was deleted after the
+	// version was already recorded — otherwise it never comes back and
+	// the menu never gets it re-added.
+	if ( ! $needs_repair ) {
+		foreach ( array_keys( wookiee_starter_pages() ) as $slug ) {
+			if ( ! get_page_by_path( $slug, OBJECT, 'page' ) ) {
+				$needs_repair = true;
+				break;
+			}
+		}
+	}
+
+	if ( $needs_repair ) {
 		wookiee_create_starter_content();
 	}
 }

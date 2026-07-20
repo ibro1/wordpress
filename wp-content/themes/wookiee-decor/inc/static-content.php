@@ -103,7 +103,7 @@ function wookiee_starter_pages() {
 
         <div id="wookiee-contact-banner" class="contact-banner"></div>
 
-        <div class="wookiee-content-grid-2 contact-grid">
+        <div class="contact-grid">
 
             <div class="contact-card">
                 <h2 class="contact-card-title">Send a message</h2>
@@ -116,7 +116,7 @@ function wookiee_starter_pages() {
                         <input type="text" id="wookiee_website" name="wookiee_website" tabindex="-1" autocomplete="off">
                     </div>
 
-                    <div class="contact-field-row wookiee-content-grid-inner-2">
+                    <div class="contact-field-row">
                         <div class="contact-field">
                             <label class="contact-label">First Name *</label>
                             <input type="text" name="first_name" required class="contact-input">

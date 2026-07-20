@@ -28,7 +28,7 @@ function wookiee_starter_pages() {
             </div>
         </div>
         <div style="position: relative;">
-            <img src="/wp-content/themes/wookiee-decor/assets/images/drawer-organizer.png" alt="Drawer Organizer" style="border-radius: 20px; width: 100%; max-height: 380px; object-fit: cover; box-shadow: 0 20px 40px rgba(0,0,0,0.1);">
+            <img src="' . WOOKIEE_URI . 'assets/images/drawer-organizer.png" alt="Drawer Organizer" style="border-radius: 20px; width: 100%; max-height: 380px; object-fit: cover; box-shadow: 0 20px 40px rgba(0,0,0,0.1);">
             <div style="position: absolute; bottom: 20px; right: 20px; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); max-width: 250px;">
                 <div style="font-size: 10px; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;">UK PRIVATE-LABEL RETAILER</div>
                 <div style="font-size: 24px; font-weight: 800; color: var(--wookiee-navy); margin-bottom: 5px;">Wookiee</div>
@@ -66,7 +66,7 @@ function wookiee_starter_pages() {
 <div style="background: white; padding: 100px 20px;">
     <div class="wookiee-content-grid-2" style="max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1.2fr; gap: 80px; align-items: center;">
         <div>
-            <img src="/wp-content/themes/wookiee-decor/assets/images/bathroom-shelf.png" alt="Bathroom Shelf" style="border-radius: 20px; width: 100%; box-shadow: 0 20px 40px rgba(0,0,0,0.05);">
+            <img src="' . WOOKIEE_URI . 'assets/images/bathroom-shelf.png" alt="Bathroom Shelf" style="border-radius: 20px; width: 100%; box-shadow: 0 20px 40px rgba(0,0,0,0.05);">
         </div>
         <div>
             <div style="color: #6fbdbd; font-size: 12px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 20px; display: flex; align-items: center; gap: 15px;">
@@ -93,93 +93,89 @@ function wookiee_starter_pages() {
         </div>
     </div>
 </div>' ),
-		'contact' => array( 'title' => 'Contact', 'menu' => 'Contact', 'content' => '<div style="background-color: #f4f5f0; padding: 50px 20px; min-height: 80vh; font-family: var(--font-primary); box-sizing: border-box;">
-    <div style="max-width: 1100px; margin: 0 auto; box-sizing: border-box;">
-        
-        <!-- Header -->
-        <div style="margin-bottom: 35px; box-sizing: border-box;">
-            <h1 style="font-size: 48px; color: var(--wookiee-navy); font-weight: 800; letter-spacing: -1.5px; margin: 0 0 15px 0;">Contact our team</h1>
-            <p style="font-size: 16px; color: #555; margin: 0; line-height: 1.6; max-width: 600px;">
-                Have a question about an order, shipping, or returns? We\'re here to help. Drop us a line below or reach out via email or phone.
-            </p>
+		'contact' => array( 'title' => 'Contact', 'menu' => 'Contact', 'content' => '<section class="contact-page">
+    <div class="container">
+        <div class="contact-header">
+            <div class="section-kicker">Get In Touch</div>
+            <h1 class="contact-title">Contact our team</h1>
+            <p class="contact-lead">Have a question about an order, shipping, or returns? We\'re here to help. Drop us a line below or reach out via email or phone.</p>
         </div>
-        
-        <div class="wookiee-content-grid-2" style="display: grid; grid-template-columns: 1.4fr 1fr; gap: 60px; align-items: start; box-sizing: border-box;">
-            
-            <!-- Contact Form Card -->
-            <div style="background: white; padding: 40px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.04); border: 1px solid rgba(0,0,0,0.05); box-sizing: border-box;">
-                <h2 style="font-size: 24px; color: var(--wookiee-navy); font-weight: 800; margin: 0 0 5px 0; letter-spacing: -0.5px;">Send a message</h2>
-                <p style="font-size: 14px; color: #666; margin: 0 0 30px 0;">We typically reply within 24 business hours.</p>
-                
-                <form action="/wp-admin/admin-post.php" method="POST" style="margin: 0; display: flex; flex-direction: column; gap: 20px; box-sizing: border-box;">
+
+        <div id="wookiee-contact-banner" class="contact-banner"></div>
+
+        <div class="wookiee-content-grid-2 contact-grid">
+
+            <div class="contact-card">
+                <h2 class="contact-card-title">Send a message</h2>
+                <p class="contact-card-sub">We typically reply within 24 business hours.</p>
+
+                <form action="/wp-admin/admin-post.php" method="POST" class="contact-form">
                     <input type="hidden" name="action" value="wookiee_contact_form">
-                    
-                    <div class="wookiee-content-grid-inner-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; box-sizing: border-box;">
-                        <div style="box-sizing: border-box;">
-                            <label style="display: block; font-size: 11px; font-weight: 700; color: var(--wookiee-navy); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">First Name *</label>
-                            <input type="text" name="first_name" required style="width: 100%; height: 48px; padding: 0 16px; border: 1px solid #e2e8f0; border-radius: 8px; font-family: inherit; font-size: 14px; box-sizing: border-box; background: #fff; color: #1a202c; outline: none; transition: border-color 0.2s;">
+                    <div class="contact-honeypot" aria-hidden="true">
+                        <label for="wookiee_website">Leave this field empty</label>
+                        <input type="text" id="wookiee_website" name="wookiee_website" tabindex="-1" autocomplete="off">
+                    </div>
+
+                    <div class="contact-field-row wookiee-content-grid-inner-2">
+                        <div class="contact-field">
+                            <label class="contact-label">First Name *</label>
+                            <input type="text" name="first_name" required class="contact-input">
                         </div>
-                        <div style="box-sizing: border-box;">
-                            <label style="display: block; font-size: 11px; font-weight: 700; color: var(--wookiee-navy); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">Last Name *</label>
-                            <input type="text" name="last_name" required style="width: 100%; height: 48px; padding: 0 16px; border: 1px solid #e2e8f0; border-radius: 8px; font-family: inherit; font-size: 14px; box-sizing: border-box; background: #fff; color: #1a202c; outline: none; transition: border-color 0.2s;">
+                        <div class="contact-field">
+                            <label class="contact-label">Last Name *</label>
+                            <input type="text" name="last_name" required class="contact-input">
                         </div>
                     </div>
-                    
-                    <div style="box-sizing: border-box;">
-                        <label style="display: block; font-size: 11px; font-weight: 700; color: var(--wookiee-navy); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">Email Address *</label>
-                        <input type="email" name="email" required style="width: 100%; height: 48px; padding: 0 16px; border: 1px solid #e2e8f0; border-radius: 8px; font-family: inherit; font-size: 14px; box-sizing: border-box; background: #fff; color: #1a202c; outline: none; transition: border-color 0.2s;">
+
+                    <div class="contact-field">
+                        <label class="contact-label">Email Address *</label>
+                        <input type="email" name="email" required class="contact-input">
                     </div>
-                    
-                    <div style="box-sizing: border-box;">
-                        <label style="display: block; font-size: 11px; font-weight: 700; color: var(--wookiee-navy); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">Order Number (Optional)</label>
-                        <input type="text" name="order_number" style="width: 100%; height: 48px; padding: 0 16px; border: 1px solid #e2e8f0; border-radius: 8px; font-family: inherit; font-size: 14px; box-sizing: border-box; background: #fff; color: #1a202c; outline: none; transition: border-color 0.2s;">
+
+                    <div class="contact-field">
+                        <label class="contact-label">Order Number (Optional)</label>
+                        <input type="text" name="order_number" class="contact-input">
                     </div>
-                    
-                    <div style="box-sizing: border-box;">
-                        <label style="display: block; font-size: 11px; font-weight: 700; color: var(--wookiee-navy); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">Message *</label>
-                        <textarea name="message" rows="5" required style="width: 100%; padding: 16px; border: 1px solid #e2e8f0; border-radius: 8px; font-family: inherit; font-size: 14px; box-sizing: border-box; resize: vertical; background: #fff; color: #1a202c; outline: none; transition: border-color 0.2s; line-height: 1.5;"></textarea>
+
+                    <div class="contact-field">
+                        <label class="contact-label">Message *</label>
+                        <textarea name="message" rows="5" required class="contact-input contact-textarea"></textarea>
                     </div>
-                    
-                    <button type="submit" class="btn" style="width: 100%; height: 50px; display: flex; align-items: center; justify-content: center; font-size: 15px; border-radius: 8px; background: var(--wookiee-navy); color: white; font-weight: 700; cursor: pointer; border: none; transition: background-color 0.2s; box-shadow: 0 4px 12px rgba(8,29,52,0.15);">Send message</button>
+
+                    <button type="submit" class="btn contact-submit">Send message</button>
                 </form>
             </div>
-            
-            <!-- Contact Sidebar Info -->
-            <div style="display: flex; flex-direction: column; gap: 30px; box-sizing: border-box;">
-                
-                <div style="box-sizing: border-box;">
-                    <h3 style="font-size: 18px; color: var(--wookiee-navy); font-weight: 800; margin: 0 0 20px 0; letter-spacing: -0.3px;">Support channels</h3>
-                    
-                    <!-- Email Card -->
-                    <div style="background: white; padding: 25px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.02); border: 1px solid rgba(0,0,0,0.04); display: flex; gap: 15px; align-items: flex-start; margin-bottom: 20px; box-sizing: border-box;">
-                        <span style="font-size: 20px; line-height: 1;">✉️</span>
-                        <div style="box-sizing: border-box;">
-                            <h4 style="margin: 0 0 5px 0; font-size: 15px; color: var(--wookiee-navy); font-weight: 700;">Email Support</h4>
-                            <p style="margin: 0 0 8px 0; color: #666; font-size: 13px; line-height: 1.4;">Get in touch via email directly.</p>
-                            <a href="mailto:info@wookied.com" style="color: var(--wookiee-navy); font-weight: 700; text-decoration: none; font-size: 14px; border-bottom: 1.5px solid var(--wookiee-navy); padding-bottom: 2px;">info@wookied.com</a>
+
+            <div class="contact-sidebar">
+                <div>
+                    <h3 class="contact-sidebar-heading">Support channels</h3>
+                    <div class="contact-info-card">
+                        <span class="contact-info-icon">&#9993;&#65039;</span>
+                        <div>
+                            <h4 class="contact-info-title">Email Support</h4>
+                            <p class="contact-info-desc">Get in touch via email directly.</p>
+                            <a href="mailto:info@wookied.com" class="contact-info-value">info@wookied.com</a>
                         </div>
                     </div>
-                    
-                    <!-- Phone Card -->
-                    <div style="background: white; padding: 25px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.02); border: 1px solid rgba(0,0,0,0.04); display: flex; gap: 15px; align-items: flex-start; box-sizing: border-box;">
-                        <span style="font-size: 20px; line-height: 1;">📞</span>
-                        <div style="box-sizing: border-box;">
-                            <h4 style="margin: 0 0 5px 0; font-size: 15px; color: var(--wookiee-navy); font-weight: 700;">Phone Support</h4>
-                            <p style="margin: 0 0 8px 0; color: #666; font-size: 13px; line-height: 1.4;">Available Monday to Friday, 9am - 5pm.</p>
-                            <div style="color: var(--wookiee-navy); font-weight: 700; font-size: 14px;">+442084726126</div>
+                    <div class="contact-info-card">
+                        <span class="contact-info-icon">&#128222;</span>
+                        <div>
+                            <h4 class="contact-info-title">Phone Support</h4>
+                            <p class="contact-info-desc">Available Monday to Friday, 9am - 5pm.</p>
+                            <div class="contact-info-value">+442084726126</div>
                         </div>
                     </div>
                 </div>
-                
-                <hr style="border: 0; border-top: 1px solid rgba(0,0,0,0.08); margin: 10px 0;">
-                
-                <div style="box-sizing: border-box;">
-                    <h3 style="font-size: 18px; color: var(--wookiee-navy); font-weight: 800; margin: 0 0 20px 0; letter-spacing: -0.3px;">Business office</h3>
-                    <div style="background: white; padding: 25px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.02); border: 1px solid rgba(0,0,0,0.04); display: flex; gap: 15px; align-items: flex-start; box-sizing: border-box;">
-                        <span style="font-size: 20px; line-height: 1;">🏢</span>
-                        <div style="box-sizing: border-box;">
-                            <h4 style="margin: 0 0 5px 0; font-size: 15px; color: var(--wookiee-navy); font-weight: 700;">Registered Address</h4>
-                            <p style="margin: 0; color: #666; font-size: 13px; line-height: 1.5;">
+
+                <hr class="contact-divider">
+
+                <div>
+                    <h3 class="contact-sidebar-heading">Business office</h3>
+                    <div class="contact-info-card">
+                        <span class="contact-info-icon">&#127970;</span>
+                        <div>
+                            <h4 class="contact-info-title">Registered Address</h4>
+                            <p class="contact-info-desc">
                                 Wookiee Decor Ltd<br>
                                 28 Johnston Park, Cowdenbeath, Scotland,<br>
                                 KY4 9AZ, United Kingdom
@@ -187,18 +183,32 @@ function wookiee_starter_pages() {
                         </div>
                     </div>
                 </div>
-                
             </div>
-            
+
         </div>
     </div>
-</div>
+</section>
 <script>
-if (window.location.search.indexOf("success=1") > -1) {
-    alert("Thank you! Your message has been sent successfully.");
-}
+(function() {
+    var params = new URLSearchParams(window.location.search);
+    var status = params.get("contact");
+    if (!status) { return; }
+    var banner = document.getElementById("wookiee-contact-banner");
+    if (!banner) { return; }
+    var messages = {
+        sent: ["success", "Thank you! Your message has been sent successfully."],
+        missing: ["error", "Please fill in all required fields with a valid email address."],
+        invalid: ["error", "Something went wrong. Please try again."],
+        "mail-error": ["error", "Sorry, we could not send your message right now. Please email us directly."]
+    };
+    var entry = messages[status];
+    if (!entry) { return; }
+    banner.className = "contact-banner contact-banner--" + entry[0] + " is-visible";
+    banner.textContent = entry[1];
+    banner.scrollIntoView({ behavior: "smooth", block: "center" });
+})();
 </script>' ),
-		'mission' => array( 'title' => 'Mission', 'menu' => 'Mission', 'content' => '<!-- Hero Section --><div style="background-color: var(--wookiee-bg); padding: 40px 20px; font-family: var(--font-primary); box-sizing: border-box;"><div class="wookiee-content-grid-2" style="max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center; box-sizing: border-box;"><div><div style="color: #6fbdbd; font-size: 12px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 20px; display: flex; align-items: center; gap: 15px;"><span style="width: 30px; height: 2px; background: #6fbdbd; display: inline-block;"></span> OUR MISSION </div><h1 style="font-size: 48px; color: var(--wookiee-navy); margin: 0 0 20px 0; font-weight: 800; letter-spacing: -2px; line-height: 1.1;">Our Mission</h1><p style="font-size: 18px; color: var(--wookiee-navy); font-weight: 700; margin-bottom: 15px; line-height: 1.5;"> To provide practical storage products selected to help make everyday spaces tidier. </p><p style="font-size: 16px; color: #555; line-height: 1.7; margin-bottom: 30px;"> We aim to reduce clutter and bring harmony to modern living spaces with simple, elegant solutions that are both highly functional and visually pleasing. </p><div style="display: flex; gap: 15px;"><a href="/shop/" class="btn">Explore our range</a></div></div><div><img src="/wp-content/themes/wookiee-decor/assets/images/wookiee-prod-shelves.png" alt="Our Mission Shelving" style="border-radius: 20px; width: 100%; max-height: 380px; object-fit: cover; box-shadow: 0 20px 40px rgba(0,0,0,0.1);"></div></div></div><!-- Core Values Section --><div style="background: white; padding: 100px 20px; font-family: var(--font-primary); box-sizing: border-box;"><div style="max-width: 1200px; margin: 0 auto; box-sizing: border-box;"><div style="text-align: center; margin-bottom: 70px; box-sizing: border-box;"><div style="color: #6fbdbd; font-size: 12px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 15px; justify-content: center; display: flex; align-items: center; gap: 10px;"> OUR VALUES </div><h2 style="font-size: 40px; color: var(--wookiee-navy); margin: 0; font-weight: 800; letter-spacing: -1px;">What drives Wookiee</h2></div><div class="wookiee-content-grid-3" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px; box-sizing: border-box;"><!-- Value 1 --><div style="box-sizing: border-box; text-align: center; padding: 20px;"><div style="font-size: 32px; margin-bottom: 20px;">✨</div><h3 style="font-size: 20px; color: var(--wookiee-navy); font-weight: 700; margin: 0 0 12px 0;">Simplicity</h3><p style="margin: 0; color: #666; font-size: 14px; line-height: 1.6;">De-cluttering spaces with intuitive, modular designs. We believe that storage shouldn\'t complicate your life—it should simplify it.</p></div><!-- Value 2 --><div style="box-sizing: border-box; text-align: center; padding: 20px;"><div style="font-size: 32px; margin-bottom: 20px;">🛡️</div><h3 style="font-size: 20px; color: var(--wookiee-navy); font-weight: 700; margin: 0 0 12px 0;">Quality Sourcing</h3><p style="margin: 0; color: #666; font-size: 14px; line-height: 1.6;">We select durable, premium materials—from sustainable natural bamboo to thick, food-grade, BPA-free plastics built to endure.</p></div><!-- Value 3 --><div style="box-sizing: border-box; text-align: center; padding: 20px;"><div style="font-size: 32px; margin-bottom: 20px;">🔍</div><h3 style="font-size: 20px; color: var(--wookiee-navy); font-weight: 700; margin: 0 0 12px 0;">Practical Utility</h3><p style="margin: 0; color: #666; font-size: 14px; line-height: 1.6;">Every product in our catalog is engineered to fit standard drawers, cupboards, and shelves, providing maximum volumetric efficiency.</p></div></div></div></div><!-- Sourcing Story Section --><div style="background-color: var(--wookiee-bg); padding: 100px 20px; font-family: var(--font-primary); box-sizing: border-box;"><div class="wookiee-content-grid-2" style="max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1.2fr; gap: 80px; align-items: center; box-sizing: border-box;"><div><img src="/wp-content/themes/wookiee-decor/assets/images/wookiee-prod-organizer.png" alt="Bamboo Organizer Tray" style="border-radius: 20px; width: 100%; max-height: 380px; object-fit: cover; box-shadow: 0 20px 40px rgba(0,0,0,0.05);"></div><div><div style="color: #6fbdbd; font-size: 12px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 20px; display: flex; align-items: center; gap: 15px;"><span style="width: 30px; height: 2px; background: #6fbdbd; display: inline-block;"></span> SUSTAINABILITY </div><h2 style="font-size: 48px; color: var(--wookiee-navy); margin: 0 0 30px 0; font-weight: 800; letter-spacing: -1.5px; line-height: 1.1;">Designed for longevity, sourced with care.</h2><p style="font-size: 18px; color: var(--wookiee-navy); font-weight: 700; margin-bottom: 20px; line-height: 1.5;"> We believe that home organization products shouldn\'t just be useful—they should be sustainable. </p><p style="font-size: 16px; color: #666; line-height: 1.7; margin-bottom: 20px;"> By using fast-growing FSC-certified bamboo and high-purity, recyclable polymers, we build storage solutions that stand the test of time while minimizing environmental impact. </p><p style="font-size: 16px; color: #666; line-height: 1.7; margin: 0;"> Our materials are thoroughly checked for chemical safety and toxic additives, ensuring that they are safe for kitchen food storage and kid-friendly playrooms alike. </p></div></div></div>' ),
+		'mission' => array( 'title' => 'Mission', 'menu' => 'Mission', 'content' => '<!-- Hero Section --><div style="background-color: var(--wookiee-bg); padding: 40px 20px; font-family: var(--font-primary); box-sizing: border-box;"><div class="wookiee-content-grid-2" style="max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center; box-sizing: border-box;"><div><div style="color: #6fbdbd; font-size: 12px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 20px; display: flex; align-items: center; gap: 15px;"><span style="width: 30px; height: 2px; background: #6fbdbd; display: inline-block;"></span> OUR MISSION </div><h1 style="font-size: 48px; color: var(--wookiee-navy); margin: 0 0 20px 0; font-weight: 800; letter-spacing: -2px; line-height: 1.1;">Our Mission</h1><p style="font-size: 18px; color: var(--wookiee-navy); font-weight: 700; margin-bottom: 15px; line-height: 1.5;"> To provide practical storage products selected to help make everyday spaces tidier. </p><p style="font-size: 16px; color: #555; line-height: 1.7; margin-bottom: 30px;"> We aim to reduce clutter and bring harmony to modern living spaces with simple, elegant solutions that are both highly functional and visually pleasing. </p><div style="display: flex; gap: 15px;"><a href="/shop/" class="btn">Explore our range</a></div></div><div><img src="' . WOOKIEE_URI . 'assets/images/wookiee-prod-shelves.png" alt="Our Mission Shelving" style="border-radius: 20px; width: 100%; max-height: 380px; object-fit: cover; box-shadow: 0 20px 40px rgba(0,0,0,0.1);"></div></div></div><!-- Core Values Section --><div style="background: white; padding: 100px 20px; font-family: var(--font-primary); box-sizing: border-box;"><div style="max-width: 1200px; margin: 0 auto; box-sizing: border-box;"><div style="text-align: center; margin-bottom: 70px; box-sizing: border-box;"><div style="color: #6fbdbd; font-size: 12px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 15px; justify-content: center; display: flex; align-items: center; gap: 10px;"> OUR VALUES </div><h2 style="font-size: 40px; color: var(--wookiee-navy); margin: 0; font-weight: 800; letter-spacing: -1px;">What drives Wookiee</h2></div><div class="wookiee-content-grid-3" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px; box-sizing: border-box;"><!-- Value 1 --><div style="box-sizing: border-box; text-align: center; padding: 20px;"><div style="font-size: 32px; margin-bottom: 20px;">✨</div><h3 style="font-size: 20px; color: var(--wookiee-navy); font-weight: 700; margin: 0 0 12px 0;">Simplicity</h3><p style="margin: 0; color: #666; font-size: 14px; line-height: 1.6;">De-cluttering spaces with intuitive, modular designs. We believe that storage shouldn\'t complicate your life—it should simplify it.</p></div><!-- Value 2 --><div style="box-sizing: border-box; text-align: center; padding: 20px;"><div style="font-size: 32px; margin-bottom: 20px;">🛡️</div><h3 style="font-size: 20px; color: var(--wookiee-navy); font-weight: 700; margin: 0 0 12px 0;">Quality Sourcing</h3><p style="margin: 0; color: #666; font-size: 14px; line-height: 1.6;">We select durable, premium materials—from sustainable natural bamboo to thick, food-grade, BPA-free plastics built to endure.</p></div><!-- Value 3 --><div style="box-sizing: border-box; text-align: center; padding: 20px;"><div style="font-size: 32px; margin-bottom: 20px;">🔍</div><h3 style="font-size: 20px; color: var(--wookiee-navy); font-weight: 700; margin: 0 0 12px 0;">Practical Utility</h3><p style="margin: 0; color: #666; font-size: 14px; line-height: 1.6;">Every product in our catalog is engineered to fit standard drawers, cupboards, and shelves, providing maximum volumetric efficiency.</p></div></div></div></div><!-- Sourcing Story Section --><div style="background-color: var(--wookiee-bg); padding: 100px 20px; font-family: var(--font-primary); box-sizing: border-box;"><div class="wookiee-content-grid-2" style="max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1.2fr; gap: 80px; align-items: center; box-sizing: border-box;"><div><img src="' . WOOKIEE_URI . 'assets/images/wookiee-prod-organizer.png" alt="Bamboo Organizer Tray" style="border-radius: 20px; width: 100%; max-height: 380px; object-fit: cover; box-shadow: 0 20px 40px rgba(0,0,0,0.05);"></div><div><div style="color: #6fbdbd; font-size: 12px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 20px; display: flex; align-items: center; gap: 15px;"><span style="width: 30px; height: 2px; background: #6fbdbd; display: inline-block;"></span> SUSTAINABILITY </div><h2 style="font-size: 48px; color: var(--wookiee-navy); margin: 0 0 30px 0; font-weight: 800; letter-spacing: -1.5px; line-height: 1.1;">Designed for longevity, sourced with care.</h2><p style="font-size: 18px; color: var(--wookiee-navy); font-weight: 700; margin-bottom: 20px; line-height: 1.5;"> We believe that home organization products shouldn\'t just be useful—they should be sustainable. </p><p style="font-size: 16px; color: #666; line-height: 1.7; margin-bottom: 20px;"> By using fast-growing FSC-certified bamboo and high-purity, recyclable polymers, we build storage solutions that stand the test of time while minimizing environmental impact. </p><p style="font-size: 16px; color: #666; line-height: 1.7; margin: 0;"> Our materials are thoroughly checked for chemical safety and toxic additives, ensuring that they are safe for kitchen food storage and kid-friendly playrooms alike. </p></div></div></div>' ),
 		'activities' => array( 'title' => 'Activities', 'menu' => 'Activities', 'content' => '<div style="background-color: var(--wookiee-bg); padding: 40px 20px; font-family: var(--font-primary); box-sizing: border-box;">
     <div class="wookiee-content-grid-2" style="max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center; box-sizing: border-box;">
         <div>
@@ -214,7 +224,7 @@ if (window.location.search.indexOf("success=1") > -1) {
             </p>
         </div>
         <div>
-            <img src="/wp-content/themes/wookiee-decor/assets/images/logistics-package.png" alt="Logistics & Sourcing" style="border-radius: 20px; width: 100%; max-height: 380px; object-fit: cover; box-shadow: 0 20px 40px rgba(0,0,0,0.1);">
+            <img src="' . WOOKIEE_URI . 'assets/images/logistics-package.png" alt="Logistics & Sourcing" style="border-radius: 20px; width: 100%; max-height: 380px; object-fit: cover; box-shadow: 0 20px 40px rgba(0,0,0,0.1);">
         </div>
     </div>
 </div>

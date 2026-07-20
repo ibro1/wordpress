@@ -5,9 +5,10 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'WOOKIEE_VERSION', '1.0.2' );
+define( 'WOOKIEE_VERSION', '1.0.3' );
 define( 'WOOKIEE_DIR', trailingslashit( get_template_directory() ) );
 define( 'WOOKIEE_URI', trailingslashit( get_template_directory_uri() ) );
+define( 'WOOKIEE_CONTACT_EMAIL', 'info@wookied.com' );
 
 require_once WOOKIEE_DIR . 'inc/static-content.php';
 
@@ -19,6 +20,49 @@ require_once WOOKIEE_DIR . 'inc/static-content.php';
 function wookiee_product_cat_url( $slug ) {
 	$term_link = get_term_link( $slug, 'product_cat' );
 	return ! is_wp_error( $term_link ) ? esc_url( $term_link ) : esc_url( home_url( '/shop/' ) );
+}
+
+/**
+ * Contact page form handler.
+ *
+ * Note: the Contact page's HTML is baked into post_content once at page
+ * creation (see wookiee_starter_pages()), not rendered live by PHP, so a
+ * wp_nonce_field() can't be embedded there — it would go stale immediately.
+ * A hidden honeypot field is used instead for basic bot filtering.
+ */
+add_action( 'admin_post_wookiee_contact_form', 'wookiee_handle_contact_form' );
+add_action( 'admin_post_nopriv_wookiee_contact_form', 'wookiee_handle_contact_form' );
+function wookiee_handle_contact_form() {
+	$honeypot = isset( $_POST['wookiee_website'] ) ? trim( sanitize_text_field( wp_unslash( $_POST['wookiee_website'] ) ) ) : '';
+	if ( '' !== $honeypot ) {
+		wp_safe_redirect( home_url( '/contact/?contact=sent' ) );
+		exit;
+	}
+
+	$first_name   = isset( $_POST['first_name'] ) ? sanitize_text_field( wp_unslash( $_POST['first_name'] ) ) : '';
+	$last_name    = isset( $_POST['last_name'] ) ? sanitize_text_field( wp_unslash( $_POST['last_name'] ) ) : '';
+	$email        = isset( $_POST['email'] ) ? sanitize_email( wp_unslash( $_POST['email'] ) ) : '';
+	$order_number = isset( $_POST['order_number'] ) ? sanitize_text_field( wp_unslash( $_POST['order_number'] ) ) : '';
+	$message      = isset( $_POST['message'] ) ? sanitize_textarea_field( wp_unslash( $_POST['message'] ) ) : '';
+
+	if ( '' === $first_name || '' === $last_name || '' === $email || '' === $message || ! is_email( $email ) ) {
+		wp_safe_redirect( home_url( '/contact/?contact=missing' ) );
+		exit;
+	}
+
+	$recipient = sanitize_email( WOOKIEE_CONTACT_EMAIL );
+	if ( ! is_email( $recipient ) ) {
+		wp_safe_redirect( home_url( '/contact/?contact=mail-error' ) );
+		exit;
+	}
+
+	$subject = sprintf( 'Wookiee website message from %s %s', $first_name, $last_name );
+	$body    = "Name: {$first_name} {$last_name}\nEmail: {$email}\n" . ( $order_number ? "Order number: {$order_number}\n" : '' ) . "\nMessage:\n{$message}";
+	$headers = array( sprintf( 'Reply-To: %s %s <%s>', $first_name, $last_name, $email ) );
+	$sent    = wp_mail( $recipient, $subject, $body, $headers );
+
+	wp_safe_redirect( home_url( $sent ? '/contact/?contact=sent' : '/contact/?contact=mail-error' ) );
+	exit;
 }
 
 add_action( 'after_setup_theme', 'wookiee_setup' );
@@ -96,26 +140,43 @@ function wookiee_create_starter_content() {
         update_option( 'woocommerce_shop_page_id', (int) $page_ids['shop'] );
     }
 
-	// 3. Setup Menu
-	if ( ! has_nav_menu( 'primary' ) ) {
-		$menu_id = wp_create_nav_menu( 'Wookiee Main Menu' );
-		if ( ! is_wp_error( $menu_id ) ) {
-			foreach ( array( 'home', 'shop', 'about', 'mission', 'activities', 'contact' ) as $slug ) {
-				if ( empty( $page_ids[ $slug ] ) ) {
-					continue;
-				}
-				wp_update_nav_menu_item( $menu_id, 0, array(
-					'menu-item-title'     => $pages[ $slug ]['menu'],
-					'menu-item-object'    => 'page',
-					'menu-item-object-id' => (int) $page_ids[ $slug ],
-					'menu-item-type'      => 'post_type',
-					'menu-item-status'    => 'publish',
-				) );
+	// 3. Setup Menu — create it if missing, and keep it in sync if new
+	// starter pages were added after the menu already existed (otherwise
+	// pages like Contact/Mission/Activities silently never appear).
+	$menu_id = 0;
+	if ( has_nav_menu( 'primary' ) ) {
+		$locations = get_nav_menu_locations();
+		$menu_id   = isset( $locations['primary'] ) ? (int) $locations['primary'] : 0;
+	}
+	if ( ! $menu_id ) {
+		$created = wp_create_nav_menu( 'Wookiee Main Menu' );
+		$menu_id = is_wp_error( $created ) ? 0 : (int) $created;
+	}
+
+	if ( $menu_id ) {
+		$existing_items     = wp_get_nav_menu_items( $menu_id );
+		$existing_object_ids = $existing_items ? wp_list_pluck( $existing_items, 'object_id' ) : array();
+		$existing_object_ids = array_map( 'intval', $existing_object_ids );
+
+		foreach ( array( 'home', 'shop', 'about', 'mission', 'activities', 'contact' ) as $slug ) {
+			if ( empty( $page_ids[ $slug ] ) ) {
+				continue;
 			}
-			$locations = (array) get_theme_mod( 'nav_menu_locations', array() );
-			$locations['primary'] = (int) $menu_id;
-			set_theme_mod( 'nav_menu_locations', $locations );
+			if ( in_array( (int) $page_ids[ $slug ], $existing_object_ids, true ) ) {
+				continue;
+			}
+			wp_update_nav_menu_item( $menu_id, 0, array(
+				'menu-item-title'     => $pages[ $slug ]['menu'],
+				'menu-item-object'    => 'page',
+				'menu-item-object-id' => (int) $page_ids[ $slug ],
+				'menu-item-type'      => 'post_type',
+				'menu-item-status'    => 'publish',
+			) );
 		}
+
+		$locations             = (array) get_theme_mod( 'nav_menu_locations', array() );
+		$locations['primary'] = $menu_id;
+		set_theme_mod( 'nav_menu_locations', $locations );
 	}
 
     // 4. Create Dummy Products

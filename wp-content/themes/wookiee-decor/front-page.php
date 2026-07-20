@@ -254,25 +254,25 @@ get_header(); ?>
 				array(
 					'title' => 'Indoor Storage',
 					'desc'  => 'Shelves, baskets, and cabinets',
-					'img'   => '/wp-content/themes/wookiee-decor/assets/images/wookiee-prod-shelves.png',
+					'img'   => WOOKIEE_URI . 'assets/images/wookiee-prod-shelves.png',
 					'slug'  => 'kitchen-storage',
 				),
 				array(
 					'title' => 'Home Accessories',
 					'desc'  => 'Finishing touches for every room',
-					'img'   => '/wp-content/themes/wookiee-decor/assets/images/drawer-organizer.png',
+					'img'   => WOOKIEE_URI . 'assets/images/drawer-organizer.png',
 					'slug'  => 'drawer-organisers',
 				),
 				array(
 					'title' => 'Bathroom',
 					'desc'  => 'Towels, mats, and organizers',
-					'img'   => '/wp-content/themes/wookiee-decor/assets/images/bathroom-shelf.png',
+					'img'   => WOOKIEE_URI . 'assets/images/bathroom-shelf.png',
 					'slug'  => 'bathroom-storage',
 				),
 				array(
 					'title' => 'Office & Desk',
 					'desc'  => 'Workspace organization',
-					'img'   => '/wp-content/themes/wookiee-decor/assets/images/wookiee-prod-organizer.png',
+					'img'   => WOOKIEE_URI . 'assets/images/wookiee-prod-organizer.png',
 					'slug'  => 'office-desk',
 				),
 			);

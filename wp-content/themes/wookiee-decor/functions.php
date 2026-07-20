@@ -147,7 +147,29 @@ function wookiee_sync_primary_menu( $page_ids = null, $pages = null ) {
 		return;
 	}
 
-	$existing_items      = wp_get_nav_menu_items( $menu_id );
+	$existing_items = wp_get_nav_menu_items( $menu_id );
+
+	// Clean up stale items first: if a starter page was deleted and later
+	// recreated, WordPress assigns it a brand new post ID, so the old menu
+	// item (still pointing at the dead ID) is left behind. WordPress hides
+	// such "invalid" items from the frontend entirely rather than erroring,
+	// which is exactly what silently dropped Contact from the nav before.
+	if ( $existing_items ) {
+		$known_titles = wp_list_pluck( $pages, 'menu' );
+		foreach ( $existing_items as $item ) {
+			if ( 'post_type' !== $item->type || 'page' !== $item->object ) {
+				continue;
+			}
+			if ( ! in_array( $item->title, $known_titles, true ) ) {
+				continue; // not one of ours, leave it alone
+			}
+			if ( ! get_post( $item->object_id ) ) {
+				wp_delete_post( $item->ID, true );
+			}
+		}
+		$existing_items = wp_get_nav_menu_items( $menu_id );
+	}
+
 	$existing_object_ids = $existing_items ? wp_list_pluck( $existing_items, 'object_id' ) : array();
 	$existing_object_ids = array_map( 'intval', $existing_object_ids );
 

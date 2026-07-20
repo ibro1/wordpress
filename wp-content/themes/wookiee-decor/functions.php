@@ -90,7 +90,7 @@ function wookiee_enqueue_assets() {
 	// Google Fonts: Inter
 	wp_enqueue_style( 'wookiee-fonts', 'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap', array(), null );
 	wp_enqueue_style( 'wookiee-main', WOOKIEE_URI . 'assets/css/main.css', array(), WOOKIEE_VERSION );
-	wp_enqueue_script( 'wookiee-main', WOOKIEE_URI . 'assets/js/main.js', array(), WOOKIEE_VERSION, true );
+	wp_enqueue_script( 'wookiee-main', WOOKIEE_URI . 'assets/js/main.js', array( 'jquery' ), WOOKIEE_VERSION, true );
 }
 
 add_action( 'after_switch_theme', 'wookiee_create_starter_content' );

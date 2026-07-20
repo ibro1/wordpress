@@ -150,7 +150,7 @@ function wookiee_starter_pages() {
                 <div>
                     <h3 class="contact-sidebar-heading">Support channels</h3>
                     <div class="contact-info-card">
-                        <span class="contact-info-icon">&#9993;&#65039;</span>
+                        <span class="contact-info-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z"></path><path d="m4 4 8 8 8-8"></path></svg></span>
                         <div>
                             <h4 class="contact-info-title">Email Support</h4>
                             <p class="contact-info-desc">Get in touch via email directly.</p>
@@ -158,7 +158,7 @@ function wookiee_starter_pages() {
                         </div>
                     </div>
                     <div class="contact-info-card">
-                        <span class="contact-info-icon">&#128222;</span>
+                        <span class="contact-info-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.362 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.338 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"></path></svg></span>
                         <div>
                             <h4 class="contact-info-title">Phone Support</h4>
                             <p class="contact-info-desc">Available Monday to Friday, 9am - 5pm.</p>
@@ -172,7 +172,7 @@ function wookiee_starter_pages() {
                 <div>
                     <h3 class="contact-sidebar-heading">Business office</h3>
                     <div class="contact-info-card">
-                        <span class="contact-info-icon">&#127970;</span>
+                        <span class="contact-info-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"></path><path d="M5 21V7l8-4v18"></path><path d="M19 21V11l-6-4"></path><path d="M9 9v.01"></path><path d="M9 12v.01"></path><path d="M9 15v.01"></path><path d="M9 18v.01"></path></svg></span>
                         <div>
                             <h4 class="contact-info-title">Registered Address</h4>
                             <p class="contact-info-desc">

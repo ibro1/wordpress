@@ -1033,14 +1033,30 @@ body.mobile-nav-active {
 	display: flex;
 	gap: 15px;
 	align-items: flex-start;
+	transition: transform 0.25s ease, box-shadow 0.25s ease;
 	margin-bottom: 20px;
 }
 .contact-info-card:last-child {
 	margin-bottom: 0;
 }
+.contact-info-card:hover {
+	transform: translateY(-3px);
+	box-shadow: var(--shadow-md);
+}
 .contact-info-icon {
-	font-size: 20px;
-	line-height: 1;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 42px;
+	height: 42px;
+	border-radius: 50%;
+	background: var(--wookiee-bg);
+	color: var(--wookiee-teal-dark);
+	flex-shrink: 0;
+}
+.contact-info-card:hover .contact-info-icon {
+	background: var(--wookiee-teal);
+	color: var(--wookiee-white);
 }
 .contact-info-title {
 	margin: 0 0 5px 0;

@@ -96,6 +96,71 @@ function wookiee_enqueue_assets() {
 add_action( 'after_switch_theme', 'wookiee_create_starter_content' );
 add_action( 'init', 'wookiee_maybe_create_starter_content', 20 );
 
+/**
+ * Keep the primary menu in sync with whichever starter pages currently
+ * exist, on every request. This is intentionally NOT gated behind the
+ * version/repair check above: a page can exist (so no repair is ever
+ * triggered again) while the menu that was built long ago still never
+ * got that page added to it. Cheap (a handful of get_page_by_path
+ * lookups plus one menu-items query), safe to run unconditionally.
+ */
+add_action( 'init', 'wookiee_sync_primary_menu', 21 );
+function wookiee_sync_primary_menu( $page_ids = null, $pages = null ) {
+	if ( wp_installing() ) {
+		return;
+	}
+
+	if ( null === $pages ) {
+		$pages = wookiee_starter_pages();
+	}
+	if ( null === $page_ids ) {
+		$page_ids = array();
+		foreach ( array_keys( $pages ) as $slug ) {
+			$existing = get_page_by_path( $slug, OBJECT, 'page' );
+			if ( $existing instanceof WP_Post ) {
+				$page_ids[ $slug ] = (int) $existing->ID;
+			}
+		}
+	}
+
+	$menu_id = 0;
+	if ( has_nav_menu( 'primary' ) ) {
+		$locations = get_nav_menu_locations();
+		$menu_id   = isset( $locations['primary'] ) ? (int) $locations['primary'] : 0;
+	}
+	if ( ! $menu_id ) {
+		$created = wp_create_nav_menu( 'Wookiee Main Menu' );
+		$menu_id = is_wp_error( $created ) ? 0 : (int) $created;
+	}
+	if ( ! $menu_id ) {
+		return;
+	}
+
+	$existing_items      = wp_get_nav_menu_items( $menu_id );
+	$existing_object_ids = $existing_items ? wp_list_pluck( $existing_items, 'object_id' ) : array();
+	$existing_object_ids = array_map( 'intval', $existing_object_ids );
+
+	foreach ( array( 'home', 'shop', 'about', 'mission', 'activities', 'contact' ) as $slug ) {
+		if ( empty( $page_ids[ $slug ] ) ) {
+			continue;
+		}
+		if ( in_array( (int) $page_ids[ $slug ], $existing_object_ids, true ) ) {
+			continue;
+		}
+		wp_update_nav_menu_item( $menu_id, 0, array(
+			'menu-item-title'     => $pages[ $slug ]['menu'],
+			'menu-item-object'    => 'page',
+			'menu-item-object-id' => (int) $page_ids[ $slug ],
+			'menu-item-type'      => 'post_type',
+			'menu-item-status'    => 'publish',
+		) );
+	}
+
+	$locations             = (array) get_theme_mod( 'nav_menu_locations', array() );
+	$locations['primary'] = $menu_id;
+	set_theme_mod( 'nav_menu_locations', $locations );
+}
+
 function wookiee_maybe_create_starter_content() {
 	if ( wp_installing() ) {
 		return;
@@ -155,44 +220,8 @@ function wookiee_create_starter_content() {
         update_option( 'woocommerce_shop_page_id', (int) $page_ids['shop'] );
     }
 
-	// 3. Setup Menu — create it if missing, and keep it in sync if new
-	// starter pages were added after the menu already existed (otherwise
-	// pages like Contact/Mission/Activities silently never appear).
-	$menu_id = 0;
-	if ( has_nav_menu( 'primary' ) ) {
-		$locations = get_nav_menu_locations();
-		$menu_id   = isset( $locations['primary'] ) ? (int) $locations['primary'] : 0;
-	}
-	if ( ! $menu_id ) {
-		$created = wp_create_nav_menu( 'Wookiee Main Menu' );
-		$menu_id = is_wp_error( $created ) ? 0 : (int) $created;
-	}
-
-	if ( $menu_id ) {
-		$existing_items     = wp_get_nav_menu_items( $menu_id );
-		$existing_object_ids = $existing_items ? wp_list_pluck( $existing_items, 'object_id' ) : array();
-		$existing_object_ids = array_map( 'intval', $existing_object_ids );
-
-		foreach ( array( 'home', 'shop', 'about', 'mission', 'activities', 'contact' ) as $slug ) {
-			if ( empty( $page_ids[ $slug ] ) ) {
-				continue;
-			}
-			if ( in_array( (int) $page_ids[ $slug ], $existing_object_ids, true ) ) {
-				continue;
-			}
-			wp_update_nav_menu_item( $menu_id, 0, array(
-				'menu-item-title'     => $pages[ $slug ]['menu'],
-				'menu-item-object'    => 'page',
-				'menu-item-object-id' => (int) $page_ids[ $slug ],
-				'menu-item-type'      => 'post_type',
-				'menu-item-status'    => 'publish',
-			) );
-		}
-
-		$locations             = (array) get_theme_mod( 'nav_menu_locations', array() );
-		$locations['primary'] = $menu_id;
-		set_theme_mod( 'nav_menu_locations', $locations );
-	}
+	// 3. Setup Menu
+	wookiee_sync_primary_menu( $page_ids, $pages );
 
     // 4. Create Dummy Products
     wookiee_create_dummy_products();

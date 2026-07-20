@@ -202,7 +202,7 @@ get_header(); ?>
 	</section>
 
 	<!-- How it works Section -->
-	<section class="container" style="padding: 60px 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center;">
+	<section class="container wookiee-content-grid-2" style="padding: 60px 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center;">
 		<?php
 		$feature_id = get_option('wookiee_feature_image_id');
 		$feature_url = $feature_id ? wp_get_attachment_url($feature_id) : '';
@@ -259,25 +259,25 @@ get_header(); ?>
 				array(
 					'title' => 'Indoor Storage',
 					'desc' => 'Shelves, baskets, and cabinets',
-					'img' => '/wp-content/themes/wookiee-commerce/assets/images/wookiee-prod-shelves.png',
+					'img' => '/wp-content/themes/wookiee-decor/assets/images/wookiee-prod-shelves.png',
 					'slug' => 'kitchen-storage'
 				),
 				array(
 					'title' => 'Home Accessories',
 					'desc' => 'Finishing touches for every room',
-					'img' => '/wp-content/themes/wookiee-commerce/assets/images/drawer-organizer.png',
+					'img' => '/wp-content/themes/wookiee-decor/assets/images/drawer-organizer.png',
 					'slug' => 'drawer-organisers'
 				),
 				array(
 					'title' => 'Bathroom',
 					'desc' => 'Towels, mats, and organizers',
-					'img' => '/wp-content/themes/wookiee-commerce/assets/images/bathroom-shelf.png',
+					'img' => '/wp-content/themes/wookiee-decor/assets/images/bathroom-shelf.png',
 					'slug' => 'bathroom-storage'
 				),
 				array(
 					'title' => 'Office & Desk',
 					'desc' => 'Workspace organization',
-					'img' => '/wp-content/themes/wookiee-commerce/assets/images/wookiee-prod-organizer.png',
+					'img' => '/wp-content/themes/wookiee-decor/assets/images/wookiee-prod-organizer.png',
 					'slug' => 'office-desk'
 				)
 			);

@@ -32,7 +32,7 @@
 	</div>
 
 	<!-- Main Footer Columns -->
-	<div style="max-width: 1200px; margin: 0 auto; padding: 80px 20px; display: grid; grid-template-columns: 1.5fr 1fr 1fr 1.2fr; gap: 50px; box-sizing: border-box;">
+	<div class="footer-columns-grid" style="max-width: 1200px; margin: 0 auto; padding: 80px 20px; display: grid; grid-template-columns: 1.5fr 1fr 1fr 1.2fr; gap: 50px; box-sizing: border-box;">
 		
 		<!-- Col 1 -->
 		<div style="text-align: left; box-sizing: border-box;">

@@ -30,6 +30,24 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+
+    // Mobile nav toggle
+    const navToggle = document.getElementById('toggle-mobile-nav');
+    const mainNav = document.getElementById('main-navigation');
+
+    if (navToggle && mainNav) {
+        navToggle.addEventListener('click', function() {
+            const isOpen = mainNav.classList.toggle('is-open');
+            navToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+        });
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                mainNav.classList.remove('is-open');
+                navToggle.setAttribute('aria-expanded', 'false');
+            }
+        });
+    }
 });
 
 // Single Product AJAX Add to Cart (jQuery)

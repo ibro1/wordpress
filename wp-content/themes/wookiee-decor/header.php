@@ -22,7 +22,7 @@
 				</svg>
 			</a>
 		</div>
-		<nav class="main-navigation">
+		<nav class="main-navigation" id="main-navigation">
 			<?php
 			if ( has_nav_menu( 'primary' ) ) {
 				wp_nav_menu( array(
@@ -45,9 +45,12 @@
 					<span class="cart-badge"><?php echo WC()->cart->get_cart_contents_count(); ?></span>
 				<?php endif; ?>
 			</a>
+			<button id="toggle-mobile-nav" class="header-icon-btn mobile-nav-toggle" aria-label="Menu" aria-expanded="false" aria-controls="main-navigation" style="background: none; border: none; cursor: pointer; color: var(--wookiee-navy); padding: 0; align-items: center;">
+				<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+			</button>
 		</div>
 	</div>
-	
+
 	<!-- Search Bar inside header -->
 	<div id="header-search-bar" style="display: none; background: #ffffff; border-top: 1px solid var(--wookiee-border); padding: 20px 0; position: absolute; width: 100%; left: 0; top: 100%; z-index: 99; box-shadow: 0 10px 30px rgba(0,0,0,0.08); box-sizing: border-box;">
 		<div style="max-width: 800px; margin: 0 auto; display: flex; align-items: center; gap: 20px; padding: 0 20px; box-sizing: border-box;">

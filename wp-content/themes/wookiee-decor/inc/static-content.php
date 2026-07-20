@@ -1,63 +1,63 @@
 <?php
 /**
- * Static content and dummy data generation for Anyora Commerce.
+ * Static content and dummy data generation for Wookiee Decor.
  */
 
 defined( 'ABSPATH' ) || exit;
 
-function anyora_starter_pages() {
+function wookiee_starter_pages() {
 	return array(
 		'home'    => array( 'title' => 'Home', 'menu' => 'Home', 'content' => '' ),
 		'shop'    => array( 'title' => 'Shop', 'menu' => 'Shop', 'content' => '' ),
-		'about'   => array( 'title' => 'About', 'menu' => 'About', 'content' => '<div style="background-color: var(--anyora-bg); padding: 40px 20px;">
+		'about'   => array( 'title' => 'About', 'menu' => 'About', 'content' => '<div style="background-color: var(--wookiee-bg); padding: 40px 20px;">
     <div style="max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center;">
         <div>
             <div style="color: #6fbdbd; font-size: 12px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 20px; display: flex; align-items: center; gap: 15px;">
                 <span style="width: 30px; height: 2px; background: #6fbdbd; display: inline-block;"></span> ABOUT OUR BUSINESS
             </div>
-            <h1 style="font-size: 48px; color: var(--anyora-navy); margin: 0 0 20px 0; font-weight: 800; letter-spacing: -2px; line-height: 1;">About Anyora</h1>
-            <p style="font-size: 18px; color: var(--anyora-navy); font-weight: 700; margin-bottom: 20px;">
-                Anyora is a UK private-label home-storage brand and online retailer operated by Anyora Limited.
+            <h1 style="font-size: 48px; color: var(--wookiee-navy); margin: 0 0 20px 0; font-weight: 800; letter-spacing: -2px; line-height: 1;">About Wookiee</h1>
+            <p style="font-size: 18px; color: var(--wookiee-navy); font-weight: 700; margin-bottom: 20px;">
+                Wookiee is a UK private-label home-storage brand and online retailer operated by Wookiee Decor Ltd.
             </p>
             <p style="font-size: 16px; color: #555; line-height: 1.7; margin-bottom: 25px;">
                 We offer practical storage products for everyday areas of the home, with clear product, delivery and returns information to help customers make informed purchasing decisions.
             </p>
             <div style="display: flex; gap: 15px;">
                 <a href="/shop/" class="btn">Shop our products</a>
-                <a href="/contact/" class="btn-outline" style="border-radius: 30px; padding: 12px 24px; font-weight: 600; text-decoration: none; border: 2px solid var(--anyora-navy); color: var(--anyora-navy); display: inline-block;">Contact us</a>
+                <a href="/contact/" class="btn-outline" style="border-radius: 30px; padding: 12px 24px; font-weight: 600; text-decoration: none; border: 2px solid var(--wookiee-navy); color: var(--wookiee-navy); display: inline-block;">Contact us</a>
             </div>
         </div>
         <div style="position: relative;">
-            <img src="/wp-content/themes/anyora-commerce/assets/images/drawer-organizer.png" alt="Drawer Organizer" style="border-radius: 20px; width: 100%; max-height: 380px; object-fit: cover; box-shadow: 0 20px 40px rgba(0,0,0,0.1);">
+            <img src="/wp-content/themes/wookiee-commerce/assets/images/drawer-organizer.png" alt="Drawer Organizer" style="border-radius: 20px; width: 100%; max-height: 380px; object-fit: cover; box-shadow: 0 20px 40px rgba(0,0,0,0.1);">
             <div style="position: absolute; bottom: 20px; right: 20px; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); max-width: 250px;">
                 <div style="font-size: 10px; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;">UK PRIVATE-LABEL RETAILER</div>
-                <div style="font-size: 24px; font-weight: 800; color: var(--anyora-navy); margin-bottom: 5px;">Anyora</div>
-                <div style="font-size: 12px; color: #666;">Operated by Anyora Limited</div>
+                <div style="font-size: 24px; font-weight: 800; color: var(--wookiee-navy); margin-bottom: 5px;">Wookiee</div>
+                <div style="font-size: 12px; color: #666;">Operated by Wookiee Decor Ltd</div>
             </div>
         </div>
     </div>
 </div>
 
-<div style="background: white; border-bottom: 1px solid var(--anyora-border); border-top: 1px solid var(--anyora-border);">
+<div style="background: white; border-bottom: 1px solid var(--wookiee-border); border-top: 1px solid var(--wookiee-border);">
     <div style="max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: repeat(4, 1fr); gap: 0;">
-        <div style="padding: 40px 20px; border-right: 1px solid var(--anyora-border);">
+        <div style="padding: 40px 20px; border-right: 1px solid var(--wookiee-border);">
             <div style="font-size: 10px; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;">LEGAL BUSINESS</div>
-            <div style="font-size: 16px; font-weight: 700; color: var(--anyora-navy); margin-bottom: 5px;">Anyora Limited</div>
-            <div style="font-size: 12px; color: #666;">Registered in England and Wales</div>
+            <div style="font-size: 16px; font-weight: 700; color: var(--wookiee-navy); margin-bottom: 5px;">Wookiee Decor Ltd</div>
+            <div style="font-size: 12px; color: #666;">Registered in Scotland</div>
         </div>
-        <div style="padding: 40px 20px; border-right: 1px solid var(--anyora-border);">
+        <div style="padding: 40px 20px; border-right: 1px solid var(--wookiee-border);">
             <div style="font-size: 10px; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;">COMPANY NUMBER</div>
-            <div style="font-size: 16px; font-weight: 700; color: var(--anyora-navy); margin-bottom: 5px;">16938766</div>
+            <div style="font-size: 16px; font-weight: 700; color: var(--wookiee-navy); margin-bottom: 5px;">SC769264</div>
             <div style="font-size: 12px; color: #666;">Incorporated 2 January 2026</div>
         </div>
-        <div style="padding: 40px 20px; border-right: 1px solid var(--anyora-border);">
+        <div style="padding: 40px 20px; border-right: 1px solid var(--wookiee-border);">
             <div style="font-size: 10px; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;">ORDER FULFILMENT</div>
-            <div style="font-size: 16px; font-weight: 700; color: var(--anyora-navy); margin-bottom: 5px;">Anyora in Bilston</div>
+            <div style="font-size: 16px; font-weight: 700; color: var(--wookiee-navy); margin-bottom: 5px;">Wookiee in Cowdenbeath</div>
             <div style="font-size: 12px; color: #666;">Stored, packed and dispatched in the UK</div>
         </div>
         <div style="padding: 40px 20px;">
             <div style="font-size: 10px; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;">DELIVERY MARKET</div>
-            <div style="font-size: 16px; font-weight: 700; color: var(--anyora-navy); margin-bottom: 5px;">United Kingdom</div>
+            <div style="font-size: 16px; font-weight: 700; color: var(--wookiee-navy); margin-bottom: 5px;">United Kingdom</div>
             <div style="font-size: 12px; color: #666;">3-5 working days normally</div>
         </div>
     </div>
@@ -66,27 +66,27 @@ function anyora_starter_pages() {
 <div style="background: white; padding: 100px 20px;">
     <div style="max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1.2fr; gap: 80px; align-items: center;">
         <div>
-            <img src="/wp-content/themes/anyora-commerce/assets/images/bathroom-shelf.png" alt="Bathroom Shelf" style="border-radius: 20px; width: 100%; box-shadow: 0 20px 40px rgba(0,0,0,0.05);">
+            <img src="/wp-content/themes/wookiee-commerce/assets/images/bathroom-shelf.png" alt="Bathroom Shelf" style="border-radius: 20px; width: 100%; box-shadow: 0 20px 40px rgba(0,0,0,0.05);">
         </div>
         <div>
             <div style="color: #6fbdbd; font-size: 12px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 20px; display: flex; align-items: center; gap: 15px;">
                 <span style="width: 30px; height: 2px; background: #6fbdbd; display: inline-block;"></span> OUR RANGE AND APPROACH
             </div>
-            <h2 style="font-size: 48px; color: var(--anyora-navy); margin: 0 0 30px 0; font-weight: 800; letter-spacing: -1.5px; line-height: 1.1;">Practical storage, clearly presented.</h2>
-            <p style="font-size: 18px; color: var(--anyora-navy); font-weight: 700; margin-bottom: 20px; line-height: 1.5;">
+            <h2 style="font-size: 48px; color: var(--wookiee-navy); margin: 0 0 30px 0; font-weight: 800; letter-spacing: -1.5px; line-height: 1.1;">Practical storage, clearly presented.</h2>
+            <p style="font-size: 18px; color: var(--wookiee-navy); font-weight: 700; margin-bottom: 20px; line-height: 1.5;">
                 Our range focuses on useful storage products for kitchens, bathrooms, drawers, footwear and other everyday spaces.
             </p>
             <p style="font-size: 16px; color: #666; line-height: 1.7; margin-bottom: 20px;">
-                Products sold as Anyora-branded goods form part of our private-label range. These products may be produced for the Anyora brand by selected third-party manufacturers.
+                Products sold as Wookiee-branded goods form part of our private-label range. These products may be produced for the Wookiee brand by selected third-party manufacturers.
             </p>
             <p style="font-size: 16px; color: #666; line-height: 1.7; margin-bottom: 25px;">
-                Anyora Limited operates the brand and is the retailer responsible for purchases made through this website. We manage the customer-facing product information, pricing, order administration, delivery arrangements and customer support.
+                Wookiee Decor Ltd operates the brand and is the retailer responsible for purchases made through this website. We manage the customer-facing product information, pricing, order administration, delivery arrangements and customer support.
             </p>
             
-            <div style="background: var(--anyora-bg); border-radius: 15px; padding: 30px; display: flex; gap: 20px; align-items: flex-start;">
+            <div style="background: var(--wookiee-bg); border-radius: 15px; padding: 30px; display: flex; gap: 20px; align-items: flex-start;">
                 <div style="color: #dcb37b; font-weight: 700; font-size: 14px; margin-top: 3px;">01</div>
                 <div>
-                    <h4 style="margin: 0 0 10px 0; font-size: 18px; color: var(--anyora-navy);">Practical selection</h4>
+                    <h4 style="margin: 0 0 10px 0; font-size: 18px; color: var(--wookiee-navy);">Practical selection</h4>
                     <p style="margin: 0; color: #666; font-size: 14px; line-height: 1.6;">Products are selected for useful home organisation and everyday storage.</p>
                 </div>
             </div>
@@ -98,7 +98,7 @@ function anyora_starter_pages() {
         
         <!-- Header -->
         <div style="margin-bottom: 35px; box-sizing: border-box;">
-            <h1 style="font-size: 48px; color: var(--anyora-navy); font-weight: 800; letter-spacing: -1.5px; margin: 0 0 15px 0;">Contact our team</h1>
+            <h1 style="font-size: 48px; color: var(--wookiee-navy); font-weight: 800; letter-spacing: -1.5px; margin: 0 0 15px 0;">Contact our team</h1>
             <p style="font-size: 16px; color: #555; margin: 0; line-height: 1.6; max-width: 600px;">
                 Have a question about an order, shipping, or returns? We\'re here to help. Drop us a line below or reach out via email or phone.
             </p>
@@ -108,39 +108,39 @@ function anyora_starter_pages() {
             
             <!-- Contact Form Card -->
             <div style="background: white; padding: 40px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.04); border: 1px solid rgba(0,0,0,0.05); box-sizing: border-box;">
-                <h2 style="font-size: 24px; color: var(--anyora-navy); font-weight: 800; margin: 0 0 5px 0; letter-spacing: -0.5px;">Send a message</h2>
+                <h2 style="font-size: 24px; color: var(--wookiee-navy); font-weight: 800; margin: 0 0 5px 0; letter-spacing: -0.5px;">Send a message</h2>
                 <p style="font-size: 14px; color: #666; margin: 0 0 30px 0;">We typically reply within 24 business hours.</p>
                 
                 <form action="/wp-admin/admin-post.php" method="POST" style="margin: 0; display: flex; flex-direction: column; gap: 20px; box-sizing: border-box;">
-                    <input type="hidden" name="action" value="anyora_contact_form">
+                    <input type="hidden" name="action" value="wookiee_contact_form">
                     
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; box-sizing: border-box;">
                         <div style="box-sizing: border-box;">
-                            <label style="display: block; font-size: 11px; font-weight: 700; color: var(--anyora-navy); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">First Name *</label>
+                            <label style="display: block; font-size: 11px; font-weight: 700; color: var(--wookiee-navy); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">First Name *</label>
                             <input type="text" name="first_name" required style="width: 100%; height: 48px; padding: 0 16px; border: 1px solid #e2e8f0; border-radius: 8px; font-family: inherit; font-size: 14px; box-sizing: border-box; background: #fff; color: #1a202c; outline: none; transition: border-color 0.2s;">
                         </div>
                         <div style="box-sizing: border-box;">
-                            <label style="display: block; font-size: 11px; font-weight: 700; color: var(--anyora-navy); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">Last Name *</label>
+                            <label style="display: block; font-size: 11px; font-weight: 700; color: var(--wookiee-navy); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">Last Name *</label>
                             <input type="text" name="last_name" required style="width: 100%; height: 48px; padding: 0 16px; border: 1px solid #e2e8f0; border-radius: 8px; font-family: inherit; font-size: 14px; box-sizing: border-box; background: #fff; color: #1a202c; outline: none; transition: border-color 0.2s;">
                         </div>
                     </div>
                     
                     <div style="box-sizing: border-box;">
-                        <label style="display: block; font-size: 11px; font-weight: 700; color: var(--anyora-navy); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">Email Address *</label>
+                        <label style="display: block; font-size: 11px; font-weight: 700; color: var(--wookiee-navy); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">Email Address *</label>
                         <input type="email" name="email" required style="width: 100%; height: 48px; padding: 0 16px; border: 1px solid #e2e8f0; border-radius: 8px; font-family: inherit; font-size: 14px; box-sizing: border-box; background: #fff; color: #1a202c; outline: none; transition: border-color 0.2s;">
                     </div>
                     
                     <div style="box-sizing: border-box;">
-                        <label style="display: block; font-size: 11px; font-weight: 700; color: var(--anyora-navy); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">Order Number (Optional)</label>
+                        <label style="display: block; font-size: 11px; font-weight: 700; color: var(--wookiee-navy); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">Order Number (Optional)</label>
                         <input type="text" name="order_number" style="width: 100%; height: 48px; padding: 0 16px; border: 1px solid #e2e8f0; border-radius: 8px; font-family: inherit; font-size: 14px; box-sizing: border-box; background: #fff; color: #1a202c; outline: none; transition: border-color 0.2s;">
                     </div>
                     
                     <div style="box-sizing: border-box;">
-                        <label style="display: block; font-size: 11px; font-weight: 700; color: var(--anyora-navy); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">Message *</label>
+                        <label style="display: block; font-size: 11px; font-weight: 700; color: var(--wookiee-navy); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">Message *</label>
                         <textarea name="message" rows="5" required style="width: 100%; padding: 16px; border: 1px solid #e2e8f0; border-radius: 8px; font-family: inherit; font-size: 14px; box-sizing: border-box; resize: vertical; background: #fff; color: #1a202c; outline: none; transition: border-color 0.2s; line-height: 1.5;"></textarea>
                     </div>
                     
-                    <button type="submit" class="btn" style="width: 100%; height: 50px; display: flex; align-items: center; justify-content: center; font-size: 15px; border-radius: 8px; background: var(--anyora-navy); color: white; font-weight: 700; cursor: pointer; border: none; transition: background-color 0.2s; box-shadow: 0 4px 12px rgba(8,29,52,0.15);">Send message</button>
+                    <button type="submit" class="btn" style="width: 100%; height: 50px; display: flex; align-items: center; justify-content: center; font-size: 15px; border-radius: 8px; background: var(--wookiee-navy); color: white; font-weight: 700; cursor: pointer; border: none; transition: background-color 0.2s; box-shadow: 0 4px 12px rgba(8,29,52,0.15);">Send message</button>
                 </form>
             </div>
             
@@ -148,15 +148,15 @@ function anyora_starter_pages() {
             <div style="display: flex; flex-direction: column; gap: 30px; box-sizing: border-box;">
                 
                 <div style="box-sizing: border-box;">
-                    <h3 style="font-size: 18px; color: var(--anyora-navy); font-weight: 800; margin: 0 0 20px 0; letter-spacing: -0.3px;">Support channels</h3>
+                    <h3 style="font-size: 18px; color: var(--wookiee-navy); font-weight: 800; margin: 0 0 20px 0; letter-spacing: -0.3px;">Support channels</h3>
                     
                     <!-- Email Card -->
                     <div style="background: white; padding: 25px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.02); border: 1px solid rgba(0,0,0,0.04); display: flex; gap: 15px; align-items: flex-start; margin-bottom: 20px; box-sizing: border-box;">
                         <span style="font-size: 20px; line-height: 1;">✉️</span>
                         <div style="box-sizing: border-box;">
-                            <h4 style="margin: 0 0 5px 0; font-size: 15px; color: var(--anyora-navy); font-weight: 700;">Email Support</h4>
+                            <h4 style="margin: 0 0 5px 0; font-size: 15px; color: var(--wookiee-navy); font-weight: 700;">Email Support</h4>
                             <p style="margin: 0 0 8px 0; color: #666; font-size: 13px; line-height: 1.4;">Get in touch via email directly.</p>
-                            <a href="mailto:support@anyora.uk" style="color: var(--anyora-navy); font-weight: 700; text-decoration: none; font-size: 14px; border-bottom: 1.5px solid var(--anyora-navy); padding-bottom: 2px;">support@anyora.uk</a>
+                            <a href="mailto:info@wookied.com" style="color: var(--wookiee-navy); font-weight: 700; text-decoration: none; font-size: 14px; border-bottom: 1.5px solid var(--wookiee-navy); padding-bottom: 2px;">info@wookied.com</a>
                         </div>
                     </div>
                     
@@ -164,9 +164,9 @@ function anyora_starter_pages() {
                     <div style="background: white; padding: 25px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.02); border: 1px solid rgba(0,0,0,0.04); display: flex; gap: 15px; align-items: flex-start; box-sizing: border-box;">
                         <span style="font-size: 20px; line-height: 1;">📞</span>
                         <div style="box-sizing: border-box;">
-                            <h4 style="margin: 0 0 5px 0; font-size: 15px; color: var(--anyora-navy); font-weight: 700;">Phone Support</h4>
+                            <h4 style="margin: 0 0 5px 0; font-size: 15px; color: var(--wookiee-navy); font-weight: 700;">Phone Support</h4>
                             <p style="margin: 0 0 8px 0; color: #666; font-size: 13px; line-height: 1.4;">Available Monday to Friday, 9am - 5pm.</p>
-                            <div style="color: var(--anyora-navy); font-weight: 700; font-size: 14px;">+44 1902 382162</div>
+                            <div style="color: var(--wookiee-navy); font-weight: 700; font-size: 14px;">+442084726126</div>
                         </div>
                     </div>
                 </div>
@@ -174,15 +174,15 @@ function anyora_starter_pages() {
                 <hr style="border: 0; border-top: 1px solid rgba(0,0,0,0.08); margin: 10px 0;">
                 
                 <div style="box-sizing: border-box;">
-                    <h3 style="font-size: 18px; color: var(--anyora-navy); font-weight: 800; margin: 0 0 20px 0; letter-spacing: -0.3px;">Business office</h3>
+                    <h3 style="font-size: 18px; color: var(--wookiee-navy); font-weight: 800; margin: 0 0 20px 0; letter-spacing: -0.3px;">Business office</h3>
                     <div style="background: white; padding: 25px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.02); border: 1px solid rgba(0,0,0,0.04); display: flex; gap: 15px; align-items: flex-start; box-sizing: border-box;">
                         <span style="font-size: 20px; line-height: 1;">🏢</span>
                         <div style="box-sizing: border-box;">
-                            <h4 style="margin: 0 0 5px 0; font-size: 15px; color: var(--anyora-navy); font-weight: 700;">Registered Address</h4>
+                            <h4 style="margin: 0 0 5px 0; font-size: 15px; color: var(--wookiee-navy); font-weight: 700;">Registered Address</h4>
                             <p style="margin: 0; color: #666; font-size: 13px; line-height: 1.5;">
-                                Anyora Limited<br>
-                                72 Ambergate Road, Bilston,<br>
-                                WV14 0SR, United Kingdom
+                                Wookiee Decor Ltd<br>
+                                28 Johnston Park, Cowdenbeath, Scotland,<br>
+                                KY4 9AZ, United Kingdom
                             </p>
                         </div>
                     </div>
@@ -198,23 +198,23 @@ if (window.location.search.indexOf("success=1") > -1) {
     alert("Thank you! Your message has been sent successfully.");
 }
 </script>' ),
-		'mission' => array( 'title' => 'Mission', 'menu' => 'Mission', 'content' => '<!-- Hero Section --><div style="background-color: var(--anyora-bg); padding: 40px 20px; font-family: var(--font-primary); box-sizing: border-box;"><div style="max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center; box-sizing: border-box;"><div><div style="color: #6fbdbd; font-size: 12px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 20px; display: flex; align-items: center; gap: 15px;"><span style="width: 30px; height: 2px; background: #6fbdbd; display: inline-block;"></span> OUR MISSION </div><h1 style="font-size: 48px; color: var(--anyora-navy); margin: 0 0 20px 0; font-weight: 800; letter-spacing: -2px; line-height: 1.1;">Our Mission</h1><p style="font-size: 18px; color: var(--anyora-navy); font-weight: 700; margin-bottom: 15px; line-height: 1.5;"> To provide practical storage products selected to help make everyday spaces tidier. </p><p style="font-size: 16px; color: #555; line-height: 1.7; margin-bottom: 30px;"> We aim to reduce clutter and bring harmony to modern living spaces with simple, elegant solutions that are both highly functional and visually pleasing. </p><div style="display: flex; gap: 15px;"><a href="/shop/" class="btn">Explore our range</a></div></div><div><img src="/wp-content/themes/anyora-commerce/assets/images/anyora-prod-shelves.png" alt="Our Mission Shelving" style="border-radius: 20px; width: 100%; max-height: 380px; object-fit: cover; box-shadow: 0 20px 40px rgba(0,0,0,0.1);"></div></div></div><!-- Core Values Section --><div style="background: white; padding: 100px 20px; font-family: var(--font-primary); box-sizing: border-box;"><div style="max-width: 1200px; margin: 0 auto; box-sizing: border-box;"><div style="text-align: center; margin-bottom: 70px; box-sizing: border-box;"><div style="color: #6fbdbd; font-size: 12px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 15px; justify-content: center; display: flex; align-items: center; gap: 10px;"> OUR VALUES </div><h2 style="font-size: 40px; color: var(--anyora-navy); margin: 0; font-weight: 800; letter-spacing: -1px;">What drives Anyora</h2></div><div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px; box-sizing: border-box;"><!-- Value 1 --><div style="box-sizing: border-box; text-align: center; padding: 20px;"><div style="font-size: 32px; margin-bottom: 20px;">✨</div><h3 style="font-size: 20px; color: var(--anyora-navy); font-weight: 700; margin: 0 0 12px 0;">Simplicity</h3><p style="margin: 0; color: #666; font-size: 14px; line-height: 1.6;">De-cluttering spaces with intuitive, modular designs. We believe that storage shouldn\'t complicate your life—it should simplify it.</p></div><!-- Value 2 --><div style="box-sizing: border-box; text-align: center; padding: 20px;"><div style="font-size: 32px; margin-bottom: 20px;">🛡️</div><h3 style="font-size: 20px; color: var(--anyora-navy); font-weight: 700; margin: 0 0 12px 0;">Quality Sourcing</h3><p style="margin: 0; color: #666; font-size: 14px; line-height: 1.6;">We select durable, premium materials—from sustainable natural bamboo to thick, food-grade, BPA-free plastics built to endure.</p></div><!-- Value 3 --><div style="box-sizing: border-box; text-align: center; padding: 20px;"><div style="font-size: 32px; margin-bottom: 20px;">🔍</div><h3 style="font-size: 20px; color: var(--anyora-navy); font-weight: 700; margin: 0 0 12px 0;">Practical Utility</h3><p style="margin: 0; color: #666; font-size: 14px; line-height: 1.6;">Every product in our catalog is engineered to fit standard drawers, cupboards, and shelves, providing maximum volumetric efficiency.</p></div></div></div></div><!-- Sourcing Story Section --><div style="background-color: var(--anyora-bg); padding: 100px 20px; font-family: var(--font-primary); box-sizing: border-box;"><div style="max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1.2fr; gap: 80px; align-items: center; box-sizing: border-box;"><div><img src="/wp-content/themes/anyora-commerce/assets/images/anyora-prod-organizer.png" alt="Bamboo Organizer Tray" style="border-radius: 20px; width: 100%; max-height: 380px; object-fit: cover; box-shadow: 0 20px 40px rgba(0,0,0,0.05);"></div><div><div style="color: #6fbdbd; font-size: 12px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 20px; display: flex; align-items: center; gap: 15px;"><span style="width: 30px; height: 2px; background: #6fbdbd; display: inline-block;"></span> SUSTAINABILITY </div><h2 style="font-size: 48px; color: var(--anyora-navy); margin: 0 0 30px 0; font-weight: 800; letter-spacing: -1.5px; line-height: 1.1;">Designed for longevity, sourced with care.</h2><p style="font-size: 18px; color: var(--anyora-navy); font-weight: 700; margin-bottom: 20px; line-height: 1.5;"> We believe that home organization products shouldn\'t just be useful—they should be sustainable. </p><p style="font-size: 16px; color: #666; line-height: 1.7; margin-bottom: 20px;"> By using fast-growing FSC-certified bamboo and high-purity, recyclable polymers, we build storage solutions that stand the test of time while minimizing environmental impact. </p><p style="font-size: 16px; color: #666; line-height: 1.7; margin: 0;"> Our materials are thoroughly checked for chemical safety and toxic additives, ensuring that they are safe for kitchen food storage and kid-friendly playrooms alike. </p></div></div></div>' ),
-		'activities' => array( 'title' => 'Activities', 'menu' => 'Activities', 'content' => '<div style="background-color: var(--anyora-bg); padding: 40px 20px; font-family: var(--font-primary); box-sizing: border-box;">
+		'mission' => array( 'title' => 'Mission', 'menu' => 'Mission', 'content' => '<!-- Hero Section --><div style="background-color: var(--wookiee-bg); padding: 40px 20px; font-family: var(--font-primary); box-sizing: border-box;"><div style="max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center; box-sizing: border-box;"><div><div style="color: #6fbdbd; font-size: 12px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 20px; display: flex; align-items: center; gap: 15px;"><span style="width: 30px; height: 2px; background: #6fbdbd; display: inline-block;"></span> OUR MISSION </div><h1 style="font-size: 48px; color: var(--wookiee-navy); margin: 0 0 20px 0; font-weight: 800; letter-spacing: -2px; line-height: 1.1;">Our Mission</h1><p style="font-size: 18px; color: var(--wookiee-navy); font-weight: 700; margin-bottom: 15px; line-height: 1.5;"> To provide practical storage products selected to help make everyday spaces tidier. </p><p style="font-size: 16px; color: #555; line-height: 1.7; margin-bottom: 30px;"> We aim to reduce clutter and bring harmony to modern living spaces with simple, elegant solutions that are both highly functional and visually pleasing. </p><div style="display: flex; gap: 15px;"><a href="/shop/" class="btn">Explore our range</a></div></div><div><img src="/wp-content/themes/wookiee-commerce/assets/images/wookiee-prod-shelves.png" alt="Our Mission Shelving" style="border-radius: 20px; width: 100%; max-height: 380px; object-fit: cover; box-shadow: 0 20px 40px rgba(0,0,0,0.1);"></div></div></div><!-- Core Values Section --><div style="background: white; padding: 100px 20px; font-family: var(--font-primary); box-sizing: border-box;"><div style="max-width: 1200px; margin: 0 auto; box-sizing: border-box;"><div style="text-align: center; margin-bottom: 70px; box-sizing: border-box;"><div style="color: #6fbdbd; font-size: 12px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 15px; justify-content: center; display: flex; align-items: center; gap: 10px;"> OUR VALUES </div><h2 style="font-size: 40px; color: var(--wookiee-navy); margin: 0; font-weight: 800; letter-spacing: -1px;">What drives Wookiee</h2></div><div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px; box-sizing: border-box;"><!-- Value 1 --><div style="box-sizing: border-box; text-align: center; padding: 20px;"><div style="font-size: 32px; margin-bottom: 20px;">✨</div><h3 style="font-size: 20px; color: var(--wookiee-navy); font-weight: 700; margin: 0 0 12px 0;">Simplicity</h3><p style="margin: 0; color: #666; font-size: 14px; line-height: 1.6;">De-cluttering spaces with intuitive, modular designs. We believe that storage shouldn\'t complicate your life—it should simplify it.</p></div><!-- Value 2 --><div style="box-sizing: border-box; text-align: center; padding: 20px;"><div style="font-size: 32px; margin-bottom: 20px;">🛡️</div><h3 style="font-size: 20px; color: var(--wookiee-navy); font-weight: 700; margin: 0 0 12px 0;">Quality Sourcing</h3><p style="margin: 0; color: #666; font-size: 14px; line-height: 1.6;">We select durable, premium materials—from sustainable natural bamboo to thick, food-grade, BPA-free plastics built to endure.</p></div><!-- Value 3 --><div style="box-sizing: border-box; text-align: center; padding: 20px;"><div style="font-size: 32px; margin-bottom: 20px;">🔍</div><h3 style="font-size: 20px; color: var(--wookiee-navy); font-weight: 700; margin: 0 0 12px 0;">Practical Utility</h3><p style="margin: 0; color: #666; font-size: 14px; line-height: 1.6;">Every product in our catalog is engineered to fit standard drawers, cupboards, and shelves, providing maximum volumetric efficiency.</p></div></div></div></div><!-- Sourcing Story Section --><div style="background-color: var(--wookiee-bg); padding: 100px 20px; font-family: var(--font-primary); box-sizing: border-box;"><div style="max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1.2fr; gap: 80px; align-items: center; box-sizing: border-box;"><div><img src="/wp-content/themes/wookiee-commerce/assets/images/wookiee-prod-organizer.png" alt="Bamboo Organizer Tray" style="border-radius: 20px; width: 100%; max-height: 380px; object-fit: cover; box-shadow: 0 20px 40px rgba(0,0,0,0.05);"></div><div><div style="color: #6fbdbd; font-size: 12px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 20px; display: flex; align-items: center; gap: 15px;"><span style="width: 30px; height: 2px; background: #6fbdbd; display: inline-block;"></span> SUSTAINABILITY </div><h2 style="font-size: 48px; color: var(--wookiee-navy); margin: 0 0 30px 0; font-weight: 800; letter-spacing: -1.5px; line-height: 1.1;">Designed for longevity, sourced with care.</h2><p style="font-size: 18px; color: var(--wookiee-navy); font-weight: 700; margin-bottom: 20px; line-height: 1.5;"> We believe that home organization products shouldn\'t just be useful—they should be sustainable. </p><p style="font-size: 16px; color: #666; line-height: 1.7; margin-bottom: 20px;"> By using fast-growing FSC-certified bamboo and high-purity, recyclable polymers, we build storage solutions that stand the test of time while minimizing environmental impact. </p><p style="font-size: 16px; color: #666; line-height: 1.7; margin: 0;"> Our materials are thoroughly checked for chemical safety and toxic additives, ensuring that they are safe for kitchen food storage and kid-friendly playrooms alike. </p></div></div></div>' ),
+		'activities' => array( 'title' => 'Activities', 'menu' => 'Activities', 'content' => '<div style="background-color: var(--wookiee-bg); padding: 40px 20px; font-family: var(--font-primary); box-sizing: border-box;">
     <div style="max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center; box-sizing: border-box;">
         <div>
             <div style="color: #6fbdbd; font-size: 12px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 20px; display: flex; align-items: center; gap: 15px;">
                 <span style="width: 30px; height: 2px; background: #6fbdbd; display: inline-block;"></span> BUSINESS OPERATIONS
             </div>
-            <h1 style="font-size: 48px; color: var(--anyora-navy); margin: 0 0 20px 0; font-weight: 800; letter-spacing: -2px; line-height: 1;">Our Activities</h1>
-            <p style="font-size: 18px; color: var(--anyora-navy); font-weight: 700; margin-bottom: 20px;">
+            <h1 style="font-size: 48px; color: var(--wookiee-navy); margin: 0 0 20px 0; font-weight: 800; letter-spacing: -2px; line-height: 1;">Our Activities</h1>
+            <p style="font-size: 18px; color: var(--wookiee-navy); font-weight: 700; margin-bottom: 20px;">
                 Retail operations, supply chain curation, and nationwide fulfillment.
             </p>
             <p style="font-size: 16px; color: #555; line-height: 1.7; margin-bottom: 0;">
-                Anyora Limited operates as a dedicated home organization and storage brand. From design selection to final doorstep delivery, our activities are geared toward making home organization simple, high-quality, and transparent.
+                Wookiee Decor Ltd operates as a dedicated home organization and storage brand. From design selection to final doorstep delivery, our activities are geared toward making home organization simple, high-quality, and transparent.
             </p>
         </div>
         <div>
-            <img src="/wp-content/themes/anyora-commerce/assets/images/logistics-package.png" alt="Logistics & Sourcing" style="border-radius: 20px; width: 100%; max-height: 380px; object-fit: cover; box-shadow: 0 20px 40px rgba(0,0,0,0.1);">
+            <img src="/wp-content/themes/wookiee-commerce/assets/images/logistics-package.png" alt="Logistics & Sourcing" style="border-radius: 20px; width: 100%; max-height: 380px; object-fit: cover; box-shadow: 0 20px 40px rgba(0,0,0,0.1);">
         </div>
     </div>
 </div>
@@ -223,44 +223,44 @@ if (window.location.search.indexOf("success=1") > -1) {
     <div style="max-width: 1200px; margin: 0 auto; box-sizing: border-box;">
         
         <div style="text-align: center; margin-bottom: 70px; box-sizing: border-box;">
-            <h2 style="font-size: 40px; color: var(--anyora-navy); margin: 0 0 15px 0; font-weight: 800; letter-spacing: -1px;">Principal Business Activities</h2>
+            <h2 style="font-size: 40px; color: var(--wookiee-navy); margin: 0 0 15px 0; font-weight: 800; letter-spacing: -1px;">Principal Business Activities</h2>
             <p style="font-size: 16px; color: #666; max-width: 600px; margin: 0 auto; line-height: 1.6;">How we manage product design, inventory storage, and customer logistics in the UK.</p>
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px; box-sizing: border-box;">
             
             <!-- Card 1 -->
-            <div style="background: var(--anyora-bg); padding: 40px; border-radius: 16px; box-sizing: border-box; display: flex; gap: 20px; align-items: flex-start;">
+            <div style="background: var(--wookiee-bg); padding: 40px; border-radius: 16px; box-sizing: border-box; display: flex; gap: 20px; align-items: flex-start;">
                 <div style="background: white; width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px; box-shadow: 0 4px 10px rgba(0,0,0,0.02); flex-shrink: 0;">📦</div>
                 <div>
-                    <h3 style="font-size: 20px; color: var(--anyora-navy); font-weight: 700; margin: 0 0 10px 0;">Private-Label Sourcing</h3>
+                    <h3 style="font-size: 20px; color: var(--wookiee-navy); font-weight: 700; margin: 0 0 10px 0;">Private-Label Sourcing</h3>
                     <p style="margin: 0; color: #666; font-size: 14px; line-height: 1.6;">We source and curate practical, durable home storage solutions made from premium materials such as FSC-certified bamboo and durable BPA-free acrylics.</p>
                 </div>
             </div>
 
             <!-- Card 2 -->
-            <div style="background: var(--anyora-bg); padding: 40px; border-radius: 16px; box-sizing: border-box; display: flex; gap: 20px; align-items: flex-start;">
+            <div style="background: var(--wookiee-bg); padding: 40px; border-radius: 16px; box-sizing: border-box; display: flex; gap: 20px; align-items: flex-start;">
                 <div style="background: white; width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px; box-shadow: 0 4px 10px rgba(0,0,0,0.02); flex-shrink: 0;">🔍</div>
                 <div>
-                    <h3 style="font-size: 20px; color: var(--anyora-navy); font-weight: 700; margin: 0 0 10px 0;">Quality Assurance</h3>
+                    <h3 style="font-size: 20px; color: var(--wookiee-navy); font-weight: 700; margin: 0 0 10px 0;">Quality Assurance</h3>
                     <p style="margin: 0; color: #666; font-size: 14px; line-height: 1.6;">Every batch of products undergoes material, durability, and finishing checks to ensure they meet the high standards expected by our customers.</p>
                 </div>
             </div>
 
             <!-- Card 3 -->
-            <div style="background: var(--anyora-bg); padding: 40px; border-radius: 16px; box-sizing: border-box; display: flex; gap: 20px; align-items: flex-start;">
+            <div style="background: var(--wookiee-bg); padding: 40px; border-radius: 16px; box-sizing: border-box; display: flex; gap: 20px; align-items: flex-start;">
                 <div style="background: white; width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px; box-shadow: 0 4px 10px rgba(0,0,0,0.02); flex-shrink: 0;">🏭</div>
                 <div>
-                    <h3 style="font-size: 20px; color: var(--anyora-navy); font-weight: 700; margin: 0 0 10px 0;">UK Fulfillment Hub</h3>
-                    <p style="margin: 0; color: #666; font-size: 14px; line-height: 1.6;">We run our packaging, storage, and order dispatch operations directly from our dedicated facility located in Bilston, United Kingdom.</p>
+                    <h3 style="font-size: 20px; color: var(--wookiee-navy); font-weight: 700; margin: 0 0 10px 0;">UK Fulfillment Hub</h3>
+                    <p style="margin: 0; color: #666; font-size: 14px; line-height: 1.6;">We run our packaging, storage, and order dispatch operations directly from our dedicated facility located in Cowdenbeath, United Kingdom.</p>
                 </div>
             </div>
 
             <!-- Card 4 -->
-            <div style="background: var(--anyora-bg); padding: 40px; border-radius: 16px; box-sizing: border-box; display: flex; gap: 20px; align-items: flex-start;">
+            <div style="background: var(--wookiee-bg); padding: 40px; border-radius: 16px; box-sizing: border-box; display: flex; gap: 20px; align-items: flex-start;">
                 <div style="background: white; width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px; box-shadow: 0 4px 10px rgba(0,0,0,0.02); flex-shrink: 0;">🚚</div>
                 <div>
-                    <h3 style="font-size: 20px; color: var(--anyora-navy); font-weight: 700; margin: 0 0 10px 0;">Logistics & Delivery</h3>
+                    <h3 style="font-size: 20px; color: var(--wookiee-navy); font-weight: 700; margin: 0 0 10px 0;">Logistics & Delivery</h3>
                     <p style="margin: 0; color: #666; font-size: 14px; line-height: 1.6;">Nationwide delivery is handled via reliable UK couriers, normally dispatching within 24 hours and arriving within 3-5 working days.</p>
                 </div>
             </div>
@@ -272,27 +272,27 @@ if (window.location.search.indexOf("success=1") > -1) {
 <div style="max-width:860px; margin:0 auto; padding:40px 20px; font-family:inherit; color:#333; line-height:1.7;">
 
 <h1 style="font-size:32px; font-weight:800; color:#081d34; margin-bottom:6px;">Terms and Conditions</h1>
-<p style="color:#888; font-size:14px; margin-bottom:40px;">Last updated: July 2025 &nbsp;|&nbsp; Anyora Limited &nbsp;|&nbsp; Company No. 16938766</p>
+<p style="color:#888; font-size:14px; margin-bottom:40px;">Last updated: July 2025 &nbsp;|&nbsp; Wookiee Decor Ltd &nbsp;|&nbsp; Company No. SC769264</p>
 
-<p>These terms and conditions govern your use of the Anyora website at <strong>anyora.uk</strong> and any purchase you make from us. Please read them carefully before placing an order. By purchasing from us, you agree to be bound by these terms.</p>
+<p>These terms and conditions govern your use of the Wookiee website at <strong>wookied.com</strong> and any purchase you make from us. Please read them carefully before placing an order. By purchasing from us, you agree to be bound by these terms.</p>
 
 <p>These terms do not affect your statutory rights under UK consumer law, including the Consumer Rights Act 2015 and the Consumer Contracts (Information, Cancellation and Additional Charges) Regulations 2013.</p>
 
 <hr style="border:none;border-top:1px solid #eee;margin:36px 0;">
 
 <h2 style="font-size:20px; font-weight:700; color:#081d34; margin-bottom:12px;">1. About Us</h2>
-<p>Anyora is a trading name of <strong>Anyora Limited</strong>, a private limited company registered in England and Wales.</p>
+<p>Wookiee is a trading name of <strong>Wookiee Decor Ltd</strong>, a private limited company registered in England and Wales.</p>
 <ul style="padding-left:22px;">
-  <li><strong>Company number:</strong> 16938766</li>
-  <li><strong>Registered address:</strong> 72 Ambergate Road, Bilston, WV14 0SR, United Kingdom</li>
-  <li><strong>Email:</strong> <a href="mailto:support@anyora.uk" style="color:#6fbdbd;">support@anyora.uk</a></li>
-  <li><strong>Phone:</strong> +44 1902 382162</li>
+  <li><strong>Company number:</strong> SC769264</li>
+  <li><strong>Registered address:</strong> 28 Johnston Park, Cowdenbeath, Scotland, KY4 9AZ</li>
+  <li><strong>Email:</strong> <a href="mailto:info@wookied.com" style="color:#6fbdbd;">info@wookied.com</a></li>
+  <li><strong>Phone:</strong> +442084726126</li>
 </ul>
 
 <hr style="border:none;border-top:1px solid #eee;margin:36px 0;">
 
 <h2 style="font-size:20px; font-weight:700; color:#081d34; margin-bottom:12px;">2. Placing an Order</h2>
-<p>When you place an order on our website, you are making an offer to purchase goods. Your order constitutes an offer to Anyora to buy the product(s) listed. All orders are subject to availability and acceptance by us.</p>
+<p>When you place an order on our website, you are making an offer to purchase goods. Your order constitutes an offer to Wookiee to buy the product(s) listed. All orders are subject to availability and acceptance by us.</p>
 <p>You will receive an order confirmation email once your order is placed. This email is an acknowledgement that we have received your order and does not constitute acceptance of it. Acceptance occurs when we dispatch your goods and send a dispatch confirmation email.</p>
 <p>We reserve the right to refuse or cancel any order at our discretion, including if a product is found to be incorrectly priced. If we cancel an order, we will issue a full refund to your original payment method.</p>
 
@@ -313,7 +313,7 @@ if (window.location.search.indexOf("success=1") > -1) {
 
 <h2 style="font-size:20px; font-weight:700; color:#081d34; margin-bottom:12px;">5. Your Right to Cancel (Cooling-Off Period)</h2>
 <p>Under the Consumer Contracts (Information, Cancellation and Additional Charges) Regulations 2013, you have the right to cancel your order within <strong>14 days</strong> of receiving your goods, without giving any reason.</p>
-<p>To exercise this right, you must notify us clearly within the 14-day period by emailing <a href="mailto:support@anyora.uk" style="color:#6fbdbd;">support@anyora.uk</a>. You must then return the goods to us within a further 14 days of notifying us.</p>
+<p>To exercise this right, you must notify us clearly within the 14-day period by emailing <a href="mailto:info@wookied.com" style="color:#6fbdbd;">info@wookied.com</a>. You must then return the goods to us within a further 14 days of notifying us.</p>
 <p>We will issue a full refund, including the original standard delivery charge, within <strong>14 days</strong> of receiving the returned goods or evidence of return, whichever is earlier. We may reduce the refund to reflect any diminishment in the value of the goods caused by handling beyond what is necessary to inspect them.</p>
 <p>Return shipping costs for change-of-mind cancellations are your responsibility unless otherwise stated.</p>
 
@@ -326,7 +326,7 @@ if (window.location.search.indexOf("success=1") > -1) {
   <li><strong>After 30 days (up to 6 months):</strong> We will offer a repair or replacement. If neither is possible or both fail, you are entitled to a partial or full refund.</li>
   <li><strong>After 6 months:</strong> You must demonstrate the fault existed at the time of delivery. If proven, we will offer a repair, replacement, or partial refund.</li>
 </ul>
-<p>To report a fault, please contact us at <a href="mailto:support@anyora.uk" style="color:#6fbdbd;">support@anyora.uk</a> with your order number and a description or photo of the issue.</p>
+<p>To report a fault, please contact us at <a href="mailto:info@wookied.com" style="color:#6fbdbd;">info@wookied.com</a> with your order number and a description or photo of the issue.</p>
 
 <hr style="border:none;border-top:1px solid #eee;margin:36px 0;">
 
@@ -342,7 +342,7 @@ if (window.location.search.indexOf("success=1") > -1) {
 <hr style="border:none;border-top:1px solid #eee;margin:36px 0;">
 
 <h2 style="font-size:20px; font-weight:700; color:#081d34; margin-bottom:12px;">9. Intellectual Property</h2>
-<p>All content on this website, including text, images, graphics, logos, and design, is the property of Anyora Limited or its licensors and is protected by copyright and other intellectual property laws. You may not reproduce, redistribute, or republish any part of this website without our express written permission.</p>
+<p>All content on this website, including text, images, graphics, logos, and design, is the property of Wookiee Decor Ltd or its licensors and is protected by copyright and other intellectual property laws. You may not reproduce, redistribute, or republish any part of this website without our express written permission.</p>
 
 <hr style="border:none;border-top:1px solid #eee;margin:36px 0;">
 
@@ -361,7 +361,7 @@ if (window.location.search.indexOf("success=1") > -1) {
 
 <hr style="border:none;border-top:1px solid #eee;margin:36px 0;">
 
-<p style="font-size:13px; color:#999;">If you have any questions about these terms, please contact us at <a href="mailto:support@anyora.uk" style="color:#6fbdbd;">support@anyora.uk</a>.</p>
+<p style="font-size:13px; color:#999;">If you have any questions about these terms, please contact us at <a href="mailto:info@wookied.com" style="color:#6fbdbd;">info@wookied.com</a>.</p>
 
 </div>
 ' ),
@@ -369,7 +369,7 @@ if (window.location.search.indexOf("success=1") > -1) {
 <div style="max-width:860px; margin:0 auto; padding:40px 20px; font-family:inherit; color:#333; line-height:1.7;">
 
 <h1 style="font-size:32px; font-weight:800; color:#081d34; margin-bottom:6px;">Shipping Policy</h1>
-<p style="color:#888; font-size:14px; margin-bottom:40px;">Last updated: July 2025 &nbsp;|&nbsp; Anyora Limited &nbsp;|&nbsp; Company No. 16938766</p>
+<p style="color:#888; font-size:14px; margin-bottom:40px;">Last updated: July 2025 &nbsp;|&nbsp; Wookiee Decor Ltd &nbsp;|&nbsp; Company No. SC769264</p>
 
 <p>We want your order to arrive quickly and safely. Below you will find everything you need to know about how we ship, what it costs, and what to do if something goes wrong.</p>
 
@@ -418,7 +418,7 @@ if (window.location.search.indexOf("success=1") > -1) {
 <hr style="border:none;border-top:1px solid #eee;margin:36px 0;">
 
 <h2 style="font-size:20px; font-weight:700; color:#081d34; margin-bottom:12px;">Tracking Your Order</h2>
-<p>Once your order is dispatched, you will receive an email containing your tracking number and a link to track your parcel. You can also log in to your account at <a href="/my-account/" style="color:#6fbdbd;">anyora.uk/my-account</a> to view your order status.</p>
+<p>Once your order is dispatched, you will receive an email containing your tracking number and a link to track your parcel. You can also log in to your account at <a href="/my-account/" style="color:#6fbdbd;">wookied.com/my-account</a> to view your order status.</p>
 
 <hr style="border:none;border-top:1px solid #eee;margin:36px 0;">
 
@@ -429,16 +429,16 @@ if (window.location.search.indexOf("success=1") > -1) {
 <hr style="border:none;border-top:1px solid #eee;margin:36px 0;">
 
 <h2 style="font-size:20px; font-weight:700; color:#081d34; margin-bottom:12px;">Damaged or Lost Parcels</h2>
-<p>If your order arrives damaged, please take photos immediately and contact us at <a href="mailto:support@anyora.uk" style="color:#6fbdbd;">support@anyora.uk</a> within 48 hours of delivery. If your tracked parcel shows as delivered but you have not received it, please check with neighbours and your local courier depot first, then contact us and we will investigate.</p>
+<p>If your order arrives damaged, please take photos immediately and contact us at <a href="mailto:info@wookied.com" style="color:#6fbdbd;">info@wookied.com</a> within 48 hours of delivery. If your tracked parcel shows as delivered but you have not received it, please check with neighbours and your local courier depot first, then contact us and we will investigate.</p>
 
 <hr style="border:none;border-top:1px solid #eee;margin:36px 0;">
 
 <h2 style="font-size:20px; font-weight:700; color:#081d34; margin-bottom:12px;">Contact Us</h2>
 <p>If you have any questions about your delivery, please reach out to our support team:</p>
 <ul style="padding-left:22px;">
-  <li>Email: <a href="mailto:support@anyora.uk" style="color:#6fbdbd;">support@anyora.uk</a></li>
-  <li>Phone: +44 1902 382162</li>
-  <li>Address: Anyora Limited, 72 Ambergate Road, Bilston, WV14 0SR, United Kingdom</li>
+  <li>Email: <a href="mailto:info@wookied.com" style="color:#6fbdbd;">info@wookied.com</a></li>
+  <li>Phone: +442084726126</li>
+  <li>Address: Wookiee Decor Ltd, 28 Johnston Park, Cowdenbeath, Scotland, KY4 9AZ</li>
 </ul>
 
 </div>
@@ -447,7 +447,7 @@ if (window.location.search.indexOf("success=1") > -1) {
 <div style="max-width:860px; margin:0 auto; padding:40px 20px; font-family:inherit; color:#333; line-height:1.7;">
 
 <h1 style="font-size:32px; font-weight:800; color:#081d34; margin-bottom:6px;">Returns, Refunds and Cancellations</h1>
-<p style="color:#888; font-size:14px; margin-bottom:40px;">Last updated: July 2025 &nbsp;|&nbsp; Anyora Limited &nbsp;|&nbsp; Company No. 16938766</p>
+<p style="color:#888; font-size:14px; margin-bottom:40px;">Last updated: July 2025 &nbsp;|&nbsp; Wookiee Decor Ltd &nbsp;|&nbsp; Company No. SC769264</p>
 
 <p>We want you to be completely satisfied with your purchase. If something is not right, we will do everything we reasonably can to resolve it quickly and fairly.</p>
 
@@ -455,7 +455,7 @@ if (window.location.search.indexOf("success=1") > -1) {
 
 <h2 style="font-size:20px; font-weight:700; color:#081d34; margin-bottom:12px;">Your Statutory Right to Cancel (14-Day Cooling-Off Period)</h2>
 <p>Under the Consumer Contracts (Information, Cancellation and Additional Charges) Regulations 2013, you have the right to cancel your order within <strong>14 days</strong> of the day you (or someone you nominate) receive the goods, without giving any reason.</p>
-<p>To exercise this right, you must inform us clearly within the 14-day period. The easiest way is to email us at <a href="mailto:support@anyora.uk" style="color:#6fbdbd;">support@anyora.uk</a> with your name, order number, and a clear statement that you wish to cancel.</p>
+<p>To exercise this right, you must inform us clearly within the 14-day period. The easiest way is to email us at <a href="mailto:info@wookied.com" style="color:#6fbdbd;">info@wookied.com</a> with your name, order number, and a clear statement that you wish to cancel.</p>
 <p>Once you have notified us, you have a further <strong>14 days</strong> to return the goods to us. You are responsible for the cost of return shipping for change-of-mind cancellations.</p>
 <p>We will issue a full refund — including the original standard delivery charge — within <strong>14 days</strong> of receiving the returned goods or evidence of return, whichever is earlier. We process refunds to your original payment method. We may reduce the refund amount to reflect any reduction in the value of the goods if you have handled them beyond what is necessary to check their nature and condition.</p>
 
@@ -485,7 +485,7 @@ if (window.location.search.indexOf("success=1") > -1) {
 
 <h2 style="font-size:20px; font-weight:700; color:#081d34; margin-bottom:12px;">How to Start a Return</h2>
 <ol style="padding-left:22px;">
-  <li>Email <a href="mailto:support@anyora.uk" style="color:#6fbdbd;">support@anyora.uk</a> with your order number, reason for return, and photos if the item is damaged or faulty.</li>
+  <li>Email <a href="mailto:info@wookied.com" style="color:#6fbdbd;">info@wookied.com</a> with your order number, reason for return, and photos if the item is damaged or faulty.</li>
   <li>Our team will respond within 2 business days with a returns authorisation and instructions.</li>
   <li>Pack the item securely and send it to the address provided in our response.</li>
   <li>Once we receive and inspect the return, we will process your refund within 5–14 business days.</li>
@@ -495,7 +495,7 @@ if (window.location.search.indexOf("success=1") > -1) {
 <hr style="border:none;border-top:1px solid #eee;margin:36px 0;">
 
 <h2 style="font-size:20px; font-weight:700; color:#081d34; margin-bottom:12px;">Cancellations</h2>
-<p>If you wish to cancel an order before it has been dispatched, please contact us immediately at <a href="mailto:support@anyora.uk" style="color:#6fbdbd;">support@anyora.uk</a>. We will do our best to stop the order before it ships. If the order has already been dispatched, you will need to follow the returns process above once the parcel arrives.</p>
+<p>If you wish to cancel an order before it has been dispatched, please contact us immediately at <a href="mailto:info@wookied.com" style="color:#6fbdbd;">info@wookied.com</a>. We will do our best to stop the order before it ships. If the order has already been dispatched, you will need to follow the returns process above once the parcel arrives.</p>
 
 <hr style="border:none;border-top:1px solid #eee;margin:36px 0;">
 
@@ -510,7 +510,7 @@ if (window.location.search.indexOf("success=1") > -1) {
 
 <hr style="border:none;border-top:1px solid #eee;margin:36px 0;">
 
-<p style="font-size:13px; color:#999;">Nothing in this policy affects your statutory rights under UK consumer law. For queries, contact <a href="mailto:support@anyora.uk" style="color:#6fbdbd;">support@anyora.uk</a> or call +44 1902 382162.</p>
+<p style="font-size:13px; color:#999;">Nothing in this policy affects your statutory rights under UK consumer law. For queries, contact <a href="mailto:info@wookied.com" style="color:#6fbdbd;">info@wookied.com</a> or call +442084726126.</p>
 
 </div>
 ' ),
@@ -518,7 +518,7 @@ if (window.location.search.indexOf("success=1") > -1) {
 <div style="max-width:860px; margin:0 auto; padding:40px 20px; font-family:inherit; color:#333; line-height:1.7;">
 
 <h1 style="font-size:32px; font-weight:800; color:#081d34; margin-bottom:6px;">Payment Policy</h1>
-<p style="color:#888; font-size:14px; margin-bottom:40px;">Last updated: July 2025 &nbsp;|&nbsp; Anyora Limited &nbsp;|&nbsp; Company No. 16938766</p>
+<p style="color:#888; font-size:14px; margin-bottom:40px;">Last updated: July 2025 &nbsp;|&nbsp; Wookiee Decor Ltd &nbsp;|&nbsp; Company No. SC769264</p>
 
 <p>This page explains how we handle payments, what methods we accept, and how we keep your financial information safe.</p>
 
@@ -544,7 +544,7 @@ if (window.location.search.indexOf("success=1") > -1) {
 <hr style="border:none;border-top:1px solid #eee;margin:36px 0;">
 
 <h2 style="font-size:20px; font-weight:700; color:#081d34; margin-bottom:12px;">Payment Security</h2>
-<p>All transactions on anyora.uk are processed through an industry-standard secure payment gateway using SSL (Secure Socket Layer) encryption. Your card details are transmitted directly to our payment processor and are never stored on our servers. We do not have access to your full card number, CVV, or banking credentials.</p>
+<p>All transactions on wookied.com are processed through an industry-standard secure payment gateway using SSL (Secure Socket Layer) encryption. Your card details are transmitted directly to our payment processor and are never stored on our servers. We do not have access to your full card number, CVV, or banking credentials.</p>
 <p>Our payment infrastructure is compliant with industry security standards to protect against unauthorised access and fraud.</p>
 
 <hr style="border:none;border-top:1px solid #eee;margin:36px 0;">
@@ -555,7 +555,7 @@ if (window.location.search.indexOf("success=1") > -1) {
 <hr style="border:none;border-top:1px solid #eee;margin:36px 0;">
 
 <h2 style="font-size:20px; font-weight:700; color:#081d34; margin-bottom:12px;">Failed Payments</h2>
-<p>If your payment is declined, your order will not be confirmed and no charge will be made. Please check your card details and billing address, or try an alternative payment method. If you continue to experience issues, please contact your bank or payment provider first, then reach out to us at <a href="mailto:support@anyora.uk" style="color:#6fbdbd;">support@anyora.uk</a>.</p>
+<p>If your payment is declined, your order will not be confirmed and no charge will be made. Please check your card details and billing address, or try an alternative payment method. If you continue to experience issues, please contact your bank or payment provider first, then reach out to us at <a href="mailto:info@wookied.com" style="color:#6fbdbd;">info@wookied.com</a>.</p>
 
 <hr style="border:none;border-top:1px solid #eee;margin:36px 0;">
 
@@ -569,7 +569,7 @@ if (window.location.search.indexOf("success=1") > -1) {
 
 <hr style="border:none;border-top:1px solid #eee;margin:36px 0;">
 
-<p style="font-size:13px; color:#999;">Questions about a payment? Contact us at <a href="mailto:support@anyora.uk" style="color:#6fbdbd;">support@anyora.uk</a> or call +44 1902 382162.</p>
+<p style="font-size:13px; color:#999;">Questions about a payment? Contact us at <a href="mailto:info@wookied.com" style="color:#6fbdbd;">info@wookied.com</a> or call +442084726126.</p>
 
 </div>
 ' ),
@@ -577,9 +577,9 @@ if (window.location.search.indexOf("success=1") > -1) {
 <div style="max-width:860px; margin:0 auto; padding:40px 20px; font-family:inherit; color:#333; line-height:1.7;">
 
 <h1 style="font-size:32px; font-weight:800; color:#081d34; margin-bottom:6px;">Privacy Policy</h1>
-<p style="color:#888; font-size:14px; margin-bottom:40px;">Last updated: July 2025 &nbsp;|&nbsp; Anyora Limited &nbsp;|&nbsp; Company No. 16938766</p>
+<p style="color:#888; font-size:14px; margin-bottom:40px;">Last updated: July 2025 &nbsp;|&nbsp; Wookiee Decor Ltd &nbsp;|&nbsp; Company No. SC769264</p>
 
-<p>This privacy policy explains how Anyora Limited collects, uses, stores, and protects your personal information when you visit anyora.uk or purchase from us. It also explains your rights under UK data protection law.</p>
+<p>This privacy policy explains how Wookiee Decor Ltd collects, uses, stores, and protects your personal information when you visit wookied.com or purchase from us. It also explains your rights under UK data protection law.</p>
 <p>We are committed to handling your data responsibly and transparently. We only collect what we need, we keep it secure, and we never sell it.</p>
 
 <hr style="border:none;border-top:1px solid #eee;margin:36px 0;">
@@ -587,10 +587,10 @@ if (window.location.search.indexOf("success=1") > -1) {
 <h2 style="font-size:20px; font-weight:700; color:#081d34; margin-bottom:12px;">1. Who We Are (Data Controller)</h2>
 <p>The data controller for your personal information is:</p>
 <ul style="padding-left:22px;">
-  <li><strong>Anyora Limited</strong></li>
-  <li>72 Ambergate Road, Bilston, WV14 0SR, United Kingdom</li>
-  <li>Company number: 16938766</li>
-  <li>Email: <a href="mailto:support@anyora.uk" style="color:#6fbdbd;">support@anyora.uk</a></li>
+  <li><strong>Wookiee Decor Ltd</strong></li>
+  <li>28 Johnston Park, Cowdenbeath, Scotland, KY4 9AZ</li>
+  <li>Company number: SC769264</li>
+  <li>Email: <a href="mailto:info@wookied.com" style="color:#6fbdbd;">info@wookied.com</a></li>
 </ul>
 <p>We process your data in accordance with the UK General Data Protection Regulation (UK GDPR) and the Data Protection Act 2018.</p>
 
@@ -696,7 +696,7 @@ if (window.location.search.indexOf("success=1") > -1) {
   <li><strong>Right to object:</strong> Object to us processing your data based on legitimate interests or for direct marketing purposes.</li>
   <li><strong>Rights related to automated decision-making:</strong> We do not make automated decisions that have legal or significant effects on you.</li>
 </ul>
-<p>To exercise any of these rights, please email us at <a href="mailto:support@anyora.uk" style="color:#6fbdbd;">support@anyora.uk</a>. We will respond within one calendar month. We do not charge a fee for exercising your rights unless a request is manifestly unfounded or excessive.</p>
+<p>To exercise any of these rights, please email us at <a href="mailto:info@wookied.com" style="color:#6fbdbd;">info@wookied.com</a>. We will respond within one calendar month. We do not charge a fee for exercising your rights unless a request is manifestly unfounded or excessive.</p>
 
 <hr style="border:none;border-top:1px solid #eee;margin:36px 0;">
 
@@ -711,12 +711,12 @@ if (window.location.search.indexOf("success=1") > -1) {
 <hr style="border:none;border-top:1px solid #eee;margin:36px 0;">
 
 <h2 style="font-size:20px; font-weight:700; color:#081d34; margin-bottom:12px;">10. Marketing Communications</h2>
-<p>We will only send you marketing emails if you have opted in to receive them. You can unsubscribe at any time by clicking the unsubscribe link in any marketing email or by emailing us at <a href="mailto:support@anyora.uk" style="color:#6fbdbd;">support@anyora.uk</a>. Opting out of marketing does not affect your order-related communications.</p>
+<p>We will only send you marketing emails if you have opted in to receive them. You can unsubscribe at any time by clicking the unsubscribe link in any marketing email or by emailing us at <a href="mailto:info@wookied.com" style="color:#6fbdbd;">info@wookied.com</a>. Opting out of marketing does not affect your order-related communications.</p>
 
 <hr style="border:none;border-top:1px solid #eee;margin:36px 0;">
 
 <h2 style="font-size:20px; font-weight:700; color:#081d34; margin-bottom:12px;">11. Complaints</h2>
-<p>If you are unhappy with how we have handled your personal data, please contact us first at <a href="mailto:support@anyora.uk" style="color:#6fbdbd;">support@anyora.uk</a> so we can try to resolve your concern.</p>
+<p>If you are unhappy with how we have handled your personal data, please contact us first at <a href="mailto:info@wookied.com" style="color:#6fbdbd;">info@wookied.com</a> so we can try to resolve your concern.</p>
 <p>You also have the right to lodge a complaint with the UK Information Commissioner\'s Office (ICO):</p>
 <ul style="padding-left:22px;">
   <li>Website: <a href="https://ico.org.uk/make-a-complaint" style="color:#6fbdbd;" target="_blank" rel="noopener">ico.org.uk/make-a-complaint</a></li>
@@ -734,9 +734,9 @@ if (window.location.search.indexOf("success=1") > -1) {
 <div style="max-width:860px; margin:0 auto; padding:40px 20px; font-family:inherit; color:#333; line-height:1.7;">
 
 <h1 style="font-size:32px; font-weight:800; color:#081d34; margin-bottom:6px;">Cookie Policy</h1>
-<p style="color:#888; font-size:14px; margin-bottom:40px;">Last updated: July 2025 &nbsp;|&nbsp; Anyora Limited &nbsp;|&nbsp; Company No. 16938766</p>
+<p style="color:#888; font-size:14px; margin-bottom:40px;">Last updated: July 2025 &nbsp;|&nbsp; Wookiee Decor Ltd &nbsp;|&nbsp; Company No. SC769264</p>
 
-<p>This cookie policy explains what cookies are, which cookies we use on anyora.uk, why we use them, and how you can manage your preferences. It should be read alongside our <a href="/privacy/" style="color:#6fbdbd;">Privacy Policy</a>.</p>
+<p>This cookie policy explains what cookies are, which cookies we use on wookied.com, why we use them, and how you can manage your preferences. It should be read alongside our <a href="/privacy/" style="color:#6fbdbd;">Privacy Policy</a>.</p>
 
 <hr style="border:none;border-top:1px solid #eee;margin:36px 0;">
 
@@ -839,7 +839,7 @@ if (window.location.search.indexOf("success=1") > -1) {
 <hr style="border:none;border-top:1px solid #eee;margin:36px 0;">
 
 <h2 style="font-size:20px; font-weight:700; color:#081d34; margin-bottom:12px;">Your Consent</h2>
-<p>When you first visit anyora.uk, you will be presented with a cookie consent notice asking for your permission to set non-essential cookies. You can choose to accept all cookies, accept only essential cookies, or customise your preferences.</p>
+<p>When you first visit wookied.com, you will be presented with a cookie consent notice asking for your permission to set non-essential cookies. You can choose to accept all cookies, accept only essential cookies, or customise your preferences.</p>
 <p>You can change or withdraw your consent at any time by visiting our <a href="/cookie-pref/" style="color:#6fbdbd;">Cookie Preferences</a> page.</p>
 
 <hr style="border:none;border-top:1px solid #eee;margin:36px 0;">
@@ -869,7 +869,7 @@ if (window.location.search.indexOf("success=1") > -1) {
 
 <hr style="border:none;border-top:1px solid #eee;margin:36px 0;">
 
-<p style="font-size:13px; color:#999;">Questions about cookies? Email us at <a href="mailto:support@anyora.uk" style="color:#6fbdbd;">support@anyora.uk</a>.</p>
+<p style="font-size:13px; color:#999;">Questions about cookies? Email us at <a href="mailto:info@wookied.com" style="color:#6fbdbd;">info@wookied.com</a>.</p>
 
 </div>
 ' ),
@@ -877,9 +877,9 @@ if (window.location.search.indexOf("success=1") > -1) {
 <div style="max-width:860px; margin:0 auto; padding:40px 20px; font-family:inherit; color:#333; line-height:1.7;">
 
 <h1 style="font-size:32px; font-weight:800; color:#081d34; margin-bottom:6px;">Cookie Preferences</h1>
-<p style="color:#888; font-size:14px; margin-bottom:40px;">Anyora Limited &nbsp;|&nbsp; anyora.uk</p>
+<p style="color:#888; font-size:14px; margin-bottom:40px;">Wookiee Decor Ltd &nbsp;|&nbsp; wookied.com</p>
 
-<p>This page explains how to manage the cookies set by anyora.uk. You are always in control of the cookies placed on your device. Below is a summary of each cookie category and how to manage your choices.</p>
+<p>This page explains how to manage the cookies set by wookied.com. You are always in control of the cookies placed on your device. Below is a summary of each cookie category and how to manage your choices.</p>
 
 <hr style="border:none;border-top:1px solid #eee;margin:36px 0;">
 
@@ -914,7 +914,7 @@ if (window.location.search.indexOf("success=1") > -1) {
 
 <hr style="border:none;border-top:1px solid #eee;margin:36px 0;">
 
-<p>For full details of all cookies we use and why, please read our <a href="/cookie/" style="color:#6fbdbd;">Cookie Policy</a>. For questions, email us at <a href="mailto:support@anyora.uk" style="color:#6fbdbd;">support@anyora.uk</a>.</p>
+<p>For full details of all cookies we use and why, please read our <a href="/cookie/" style="color:#6fbdbd;">Cookie Policy</a>. For questions, email us at <a href="mailto:info@wookied.com" style="color:#6fbdbd;">info@wookied.com</a>.</p>
 
 </div>
 ' ),
@@ -922,7 +922,7 @@ if (window.location.search.indexOf("success=1") > -1) {
 	);
 }
 
-function anyora_sideload_theme_image( $filename, $title ) {
+function wookiee_sideload_theme_image( $filename, $title ) {
     $theme_dir = get_template_directory();
     $file_path = $theme_dir . '/assets/images/' . $filename;
     
@@ -972,7 +972,7 @@ function anyora_sideload_theme_image( $filename, $title ) {
     return false;
 }
 
-function anyora_create_dummy_products() {
+function wookiee_create_dummy_products() {
     if ( ! class_exists( 'WooCommerce' ) ) {
         return;
     }
@@ -1019,7 +1019,7 @@ function anyora_create_dummy_products() {
             'title' => 'Stackable Bamboo Storage Box',
             'price' => '18.99',
             'cat'   => 'drawer-organisers',
-            'img'   => 'anyora-prod-organizer.png',
+            'img'   => 'wookiee-prod-organizer.png',
         ),
         array(
             'title' => 'Premium Bathroom Shelf',
@@ -1047,7 +1047,7 @@ function anyora_create_dummy_products() {
                 update_post_meta( $post_id, '_price', $prod['price'] );
                 
                 // Programmatically upload and attach the featured image
-                $attach_id = anyora_sideload_theme_image( $prod['img'], $prod['title'] );
+                $attach_id = wookiee_sideload_theme_image( $prod['img'], $prod['title'] );
                 if ( $attach_id ) {
                     update_post_meta( $post_id, '_thumbnail_id', $attach_id );
                 }
@@ -1061,7 +1061,7 @@ function anyora_create_dummy_products() {
             // Even if the product exists, make sure it has its featured image attached
             $thumb_id = get_post_meta( $existing->ID, '_thumbnail_id', true );
             if ( ! $thumb_id ) {
-                $attach_id = anyora_sideload_theme_image( $prod['img'], $prod['title'] );
+                $attach_id = wookiee_sideload_theme_image( $prod['img'], $prod['title'] );
                 if ( $attach_id ) {
                     update_post_meta( $existing->ID, '_thumbnail_id', $attach_id );
                 }

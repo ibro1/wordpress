@@ -1,9 +1,9 @@
 /* =========================================
-   Anyora Commerce - Custom Checkout Funnel
+   Wookiee Decor - Custom Checkout Funnel
    ========================================= */
 
 /* Reset & Page Setup */
-body.anyora-checkout-funnel-page {
+body.wookiee-checkout-funnel-page {
     background-color: #f4f5f0;
     color: #2c3e50;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -92,19 +92,19 @@ body.anyora-checkout-funnel-page {
 }
 
 /* Hide standard block checkout title since we want a clean header */
-.anyora-checkout-funnel-page .checkout-content-container h1:not(.checkout-page-title) {
+.wookiee-checkout-funnel-page .checkout-content-container h1:not(.checkout-page-title) {
     display: none !important;
 }
 
 /* Re-styling WooCommerce Checkout Blocks */
-.anyora-checkout-funnel-page .wp-block-woocommerce-checkout {
+.wookiee-checkout-funnel-page .wp-block-woocommerce-checkout {
     display: flex;
     flex-wrap: wrap;
     gap: 40px;
 }
 
 /* Main Checkout Form Area (Left) */
-.anyora-checkout-funnel-page .wc-block-checkout__main {
+.wookiee-checkout-funnel-page .wc-block-checkout__main {
     flex: 1 1 600px;
     background: #fff;
     border-radius: 20px;
@@ -114,7 +114,7 @@ body.anyora-checkout-funnel-page {
 }
 
 /* Sidebar Area (Right) */
-.anyora-checkout-funnel-page .wc-block-components-sidebar {
+.wookiee-checkout-funnel-page .wc-block-components-sidebar {
     flex: 1 1 350px;
     background: #f8f9fa !important;
     border-radius: 20px;
@@ -127,7 +127,7 @@ body.anyora-checkout-funnel-page {
 }
 
 /* Step Headings */
-.anyora-checkout-funnel-page .wc-block-checkout__step-heading {
+.wookiee-checkout-funnel-page .wc-block-checkout__step-heading {
     font-size: 20px !important;
     font-weight: 800 !important;
     color: #081d34 !important;
@@ -136,8 +136,8 @@ body.anyora-checkout-funnel-page {
 }
 
 /* Input Fields Overrides */
-.anyora-checkout-funnel-page .wc-block-components-text-input input,
-.anyora-checkout-funnel-page .wc-block-components-select-input select {
+.wookiee-checkout-funnel-page .wc-block-components-text-input input,
+.wookiee-checkout-funnel-page .wc-block-components-select-input select {
     border-radius: 12px !important;
     border: 1px solid #ddd !important;
     padding: 16px !important;
@@ -147,8 +147,8 @@ body.anyora-checkout-funnel-page {
     height: auto !important;
 }
 
-.anyora-checkout-funnel-page .wc-block-components-text-input input:focus,
-.anyora-checkout-funnel-page .wc-block-components-select-input select:focus {
+.wookiee-checkout-funnel-page .wc-block-components-text-input input:focus,
+.wookiee-checkout-funnel-page .wc-block-components-select-input select:focus {
     border-color: #081d34 !important;
     box-shadow: 0 0 0 4px rgba(8, 29, 52, 0.08) !important;
     outline: none !important;
@@ -156,7 +156,7 @@ body.anyora-checkout-funnel-page {
 }
 
 /* Buttons */
-.anyora-checkout-funnel-page .wc-block-components-button:not(.is-link) {
+.wookiee-checkout-funnel-page .wc-block-components-button:not(.is-link) {
     background-color: #081d34 !important;
     color: #fff !important;
     border-radius: 12px !important;
@@ -174,7 +174,7 @@ body.anyora-checkout-funnel-page {
     min-height: 56px !important;
 }
 
-.anyora-checkout-funnel-page .wc-block-components-button:not(.is-link):hover {
+.wookiee-checkout-funnel-page .wc-block-components-button:not(.is-link):hover {
     background-color: #6fbdbd !important;
     color: #081d34 !important;
     transform: translateY(-1px) !important;
@@ -182,12 +182,12 @@ body.anyora-checkout-funnel-page {
 }
 
 /* Totals and Order Summary Panel styling */
-.anyora-checkout-funnel-page .wc-block-components-order-summary {
+.wookiee-checkout-funnel-page .wc-block-components-order-summary {
     border-bottom: 1px solid #eee;
     padding-bottom: 20px;
     margin-bottom: 20px;
 }
-.anyora-checkout-funnel-page .wc-block-components-totals-wrapper {
+.wookiee-checkout-funnel-page .wc-block-components-totals-wrapper {
     padding-top: 10px;
 }
 
@@ -250,28 +250,28 @@ body.anyora-checkout-funnel-page {
    Cart Page Specific Styles (Classic Template)
    ============================================= */
 
-body.anyora-cart-funnel-page {
+body.wookiee-cart-funnel-page {
     background-color: #f4f5f0;
 }
 
 /* Cart Grid */
-.anyora-cart-grid {
+.wookiee-cart-grid {
     display: flex;
     gap: 40px;
     align-items: flex-start;
     flex-wrap: wrap;
 }
-.anyora-cart-items {
+.wookiee-cart-items {
     flex: 1 1 580px;
 }
-.anyora-cart-sidebar {
+.wookiee-cart-sidebar {
     flex: 1 1 300px;
     position: sticky;
     top: 100px;
 }
 
 /* Cart Items Card */
-.anyora-cart-items .woocommerce-cart-form {
+.wookiee-cart-items .woocommerce-cart-form {
     background: #fff;
     border-radius: 20px;
     padding: 36px;
@@ -280,7 +280,7 @@ body.anyora-cart-funnel-page {
 }
 
 /* Column Header */
-.anyora-cart-header {
+.wookiee-cart-header {
     display: grid;
     grid-template-columns: 1fr 110px 110px 110px;
     padding: 0 0 14px 50px;
@@ -294,7 +294,7 @@ body.anyora-cart-funnel-page {
 }
 
 /* Cart Row */
-.anyora-cart-row {
+.wookiee-cart-row {
     display: grid;
     grid-template-columns: 36px 1fr 110px 110px 110px;
     align-items: center;
@@ -302,12 +302,12 @@ body.anyora-cart-funnel-page {
     border-bottom: 1px solid #f5f5f5;
     gap: 10px;
 }
-.anyora-cart-row:last-of-type {
+.wookiee-cart-row:last-of-type {
     border-bottom: none;
 }
 
 /* Remove Button */
-.anyora-remove-btn {
+.wookiee-remove-btn {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -320,19 +320,19 @@ body.anyora-cart-funnel-page {
     transition: all 0.2s ease;
     flex-shrink: 0;
 }
-.anyora-remove-btn:hover {
+.wookiee-remove-btn:hover {
     background: #d32f2f;
     color: #fff;
     transform: scale(1.05);
 }
 
 /* Product Cell */
-.anyora-cart-product {
+.wookiee-cart-product {
     display: flex;
     align-items: center;
     gap: 16px;
 }
-.anyora-cart-thumb img {
+.wookiee-cart-thumb img {
     width: 72px;
     height: 72px;
     border-radius: 12px;
@@ -340,13 +340,13 @@ body.anyora-cart-funnel-page {
     display: block;
     border: 1px solid #f0f0f0;
 }
-.anyora-cart-meta {
+.wookiee-cart-meta {
     display: flex;
     flex-direction: column;
     gap: 4px;
 }
-.anyora-cart-product-name a,
-.anyora-cart-product-name {
+.wookiee-cart-product-name a,
+.wookiee-cart-product-name {
     font-weight: 700;
     font-size: 15px;
     color: #081d34;
@@ -354,28 +354,28 @@ body.anyora-cart-funnel-page {
     line-height: 1.3;
     display: block;
 }
-.anyora-cart-product-name a:hover {
+.wookiee-cart-product-name a:hover {
     color: #6fbdbd;
 }
-.anyora-cart-sku {
+.wookiee-cart-sku {
     font-size: 12px;
     color: #aaa;
 }
 
 /* Price / Qty / Total */
-.anyora-cart-row .col-price,
-.anyora-cart-row .col-total {
+.wookiee-cart-row .col-price,
+.wookiee-cart-row .col-total {
     font-weight: 700;
     font-size: 16px;
     color: #081d34;
     text-align: left;
 }
-.anyora-cart-row .col-qty {
+.wookiee-cart-row .col-qty {
     text-align: left;
 }
 
 /* Qty Input */
-.anyora-cart-row .quantity input.qty {
+.wookiee-cart-row .quantity input.qty {
     width: 64px;
     height: 44px;
     border: 1px solid #e0e0e0;
@@ -389,18 +389,18 @@ body.anyora-cart-funnel-page {
     appearance: textfield;
     -moz-appearance: textfield;
 }
-.anyora-cart-row .quantity input.qty:focus {
+.wookiee-cart-row .quantity input.qty:focus {
     border-color: #081d34;
     outline: none;
     background: #fff;
 }
-.anyora-cart-qty-fixed {
+.wookiee-cart-qty-fixed {
     font-weight: 700;
     color: #081d34;
 }
 
 /* Cart Actions Row */
-.anyora-cart-actions {
+.wookiee-cart-actions {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
@@ -410,10 +410,10 @@ body.anyora-cart-funnel-page {
     padding-top: 24px;
     border-top: 1px solid #f0f0f0;
 }
-.anyora-coupon-wrap {
+.wookiee-coupon-wrap {
     flex: 1 1 300px;
 }
-.anyora-coupon-label {
+.wookiee-coupon-label {
     display: flex;
     align-items: center;
     gap: 7px;
@@ -423,11 +423,11 @@ body.anyora-cart-funnel-page {
     margin-bottom: 10px;
     cursor: pointer;
 }
-.anyora-coupon-input-row {
+.wookiee-coupon-input-row {
     display: flex;
     gap: 8px;
 }
-.anyora-coupon-input {
+.wookiee-coupon-input {
     flex: 1;
     border: 1px solid #e0e0e0;
     border-radius: 10px;
@@ -437,12 +437,12 @@ body.anyora-cart-funnel-page {
     background: #fafafa;
     transition: border-color 0.2s;
 }
-.anyora-coupon-input:focus {
+.wookiee-coupon-input:focus {
     border-color: #081d34;
     outline: none;
     background: #fff;
 }
-.anyora-coupon-btn {
+.wookiee-coupon-btn {
     padding: 12px 20px;
     background: #f4f5f0;
     border: 1px solid #e0e0e0;
@@ -454,12 +454,12 @@ body.anyora-cart-funnel-page {
     transition: all 0.2s;
     white-space: nowrap;
 }
-.anyora-coupon-btn:hover {
+.wookiee-coupon-btn:hover {
     background: #081d34;
     color: #fff;
     border-color: #081d34;
 }
-.anyora-update-cart-btn {
+.wookiee-update-cart-btn {
     display: inline-flex;
     align-items: center;
     gap: 8px;
@@ -474,7 +474,7 @@ body.anyora-cart-funnel-page {
     transition: all 0.2s;
     white-space: nowrap;
 }
-.anyora-update-cart-btn:hover {
+.wookiee-update-cart-btn:hover {
     border-color: #081d34;
     color: #081d34;
 }
@@ -483,26 +483,26 @@ body.anyora-cart-funnel-page {
    Cart Totals Sidebar Card
    ============================================= */
 
-.anyora-cart-totals {
+.wookiee-cart-totals {
     background: #fff;
     border-radius: 20px;
     padding: 36px;
     box-shadow: 0 4px 20px rgba(0,0,0,0.03);
     border: 1px solid rgba(0,0,0,0.05);
 }
-.anyora-totals-title {
+.wookiee-totals-title {
     font-size: 20px;
     font-weight: 800;
     color: #081d34;
     margin: 0 0 24px;
     letter-spacing: -0.3px;
 }
-.anyora-totals-rows {
+.wookiee-totals-rows {
     display: flex;
     flex-direction: column;
     gap: 0;
 }
-.anyora-totals-row {
+.wookiee-totals-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -510,15 +510,15 @@ body.anyora-cart-funnel-page {
     border-bottom: 1px solid #f5f5f5;
     font-size: 15px;
 }
-.anyora-totals-row .label {
+.wookiee-totals-row .label {
     color: #555;
     font-weight: 500;
 }
-.anyora-totals-row .value {
+.wookiee-totals-row .value {
     font-weight: 600;
     color: #081d34;
 }
-.anyora-totals-grand {
+.wookiee-totals-grand {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -526,19 +526,19 @@ body.anyora-cart-funnel-page {
     margin-top: 4px;
     border-top: 2px solid #081d34;
 }
-.anyora-totals-grand .label {
+.wookiee-totals-grand .label {
     font-size: 18px;
     font-weight: 800;
     color: #081d34;
 }
-.anyora-totals-grand .value {
+.wookiee-totals-grand .value {
     font-size: 22px;
     font-weight: 800;
     color: #081d34;
 }
 
 /* Remove coupon link */
-.anyora-remove-coupon {
+.wookiee-remove-coupon {
     margin-left: 6px;
     color: #d32f2f;
     font-weight: 700;
@@ -547,13 +547,13 @@ body.anyora-cart-funnel-page {
 }
 
 /* Checkout CTA */
-.anyora-checkout-cta {
+.wookiee-checkout-cta {
     display: flex;
     flex-direction: column;
     gap: 12px;
     margin-top: 24px;
 }
-.anyora-checkout-btn {
+.wookiee-checkout-btn {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -569,13 +569,13 @@ body.anyora-cart-funnel-page {
     box-shadow: 0 8px 20px rgba(8, 29, 52, 0.18);
     letter-spacing: 0.2px;
 }
-.anyora-checkout-btn:hover {
+.wookiee-checkout-btn:hover {
     background: #6fbdbd;
     color: #081d34;
     transform: translateY(-2px);
     box-shadow: 0 12px 28px rgba(111, 189, 189, 0.3);
 }
-.anyora-continue-link {
+.wookiee-continue-link {
     text-align: center;
     font-size: 14px;
     font-weight: 600;
@@ -584,12 +584,12 @@ body.anyora-cart-funnel-page {
     padding: 6px;
     transition: color 0.2s;
 }
-.anyora-continue-link:hover {
+.wookiee-continue-link:hover {
     color: #081d34;
 }
 
 /* Mini Trust */
-.anyora-mini-trust {
+.wookiee-mini-trust {
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -610,7 +610,7 @@ body.anyora-cart-funnel-page {
    Empty Cart State
    ============================================= */
 
-.anyora-empty-cart {
+.wookiee-empty-cart {
     text-align: center;
     padding: 80px 20px;
     max-width: 560px;
@@ -645,7 +645,7 @@ body.anyora-cart-funnel-page {
     align-items: center;
     margin-bottom: 60px;
 }
-.anyora-btn-primary {
+.wookiee-btn-primary {
     display: inline-flex;
     align-items: center;
     gap: 10px;
@@ -662,13 +662,13 @@ body.anyora-cart-funnel-page {
     max-width: 340px;
     justify-content: center;
 }
-.anyora-btn-primary:hover {
+.wookiee-btn-primary:hover {
     background: #6fbdbd;
     color: #081d34;
     transform: translateY(-2px);
     box-shadow: 0 12px 28px rgba(111, 189, 189, 0.3);
 }
-.anyora-btn-outline {
+.wookiee-btn-outline {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -684,7 +684,7 @@ body.anyora-cart-funnel-page {
     width: 100%;
     max-width: 340px;
 }
-.anyora-btn-outline:hover {
+.wookiee-btn-outline:hover {
     border-color: #081d34;
     background: #081d34;
     color: #fff;
@@ -712,26 +712,26 @@ body.anyora-cart-funnel-page {
    ============================================= */
 
 @media (max-width: 900px) {
-    .anyora-cart-grid {
+    .wookiee-cart-grid {
         flex-direction: column;
     }
-    .anyora-cart-sidebar {
+    .wookiee-cart-sidebar {
         position: static;
         width: 100%;
     }
-    .anyora-cart-header {
+    .wookiee-cart-header {
         display: none;
     }
-    .anyora-cart-row {
+    .wookiee-cart-row {
         grid-template-columns: 36px 1fr 1fr;
         grid-template-rows: auto auto;
     }
-    .anyora-cart-row .col-price { display: none; }
-    .anyora-cart-row .col-total { font-weight: 700; }
+    .wookiee-cart-row .col-price { display: none; }
+    .wookiee-cart-row .col-total { font-weight: 700; }
 }
 @media (max-width: 600px) {
-    .anyora-cart-items .woocommerce-cart-form,
-    .anyora-cart-totals {
+    .wookiee-cart-items .woocommerce-cart-form,
+    .wookiee-cart-totals {
         padding: 24px 20px;
     }
     .empty-cart-features {
@@ -750,18 +750,18 @@ body.anyora-cart-funnel-page {
 }
 
 /* Cart Layout - WooCommerce Block Cart */
-.anyora-cart-funnel-page .wp-block-woocommerce-cart {
+.wookiee-cart-funnel-page .wp-block-woocommerce-cart {
     background: transparent;
 }
 
-.anyora-cart-funnel-page .wc-block-cart {
+.wookiee-cart-funnel-page .wc-block-cart {
     display: flex;
     flex-wrap: wrap;
     gap: 40px;
     align-items: flex-start;
 }
 
-.anyora-cart-funnel-page .wc-block-cart__main-section {
+.wookiee-cart-funnel-page .wc-block-cart__main-section {
     flex: 1 1 580px;
     background: #fff;
     border-radius: 20px;
@@ -770,7 +770,7 @@ body.anyora-cart-funnel-page {
     border: 1px solid rgba(0,0,0,0.04);
 }
 
-.anyora-cart-funnel-page .wc-block-cart__sidebar {
+.wookiee-cart-funnel-page .wc-block-cart__sidebar {
     flex: 1 1 320px;
     background: #f8f9fa;
     border-radius: 20px;
@@ -781,11 +781,11 @@ body.anyora-cart-funnel-page {
 }
 
 /* Cart Table Styling */
-.anyora-cart-funnel-page .wc-block-cart-items table,
-.anyora-cart-funnel-page table.wc-block-cart-items {
+.wookiee-cart-funnel-page .wc-block-cart-items table,
+.wookiee-cart-funnel-page table.wc-block-cart-items {
     border: none !important;
 }
-.anyora-cart-funnel-page .wc-block-cart-items__header th {
+.wookiee-cart-funnel-page .wc-block-cart-items__header th {
     font-size: 12px;
     font-weight: 700;
     text-transform: uppercase;
@@ -794,23 +794,23 @@ body.anyora-cart-funnel-page {
     padding-bottom: 16px;
     border-bottom: 1px solid #eee !important;
 }
-.anyora-cart-funnel-page .wc-block-cart-item__image img {
+.wookiee-cart-funnel-page .wc-block-cart-item__image img {
     border-radius: 10px !important;
 }
-.anyora-cart-funnel-page .wc-block-components-product-name a {
+.wookiee-cart-funnel-page .wc-block-components-product-name a {
     font-weight: 700;
     color: #081d34;
     font-size: 16px;
     text-decoration: none;
 }
-.anyora-cart-funnel-page .wc-block-cart-item__product td {
+.wookiee-cart-funnel-page .wc-block-cart-item__product td {
     border-bottom: 1px solid #f0f0f0;
     padding: 20px 0;
 }
 
 /* Proceed to Checkout Button */
-.anyora-cart-funnel-page .wc-block-components-button:not(.is-link),
-.anyora-cart-funnel-page .wc-block-cart__submit-button {
+.wookiee-cart-funnel-page .wc-block-components-button:not(.is-link),
+.wookiee-cart-funnel-page .wc-block-cart__submit-button {
     background-color: #081d34 !important;
     color: #fff !important;
     border-radius: 14px !important;
@@ -827,8 +827,8 @@ body.anyora-cart-funnel-page {
     justify-content: center !important;
     letter-spacing: 0.2px;
 }
-.anyora-cart-funnel-page .wc-block-components-button:not(.is-link):hover,
-.anyora-cart-funnel-page .wc-block-cart__submit-button:hover {
+.wookiee-cart-funnel-page .wc-block-components-button:not(.is-link):hover,
+.wookiee-cart-funnel-page .wc-block-cart__submit-button:hover {
     background-color: #6fbdbd !important;
     color: #081d34 !important;
     transform: translateY(-2px) !important;
@@ -839,7 +839,7 @@ body.anyora-cart-funnel-page {
    Empty Cart State
    ============================================= */
 
-.anyora-empty-cart {
+.wookiee-empty-cart {
     text-align: center;
     padding: 80px 20px;
     max-width: 560px;
@@ -879,7 +879,7 @@ body.anyora-cart-funnel-page {
     margin-bottom: 60px;
 }
 
-.anyora-btn-primary {
+.wookiee-btn-primary {
     display: inline-flex;
     align-items: center;
     gap: 10px;
@@ -896,14 +896,14 @@ body.anyora-cart-funnel-page {
     max-width: 340px;
     justify-content: center;
 }
-.anyora-btn-primary:hover {
+.wookiee-btn-primary:hover {
     background-color: #6fbdbd;
     color: #081d34;
     transform: translateY(-2px);
     box-shadow: 0 12px 28px rgba(111, 189, 189, 0.3);
 }
 
-.anyora-btn-outline {
+.wookiee-btn-outline {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -919,7 +919,7 @@ body.anyora-cart-funnel-page {
     width: 100%;
     max-width: 340px;
 }
-.anyora-btn-outline:hover {
+.wookiee-btn-outline:hover {
     border-color: #081d34;
     background-color: #081d34;
     color: #fff;
@@ -946,7 +946,7 @@ body.anyora-cart-funnel-page {
 }
 
 @media (max-width: 768px) {
-    .anyora-empty-cart {
+    .wookiee-empty-cart {
         padding: 60px 20px;
     }
     .empty-cart-title {
@@ -963,7 +963,7 @@ body.anyora-cart-funnel-page {
    Checkout Progress Steps
    ============================================= */
 
-.anyora-checkout-steps {
+.wookiee-checkout-steps {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1022,7 +1022,7 @@ body.anyora-cart-funnel-page {
    Custom Qty Stepper
    ============================================= */
 
-.anyora-qty-stepper {
+.wookiee-qty-stepper {
     display: inline-flex;
     align-items: center;
     border: 1.5px solid #e0e0e0;
@@ -1031,7 +1031,7 @@ body.anyora-cart-funnel-page {
     background: #fff;
     transition: border-color 0.2s;
 }
-.anyora-qty-stepper:focus-within {
+.wookiee-qty-stepper:focus-within {
     border-color: #081d34;
 }
 .qty-btn {
@@ -1074,7 +1074,7 @@ body.anyora-cart-funnel-page {
    Coupon Accordion Toggle
    ============================================= */
 
-.anyora-coupon-toggle {
+.wookiee-coupon-toggle {
     display: inline-flex;
     align-items: center;
     gap: 8px;
@@ -1087,30 +1087,30 @@ body.anyora-cart-funnel-page {
     padding: 0;
     transition: color 0.2s;
 }
-.anyora-coupon-toggle:hover {
+.wookiee-coupon-toggle:hover {
     color: #081d34;
 }
 .toggle-chevron {
     transition: transform 0.3s ease;
 }
-.anyora-coupon-toggle.open .toggle-chevron {
+.wookiee-coupon-toggle.open .toggle-chevron {
     transform: rotate(180deg);
 }
-.anyora-coupon-panel {
+.wookiee-coupon-panel {
     max-height: 0;
     overflow: hidden;
     transition: max-height 0.35s ease, opacity 0.35s ease;
     opacity: 0;
     margin-top: 0;
 }
-.anyora-coupon-panel.open {
+.wookiee-coupon-panel.open {
     max-height: 80px;
     opacity: 1;
     margin-top: 12px;
 }
 
 /* Cart action right side */
-.anyora-cart-action-right {
+.wookiee-cart-action-right {
     display: flex;
     align-items: center;
 }
@@ -1119,7 +1119,7 @@ body.anyora-cart-funnel-page {
    In-Stock Badge
    ============================================= */
 
-.anyora-in-stock {
+.wookiee-in-stock {
     display: inline-flex;
     align-items: center;
     gap: 5px;
@@ -1136,7 +1136,7 @@ body.anyora-cart-funnel-page {
    Grand Total Row
    ============================================= */
 
-.anyora-totals-grand {
+.wookiee-totals-grand {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -1187,7 +1187,7 @@ body.anyora-cart-funnel-page {
    Free Shipping Progress Bar
    ============================================= */
 
-.anyora-shipping-progress {
+.wookiee-shipping-progress {
     margin-bottom: 24px;
     padding: 16px;
     background: #f4f5f0;
@@ -1223,7 +1223,7 @@ body.anyora-cart-funnel-page {
    Payment Icons
    ============================================= */
 
-.anyora-payment-icons {
+.wookiee-payment-icons {
     margin-top: 20px;
     padding-top: 20px;
     border-top: 1px solid #f0f0f0;

@@ -10,7 +10,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <?php wp_head(); ?>
 </head>
-<body <?php body_class( 'anyora-cart-funnel-page' ); ?>>
+<body <?php body_class( 'wookiee-cart-funnel-page' ); ?>>
 
     <!-- Cart Page Header -->
     <header class="checkout-header">
@@ -18,13 +18,13 @@
             <div class="checkout-header-left">
                 <a href="<?php echo esc_url( home_url( '/' ) ); ?>" class="checkout-logo-link">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 38" width="150" height="34" fill="none">
-                        <path d="M8 30 L18 8 L28 30" stroke="#081d34" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-                        <line x1="12" y1="20" x2="24" y2="20" stroke="#6fbdbd" stroke-width="2.5" stroke-linecap="round"/>
-                        <line x1="9.5" y1="25.5" x2="26.5" y2="25.5" stroke="#6fbdbd" stroke-width="2.5" stroke-linecap="round"/>
-                        <rect x="14" y="21" width="8" height="4.5" rx="1" fill="#081d34"/>
-                        <rect x="16.5" y="15.5" width="5" height="4.5" rx="1" fill="#6fbdbd"/>
-                        <text x="36" y="28" font-family="'Outfit', 'Inter', system-ui, sans-serif" font-weight="800" font-size="22" fill="#081d34" letter-spacing="-0.5px">anyora</text>
-                    </svg>
+					<path d="M8 8 L12 30 L17.5 17 L23 30 L27 8" stroke="#081d34" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+					<rect x="10" y="11" width="4.5" height="4" rx="1" fill="#6fbdbd"/>
+					<rect x="20.5" y="11" width="4.5" height="4" rx="1" fill="#6fbdbd"/>
+					<line x1="11" y1="13" x2="13.5" y2="13" stroke="#081d34" stroke-width="1.2" stroke-linecap="round"/>
+					<line x1="21.5" y1="13" x2="24" y2="13" stroke="#081d34" stroke-width="1.2" stroke-linecap="round"/>
+					<text x="36" y="28" font-family="'Outfit', 'Inter', system-ui, sans-serif" font-weight="800" font-size="22" fill="#081d34" letter-spacing="-0.5px">Wookiee</text>
+				</svg>
                 </a>
                 <a href="<?php echo esc_url( home_url( '/shop/' ) ); ?>" class="back-to-cart-link">
                     &larr; Continue Shopping
@@ -41,9 +41,9 @@
 
             <?php if ( class_exists('WooCommerce') && ! WC()->cart->is_empty() ) : ?>
 
-                <div class="anyora-cart-layout">
+                <div class="wookiee-cart-layout">
                     <!-- Cart Items Section -->
-                    <div class="anyora-cart-items-col">
+                    <div class="wookiee-cart-items-col">
                         <h1 class="checkout-page-title">Your Cart <span class="cart-item-count">(<?php echo WC()->cart->get_cart_contents_count(); ?> <?php echo WC()->cart->get_cart_contents_count() === 1 ? 'item' : 'items'; ?>)</span></h1>
                         <?php
                         while ( have_posts() ) :
@@ -57,7 +57,7 @@
             <?php else : ?>
 
                 <!-- Beautiful Empty Cart State -->
-                <div class="anyora-empty-cart">
+                <div class="wookiee-empty-cart">
                     <div class="empty-cart-icon">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" fill="none">
                             <circle cx="40" cy="40" r="40" fill="#f4f5f0"/>
@@ -70,11 +70,11 @@
                     <h1 class="empty-cart-title">Your cart is empty</h1>
                     <p class="empty-cart-subtitle">Looks like you haven't added anything to your cart yet. Discover our premium collection and find something you'll love.</p>
                     <div class="empty-cart-actions">
-                        <a href="<?php echo esc_url( wc_get_page_permalink( 'shop' ) ); ?>" class="anyora-btn-primary">
+                        <a href="<?php echo esc_url( wc_get_page_permalink( 'shop' ) ); ?>" class="wookiee-btn-primary">
                             Browse All Products
                             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
                         </a>
-                        <a href="<?php echo esc_url( home_url( '/' ) ); ?>" class="anyora-btn-outline">
+                        <a href="<?php echo esc_url( home_url( '/' ) ); ?>" class="wookiee-btn-outline">
                             Back to Home
                         </a>
                     </div>
@@ -113,7 +113,7 @@
                 </div>
                 <div class="trust-signal">
                     <span class="trust-icon">✉️</span>
-                    <span class="trust-text">Customer Support: support@anyora.uk</span>
+                    <span class="trust-text">Customer Support: info@wookied.com</span>
                 </div>
             </div>
             <p class="checkout-copyright">&copy; <?php echo date('Y'); ?> <?php bloginfo( 'name' ); ?>. All rights reserved.</p>

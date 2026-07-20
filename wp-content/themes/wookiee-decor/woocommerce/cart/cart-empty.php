@@ -1,6 +1,6 @@
 <?php
 /**
- * Anyora Commerce - Custom Empty Cart Template
+ * Wookiee Decor - Custom Empty Cart Template
  * Overrides: woocommerce/cart/cart-empty.php
  */
 
@@ -9,7 +9,7 @@ defined( 'ABSPATH' ) || exit;
 do_action( 'woocommerce_cart_is_empty' );
 ?>
 
-<div class="anyora-empty-cart">
+<div class="wookiee-empty-cart">
     <div class="empty-cart-icon">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
             <circle cx="50" cy="50" r="50" fill="#f4f5f0"/>
@@ -22,11 +22,11 @@ do_action( 'woocommerce_cart_is_empty' );
     <h2 class="empty-cart-title">Your cart is empty</h2>
     <p class="empty-cart-subtitle">Looks like you haven't added anything yet. Explore our premium collection and discover something you'll love.</p>
     <div class="empty-cart-actions">
-        <a href="<?php echo esc_url( apply_filters( 'woocommerce_return_to_shop_redirect', wc_get_page_permalink( 'shop' ) ) ); ?>" class="anyora-btn-primary">
+        <a href="<?php echo esc_url( apply_filters( 'woocommerce_return_to_shop_redirect', wc_get_page_permalink( 'shop' ) ) ); ?>" class="wookiee-btn-primary">
             Browse All Products
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
         </a>
-        <a href="<?php echo esc_url( home_url('/') ); ?>" class="anyora-btn-outline">
+        <a href="<?php echo esc_url( home_url('/') ); ?>" class="wookiee-btn-outline">
             Back to Home
         </a>
     </div>

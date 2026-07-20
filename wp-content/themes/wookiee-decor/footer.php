@@ -1,14 +1,14 @@
-<footer class="site-footer" style="background-color: var(--anyora-navy); color: var(--anyora-white); font-family: var(--font-primary); box-sizing: border-box;">
+<footer class="site-footer" style="background-color: var(--wookiee-navy); color: var(--wookiee-white); font-family: var(--font-primary); box-sizing: border-box;">
 	
 	<!-- Newsletter Section (Dark Luxury) -->
 	<div style="width: 100%; border-bottom: 1px solid rgba(255,255,255,0.06); box-sizing: border-box;">
 		<div class="footer-newsletter" style="padding: 80px 20px; max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 1.2fr 1fr; gap: 60px; align-items: center; box-sizing: border-box;">
 			<div class="newsletter-text" style="text-align: left; box-sizing: border-box;">
 				<div style="color: #6fbdbd; font-size: 12px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 20px; display: flex; align-items: center; gap: 15px;">
-					<span style="width: 30px; height: 2px; background: #6fbdbd; display: inline-block;"></span> JOIN THE ANYORA MAILING LIST
+					<span style="width: 30px; height: 2px; background: #6fbdbd; display: inline-block;"></span> JOIN THE WOOKIEE MAILING LIST
 				</div>
 				<h2 style="font-size: 48px; margin: 0 0 20px 0; line-height: 1.1; font-weight: 800; color: #ffffff; letter-spacing: -1.5px;">More organisation.<br>Less clutter.</h2>
-				<p style="font-size: 16px; line-height: 1.6; color: #a0b0c0; margin-bottom: 30px; max-width: 480px;">Receive home-organisation ideas, new-product updates and occasional Anyora offers directly in your inbox.</p>
+				<p style="font-size: 16px; line-height: 1.6; color: #a0b0c0; margin-bottom: 30px; max-width: 480px;">Receive home-organisation ideas, new-product updates and occasional Wookiee offers directly in your inbox.</p>
 				
 				<div style="display: flex; gap: 20px; font-size: 14px; color: #ffffff; font-weight: 600; flex-wrap: wrap;">
 					<div style="display: flex; align-items: center; gap: 8px;"><span style="color: #6fbdbd; font-size: 16px;">✓</span> Organisation ideas</div>
@@ -18,7 +18,7 @@
 			</div>
 			
 			<div class="newsletter-card" style="box-sizing: border-box;">
-				<h3 style="font-size: 24px; margin: 0 0 10px 0; font-weight: 800; color: #ffffff; letter-spacing: -0.5px;">Stay organised with Anyora.</h3>
+				<h3 style="font-size: 24px; margin: 0 0 10px 0; font-weight: 800; color: #ffffff; letter-spacing: -0.5px;">Stay organised with Wookiee.</h3>
 				<p style="font-size: 15px; color: #a0b0c0; margin: 0 0 30px 0; line-height: 1.5;">Enter your email address to join our marketing mailing list.</p>
 				
 				<form style="display: flex; gap: 15px; margin-bottom: 25px; border-bottom: 2px solid rgba(255,255,255,0.15); padding-bottom: 12px; align-items: center; box-sizing: border-box;">
@@ -26,7 +26,7 @@
 					<button type="submit" style="background: transparent; color: #6fbdbd; border: none; font-weight: 700; cursor: pointer; text-transform: uppercase; font-size: 13px; letter-spacing: 1.5px; display: flex; align-items: center; gap: 8px; padding: 0;">Subscribe <span>➔</span></button>
 				</form>
 				
-				<p style="font-size: 11px; color: #7f8f9f; line-height: 1.5; margin: 0; text-align: left;">By entering your email address and selecting "Subscribe", you consent to receive marketing emails from Anyora. Marketing is optional and you can withdraw your consent at any time. <a href="<?php echo esc_url( home_url( '/privacy/' ) ); ?>" style="color: #6fbdbd; font-weight: 700; text-decoration: underline;">Read our Privacy Policy.</a> <a href="<?php echo esc_url( home_url( '/cookie/' ) ); ?>" style="color: #6fbdbd; font-weight: 700; text-decoration: underline;">Read our Cookie Policy.</a></p>
+				<p style="font-size: 11px; color: #7f8f9f; line-height: 1.5; margin: 0; text-align: left;">By entering your email address and selecting "Subscribe", you consent to receive marketing emails from Wookiee. Marketing is optional and you can withdraw your consent at any time. <a href="<?php echo esc_url( home_url( '/privacy/' ) ); ?>" style="color: #6fbdbd; font-weight: 700; text-decoration: underline;">Read our Privacy Policy.</a> <a href="<?php echo esc_url( home_url( '/cookie/' ) ); ?>" style="color: #6fbdbd; font-weight: 700; text-decoration: underline;">Read our Cookie Policy.</a></p>
 			</div>
 		</div>
 	</div>
@@ -37,18 +37,18 @@
 		<!-- Col 1 -->
 		<div style="text-align: left; box-sizing: border-box;">
 			<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 38" width="150" height="34" fill="none" style="margin-bottom: 25px; display: block;">
-				<path d="M8 30 L18 8 L28 30" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-				<line x1="12" y1="20" x2="24" y2="20" stroke="#6fbdbd" stroke-width="2.5" stroke-linecap="round"/>
-				<line x1="9.5" y1="25.5" x2="26.5" y2="25.5" stroke="#6fbdbd" stroke-width="2.5" stroke-linecap="round"/>
-				<rect x="14" y="21" width="8" height="4.5" rx="1" fill="#ffffff"/>
-				<rect x="16.5" y="15.5" width="5" height="4.5" rx="1" fill="#6fbdbd"/>
-				<text x="36" y="28" font-family="'Outfit', 'Inter', system-ui, sans-serif" font-weight="800" font-size="22" fill="#ffffff" letter-spacing="-0.5px">anyora</text>
+				<path d="M8 8 L12 30 L17.5 17 L23 30 L27 8" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+				<rect x="10" y="11" width="4.5" height="4" rx="1" fill="#6fbdbd"/>
+				<rect x="20.5" y="11" width="4.5" height="4" rx="1" fill="#6fbdbd"/>
+				<line x1="11" y1="13" x2="13.5" y2="13" stroke="#ffffff" stroke-width="1.2" stroke-linecap="round"/>
+				<line x1="21.5" y1="13" x2="24" y2="13" stroke="#ffffff" stroke-width="1.2" stroke-linecap="round"/>
+				<text x="36" y="28" font-family="'Outfit', 'Inter', system-ui, sans-serif" font-weight="800" font-size="22" fill="#ffffff" letter-spacing="-0.5px">Wookiee</text>
 			</svg>
 			<p style="font-size: 14px; line-height: 1.6; color: #a0b0c0; margin-bottom: 30px; padding-right: 20px;">
-				Anyora is a UK private-label home-storage brand and online retailer operated by Anyora Limited. We offer practical storage products selected to help make everyday spaces tidier and easier to use.
+				Wookiee is a UK private-label home-storage brand operated by Wookiee Decor Ltd. wookied.com is the official online store of Wookiee Decor Ltd. We offer practical storage products selected to help make everyday spaces tidier and easier to use.
 			</p>
 			
-			<div style="font-size: 11px; font-weight: 700; letter-spacing: 1.5px; margin-bottom: 15px; text-transform: uppercase; color: #6fbdbd;">Find Anyora Online</div>
+			<div style="font-size: 11px; font-weight: 700; letter-spacing: 1.5px; margin-bottom: 15px; text-transform: uppercase; color: #6fbdbd;">Find Wookiee Online</div>
 			<div style="display: flex; gap: 18px; margin-bottom: 30px;">
 				<a href="#" aria-label="Facebook" class="social-icon-btn" style="color: #a0b0c0; text-decoration: none; transition: all 0.25s;">
 					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg>
@@ -94,27 +94,27 @@
 			<div>
 				<div style="font-size: 11px; font-weight: 700; letter-spacing: 1.5px; margin-bottom: 15px; text-transform: uppercase; color: #6fbdbd;">Registered Office</div>
 				<p style="margin: 0; color: #a0b0c0; font-size: 14px; line-height: 1.6;">
-					<strong style="color: #ffffff; font-weight: 700;">Anyora Limited</strong><br>
-					72 Ambergate Road, Bilston,<br>
-					WV14 0SR, United Kingdom
+					<strong style="color: #ffffff; font-weight: 700;">Wookiee Decor Ltd</strong><br>
+					28 Johnston Park, Cowdenbeath, Scotland,<br>
+					KY4 9AZ, United Kingdom
 				</p>
 			</div>
 			
 			<div>
 				<div style="font-size: 11px; font-weight: 700; letter-spacing: 1.5px; margin-bottom: 10px; text-transform: uppercase; color: #6fbdbd;">Support Channels</div>
 				<p style="margin: 0 0 6px 0; color: #a0b0c0; font-size: 14px; display: flex; align-items: center; gap: 8px;">
-					<span style="color: #6fbdbd;">✉</span> <a href="mailto:support@anyora.uk" style="color: #fff; text-decoration: none; font-weight: 600; border: none !important; border-bottom: 1px solid rgba(255,255,255,0.2) !important; outline: none !important; transition: border-color 0.2s;">support@anyora.uk</a>
+					<span style="color: #6fbdbd;">✉</span> <a href="mailto:info@wookied.com" style="color: #fff; text-decoration: none; font-weight: 600; border: none !important; border-bottom: 1px solid rgba(255,255,255,0.2) !important; outline: none !important; transition: border-color 0.2s;">info@wookied.com</a>
 				</p>
 				<p style="margin: 0; color: #a0b0c0; font-size: 14px; display: flex; align-items: center; gap: 8px;">
-					<span style="color: #6fbdbd;">📞</span> <span style="color: #ffffff; font-weight: 600;">+44 1902 382162</span>
+					<span style="color: #6fbdbd;">📞</span> <span style="color: #ffffff; font-weight: 600;">+442084726126</span>
 				</p>
 			</div>
 			
 			<div>
 				<div style="font-size: 11px; font-weight: 700; letter-spacing: 1.5px; margin-bottom: 5px; text-transform: uppercase; color: #6fbdbd;">Company Details</div>
 				<p style="margin: 0; color: #a0b0c0; font-size: 14px; line-height: 1.5;">
-					Company number: <span style="color: #ffffff; font-weight: 600;">16938766</span><br>
-					<span style="font-size: 12px; opacity: 0.8;">Registered in England and Wales</span>
+					Company number: <span style="color: #ffffff; font-weight: 600;">SC769264</span><br>
+					<span style="font-size: 12px; opacity: 0.8;">Registered in Scotland</span>
 				</p>
 			</div>
 		</div>
@@ -137,7 +137,7 @@
 			
 			<div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 30px; box-sizing: border-box;">
 				<div style="font-size: 13px; color: #a0b0c0;">
-					© <?php echo date('Y'); ?> Anyora Limited. All rights reserved.
+					© <?php echo date('Y'); ?> Wookiee Decor Ltd. All rights reserved.
 				</div>
 				<div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
 					<span style="font-size: 12px; color: #a0b0c0; margin-right: 5px;">Accepted payments</span>

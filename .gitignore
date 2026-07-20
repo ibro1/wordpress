@@ -1,10 +1,36 @@
-wp-content/plugins/woocommerce.zip
+# Sensitive config
+wp-config.php
+.htaccess
+.env
+
+# Uploads (user media)
+wp-content/uploads/
+
+# Logs
 wp-content/debug.log
-wp-content/uploads/wc-logs/fatal-errors-2026-07-17-565320137fafbab35eeb65882ff3bd7d.log
-wp-content/uploads/wc-logs/wc-analytics-order-import-2026-07-17-32c40ce8dcd5d58be98fc8edd679deb1.log
-wp-content/uploads/wc-logs/wc-image-regeneration-2026-07-17-a1ab5ba3a2a53393c6c225ebf48b8909.log
-wp-content/debug.log
-wp-content/debug.log
-wp-content/debug.log
-wp-content/debug.log
-wp-content/debug.log
+*.log
+
+# Cache / backups / upgrade artifacts
+wp-content/cache/
+wp-content/upgrade/
+wp-content/upgrade-temp-backup/
+wp-content/backup*/
+wp-content/backups/
+
+# Zip archives anywhere in the repo (including partial/temp download files)
+*.zip
+*.zip.*
+
+# Node / build tooling
+node_modules/
+vendor/
+npm-debug.log
+yarn-error.log
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace

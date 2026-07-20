@@ -1,6 +1,6 @@
 <?php
 /**
- * Anyora Commerce - Custom Cart Page Template
+ * Wookiee Decor - Custom Cart Page Template
  * Overrides: woocommerce/cart/cart.php
  */
 
@@ -10,7 +10,7 @@ do_action( 'woocommerce_before_cart' );
 ?>
 
 <!-- Checkout Progress Steps -->
-<div class="anyora-checkout-steps">
+<div class="wookiee-checkout-steps">
     <div class="step active">
         <div class="step-bubble">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
@@ -33,17 +33,17 @@ do_action( 'woocommerce_before_cart' );
     </div>
 </div>
 
-<div class="anyora-cart-grid">
+<div class="wookiee-cart-grid">
 
     <!-- LEFT: Cart Items -->
-    <div class="anyora-cart-items">
+    <div class="wookiee-cart-items">
 
         <?php do_action( 'woocommerce_before_cart_table' ); ?>
 
         <form class="woocommerce-cart-form" action="<?php echo esc_url( wc_get_cart_url() ); ?>" method="post">
 
             <!-- Column Headers -->
-            <div class="anyora-cart-header">
+            <div class="wookiee-cart-header">
                 <span class="col-product">Product</span>
                 <span class="col-price">Unit Price</span>
                 <span class="col-qty">Quantity</span>
@@ -64,12 +64,12 @@ do_action( 'woocommerce_before_cart' );
                     $max_qty           = $_product->is_sold_individually() ? 1 : $_product->get_max_purchase_quantity();
             ?>
 
-            <div class="anyora-cart-row <?php echo esc_attr( apply_filters( 'woocommerce_cart_item_class', 'cart_item', $cart_item, $cart_item_key ) ); ?>">
+            <div class="wookiee-cart-row <?php echo esc_attr( apply_filters( 'woocommerce_cart_item_class', 'cart_item', $cart_item, $cart_item_key ) ); ?>">
 
                 <!-- Remove Button -->
                 <div class="col-remove">
                     <?php echo apply_filters( 'woocommerce_cart_item_remove_link', sprintf(
-                        '<a href="%s" class="anyora-remove-btn" aria-label="Remove %s">
+                        '<a href="%s" class="wookiee-remove-btn" aria-label="Remove %s">
                             <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
                         </a>',
                         esc_url( wc_get_cart_remove_url( $cart_item_key ) ),
@@ -79,24 +79,24 @@ do_action( 'woocommerce_before_cart' );
 
                 <!-- Product Info -->
                 <div class="col-product">
-                    <div class="anyora-cart-product">
-                        <div class="anyora-cart-thumb">
+                    <div class="wookiee-cart-product">
+                        <div class="wookiee-cart-thumb">
                             <?php if ( $product_permalink ) : ?>
                                 <a href="<?php echo esc_url( $product_permalink ); ?>"><?php echo $thumbnail; ?></a>
                             <?php else : echo $thumbnail; endif; ?>
                         </div>
-                        <div class="anyora-cart-meta">
-                            <span class="anyora-cart-product-name">
+                        <div class="wookiee-cart-meta">
+                            <span class="wookiee-cart-product-name">
                                 <?php if ( $product_permalink ) : ?>
                                     <a href="<?php echo esc_url( $product_permalink ); ?>"><?php echo wp_kses_post( $product_name ); ?></a>
                                 <?php else : echo wp_kses_post( $product_name ); endif; ?>
                             </span>
                             <?php echo wc_get_formatted_cart_item_data( $cart_item ); ?>
                             <?php if ( $_product->get_sku() ) : ?>
-                                <span class="anyora-cart-sku">SKU: <?php echo esc_html( $_product->get_sku() ); ?></span>
+                                <span class="wookiee-cart-sku">SKU: <?php echo esc_html( $_product->get_sku() ); ?></span>
                             <?php endif; ?>
                             <?php if ( $_product->is_in_stock() ) : ?>
-                                <span class="anyora-in-stock">
+                                <span class="wookiee-in-stock">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="9" height="9" viewBox="0 0 24 24" fill="#2e7d32"><circle cx="12" cy="12" r="10"/></svg>
                                     In Stock
                                 </span>
@@ -113,10 +113,10 @@ do_action( 'woocommerce_before_cart' );
                 <!-- Quantity -->
                 <div class="col-qty" data-label="Qty">
                     <?php if ( $_product->is_sold_individually() ) : ?>
-                        <span class="anyora-cart-qty-fixed">1</span>
+                        <span class="wookiee-cart-qty-fixed">1</span>
                         <input type="hidden" name="cart[<?php echo esc_attr( $cart_item_key ); ?>][qty]" value="1">
                     <?php else : ?>
-                        <div class="anyora-qty-stepper">
+                        <div class="wookiee-qty-stepper">
                             <button type="button" class="qty-btn qty-minus" aria-label="Decrease quantity">−</button>
                             <input type="number"
                                 name="cart[<?php echo esc_attr( $cart_item_key ); ?>][qty]"
@@ -142,26 +142,26 @@ do_action( 'woocommerce_before_cart' );
             <?php do_action( 'woocommerce_cart_contents' ); ?>
 
             <!-- Cart Actions Row -->
-            <div class="anyora-cart-actions">
+            <div class="wookiee-cart-actions">
                 <?php if ( wc_coupons_enabled() ) : ?>
-                <div class="anyora-coupon-wrap">
-                    <button type="button" class="anyora-coupon-toggle" id="coupon-toggle">
+                <div class="wookiee-coupon-wrap">
+                    <button type="button" class="wookiee-coupon-toggle" id="coupon-toggle">
                         <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
                         Have a promo code?
                         <svg class="toggle-chevron" xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
                     </button>
-                    <div class="anyora-coupon-panel" id="coupon-panel">
-                        <div class="anyora-coupon-input-row">
-                            <input type="text" name="coupon_code" class="anyora-coupon-input" id="coupon_code" placeholder="Enter promo code" />
-                            <button type="submit" class="anyora-coupon-btn" name="apply_coupon" value="Apply">Apply</button>
+                    <div class="wookiee-coupon-panel" id="coupon-panel">
+                        <div class="wookiee-coupon-input-row">
+                            <input type="text" name="coupon_code" class="wookiee-coupon-input" id="coupon_code" placeholder="Enter promo code" />
+                            <button type="submit" class="wookiee-coupon-btn" name="apply_coupon" value="Apply">Apply</button>
                         </div>
                     </div>
                     <?php do_action( 'woocommerce_cart_coupon' ); ?>
                 </div>
                 <?php endif; ?>
 
-                <div class="anyora-cart-action-right">
-                    <button type="submit" class="anyora-update-cart-btn" name="update_cart" value="update">
+                <div class="wookiee-cart-action-right">
+                    <button type="submit" class="wookiee-update-cart-btn" name="update_cart" value="update">
                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
                         Update Cart
                     </button>
@@ -177,7 +177,7 @@ do_action( 'woocommerce_before_cart' );
     </div>
 
     <!-- RIGHT: Cart Totals -->
-    <div class="anyora-cart-sidebar">
+    <div class="wookiee-cart-sidebar">
         <?php do_action( 'woocommerce_before_cart_collaterals' ); ?>
         <div class="cart-collaterals">
             <?php do_action( 'woocommerce_cart_collaterals' ); ?>
@@ -189,7 +189,7 @@ do_action( 'woocommerce_before_cart' );
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     // Custom +/- steppers
-    document.querySelectorAll('.anyora-qty-stepper').forEach(function (stepper) {
+    document.querySelectorAll('.wookiee-qty-stepper').forEach(function (stepper) {
         var input = stepper.querySelector('.qty-input');
         var minus = stepper.querySelector('.qty-minus');
         var plus  = stepper.querySelector('.qty-plus');

@@ -116,6 +116,35 @@ add_action( 'init', 'wookiee_sync_primary_menu', 21 );
  * request too.
  */
 add_action( 'init', 'wookiee_create_dummy_products', 22 );
+
+/**
+ * Same self-healing pattern again: only ever ran inside the version-gated
+ * repair function, so if wookiee_sideload_theme_image() (which needs
+ * media-handling functions that aren't loaded this early on every request)
+ * failed or never got a chance to run, the homepage hero/feature images
+ * stayed empty forever with no way to retry. Cheap no-op once both
+ * options are already set, since it bails out immediately in that case.
+ */
+add_action( 'init', 'wookiee_ensure_theme_images', 23 );
+function wookiee_ensure_theme_images() {
+	if ( wp_installing() || ! function_exists( 'wookiee_sideload_theme_image' ) ) {
+		return;
+	}
+
+	if ( ! get_option( 'wookiee_hero_image_id' ) ) {
+		$hero_attach_id = wookiee_sideload_theme_image( 'hero-banner.png', 'Wookiee Hero Banner' );
+		if ( $hero_attach_id ) {
+			update_option( 'wookiee_hero_image_id', $hero_attach_id );
+		}
+	}
+
+	if ( ! get_option( 'wookiee_feature_image_id' ) ) {
+		$feature_attach_id = wookiee_sideload_theme_image( 'lifestyle.png', 'Wookiee Lifestyle' );
+		if ( $feature_attach_id ) {
+			update_option( 'wookiee_feature_image_id', $feature_attach_id );
+		}
+	}
+}
 function wookiee_sync_primary_menu( $page_ids = null, $pages = null ) {
 	if ( wp_installing() ) {
 		return;
@@ -259,13 +288,8 @@ function wookiee_create_starter_content() {
     // 4. Create Dummy Products
     wookiee_create_dummy_products();
 
-    // 5. Set Homepage Hero Image
-    if ( function_exists( 'wookiee_sideload_theme_image' ) ) {
-        $hero_attach_id = wookiee_sideload_theme_image( 'hero-banner.png', 'Wookiee Hero Banner' );
-        if ( $hero_attach_id ) {
-            update_option( 'wookiee_hero_image_id', $hero_attach_id );
-        }
-    }
+    // 5. Set homepage hero + feature images
+    wookiee_ensure_theme_images();
 
 	update_option( 'wookiee_pages_version', WOOKIEE_VERSION );
 	flush_rewrite_rules( false );

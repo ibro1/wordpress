@@ -11,6 +11,16 @@ define( 'WOOKIEE_URI', trailingslashit( get_template_directory_uri() ) );
 
 require_once WOOKIEE_DIR . 'inc/static-content.php';
 
+/**
+ * Safely resolve a product category link, falling back to the shop page
+ * when the term doesn't exist yet (get_term_link() returns WP_Error then,
+ * which must never be passed straight into esc_url()).
+ */
+function wookiee_product_cat_url( $slug ) {
+	$term_link = get_term_link( $slug, 'product_cat' );
+	return ! is_wp_error( $term_link ) ? esc_url( $term_link ) : esc_url( home_url( '/shop/' ) );
+}
+
 add_action( 'after_setup_theme', 'wookiee_setup' );
 function wookiee_setup() {
 	load_theme_textdomain( 'wookiee-commerce' );

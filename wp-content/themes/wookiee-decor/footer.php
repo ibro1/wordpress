@@ -66,10 +66,10 @@
 			<div class="footer-eyebrow">Shop</div>
 			<ul class="footer-links-list">
 				<li><a href="<?php echo esc_url( home_url( '/shop/' ) ); ?>">All products</a></li>
-				<li><a href="<?php echo esc_url( get_term_link( 'kitchen-storage', 'product_cat' ) ); ?>">Kitchen storage</a></li>
-				<li><a href="<?php echo esc_url( get_term_link( 'bathroom-storage', 'product_cat' ) ); ?>">Bathroom storage</a></li>
-				<li><a href="<?php echo esc_url( get_term_link( 'drawer-organisers', 'product_cat' ) ); ?>">Drawer organisers</a></li>
-				<li><a href="<?php echo esc_url( get_term_link( 'shoe-storage', 'product_cat' ) ); ?>">Shoe storage</a></li>
+				<li><a href="<?php echo wookiee_product_cat_url( 'kitchen-storage' ); ?>">Kitchen storage</a></li>
+				<li><a href="<?php echo wookiee_product_cat_url( 'bathroom-storage' ); ?>">Bathroom storage</a></li>
+				<li><a href="<?php echo wookiee_product_cat_url( 'drawer-organisers' ); ?>">Drawer organisers</a></li>
+				<li><a href="<?php echo wookiee_product_cat_url( 'shoe-storage' ); ?>">Shoe storage</a></li>
 			</ul>
 		</div>
 

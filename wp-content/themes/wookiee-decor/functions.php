@@ -105,6 +105,17 @@ add_action( 'init', 'wookiee_maybe_create_starter_content', 20 );
  * lookups plus one menu-items query), safe to run unconditionally.
  */
 add_action( 'init', 'wookiee_sync_primary_menu', 21 );
+
+/**
+ * Same problem, same fix, different data: wookiee_create_dummy_products()
+ * bails out immediately if WooCommerce isn't active yet, so if the plugin
+ * wasn't active during the one-time repair run, products never get created
+ * — and activating WooCommerce later doesn't retroactively trigger that
+ * repair. The function is already idempotent (checks get_page_by_title()
+ * per product before inserting), so it's safe to just let it run on every
+ * request too.
+ */
+add_action( 'init', 'wookiee_create_dummy_products', 22 );
 function wookiee_sync_primary_menu( $page_ids = null, $pages = null ) {
 	if ( wp_installing() ) {
 		return;

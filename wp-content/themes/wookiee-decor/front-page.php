@@ -10,9 +10,9 @@ get_header(); ?>
 	<section class="hero-section">
 		<div class="container hero-grid">
 			<div class="hero-text-col">
-				<div class="hero-eyebrow">Premium Home Storage</div>
-				<h1 class="hero-title">A more organised<br>home starts <em>here.</em></h1>
-				<p class="hero-lead">Discover our collection of thoughtful storage solutions and home accessories designed for modern living.</p>
+				<div class="hero-eyebrow"><?php echo esc_html( wookiee_get_setting( 'hero_eyebrow' ) ); ?></div>
+				<h1 class="hero-title"><?php echo esc_html( wookiee_get_setting( 'hero_headline' ) ); ?></h1>
+				<p class="hero-lead"><?php echo esc_html( wookiee_get_setting( 'hero_subheadline' ) ); ?></p>
 				<div class="hero-cta-row">
 					<a href="<?php echo esc_url( home_url( '/shop/' ) ); ?>" class="btn">Shop all storage</a>
 					<a href="#categories" class="btn btn-outline">Explore categories</a>
@@ -236,8 +236,8 @@ get_header(); ?>
 	<section class="philosophy-section">
 		<div class="container philosophy-inner">
 			<div class="section-kicker">Philosophy</div>
-			<h2 class="section-title">Organisation should feel simple.</h2>
-			<p class="philosophy-copy">We believe that a tidy home leads to a clearer mind. That's why we design products that are not only functional but also beautiful, helping you create spaces you love to spend time in without the stress of clutter.</p>
+			<h2 class="section-title"><?php echo esc_html( wookiee_get_setting( 'homepage_philosophy_heading' ) ); ?></h2>
+			<p class="philosophy-copy"><?php echo esc_html( wookiee_get_setting( 'homepage_philosophy' ) ); ?></p>
 			<a href="<?php echo esc_url( home_url( '/about/' ) ); ?>" class="btn btn-outline">Learn more</a>
 		</div>
 	</section>

@@ -48,11 +48,16 @@
 
 **Feedback:** "Products are duplicate" / "And go for one niche only"
 
-**Root cause (verified):** The 6 dummy products span mismatched categories and, more importantly, include a **"Compact Mobility Scooter (Foldable)"** — a mobility aid product that has nothing to do with a home storage/organization brand. This is almost certainly what reads as "duplicate/repetitive" (two bamboo-themed products, two bathroom-themed products, one unrelated scooter) rather than an actual code bug creating duplicate database entries — the product-creation code already guards against literal duplicates by title.
+**Root cause (verified, more specific than first thought):** Two compounding issues, not a database bug —
 
-**Proposed fix:** Replace the current 6-product placeholder set with a smaller, coherent single-niche catalog (home storage & organization only — drop the scooter entirely). Exact product lineup is a content decision, not something to invent unilaterally.
+1. The 6 dummy products span mismatched categories and include a **"Compact Mobility Scooter (Foldable)"** — a mobility aid product with nothing to do with a home storage/organization brand.
+2. **Cross-product image reuse from the gallery work**: with only ~10 usable stock photos for 6 products × up to 3 gallery images each, several photos are literally reused across *different* products — `lifestyle.png` appears in three separate products' galleries; `bathroom-shelf.png` is one product's main photo and another's gallery image; same pattern for `wookiee-prod-organizer.png` and the two bamboo-themed products. Clicking between products, the same photo shows up attached to what's supposed to be a different item — this is almost certainly what reads as "duplicate."
 
-**Decision needed:** what the real product lineup should be (real products the business will actually sell), or at minimum, confirmation that the placeholder set should just drop the scooter and be reworded to feel less repetitive within the existing storage niche.
+The product-creation code already guards against literal duplicate database rows by title, so this isn't that.
+
+**Proposed fix:** Replace the current 6-product placeholder set with a smaller, coherent single-niche catalog (home storage & organization only — drop the scooter entirely), sized so each product can have genuinely distinct photography rather than stretching ~10 stock photos across too many products. Reshuffling which stock photo goes where reduces visible overlap somewhat but can't eliminate it at 6 products with this photo pool — the real fix is fewer products and/or real photography, not further shuffling.
+
+**Decision needed:** what the real product lineup should be (real products the business will actually sell), or at minimum, confirmation that the placeholder set should shrink to however many products the existing photo pool can genuinely support without repeats.
 
 ---
 
@@ -82,11 +87,13 @@
 
 **Feedback:** "Change the pallet of footer" / "Payment icons not rendered properly"
 
+**Clarified direction (from Abubakar):** not about color specifically — the footer should read as **clean and modern, not cluttered**. This is a density/layout complaint, not a palette complaint.
+
 **Root cause:**
-- **Palette:** this is feedback given *after* seeing the new Warm Terracotta & Ink palette already applied — the stakeholder wants the footer specifically adjusted further, but didn't say what's wrong with it (too dark? doesn't match? wants a lighter variant?). **Needs clarification before touching anything** — changing it blind risks going back and forth.
+- **Clutter:** the newsletter section currently stacks a kicker, heading, lead paragraph, 3 bullet points, *and* a separate signup card side-by-side with a 4-column link/info section below it and a sub-footer below that — a lot of vertical weight and visual sections before you reach the bottom. Fix: consolidate the newsletter block into a single slim band, reduce info density in the columns, tighten spacing throughout.
 - **Payment icons:** checked directly — the Visa/Mastercard/PayPal/Amex/Apple Pay SVGs use their own brand-specific colors and were *not* touched by the recent palette sweep, so this isn't a regression from that work. The actual rendering problem (sizing? wrapping? invisible against the dark background at certain sizes?) hasn't been confirmed visually yet.
 
-**Decision/info needed:** a screenshot of the current payment icons as rendered, and specific direction on what's wrong with the footer palette (not just "change it").
+**Decision/info needed:** a screenshot of the current payment icons as rendered, to diagnose the actual rendering problem.
 
 ---
 
@@ -114,15 +121,14 @@
 
 Roughly in dependency order — items with open decisions are blocked until those are answered, so the sequence below assumes answers come back in this rough priority:
 
-1. **Get the two open decisions first** (shipping rate; returns address; footer palette direction; social accounts; product lineup) — several other fixes depend on these and doing them twice wastes a delete/redeploy cycle each time.
-2. Shipping rate change (banner, trust bar, hero badge, shipping policy, WooCommerce config)
-3. Returns policy address
-4. Product catalog rework (drop scooter, resolve shoe-storage category)
-5. About page: fix floating card CSS (code fix, no decision needed) + delete/regenerate page content
-6. Breadcrumbs (self-contained, no decisions needed — can happen anytime)
+1. **Unblocked, start now:** footer decluttering (§6, direction confirmed: clean/modern/not cluttered), breadcrumbs (§8, self-contained), About page floating card CSS fix (§5, code fix, no decision needed).
+2. **Get the remaining open decisions** (shipping rate; returns address; social accounts; product lineup) — several other fixes depend on these and doing them twice wastes a delete/redeploy cycle each time.
+3. Shipping rate change (banner, trust bar, hero badge, shipping policy, WooCommerce config)
+4. Returns policy address
+5. Product catalog rework (drop scooter, resolve shoe-storage category, reduce cross-product image reuse)
+6. About page: delete/regenerate page content (routine, after the CSS fix in step 1)
 7. Footer payment icons (needs a current screenshot to diagnose first)
-8. Footer palette adjustment (needs direction first)
-9. Social media links (needs the Facebook URL / account decision first)
+8. Social media links (needs the Facebook URL / account decision first)
 
 ## Open questions summary (blocking items)
 
@@ -131,6 +137,7 @@ Roughly in dependency order — items with open decisions are blocked until thos
 | 1 | Flat shipping rate: £5.99 or £6.99 (or other)? | §1, and downstream copy in §2 |
 | 2 | Returns address — same as registered office, or a separate warehouse address? | §2 |
 | 3 | Real product lineup, or just "drop the scooter" from the existing placeholders? | §3, §4 |
-| 4 | What specifically is wrong with the footer palette? | §6 |
-| 5 | Facebook page URL (if it exists)? Keep/drop Instagram/LinkedIn/Pinterest icons? | §7 |
-| 6 | Current screenshot of payment icons issue (to diagnose before fixing) | §6 |
+| 4 | Facebook page URL (if it exists)? Keep/drop Instagram/LinkedIn/Pinterest icons? | §7 |
+| 5 | Current screenshot of payment icons issue (to diagnose before fixing) | §6 |
+
+~~What specifically is wrong with the footer palette?~~ — resolved: it was never about color, it's about density (see §6).

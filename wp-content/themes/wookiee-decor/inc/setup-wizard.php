@@ -11,15 +11,30 @@
 
 defined( 'ABSPATH' ) || exit;
 
-add_action( 'admin_menu', 'wookiee_register_setup_wizard_page' );
-function wookiee_register_setup_wizard_page() {
-	add_theme_page(
-		'Wookiee Setup',
-		'Wookiee Setup',
-		'manage_options',
-		'wookiee-setup',
-		'wookiee_render_setup_wizard_page'
-	);
+/**
+ * Sends the admin straight to the Setup dashboard right after activating
+ * the theme, instead of leaving them to discover it in the menu on their
+ * own - the "boom, configure it" part of the turnkey vision falls flat if
+ * nobody knows where to start.
+ */
+add_action( 'after_switch_theme', 'wookiee_flag_setup_redirect' );
+function wookiee_flag_setup_redirect() {
+	set_transient( 'wookiee_setup_redirect', 1, MINUTE_IN_SECONDS );
+}
+
+add_action( 'admin_init', 'wookiee_maybe_redirect_to_setup' );
+function wookiee_maybe_redirect_to_setup() {
+	if ( ! get_transient( 'wookiee_setup_redirect' ) ) {
+		return;
+	}
+	delete_transient( 'wookiee_setup_redirect' );
+
+	if ( wp_doing_ajax() || ! current_user_can( 'manage_options' ) ) {
+		return;
+	}
+
+	wp_safe_redirect( admin_url( 'admin.php?page=wookiee-setup' ) );
+	exit;
 }
 
 /**
@@ -79,10 +94,10 @@ function wookiee_render_setup_wizard_page() {
 	$shipping_zone = $has_woo ? wookiee_find_uk_shipping_zone() : null;
 	$pending       = wookiee_count_pending_ai_drafts();
 
-	$settings_url = admin_url( 'themes.php?page=wookiee-settings' );
-	$content_url  = admin_url( 'themes.php?page=wookiee-content-generator' );
-	$product_url  = admin_url( 'themes.php?page=wookiee-product-generator' );
-	$catalog_url  = admin_url( 'themes.php?page=wookiee-supplier-catalog' );
+	$settings_url = admin_url( 'admin.php?page=wookiee-settings' );
+	$content_url  = admin_url( 'admin.php?page=wookiee-content-generator' );
+	$product_url  = admin_url( 'admin.php?page=wookiee-product-generator' );
+	$catalog_url  = admin_url( 'admin.php?page=wookiee-supplier-catalog' );
 	?>
 	<div class="wrap">
 		<h1>Wookiee Setup</h1>

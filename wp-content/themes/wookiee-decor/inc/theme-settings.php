@@ -58,17 +58,6 @@ function wookiee_get_returns_address() {
 	return '' !== trim( (string) $returns ) ? $returns : wookiee_get_setting( 'registered_address' );
 }
 
-add_action( 'admin_menu', 'wookiee_register_settings_page' );
-function wookiee_register_settings_page() {
-	add_theme_page(
-		'Wookiee Settings',
-		'Wookiee Settings',
-		'manage_options',
-		'wookiee-settings',
-		'wookiee_render_settings_page'
-	);
-}
-
 add_action( 'admin_init', 'wookiee_register_settings' );
 function wookiee_register_settings() {
 	foreach ( wookiee_settings_fields() as $key => $field ) {
@@ -126,7 +115,7 @@ function wookiee_render_settings_page() {
 								<p class="description">Only needed to use the lookup button above. Free to obtain, one per WordPress install.</p>
 							<?php endif; ?>
 							<?php if ( 'cj_api_key' === $key ) : ?>
-								<p class="description">From your CJ Dropshipping account: My CJ → API Setting. Used with the email above to authenticate the <a href="<?php echo esc_url( admin_url( 'themes.php?page=wookiee-supplier-catalog' ) ); ?>">Wookiee Supplier Catalog</a> page.</p>
+								<p class="description">From your CJ Dropshipping account: My CJ → API Setting. Used with the email above to authenticate the <a href="<?php echo esc_url( admin_url( 'admin.php?page=wookiee-supplier-catalog' ) ); ?>">Wookiee Supplier Catalog</a> page.</p>
 							<?php endif; ?>
 							<?php if ( '' !== $field['default'] ) : ?>
 								<p class="description">Default if left blank: <?php echo esc_html( is_string( $field['default'] ) ? str_replace( "\n", ' / ', $field['default'] ) : '' ); ?></p>

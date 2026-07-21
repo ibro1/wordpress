@@ -16,17 +16,6 @@ defined( 'ABSPATH' ) || exit;
 
 define( 'WOOKIEE_AI_MAX_PRODUCTS', 8 );
 
-add_action( 'admin_menu', 'wookiee_register_product_generator_page' );
-function wookiee_register_product_generator_page() {
-	add_theme_page(
-		'Wookiee Product Generator',
-		'Wookiee Product Generator',
-		'manage_options',
-		'wookiee-product-generator',
-		'wookiee_render_product_generator_page'
-	);
-}
-
 function wookiee_render_product_generator_page() {
 	if ( ! current_user_can( 'manage_options' ) ) {
 		return;
@@ -43,7 +32,7 @@ function wookiee_render_product_generator_page() {
 			<div class="notice notice-error"><p>WooCommerce isn't active, so generated products have nowhere to be created. Activate WooCommerce first.</p></div>
 		<?php endif; ?>
 		<?php if ( ! $has_key ) : ?>
-			<div class="notice notice-warning"><p>No Anthropic API key set. Add one on the <a href="<?php echo esc_url( admin_url( 'themes.php?page=wookiee-settings' ) ); ?>">Wookiee Settings</a> page first.</p></div>
+			<div class="notice notice-warning"><p>No Anthropic API key set. Add one on the <a href="<?php echo esc_url( admin_url( 'admin.php?page=wookiee-settings' ) ); ?>">Wookiee Settings</a> page first.</p></div>
 		<?php endif; ?>
 
 		<table class="form-table" role="presentation">

@@ -255,17 +255,6 @@ function wookiee_sideload_remote_image( $url, $title ) {
 	return is_wp_error( $attach_id ) ? 0 : (int) $attach_id;
 }
 
-add_action( 'admin_menu', 'wookiee_register_supplier_catalog_page' );
-function wookiee_register_supplier_catalog_page() {
-	add_theme_page(
-		'Wookiee Supplier Catalog',
-		'Wookiee Supplier Catalog',
-		'manage_options',
-		'wookiee-supplier-catalog',
-		'wookiee_render_supplier_catalog_page'
-	);
-}
-
 function wookiee_render_supplier_catalog_page() {
 	if ( ! current_user_can( 'manage_options' ) ) {
 		return;
@@ -282,7 +271,7 @@ function wookiee_render_supplier_catalog_page() {
 			<div class="notice notice-error"><p>WooCommerce isn't active.</p></div>
 		<?php endif; ?>
 		<?php if ( ! $has_creds ) : ?>
-			<div class="notice notice-warning"><p>Add your CJ Dropshipping email and API key on the <a href="<?php echo esc_url( admin_url( 'themes.php?page=wookiee-settings' ) ); ?>">Wookiee Settings</a> page first.</p></div>
+			<div class="notice notice-warning"><p>Add your CJ Dropshipping email and API key on the <a href="<?php echo esc_url( admin_url( 'admin.php?page=wookiee-settings' ) ); ?>">Wookiee Settings</a> page first.</p></div>
 		<?php endif; ?>
 
 		<p>

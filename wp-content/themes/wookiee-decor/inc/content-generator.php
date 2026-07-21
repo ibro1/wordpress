@@ -29,17 +29,6 @@ function wookiee_content_generator_pieces() {
 	);
 }
 
-add_action( 'admin_menu', 'wookiee_register_content_generator_page' );
-function wookiee_register_content_generator_page() {
-	add_theme_page(
-		'Wookiee Content Generator',
-		'Wookiee Content Generator',
-		'manage_options',
-		'wookiee-content-generator',
-		'wookiee_render_content_generator_page'
-	);
-}
-
 function wookiee_render_content_generator_page() {
 	if ( ! current_user_can( 'manage_options' ) ) {
 		return;
@@ -52,7 +41,7 @@ function wookiee_render_content_generator_page() {
 		<p>Generates on-brand page copy and UK policy pages from the store's niche and the business details already saved in Wookiee Settings. Every result is created as a new page titled "<em>(AI Draft)</em>" in <strong>Draft</strong> status — it never touches or replaces an existing live page. Review each draft, edit as needed, then either copy its content into the real page or publish it and update the live page to match.</p>
 
 		<?php if ( ! $has_key ) : ?>
-			<div class="notice notice-warning"><p>No Anthropic API key set. Add one on the <a href="<?php echo esc_url( admin_url( 'themes.php?page=wookiee-settings' ) ); ?>">Wookiee Settings</a> page first.</p></div>
+			<div class="notice notice-warning"><p>No Anthropic API key set. Add one on the <a href="<?php echo esc_url( admin_url( 'admin.php?page=wookiee-settings' ) ); ?>">Wookiee Settings</a> page first.</p></div>
 		<?php endif; ?>
 
 		<table class="form-table" role="presentation">

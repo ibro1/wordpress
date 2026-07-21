@@ -20,8 +20,10 @@ function wookiee_settings_fields() {
 	return array(
 		'contact_email'      => array( 'label' => 'Contact email', 'default' => 'info@wookied.com', 'type' => 'email' ),
 		'contact_phone'      => array( 'label' => 'Contact phone', 'default' => '+44 20 8472 6126', 'type' => 'text' ),
+		'business_name'      => array( 'label' => 'Registered company name', 'default' => 'Wookiee Decor Ltd', 'type' => 'text' ),
 		'registered_address'  => array( 'label' => 'Registered office address', 'default' => "Wookiee Decor Ltd\n28 Johnston Park, Cowdenbeath\nKY4 9AZ, United Kingdom", 'type' => 'textarea' ),
 		'company_number'     => array( 'label' => 'Company number', 'default' => 'SC769264', 'type' => 'text' ),
+		'companies_house_api_key' => array( 'label' => 'Companies House API key', 'default' => '', 'type' => 'password' ),
 		'returns_address'    => array( 'label' => 'Returns address (leave blank to use registered office address)', 'default' => '', 'type' => 'textarea' ),
 		'shipping_rate'      => array( 'label' => 'Flat shipping rate (£)', 'default' => '5.99', 'type' => 'text' ),
 		'shipping_dispatch'  => array( 'label' => 'Dispatch / transit time', 'default' => 'Dispatched within 24 hours, 3-5 working days transit', 'type' => 'text' ),
@@ -81,6 +83,8 @@ function wookiee_sanitizer_for( $type ) {
 			return 'esc_url_raw';
 		case 'textarea':
 			return 'sanitize_textarea_field';
+		case 'password':
+			return 'sanitize_text_field';
 		default:
 			return 'sanitize_text_field';
 	}
@@ -104,7 +108,17 @@ function wookiee_render_settings_page() {
 							<?php if ( 'textarea' === $field['type'] ) : ?>
 								<textarea name="wookiee_setting_<?php echo esc_attr( $key ); ?>" id="wookiee_setting_<?php echo esc_attr( $key ); ?>" rows="3" class="large-text" placeholder="<?php echo esc_attr( $field['default'] ); ?>"><?php echo esc_textarea( get_option( 'wookiee_setting_' . $key, '' ) ); ?></textarea>
 							<?php else : ?>
-								<input type="<?php echo 'url' === $field['type'] ? 'url' : ( 'email' === $field['type'] ? 'email' : 'text' ); ?>" name="wookiee_setting_<?php echo esc_attr( $key ); ?>" id="wookiee_setting_<?php echo esc_attr( $key ); ?>" value="<?php echo esc_attr( get_option( 'wookiee_setting_' . $key, '' ) ); ?>" placeholder="<?php echo esc_attr( $field['default'] ); ?>" class="regular-text">
+								<input type="<?php echo 'url' === $field['type'] ? 'url' : ( 'email' === $field['type'] ? 'email' : ( 'password' === $field['type'] ? 'password' : 'text' ) ); ?>" name="wookiee_setting_<?php echo esc_attr( $key ); ?>" id="wookiee_setting_<?php echo esc_attr( $key ); ?>" value="<?php echo esc_attr( get_option( 'wookiee_setting_' . $key, '' ) ); ?>" placeholder="<?php echo esc_attr( $field['default'] ); ?>" class="regular-text" autocomplete="off">
+							<?php endif; ?>
+							<?php if ( 'company_number' === $key ) : ?>
+								<p>
+									<button type="button" class="button" id="wookiee-ch-lookup-btn">Look up on Companies House</button>
+									<span id="wookiee-ch-lookup-status" style="margin-left:8px;"></span>
+								</p>
+								<p class="description">Fills in the registered company name and address below from the official Companies House register. Requires an API key (below) — get one free at <a href="https://developer.company-information.service.gov.uk/" target="_blank" rel="noopener">developer.company-information.service.gov.uk</a>. Review the filled-in fields before saving.</p>
+							<?php endif; ?>
+							<?php if ( 'companies_house_api_key' === $key ) : ?>
+								<p class="description">Only needed to use the lookup button above. Free to obtain, one per WordPress install.</p>
 							<?php endif; ?>
 							<?php if ( '' !== $field['default'] ) : ?>
 								<p class="description">Default if left blank: <?php echo esc_html( is_string( $field['default'] ) ? str_replace( "\n", ' / ', $field['default'] ) : '' ); ?></p>
@@ -116,7 +130,123 @@ function wookiee_render_settings_page() {
 			<?php submit_button(); ?>
 		</form>
 	</div>
+	<script>
+	( function() {
+		var btn = document.getElementById( 'wookiee-ch-lookup-btn' );
+		if ( ! btn ) {
+			return;
+		}
+		btn.addEventListener( 'click', function() {
+			var status = document.getElementById( 'wookiee-ch-lookup-status' );
+			var numberField = document.getElementById( 'wookiee_setting_company_number' );
+			var number = numberField ? numberField.value.trim() : '';
+			if ( ! number ) {
+				status.textContent = 'Enter a company number first.';
+				return;
+			}
+			btn.disabled = true;
+			status.textContent = 'Looking up…';
+			var data = new FormData();
+			data.append( 'action', 'wookiee_ch_lookup' );
+			data.append( 'nonce', '<?php echo esc_js( wp_create_nonce( 'wookiee_ch_lookup' ) ); ?>' );
+			data.append( 'company_number', number );
+			fetch( ajaxurl, { method: 'POST', credentials: 'same-origin', body: data } )
+				.then( function( r ) { return r.json(); } )
+				.then( function( res ) {
+					btn.disabled = false;
+					if ( ! res.success ) {
+						status.textContent = res.data && res.data.message ? res.data.message : 'Lookup failed.';
+						return;
+					}
+					var nameField = document.getElementById( 'wookiee_setting_business_name' );
+					var addrField = document.getElementById( 'wookiee_setting_registered_address' );
+					if ( nameField ) {
+						nameField.value = res.data.company_name;
+					}
+					if ( addrField ) {
+						addrField.value = res.data.address;
+					}
+					status.textContent = 'Found: ' + res.data.company_name + ' (status: ' + res.data.company_status + '). Review the fields, then click Save Changes.';
+				} )
+				.catch( function() {
+					btn.disabled = false;
+					status.textContent = 'Lookup failed — could not reach the server.';
+				} );
+		} );
+	} )();
+	</script>
 	<?php
+}
+
+/**
+ * Server-side proxy for the Companies House lookup so the API key never
+ * reaches the browser. Populates business_name and registered_address on
+ * the settings screen only - nothing is saved until the admin clicks
+ * Save Changes, since this is business-identity data worth a human check.
+ */
+add_action( 'wp_ajax_wookiee_ch_lookup', 'wookiee_ch_lookup_handler' );
+function wookiee_ch_lookup_handler() {
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_send_json_error( array( 'message' => 'Not allowed.' ), 403 );
+	}
+	check_ajax_referer( 'wookiee_ch_lookup', 'nonce' );
+
+	$company_number = isset( $_POST['company_number'] ) ? sanitize_text_field( wp_unslash( $_POST['company_number'] ) ) : '';
+	$api_key        = wookiee_get_setting( 'companies_house_api_key' );
+
+	if ( '' === $company_number ) {
+		wp_send_json_error( array( 'message' => 'Enter a company number first.' ) );
+	}
+	if ( '' === trim( (string) $api_key ) ) {
+		wp_send_json_error( array( 'message' => 'Add your Companies House API key below, click Save Changes, then try the lookup again.' ) );
+	}
+
+	$response = wp_remote_get(
+		'https://api.company-information.service.gov.uk/company/' . rawurlencode( $company_number ),
+		array(
+			'headers' => array(
+				'Authorization' => 'Basic ' . base64_encode( $api_key . ':' ),
+			),
+			'timeout' => 15,
+		)
+	);
+
+	if ( is_wp_error( $response ) ) {
+		wp_send_json_error( array( 'message' => $response->get_error_message() ) );
+	}
+
+	$code = wp_remote_retrieve_response_code( $response );
+	if ( 404 === $code ) {
+		wp_send_json_error( array( 'message' => 'No company found with that number.' ) );
+	}
+	if ( 401 === $code ) {
+		wp_send_json_error( array( 'message' => 'Companies House rejected the API key - check it and try again.' ) );
+	}
+	if ( 200 !== $code ) {
+		wp_send_json_error( array( 'message' => 'Companies House returned an unexpected error (HTTP ' . intval( $code ) . ').' ) );
+	}
+
+	$data = json_decode( wp_remote_retrieve_body( $response ), true );
+	if ( ! is_array( $data ) ) {
+		wp_send_json_error( array( 'message' => 'Could not read the Companies House response.' ) );
+	}
+
+	$addr  = isset( $data['registered_office_address'] ) && is_array( $data['registered_office_address'] ) ? $data['registered_office_address'] : array();
+	$lines = array_filter( array(
+		isset( $addr['premises'] ) ? $addr['premises'] : '',
+		isset( $addr['address_line_1'] ) ? $addr['address_line_1'] : '',
+		isset( $addr['address_line_2'] ) ? $addr['address_line_2'] : '',
+		isset( $addr['locality'] ) ? $addr['locality'] : '',
+		isset( $addr['region'] ) ? $addr['region'] : '',
+		isset( $addr['postal_code'] ) ? $addr['postal_code'] : '',
+		isset( $addr['country'] ) ? $addr['country'] : '',
+	) );
+
+	wp_send_json_success( array(
+		'company_name'   => isset( $data['company_name'] ) ? $data['company_name'] : '',
+		'company_status' => isset( $data['company_status'] ) ? $data['company_status'] : '',
+		'address'        => implode( "\n", $lines ),
+	) );
 }
 
 /**

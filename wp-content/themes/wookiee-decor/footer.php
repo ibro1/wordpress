@@ -27,7 +27,7 @@
 				<text x="36" y="28" font-family="'Outfit', 'Inter', system-ui, sans-serif" font-weight="800" font-size="22" fill="#ffffff" letter-spacing="-0.5px">Wookiee</text>
 			</svg>
 			<p class="footer-about-copy">
-				UK private-label home-storage brand operated by Wookiee Decor Ltd.
+				UK private-label home-storage brand operated by <?php echo esc_html( wookiee_get_setting( 'business_name' ) ); ?>.
 			</p>
 			<?php
 			$wookiee_socials = array(
@@ -94,7 +94,7 @@
 			</div>
 
 			<div class="footer-bottom-row">
-				<div class="footer-copyright">&copy; <?php echo esc_html( date( 'Y' ) ); ?> Wookiee Decor Ltd.</div>
+				<div class="footer-copyright">&copy; <?php echo esc_html( date( 'Y' ) ); ?> <?php echo esc_html( wookiee_get_setting( 'business_name' ) ); ?>.</div>
 				<div class="footer-payments">
 					<div class="payment-icon-wrapper" title="Visa">
 						<svg width="40" height="20" viewBox="0 0 40 20"><text x="20" y="14" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-weight="700" font-style="italic" font-size="11" fill="#ffffff">VISA</text></svg>

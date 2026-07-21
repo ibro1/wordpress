@@ -63,7 +63,7 @@ Legitimate alternatives that achieve the same actual goal (a real, single-niche,
 
 Roughly in order of (value delivered) ÷ (risk + complexity) — cheapest wins first, riskiest/most novel last:
 
-1. **Companies House lookup** (§2a) — small, clean, immediately useful even for Wookiee itself right now, no legal complexity.
+1. **Companies House lookup** (§2a) — small, clean, immediately useful even for Wookiee itself right now, no legal complexity. ✅ Built — Settings → Wookiee Settings now has an API key field and a "Look up on Companies House" button next to Company number; fills registered name/address for review before save. Needs an admin to register a free API key and click-test it live.
 2. **Draft-only AI product content generator** (§2c, without a live supplier integration yet) — AI drafts description/categorization from a niche brief you provide, using stock or your own uploaded images, sitting as drafts for review. Proves out the "AI creates catalog content responsibly" piece without the bigger supplier-API integration.
 3. **Niche-agnostic page content generation** (§2b) — the biggest lift, best done after 1–2 are proven out since it benefits from the same "AI generates, human reviews, then it's saved as real content" pattern.
 4. **Supplier API integration** (§2c, full version) — connecting to an actual dropship/wholesale source for real, fulfillable inventory. This is its own significant integration project depending on which supplier(s) you want to support.

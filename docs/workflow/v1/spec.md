@@ -6,41 +6,23 @@
 
 ---
 
-## 1. Business model change: shipping
+## 1. Business model change: shipping — ✅ DONE
 
 **Feedback:** "Remove shipping from banner" → "It's repetitive" → "Don't use free delivery" → "Use flat rate" → "5.99" / "Or" / "6.99"
 
-**What this means:** The stakeholder is moving away from "free delivery over £50" messaging entirely, in favor of a flat shipping rate. He proposed two candidate prices (£5.99 or £6.99) without settling on one — **this is a decision needed before implementation**, not something to guess at.
+**Resolution:** went with **£5.99** (Abubakar's call, on Claude's recommendation — more standard UK flat-rate price point than £6.99). Implemented as a **setting**, not hardcoded copy: `wookiee_setting_shipping_rate`, editable at Appearance → Wookiee Settings, read live by the announcement bar, homepage trust bar, hero stat badge, and the Shipping policy page (via `[wookiee_field key="shipping_rate"]`). Changing the number in one place now updates everywhere, including already-baked pages.
 
-**Where "free delivery" messaging currently lives (all need updating once the rate is decided):**
-- Announcement bar (`header.php`): "Free UK delivery on orders over £50 · 30-day hassle-free returns · Secure checkout"
-- Homepage trust bar (`front-page.php`): "Free delivery — On orders over £50"
-- Homepage hero stat badge (`front-page.php`): "3-5 day UK delivery, dispatched from Cowdenbeath"
-- Shipping policy page content (`inc/static-content.php`)
-- Possibly WooCommerce shipping zone/method configuration itself (not yet inspected — need to check whether a "free shipping over £50" method is actually configured in WooCommerce settings, separate from the marketing copy)
-
-**"It's repetitive"** most likely refers to delivery/returns messaging appearing in this many places at once (banner + trust bar + hero badge) rather than being a single, clear statement — worth consolidating once the new rate is settled, not just find-and-replacing the number in four places.
-
-**Decision needed:** £5.99 or £6.99 flat rate (or a different number — the stakeholder may have continued this conversation past what's visible in the screenshot).
-
-**Proposed fix (once rate is decided):**
-- Update WooCommerce shipping settings to a flat-rate method at the agreed price
-- Rewrite the announcement bar, trust bar, and hero badge copy around the flat rate instead of a threshold
-- Update the Shipping policy page copy accordingly (see also §2, handling/transit time)
+**Not yet done:** the actual WooCommerce shipping zone/method configuration (cart/checkout calculation) still needs to be set to a flat £5.99 rate — this spec item covered the *messaging*, not the checkout math. Needs a pass through WooCommerce → Settings → Shipping.
 
 ---
 
-## 2. Policy page content gaps
+## 2. Policy page content gaps — ✅ DONE (shipping/handling), self-serve (returns address)
 
 **Feedback:** "Mention handling and transit time in shipping" / "Mention return address in refund policy"
 
-**What's actually there now:** Both pages exist (`inc/static-content.php`, `'shipping'` and `'returns'` keys) but were written as generic policy boilerplate without these specifics.
-
-**Proposed fix:**
-- Shipping policy: add explicit handling time (e.g. "orders dispatched within 24 hours") and transit time (e.g. "3-5 working days" — already used elsewhere on the site, so at least internally consistent) alongside the new flat-rate shipping cost from §1.
-- Returns/refunds policy: add the actual return address (**registered office address is already established elsewhere on the site as "28 Johnston Park, Cowdenbeath, Scotland, KY4 9AZ" — need to confirm with stakeholder whether returns go to this same address or a different warehouse/returns address**).
-
-**Decision needed:** confirm the returns address (same as registered office, or different).
+**Resolution:**
+- Shipping policy: rewrote the delivery cost table around the flat rate + a "Handling & Transit Time" column, both pulled live from settings (`shipping_rate`, `shipping_dispatch`).
+- Returns address: rather than guess or block on an answer, this (and every other contact detail across all policy pages — email, phone, company number, registered address, ~30 instances total) now reads from the new **Appearance → Wookiee Settings** admin page via shortcode. **Returns address defaults to the registered office address if left blank** — go to the settings page and fill in a different address there if returns actually go somewhere else (a separate warehouse, etc.), otherwise no action needed.
 
 ---
 
@@ -71,41 +53,31 @@ The product-creation code already guards against literal duplicate database rows
 
 ---
 
-## 5. About page — image and layout
+## 5. About page — image and layout — ✅ DONE
 
-**Feedback:** "About page overlay issue" / "Broken image" (screenshot showed the "Our Range and Approach" section, with a broken image icon where a bathroom shelf photo should be, and a separate screenshot showed the floating stat card overlapping the hero image awkwardly)
+**Feedback:** "About page overlay issue" / "Broken image"
 
-**Root cause:**
-- **Broken image:** the About page's stored content was baked into the database before a hardcoded-path fix landed in the theme code earlier this session. Static page content doesn't auto-update from theme code changes — it needs the page deleted and regenerated. **This may already be stale again** after the most recent palette/image work, so it needs re-verification after redeploy, not just a repeat of the old fix.
-- **Overlay issue:** the floating "UK Private-Label Retailer / Wookiee / Operated by Wookiee Decor Ltd" card is positioned with `position: absolute; bottom: 20px; right: 20px` against the hero image, sized `max-width: 250px`. At the viewport/image size shown in the stakeholder's screenshot, the card overlaps awkwardly rather than sitting cleanly at the corner — this is a real CSS positioning issue, not just a stale-content problem.
-
-**Proposed fix:** delete + regenerate the About page (routine at this point), and separately fix the floating card's CSS to size/position more robustly across viewport widths (likely needs to move from raw inline absolute positioning to a proper responsive pattern, matching how the homepage's hero stat badge already handles this better).
+**Resolution:** the floating stat card's CSS now caps its width to the container (`max-width: min(230px, calc(100% - 40px))`) instead of a bare fixed 250px, and drops to static flow below the image entirely under 480px instead of overlapping it. The broken image itself was confirmed fixed after the About page was deleted/regenerated earlier in this session; since company details on this page (registered address, company number) now also read from Wookiee Settings via shortcode, this page won't need another delete/regenerate cycle if those details ever change again.
 
 ---
 
-## 6. Footer
+## 6. Footer — ✅ mostly done
 
 **Feedback:** "Change the pallet of footer" / "Payment icons not rendered properly"
 
-**Clarified direction (from Abubakar):** not about color specifically — the footer should read as **clean and modern, not cluttered**. This is a density/layout complaint, not a palette complaint.
-
-**Root cause:**
-- **Clutter:** the newsletter section currently stacks a kicker, heading, lead paragraph, 3 bullet points, *and* a separate signup card side-by-side with a 4-column link/info section below it and a sub-footer below that — a lot of vertical weight and visual sections before you reach the bottom. Fix: consolidate the newsletter block into a single slim band, reduce info density in the columns, tighten spacing throughout.
-- **Payment icons:** checked directly — the Visa/Mastercard/PayPal/Amex/Apple Pay SVGs use their own brand-specific colors and were *not* touched by the recent palette sweep, so this isn't a regression from that work. The actual rendering problem (sizing? wrapping? invisible against the dark background at certain sizes?) hasn't been confirmed visually yet.
-
-**Decision/info needed:** a screenshot of the current payment icons as rendered, to diagnose the actual rendering problem.
+**Resolution:**
+- **Clutter:** consolidated the newsletter block (was: kicker + heading + lead + 3 bullets + separate signup card) into a single slim inline band; merged the 4-column info section down; tightened spacing throughout.
+- **Payment icons:** the Visa and PayPal icons were crude hand-approximated shape blobs that didn't actually resemble the real logos (unlike Mastercard's recognizable two-circle mark, or Amex/Apple Pay's clean text style) — likely the actual "not rendered properly" issue. Replaced with clean text-based badges matching the Amex/Apple Pay treatment already in use. **Still worth a look after redeploy** to confirm this was the actual problem, since it was diagnosed from the code rather than a screenshot.
 
 ---
 
-## 7. Social media links
+## 7. Social media links — ✅ DONE (mechanism), needs your input (URLs)
 
 **Feedback:** "Remove social media if you don't have pages" / "Atleast make fb"
 
-**Root cause:** footer social icons (Facebook, Instagram, LinkedIn, Pinterest) all link to `#` — placeholders, no real accounts behind them.
+**Resolution:** social icons are now driven by the Wookiee Settings admin page — each of Facebook/Instagram/LinkedIn/Pinterest only renders in the footer if a URL is actually filled in there; blank fields hide their icon entirely. No code changes needed to add or remove one going forward.
 
-**Proposed fix:** at minimum, set up a real Facebook page and link it; remove the other three placeholder icons (Instagram/LinkedIn/Pinterest) until real accounts exist for those too, rather than link to nothing.
-
-**Decision needed:** does a Facebook page exist/get created, and what's the URL? Are Instagram/LinkedIn/Pinterest accounts planned at all, or should those icons come out entirely for now?
+**Still needed:** the actual Facebook URL (or whichever accounts exist) entered into the settings page — nothing shows until that's filled in.
 
 ---
 
@@ -113,31 +85,25 @@ The product-creation code already guards against literal duplicate database rows
 
 **Feedback:** "If possible make breadcrumbs"
 
-**Proposed fix:** add breadcrumb navigation (Home > Shop > Product Name, etc.) across shop/product/page templates. WooCommerce has built-in breadcrumb support (`woocommerce_breadcrumb()`) that isn't currently being called anywhere in this theme — straightforward to wire up and style to match the site.
+**Resolution:** ✅ DONE. Regular pages (About, Contact, etc.) get a simple "Home > Page Title" breadcrumb via a new `wookiee_breadcrumb()` function called from `index.php`. Shop/product pages already had WooCommerce's own breadcrumb firing automatically (it was just unstyled/easy to miss) — now styled to match the rest of the site.
 
 ---
 
-## Execution order
+## Execution order (updated)
 
-Roughly in dependency order — items with open decisions are blocked until those are answered, so the sequence below assumes answers come back in this rough priority:
-
-1. **Unblocked, start now:** footer decluttering (§6, direction confirmed: clean/modern/not cluttered), breadcrumbs (§8, self-contained), About page floating card CSS fix (§5, code fix, no decision needed).
-2. **Get the remaining open decisions** (shipping rate; returns address; social accounts; product lineup) — several other fixes depend on these and doing them twice wastes a delete/redeploy cycle each time.
-3. Shipping rate change (banner, trust bar, hero badge, shipping policy, WooCommerce config)
-4. Returns policy address
-5. Product catalog rework (drop scooter, resolve shoe-storage category, reduce cross-product image reuse)
-6. About page: delete/regenerate page content (routine, after the CSS fix in step 1)
-7. Footer payment icons (needs a current screenshot to diagnose first)
-8. Social media links (needs the Facebook URL / account decision first)
+1. ~~Footer decluttering, breadcrumbs, About page CSS fix~~ — ✅ done
+2. ~~Shipping rate + messaging~~ — ✅ done (£5.99, now a setting)
+3. ~~Theme settings admin panel~~ — ✅ done, resolves the returns-address and social-URL blockers as self-serve rather than needing a code change
+4. Remaining: WooCommerce shipping method configuration (checkout math, not just messaging — see §1)
+5. Remaining: product catalog rework (§3, §4) — waiting on real product data or confirmation to just shrink the placeholder set
+6. Remaining: reconfirm the payment icon fix actually resolved the "not rendered properly" complaint (§6)
 
 ## Open questions summary (blocking items)
 
 | # | Question | Blocks |
 |---|---|---|
-| 1 | Flat shipping rate: £5.99 or £6.99 (or other)? | §1, and downstream copy in §2 |
-| 2 | Returns address — same as registered office, or a separate warehouse address? | §2 |
-| 3 | Real product lineup, or just "drop the scooter" from the existing placeholders? | §3, §4 |
-| 4 | Facebook page URL (if it exists)? Keep/drop Instagram/LinkedIn/Pinterest icons? | §7 |
-| 5 | Current screenshot of payment icons issue (to diagnose before fixing) | §6 |
+| 1 | Real product lineup, or just confirm shrinking the placeholder set to whatever the photo pool can support without repeats? | §3, §4 |
+| 2 | Facebook page URL (and any other real social accounts) — no longer blocks any code work, just needs entering at Appearance → Wookiee Settings whenever ready | §7 |
+| 3 | Confirm on the live site whether the payment icon fix actually resolved "not rendered properly" | §6 |
 
 ~~What specifically is wrong with the footer palette?~~ — resolved: it was never about color, it's about density (see §6).

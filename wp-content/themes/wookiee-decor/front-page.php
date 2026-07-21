@@ -29,8 +29,8 @@ get_header(); ?>
 				<div class="hero-image-placeholder">Hero Image Placeholder</div>
 				<?php endif; ?>
 				<div class="hero-stat-badge">
-					<div class="stat-number">3-5</div>
-					<div class="stat-label">day UK delivery, dispatched from Cowdenbeath</div>
+					<div class="stat-number">&pound;<?php echo esc_html( wookiee_get_setting( 'shipping_rate' ) ); ?></div>
+					<div class="stat-label">flat-rate UK shipping, dispatched from Cowdenbeath</div>
 				</div>
 			</div>
 		</div>
@@ -42,7 +42,7 @@ get_header(); ?>
 			<div class="feature-icon">
 				<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="2" ry="2"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
 			</div>
-			<div>Free delivery<span class="feature-text-sub">On orders over &pound;50</span></div>
+			<div>Flat-rate shipping<span class="feature-text-sub">Just &pound;<?php echo esc_html( wookiee_get_setting( 'shipping_rate' ) ); ?> UK-wide</span></div>
 		</div>
 		<div class="feature-item">
 			<div class="feature-icon">

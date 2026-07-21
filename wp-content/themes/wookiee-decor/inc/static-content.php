@@ -47,7 +47,7 @@ function wookiee_starter_pages() {
         </div>
         <div style="padding: 40px 20px; border-right: 1px solid var(--wookiee-border);">
             <div style="font-size: 10px; font-weight: 700; color: #8a7d6d; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;">COMPANY NUMBER</div>
-            <div style="font-size: 16px; font-weight: 700; color: var(--wookiee-ink); margin-bottom: 5px;">SC769264</div>
+            <div style="font-size: 16px; font-weight: 700; color: var(--wookiee-ink); margin-bottom: 5px;">[wookiee_field key="company_number"]</div>
             <div style="font-size: 12px; color: #6b6058;">Incorporated 2 January 2026</div>
         </div>
         <div style="padding: 40px 20px; border-right: 1px solid var(--wookiee-border);">
@@ -154,7 +154,7 @@ function wookiee_starter_pages() {
                         <div>
                             <h4 class="contact-info-title">Email Support</h4>
                             <p class="contact-info-desc">Get in touch via email directly.</p>
-                            <a href="mailto:info@wookied.com" class="contact-info-value">info@wookied.com</a>
+                            <a href=\'mailto:[wookiee_field key="contact_email"]\' class="contact-info-value">[wookiee_field key="contact_email"]</a>
                         </div>
                     </div>
                     <div class="contact-info-card">
@@ -162,7 +162,7 @@ function wookiee_starter_pages() {
                         <div>
                             <h4 class="contact-info-title">Phone Support</h4>
                             <p class="contact-info-desc">Available Monday to Friday, 9am - 5pm.</p>
-                            <div class="contact-info-value">+442084726126</div>
+                            <div class="contact-info-value">[wookiee_field key="contact_phone"]</div>
                         </div>
                     </div>
                 </div>
@@ -175,11 +175,7 @@ function wookiee_starter_pages() {
                         <span class="contact-info-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"></path><path d="M5 21V7l8-4v18"></path><path d="M19 21V11l-6-4"></path><path d="M9 9v.01"></path><path d="M9 12v.01"></path><path d="M9 15v.01"></path><path d="M9 18v.01"></path></svg></span>
                         <div>
                             <h4 class="contact-info-title">Registered Address</h4>
-                            <p class="contact-info-desc">
-                                Wookiee Decor Ltd<br>
-                                28 Johnston Park, Cowdenbeath, Scotland,<br>
-                                KY4 9AZ, United Kingdom
-                            </p>
+                            <p class="contact-info-desc">[wookiee_field key="registered_address"]</p>
                         </div>
                     </div>
                 </div>
@@ -212,7 +208,7 @@ function wookiee_starter_pages() {
 <div style="max-width:860px; margin:0 auto; padding:40px 20px; font-family:inherit; color:#333; line-height:1.7;">
 
 <h1 style="font-size:32px; font-weight:800; color:#1a1614; margin-bottom:6px;">Terms and Conditions</h1>
-<p style="color:#8a7d6d; font-size:14px; margin-bottom:40px;">Last updated: July 2025 &nbsp;|&nbsp; Wookiee Decor Ltd &nbsp;|&nbsp; Company No. SC769264</p>
+<p style="color:#8a7d6d; font-size:14px; margin-bottom:40px;">Last updated: July 2025 &nbsp;|&nbsp; Wookiee Decor Ltd &nbsp;|&nbsp; Company No. [wookiee_field key="company_number"]</p>
 
 <p>These terms and conditions govern your use of the Wookiee website at <strong>wookied.com</strong> and any purchase you make from us. Please read them carefully before placing an order. By purchasing from us, you agree to be bound by these terms.</p>
 
@@ -223,10 +219,10 @@ function wookiee_starter_pages() {
 <h2 style="font-size:20px; font-weight:700; color:#1a1614; margin-bottom:12px;">1. About Us</h2>
 <p>Wookiee is a trading name of <strong>Wookiee Decor Ltd</strong>, a private limited company registered in England and Wales.</p>
 <ul style="padding-left:22px;">
-  <li><strong>Company number:</strong> SC769264</li>
-  <li><strong>Registered address:</strong> 28 Johnston Park, Cowdenbeath, Scotland, KY4 9AZ</li>
-  <li><strong>Email:</strong> <a href="mailto:info@wookied.com" style="color:#c1704a;">info@wookied.com</a></li>
-  <li><strong>Phone:</strong> +442084726126</li>
+  <li><strong>Company number:</strong> [wookiee_field key="company_number"]</li>
+  <li><strong>Registered address:</strong> [wookiee_field key="registered_address"]</li>
+  <li><strong>Email:</strong> <a href=\'mailto:[wookiee_field key="contact_email"]\' style="color:#c1704a;">[wookiee_field key="contact_email"]</a></li>
+  <li><strong>Phone:</strong> [wookiee_field key="contact_phone"]</li>
 </ul>
 
 <hr style="border:none;border-top:1px solid #e5dbc9;margin:36px 0;">
@@ -253,7 +249,7 @@ function wookiee_starter_pages() {
 
 <h2 style="font-size:20px; font-weight:700; color:#1a1614; margin-bottom:12px;">5. Your Right to Cancel (Cooling-Off Period)</h2>
 <p>Under the Consumer Contracts (Information, Cancellation and Additional Charges) Regulations 2013, you have the right to cancel your order within <strong>14 days</strong> of receiving your goods, without giving any reason.</p>
-<p>To exercise this right, you must notify us clearly within the 14-day period by emailing <a href="mailto:info@wookied.com" style="color:#c1704a;">info@wookied.com</a>. You must then return the goods to us within a further 14 days of notifying us.</p>
+<p>To exercise this right, you must notify us clearly within the 14-day period by emailing <a href=\'mailto:[wookiee_field key="contact_email"]\' style="color:#c1704a;">[wookiee_field key="contact_email"]</a>. You must then return the goods to us within a further 14 days of notifying us.</p>
 <p>We will issue a full refund, including the original standard delivery charge, within <strong>14 days</strong> of receiving the returned goods or evidence of return, whichever is earlier. We may reduce the refund to reflect any diminishment in the value of the goods caused by handling beyond what is necessary to inspect them.</p>
 <p>Return shipping costs for change-of-mind cancellations are your responsibility unless otherwise stated.</p>
 
@@ -266,7 +262,7 @@ function wookiee_starter_pages() {
   <li><strong>After 30 days (up to 6 months):</strong> We will offer a repair or replacement. If neither is possible or both fail, you are entitled to a partial or full refund.</li>
   <li><strong>After 6 months:</strong> You must demonstrate the fault existed at the time of delivery. If proven, we will offer a repair, replacement, or partial refund.</li>
 </ul>
-<p>To report a fault, please contact us at <a href="mailto:info@wookied.com" style="color:#c1704a;">info@wookied.com</a> with your order number and a description or photo of the issue.</p>
+<p>To report a fault, please contact us at <a href=\'mailto:[wookiee_field key="contact_email"]\' style="color:#c1704a;">[wookiee_field key="contact_email"]</a> with your order number and a description or photo of the issue.</p>
 
 <hr style="border:none;border-top:1px solid #e5dbc9;margin:36px 0;">
 
@@ -301,7 +297,7 @@ function wookiee_starter_pages() {
 
 <hr style="border:none;border-top:1px solid #e5dbc9;margin:36px 0;">
 
-<p style="font-size:13px; color:#9c8f7f;">If you have any questions about these terms, please contact us at <a href="mailto:info@wookied.com" style="color:#c1704a;">info@wookied.com</a>.</p>
+<p style="font-size:13px; color:#9c8f7f;">If you have any questions about these terms, please contact us at <a href=\'mailto:[wookiee_field key="contact_email"]\' style="color:#c1704a;">[wookiee_field key="contact_email"]</a>.</p>
 
 </div>
 ' ),
@@ -309,7 +305,7 @@ function wookiee_starter_pages() {
 <div style="max-width:860px; margin:0 auto; padding:40px 20px; font-family:inherit; color:#333; line-height:1.7;">
 
 <h1 style="font-size:32px; font-weight:800; color:#1a1614; margin-bottom:6px;">Shipping Policy</h1>
-<p style="color:#8a7d6d; font-size:14px; margin-bottom:40px;">Last updated: July 2025 &nbsp;|&nbsp; Wookiee Decor Ltd &nbsp;|&nbsp; Company No. SC769264</p>
+<p style="color:#8a7d6d; font-size:14px; margin-bottom:40px;">Last updated: July 2025 &nbsp;|&nbsp; Wookiee Decor Ltd &nbsp;|&nbsp; Company No. [wookiee_field key="company_number"]</p>
 
 <p>We want your order to arrive quickly and safely. Below you will find everything you need to know about how we ship, what it costs, and what to do if something goes wrong.</p>
 
@@ -325,24 +321,19 @@ function wookiee_starter_pages() {
   <thead>
     <tr style="background:#ece2d3;">
       <th style="text-align:left; padding:12px 16px; color:#1a1614;">Service</th>
-      <th style="text-align:left; padding:12px 16px; color:#1a1614;">Estimated Delivery</th>
+      <th style="text-align:left; padding:12px 16px; color:#1a1614;">Handling &amp; Transit Time</th>
       <th style="text-align:left; padding:12px 16px; color:#1a1614;">Cost</th>
     </tr>
   </thead>
   <tbody>
-    <tr style="border-bottom:1px solid #e5dbc9;">
-      <td style="padding:12px 16px;">Standard Delivery</td>
-      <td style="padding:12px 16px;">3–5 business days</td>
-      <td style="padding:12px 16px;">Displayed at checkout</td>
-    </tr>
     <tr>
-      <td style="padding:12px 16px;">Free Delivery</td>
-      <td style="padding:12px 16px;">3–5 business days</td>
-      <td style="padding:12px 16px;">Free on qualifying orders (threshold shown at checkout)</td>
+      <td style="padding:12px 16px;">UK Flat-Rate Shipping</td>
+      <td style="padding:12px 16px;">[wookiee_field key="shipping_dispatch"]</td>
+      <td style="padding:12px 16px;">&pound;[wookiee_field key="shipping_rate"] per order</td>
     </tr>
   </tbody>
 </table>
-<p style="font-size:13px; color:#8a7d6d;">Delivery charges are calculated at checkout based on your order and location. The total will always be shown before you complete your purchase.</p>
+<p style="font-size:13px; color:#8a7d6d;">We charge one flat shipping rate regardless of order size or weight. The total is always shown before you complete your purchase.</p>
 
 <hr style="border:none;border-top:1px solid #e5dbc9;margin:36px 0;">
 
@@ -369,16 +360,16 @@ function wookiee_starter_pages() {
 <hr style="border:none;border-top:1px solid #e5dbc9;margin:36px 0;">
 
 <h2 style="font-size:20px; font-weight:700; color:#1a1614; margin-bottom:12px;">Damaged or Lost Parcels</h2>
-<p>If your order arrives damaged, please take photos immediately and contact us at <a href="mailto:info@wookied.com" style="color:#c1704a;">info@wookied.com</a> within 48 hours of delivery. If your tracked parcel shows as delivered but you have not received it, please check with neighbours and your local courier depot first, then contact us and we will investigate.</p>
+<p>If your order arrives damaged, please take photos immediately and contact us at <a href=\'mailto:[wookiee_field key="contact_email"]\' style="color:#c1704a;">[wookiee_field key="contact_email"]</a> within 48 hours of delivery. If your tracked parcel shows as delivered but you have not received it, please check with neighbours and your local courier depot first, then contact us and we will investigate.</p>
 
 <hr style="border:none;border-top:1px solid #e5dbc9;margin:36px 0;">
 
 <h2 style="font-size:20px; font-weight:700; color:#1a1614; margin-bottom:12px;">Contact Us</h2>
 <p>If you have any questions about your delivery, please reach out to our support team:</p>
 <ul style="padding-left:22px;">
-  <li>Email: <a href="mailto:info@wookied.com" style="color:#c1704a;">info@wookied.com</a></li>
-  <li>Phone: +442084726126</li>
-  <li>Address: Wookiee Decor Ltd, 28 Johnston Park, Cowdenbeath, Scotland, KY4 9AZ</li>
+  <li>Email: <a href=\'mailto:[wookiee_field key="contact_email"]\' style="color:#c1704a;">[wookiee_field key="contact_email"]</a></li>
+  <li>Phone: [wookiee_field key="contact_phone"]</li>
+  <li>Address: [wookiee_field key="registered_address"]</li>
 </ul>
 
 </div>
@@ -387,7 +378,7 @@ function wookiee_starter_pages() {
 <div style="max-width:860px; margin:0 auto; padding:40px 20px; font-family:inherit; color:#333; line-height:1.7;">
 
 <h1 style="font-size:32px; font-weight:800; color:#1a1614; margin-bottom:6px;">Returns, Refunds and Cancellations</h1>
-<p style="color:#8a7d6d; font-size:14px; margin-bottom:40px;">Last updated: July 2025 &nbsp;|&nbsp; Wookiee Decor Ltd &nbsp;|&nbsp; Company No. SC769264</p>
+<p style="color:#8a7d6d; font-size:14px; margin-bottom:40px;">Last updated: July 2025 &nbsp;|&nbsp; Wookiee Decor Ltd &nbsp;|&nbsp; Company No. [wookiee_field key="company_number"]</p>
 
 <p>We want you to be completely satisfied with your purchase. If something is not right, we will do everything we reasonably can to resolve it quickly and fairly.</p>
 
@@ -395,7 +386,7 @@ function wookiee_starter_pages() {
 
 <h2 style="font-size:20px; font-weight:700; color:#1a1614; margin-bottom:12px;">Your Statutory Right to Cancel (14-Day Cooling-Off Period)</h2>
 <p>Under the Consumer Contracts (Information, Cancellation and Additional Charges) Regulations 2013, you have the right to cancel your order within <strong>14 days</strong> of the day you (or someone you nominate) receive the goods, without giving any reason.</p>
-<p>To exercise this right, you must inform us clearly within the 14-day period. The easiest way is to email us at <a href="mailto:info@wookied.com" style="color:#c1704a;">info@wookied.com</a> with your name, order number, and a clear statement that you wish to cancel.</p>
+<p>To exercise this right, you must inform us clearly within the 14-day period. The easiest way is to email us at <a href=\'mailto:[wookiee_field key="contact_email"]\' style="color:#c1704a;">[wookiee_field key="contact_email"]</a> with your name, order number, and a clear statement that you wish to cancel.</p>
 <p>Once you have notified us, you have a further <strong>14 days</strong> to return the goods to us. You are responsible for the cost of return shipping for change-of-mind cancellations.</p>
 <p>We will issue a full refund — including the original standard delivery charge — within <strong>14 days</strong> of receiving the returned goods or evidence of return, whichever is earlier. We process refunds to your original payment method. We may reduce the refund amount to reflect any reduction in the value of the goods if you have handled them beyond what is necessary to check their nature and condition.</p>
 
@@ -425,7 +416,7 @@ function wookiee_starter_pages() {
 
 <h2 style="font-size:20px; font-weight:700; color:#1a1614; margin-bottom:12px;">How to Start a Return</h2>
 <ol style="padding-left:22px;">
-  <li>Email <a href="mailto:info@wookied.com" style="color:#c1704a;">info@wookied.com</a> with your order number, reason for return, and photos if the item is damaged or faulty.</li>
+  <li>Email <a href=\'mailto:[wookiee_field key="contact_email"]\' style="color:#c1704a;">[wookiee_field key="contact_email"]</a> with your order number, reason for return, and photos if the item is damaged or faulty.</li>
   <li>Our team will respond within 2 business days with a returns authorisation and instructions.</li>
   <li>Pack the item securely and send it to the address provided in our response.</li>
   <li>Once we receive and inspect the return, we will process your refund within 5–14 business days.</li>
@@ -435,7 +426,7 @@ function wookiee_starter_pages() {
 <hr style="border:none;border-top:1px solid #e5dbc9;margin:36px 0;">
 
 <h2 style="font-size:20px; font-weight:700; color:#1a1614; margin-bottom:12px;">Cancellations</h2>
-<p>If you wish to cancel an order before it has been dispatched, please contact us immediately at <a href="mailto:info@wookied.com" style="color:#c1704a;">info@wookied.com</a>. We will do our best to stop the order before it ships. If the order has already been dispatched, you will need to follow the returns process above once the parcel arrives.</p>
+<p>If you wish to cancel an order before it has been dispatched, please contact us immediately at <a href=\'mailto:[wookiee_field key="contact_email"]\' style="color:#c1704a;">[wookiee_field key="contact_email"]</a>. We will do our best to stop the order before it ships. If the order has already been dispatched, you will need to follow the returns process above once the parcel arrives.</p>
 
 <hr style="border:none;border-top:1px solid #e5dbc9;margin:36px 0;">
 
@@ -450,7 +441,7 @@ function wookiee_starter_pages() {
 
 <hr style="border:none;border-top:1px solid #e5dbc9;margin:36px 0;">
 
-<p style="font-size:13px; color:#9c8f7f;">Nothing in this policy affects your statutory rights under UK consumer law. For queries, contact <a href="mailto:info@wookied.com" style="color:#c1704a;">info@wookied.com</a> or call +442084726126.</p>
+<p style="font-size:13px; color:#9c8f7f;">Nothing in this policy affects your statutory rights under UK consumer law. For queries, contact <a href=\'mailto:[wookiee_field key="contact_email"]\' style="color:#c1704a;">[wookiee_field key="contact_email"]</a> or call [wookiee_field key="contact_phone"].</p>
 
 </div>
 ' ),
@@ -458,7 +449,7 @@ function wookiee_starter_pages() {
 <div style="max-width:860px; margin:0 auto; padding:40px 20px; font-family:inherit; color:#333; line-height:1.7;">
 
 <h1 style="font-size:32px; font-weight:800; color:#1a1614; margin-bottom:6px;">Payment Policy</h1>
-<p style="color:#8a7d6d; font-size:14px; margin-bottom:40px;">Last updated: July 2025 &nbsp;|&nbsp; Wookiee Decor Ltd &nbsp;|&nbsp; Company No. SC769264</p>
+<p style="color:#8a7d6d; font-size:14px; margin-bottom:40px;">Last updated: July 2025 &nbsp;|&nbsp; Wookiee Decor Ltd &nbsp;|&nbsp; Company No. [wookiee_field key="company_number"]</p>
 
 <p>This page explains how we handle payments, what methods we accept, and how we keep your financial information safe.</p>
 
@@ -495,7 +486,7 @@ function wookiee_starter_pages() {
 <hr style="border:none;border-top:1px solid #e5dbc9;margin:36px 0;">
 
 <h2 style="font-size:20px; font-weight:700; color:#1a1614; margin-bottom:12px;">Failed Payments</h2>
-<p>If your payment is declined, your order will not be confirmed and no charge will be made. Please check your card details and billing address, or try an alternative payment method. If you continue to experience issues, please contact your bank or payment provider first, then reach out to us at <a href="mailto:info@wookied.com" style="color:#c1704a;">info@wookied.com</a>.</p>
+<p>If your payment is declined, your order will not be confirmed and no charge will be made. Please check your card details and billing address, or try an alternative payment method. If you continue to experience issues, please contact your bank or payment provider first, then reach out to us at <a href=\'mailto:[wookiee_field key="contact_email"]\' style="color:#c1704a;">[wookiee_field key="contact_email"]</a>.</p>
 
 <hr style="border:none;border-top:1px solid #e5dbc9;margin:36px 0;">
 
@@ -509,7 +500,7 @@ function wookiee_starter_pages() {
 
 <hr style="border:none;border-top:1px solid #e5dbc9;margin:36px 0;">
 
-<p style="font-size:13px; color:#9c8f7f;">Questions about a payment? Contact us at <a href="mailto:info@wookied.com" style="color:#c1704a;">info@wookied.com</a> or call +442084726126.</p>
+<p style="font-size:13px; color:#9c8f7f;">Questions about a payment? Contact us at <a href=\'mailto:[wookiee_field key="contact_email"]\' style="color:#c1704a;">[wookiee_field key="contact_email"]</a> or call [wookiee_field key="contact_phone"].</p>
 
 </div>
 ' ),
@@ -517,7 +508,7 @@ function wookiee_starter_pages() {
 <div style="max-width:860px; margin:0 auto; padding:40px 20px; font-family:inherit; color:#333; line-height:1.7;">
 
 <h1 style="font-size:32px; font-weight:800; color:#1a1614; margin-bottom:6px;">Privacy Policy</h1>
-<p style="color:#8a7d6d; font-size:14px; margin-bottom:40px;">Last updated: July 2025 &nbsp;|&nbsp; Wookiee Decor Ltd &nbsp;|&nbsp; Company No. SC769264</p>
+<p style="color:#8a7d6d; font-size:14px; margin-bottom:40px;">Last updated: July 2025 &nbsp;|&nbsp; Wookiee Decor Ltd &nbsp;|&nbsp; Company No. [wookiee_field key="company_number"]</p>
 
 <p>This privacy policy explains how Wookiee Decor Ltd collects, uses, stores, and protects your personal information when you visit wookied.com or purchase from us. It also explains your rights under UK data protection law.</p>
 <p>We are committed to handling your data responsibly and transparently. We only collect what we need, we keep it secure, and we never sell it.</p>
@@ -528,9 +519,9 @@ function wookiee_starter_pages() {
 <p>The data controller for your personal information is:</p>
 <ul style="padding-left:22px;">
   <li><strong>Wookiee Decor Ltd</strong></li>
-  <li>28 Johnston Park, Cowdenbeath, Scotland, KY4 9AZ</li>
-  <li>Company number: SC769264</li>
-  <li>Email: <a href="mailto:info@wookied.com" style="color:#c1704a;">info@wookied.com</a></li>
+  <li>[wookiee_field key="registered_address"]</li>
+  <li>Company number: [wookiee_field key="company_number"]</li>
+  <li>Email: <a href=\'mailto:[wookiee_field key="contact_email"]\' style="color:#c1704a;">[wookiee_field key="contact_email"]</a></li>
 </ul>
 <p>We process your data in accordance with the UK General Data Protection Regulation (UK GDPR) and the Data Protection Act 2018.</p>
 
@@ -636,7 +627,7 @@ function wookiee_starter_pages() {
   <li><strong>Right to object:</strong> Object to us processing your data based on legitimate interests or for direct marketing purposes.</li>
   <li><strong>Rights related to automated decision-making:</strong> We do not make automated decisions that have legal or significant effects on you.</li>
 </ul>
-<p>To exercise any of these rights, please email us at <a href="mailto:info@wookied.com" style="color:#c1704a;">info@wookied.com</a>. We will respond within one calendar month. We do not charge a fee for exercising your rights unless a request is manifestly unfounded or excessive.</p>
+<p>To exercise any of these rights, please email us at <a href=\'mailto:[wookiee_field key="contact_email"]\' style="color:#c1704a;">[wookiee_field key="contact_email"]</a>. We will respond within one calendar month. We do not charge a fee for exercising your rights unless a request is manifestly unfounded or excessive.</p>
 
 <hr style="border:none;border-top:1px solid #e5dbc9;margin:36px 0;">
 
@@ -651,12 +642,12 @@ function wookiee_starter_pages() {
 <hr style="border:none;border-top:1px solid #e5dbc9;margin:36px 0;">
 
 <h2 style="font-size:20px; font-weight:700; color:#1a1614; margin-bottom:12px;">10. Marketing Communications</h2>
-<p>We will only send you marketing emails if you have opted in to receive them. You can unsubscribe at any time by clicking the unsubscribe link in any marketing email or by emailing us at <a href="mailto:info@wookied.com" style="color:#c1704a;">info@wookied.com</a>. Opting out of marketing does not affect your order-related communications.</p>
+<p>We will only send you marketing emails if you have opted in to receive them. You can unsubscribe at any time by clicking the unsubscribe link in any marketing email or by emailing us at <a href=\'mailto:[wookiee_field key="contact_email"]\' style="color:#c1704a;">[wookiee_field key="contact_email"]</a>. Opting out of marketing does not affect your order-related communications.</p>
 
 <hr style="border:none;border-top:1px solid #e5dbc9;margin:36px 0;">
 
 <h2 style="font-size:20px; font-weight:700; color:#1a1614; margin-bottom:12px;">11. Complaints</h2>
-<p>If you are unhappy with how we have handled your personal data, please contact us first at <a href="mailto:info@wookied.com" style="color:#c1704a;">info@wookied.com</a> so we can try to resolve your concern.</p>
+<p>If you are unhappy with how we have handled your personal data, please contact us first at <a href=\'mailto:[wookiee_field key="contact_email"]\' style="color:#c1704a;">[wookiee_field key="contact_email"]</a> so we can try to resolve your concern.</p>
 <p>You also have the right to lodge a complaint with the UK Information Commissioner\'s Office (ICO):</p>
 <ul style="padding-left:22px;">
   <li>Website: <a href="https://ico.org.uk/make-a-complaint" style="color:#c1704a;" target="_blank" rel="noopener">ico.org.uk/make-a-complaint</a></li>
@@ -674,7 +665,7 @@ function wookiee_starter_pages() {
 <div style="max-width:860px; margin:0 auto; padding:40px 20px; font-family:inherit; color:#333; line-height:1.7;">
 
 <h1 style="font-size:32px; font-weight:800; color:#1a1614; margin-bottom:6px;">Cookie Policy</h1>
-<p style="color:#8a7d6d; font-size:14px; margin-bottom:40px;">Last updated: July 2025 &nbsp;|&nbsp; Wookiee Decor Ltd &nbsp;|&nbsp; Company No. SC769264</p>
+<p style="color:#8a7d6d; font-size:14px; margin-bottom:40px;">Last updated: July 2025 &nbsp;|&nbsp; Wookiee Decor Ltd &nbsp;|&nbsp; Company No. [wookiee_field key="company_number"]</p>
 
 <p>This cookie policy explains what cookies are, which cookies we use on wookied.com, why we use them, and how you can manage your preferences. It should be read alongside our <a href="/privacy/" style="color:#c1704a;">Privacy Policy</a>.</p>
 
@@ -809,7 +800,7 @@ function wookiee_starter_pages() {
 
 <hr style="border:none;border-top:1px solid #e5dbc9;margin:36px 0;">
 
-<p style="font-size:13px; color:#9c8f7f;">Questions about cookies? Email us at <a href="mailto:info@wookied.com" style="color:#c1704a;">info@wookied.com</a>.</p>
+<p style="font-size:13px; color:#9c8f7f;">Questions about cookies? Email us at <a href=\'mailto:[wookiee_field key="contact_email"]\' style="color:#c1704a;">[wookiee_field key="contact_email"]</a>.</p>
 
 </div>
 ' ),
@@ -854,7 +845,7 @@ function wookiee_starter_pages() {
 
 <hr style="border:none;border-top:1px solid #e5dbc9;margin:36px 0;">
 
-<p>For full details of all cookies we use and why, please read our <a href="/cookie/" style="color:#c1704a;">Cookie Policy</a>. For questions, email us at <a href="mailto:info@wookied.com" style="color:#c1704a;">info@wookied.com</a>.</p>
+<p>For full details of all cookies we use and why, please read our <a href="/cookie/" style="color:#c1704a;">Cookie Policy</a>. For questions, email us at <a href=\'mailto:[wookiee_field key="contact_email"]\' style="color:#c1704a;">[wookiee_field key="contact_email"]</a>.</p>
 
 </div>
 ' ),

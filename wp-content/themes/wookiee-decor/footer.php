@@ -29,11 +29,26 @@
 			<p class="footer-about-copy">
 				UK private-label home-storage brand operated by Wookiee Decor Ltd.
 			</p>
+			<?php
+			$wookiee_socials = array(
+				'facebook_url'  => array( 'label' => 'Facebook', 'icon' => '<path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path>' ),
+				'instagram_url' => array( 'label' => 'Instagram', 'icon' => '<rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>' ),
+				'linkedin_url'  => array( 'label' => 'LinkedIn', 'icon' => '<path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path><rect x="2" y="9" width="4" height="12"></rect><circle cx="4" cy="4" r="2"></circle>' ),
+				'pinterest_url' => array( 'label' => 'Pinterest', 'icon' => '<path d="M8 22c-.5 0-.9-.2-1.1-.6-.5-.9-.1-2.2.8-3.7l1.7-2.7c-.5-.9-.8-2-.8-3.2 0-3.3 2.7-6 6-6s6 2.7 6 6c0 3.8-2.7 7-6.5 7-1.3 0-2.5-.5-3.3-1.4l-.8 3.1c-.4 1.5-1.4 3-1.5 3.1-.1.1-.3.2-.5.2z"></path><path d="M12 9c-.8 0-1.5.7-1.5 1.5s.7 1.5 1.5 1.5 1.5-.7 1.5-1.5S12.8 9 12 9z"></path>' ),
+			);
+			$wookiee_active_socials = array_filter( $wookiee_socials, function( $key ) {
+				return '' !== trim( (string) wookiee_get_setting( $key ) );
+			}, ARRAY_FILTER_USE_KEY );
+			?>
+			<?php if ( $wookiee_active_socials ) : ?>
 			<div class="footer-socials">
-				<a href="#" aria-label="Facebook" class="social-icon-btn">
-					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg>
+				<?php foreach ( $wookiee_active_socials as $key => $social ) : ?>
+				<a href="<?php echo esc_url( wookiee_get_setting( $key ) ); ?>" aria-label="<?php echo esc_attr( $social['label'] ); ?>" class="social-icon-btn" target="_blank" rel="noopener noreferrer">
+					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><?php echo $social['icon']; ?></svg>
 				</a>
+				<?php endforeach; ?>
 			</div>
+			<?php endif; ?>
 		</div>
 
 		<div class="footer-col">
@@ -57,12 +72,11 @@
 
 		<div class="footer-col">
 			<div class="footer-eyebrow">Get In Touch</div>
-			<p class="footer-info-text footer-contact-line"><span>&#9993;</span> <a href="mailto:info@wookied.com">info@wookied.com</a></p>
-			<p class="footer-info-text footer-contact-line"><span>&#128222;</span> <strong>+44 20 8472 6126</strong></p>
+			<p class="footer-info-text footer-contact-line"><span>&#9993;</span> <a href="mailto:<?php echo esc_attr( wookiee_get_setting( 'contact_email' ) ); ?>"><?php echo esc_html( wookiee_get_setting( 'contact_email' ) ); ?></a></p>
+			<p class="footer-info-text footer-contact-line"><span>&#128222;</span> <strong><?php echo esc_html( wookiee_get_setting( 'contact_phone' ) ); ?></strong></p>
 			<p class="footer-info-text">
-				Wookiee Decor Ltd, 28 Johnston Park,<br>
-				Cowdenbeath, KY4 9AZ, United Kingdom<br>
-				<span class="footer-info-small">Company No. SC769264</span>
+				<?php echo nl2br( esc_html( wookiee_get_setting( 'registered_address' ) ) ); ?><br>
+				<span class="footer-info-small">Company No. <?php echo esc_html( wookiee_get_setting( 'company_number' ) ); ?></span>
 			</p>
 		</div>
 

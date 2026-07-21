@@ -5,12 +5,13 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'WOOKIEE_VERSION', '1.0.6' );
+define( 'WOOKIEE_VERSION', '1.0.7' );
 define( 'WOOKIEE_DIR', trailingslashit( get_template_directory() ) );
 define( 'WOOKIEE_URI', trailingslashit( get_template_directory_uri() ) );
 define( 'WOOKIEE_CONTACT_EMAIL', 'info@wookied.com' );
 
 require_once WOOKIEE_DIR . 'inc/static-content.php';
+require_once WOOKIEE_DIR . 'inc/theme-settings.php';
 
 /**
  * Safely resolve a product category link, falling back to the shop page
@@ -66,7 +67,7 @@ function wookiee_handle_contact_form() {
 		exit;
 	}
 
-	$recipient = sanitize_email( WOOKIEE_CONTACT_EMAIL );
+	$recipient = sanitize_email( wookiee_get_setting( 'contact_email', WOOKIEE_CONTACT_EMAIL ) );
 	if ( ! is_email( $recipient ) ) {
 		wp_safe_redirect( home_url( '/contact/?contact=mail-error' ) );
 		exit;

@@ -9,7 +9,7 @@
 <?php wp_body_open(); ?>
 
 <div class="announcement-bar">
-	<p>Free UK delivery on orders over &pound;50 &nbsp;&middot;&nbsp; 30-day hassle-free returns &nbsp;&middot;&nbsp; Secure checkout</p>
+	<p>&pound;<?php echo esc_html( wookiee_get_setting( 'shipping_rate' ) ); ?> UK shipping &nbsp;&middot;&nbsp; 30-day hassle-free returns &nbsp;&middot;&nbsp; Secure checkout</p>
 </div>
 
 <header class="site-header">

@@ -27,12 +27,12 @@ function wookiee_starter_pages() {
                 <a href="/contact/" class="btn-outline" style="border-radius: 30px; padding: 12px 24px; font-weight: 600; text-decoration: none; border: 2px solid var(--wookiee-ink); color: var(--wookiee-ink); display: inline-block;">Contact us</a>
             </div>
         </div>
-        <div style="position: relative;">
+        <div class="about-hero-image-wrap">
             <img src="' . WOOKIEE_URI . 'assets/images/drawer-organizer.png" alt="Drawer Organizer" style="border-radius: 20px; width: 100%; max-height: 380px; object-fit: cover; box-shadow: 0 20px 40px rgba(0,0,0,0.1);">
-            <div style="position: absolute; bottom: 20px; right: 20px; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); max-width: 250px;">
-                <div style="font-size: 10px; font-weight: 700; color: #8a7d6d; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;">UK PRIVATE-LABEL RETAILER</div>
-                <div style="font-size: 24px; font-weight: 800; color: var(--wookiee-ink); margin-bottom: 5px;">Wookiee</div>
-                <div style="font-size: 12px; color: #6b6058;">Operated by Wookiee Decor Ltd</div>
+            <div class="about-stat-badge">
+                <div class="about-stat-kicker">UK PRIVATE-LABEL RETAILER</div>
+                <div class="about-stat-name">Wookiee</div>
+                <div class="about-stat-desc">Operated by Wookiee Decor Ltd</div>
             </div>
         </div>
     </div>
@@ -943,35 +943,35 @@ function wookiee_create_dummy_products() {
             'price'   => '45.00',
             'cat'     => 'kitchen-storage',
             'img'     => 'bamboo-shelf.png',
-            'gallery' => array( 'wookiee-prod-shelves.png', 'lifestyle.png' ),
+            'gallery' => array( 'wookiee-prod-shelves.png' ),
         ),
         array(
             'title'   => 'Minimalist Desk Organizer',
             'price'   => '24.99',
             'cat'     => 'drawer-organisers',
             'img'     => 'desk-organizer.png',
-            'gallery' => array( 'wookiee-prod-organizer.png', 'lifestyle.png' ),
+            'gallery' => array( 'drawer-organizer.png' ),
         ),
         array(
             'title'   => 'Ceramic Bathroom Set',
             'price'   => '35.00',
             'cat'     => 'bathroom-storage',
             'img'     => 'bathroom-set.png',
-            'gallery' => array( 'bathroom-shelf.png', 'lifestyle.png' ),
+            'gallery' => array( 'bathroom-shelf.png' ),
         ),
         array(
             'title'   => 'Stackable Bamboo Storage Box',
             'price'   => '18.99',
             'cat'     => 'drawer-organisers',
             'img'     => 'wookiee-prod-organizer.png',
-            'gallery' => array( 'bamboo-shelf.png', 'wookiee-prod-shelves.png' ),
+            'gallery' => array( 'lifestyle.png' ),
         ),
         array(
             'title'   => 'Premium Bathroom Shelf',
             'price'   => '29.99',
             'cat'     => 'bathroom-storage',
             'img'     => 'bathroom-shelf.png',
-            'gallery' => array( 'bathroom-set.png', 'lifestyle.png' ),
+            'gallery' => array( 'bathroom-set.png' ),
         ),
     );
 

@@ -5,7 +5,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'WOOKIEE_VERSION', '1.0.5' );
+define( 'WOOKIEE_VERSION', '1.0.6' );
 define( 'WOOKIEE_DIR', trailingslashit( get_template_directory() ) );
 define( 'WOOKIEE_URI', trailingslashit( get_template_directory_uri() ) );
 define( 'WOOKIEE_CONTACT_EMAIL', 'info@wookied.com' );
@@ -20,6 +20,22 @@ require_once WOOKIEE_DIR . 'inc/static-content.php';
 function wookiee_product_cat_url( $slug ) {
 	$term_link = get_term_link( $slug, 'product_cat' );
 	return ! is_wp_error( $term_link ) ? esc_url( $term_link ) : esc_url( home_url( '/shop/' ) );
+}
+
+/**
+ * Simple Home > Current Page breadcrumb for regular pages/posts. WooCommerce
+ * has its own breadcrumb (woocommerce_breadcrumb(), fired automatically via
+ * woocommerce_content()) for shop/product pages, which this doesn't touch.
+ */
+function wookiee_breadcrumb() {
+	if ( is_front_page() ) {
+		return;
+	}
+	echo '<nav class="wookiee-breadcrumb" aria-label="Breadcrumb"><div class="container">';
+	echo '<a href="' . esc_url( home_url( '/' ) ) . '">Home</a>';
+	echo '<span class="breadcrumb-sep">/</span>';
+	echo '<span class="breadcrumb-current">' . esc_html( get_the_title() ) . '</span>';
+	echo '</div></nav>';
 }
 
 /**

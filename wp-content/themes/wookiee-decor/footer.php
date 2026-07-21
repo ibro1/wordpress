@@ -77,8 +77,6 @@
 			<div class="footer-eyebrow">Customer Care</div>
 			<ul class="footer-links-list">
 				<li><a href="<?php echo esc_url( home_url( '/about/' ) ); ?>">About us</a></li>
-				<li><a href="<?php echo esc_url( home_url( '/activities/' ) ); ?>">Our activities</a></li>
-				<li><a href="<?php echo esc_url( home_url( '/mission/' ) ); ?>">Our mission</a></li>
 				<li><a href="<?php echo esc_url( home_url( '/contact/' ) ); ?>">Contact us</a></li>
 				<li><a href="<?php echo esc_url( home_url( '/my-account/' ) ); ?>">My account</a></li>
 			</ul>

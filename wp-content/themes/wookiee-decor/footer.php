@@ -97,19 +97,19 @@
 				<div class="footer-copyright">&copy; <?php echo esc_html( date( 'Y' ) ); ?> Wookiee Decor Ltd.</div>
 				<div class="footer-payments">
 					<div class="payment-icon-wrapper" title="Visa">
-						<svg width="30" height="18" viewBox="0 0 30 18"><text x="15" y="13" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-weight="700" font-style="italic" font-size="10" fill="#ffffff">VISA</text></svg>
+						<svg width="40" height="20" viewBox="0 0 40 20"><text x="20" y="14" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-weight="700" font-style="italic" font-size="11" fill="#ffffff">VISA</text></svg>
 					</div>
 					<div class="payment-icon-wrapper" title="Mastercard">
-						<svg width="30" height="18" viewBox="0 0 24 16"><circle cx="9" cy="8" r="6" fill="#EB001B" fill-opacity="0.85"/><circle cx="15" cy="8" r="6" fill="#F79E1B" fill-opacity="0.85"/></svg>
+						<svg width="40" height="20" viewBox="0 0 24 16"><circle cx="9" cy="8" r="6" fill="#EB001B" fill-opacity="0.85"/><circle cx="15" cy="8" r="6" fill="#F79E1B" fill-opacity="0.85"/></svg>
 					</div>
 					<div class="payment-icon-wrapper" title="PayPal">
-						<svg width="30" height="18" viewBox="0 0 30 18"><text x="15" y="13" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-weight="700" font-style="italic" font-size="9" fill="#ffffff">PayPal</text></svg>
+						<svg width="40" height="20" viewBox="0 0 40 20"><text x="20" y="14" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-weight="700" font-style="italic" font-size="9.5" fill="#ffffff">PayPal</text></svg>
 					</div>
 					<div class="payment-icon-wrapper" title="American Express">
-						<svg width="30" height="18" viewBox="0 0 30 18"><text x="15" y="12" text-anchor="middle" fill="#ffffff" font-size="7" font-weight="700" font-family="sans-serif">AMEX</text></svg>
+						<svg width="40" height="20" viewBox="0 0 40 20"><text x="20" y="13.5" text-anchor="middle" fill="#ffffff" font-size="8" font-weight="700" font-family="sans-serif">AMEX</text></svg>
 					</div>
 					<div class="payment-icon-wrapper" title="Apple Pay">
-						<svg width="30" height="18" viewBox="0 0 30 18"><text x="15" y="12.5" text-anchor="middle" fill="#ffffff" font-size="8" font-weight="600" font-family="sans-serif"> Pay</text></svg>
+						<svg width="40" height="20" viewBox="0 0 40 20"><text x="20" y="13.5" text-anchor="middle" fill="#ffffff" font-size="7" font-weight="600" font-family="sans-serif">Apple Pay</text></svg>
 					</div>
 				</div>
 			</div>

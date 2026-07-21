@@ -12,6 +12,7 @@ define( 'WOOKIEE_CONTACT_EMAIL', 'info@wookied.com' );
 
 require_once WOOKIEE_DIR . 'inc/static-content.php';
 require_once WOOKIEE_DIR . 'inc/theme-settings.php';
+require_once WOOKIEE_DIR . 'inc/product-generator.php';
 
 /**
  * Safely resolve a product category link, falling back to the shop page

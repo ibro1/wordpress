@@ -1,0 +1,292 @@
+<?php
+/**
+ * Niche-agnostic page content generator (v2 spec §2b, phase 3 of the
+ * roadmap). Generates brand-voice copy (About, homepage hero/philosophy)
+ * and UK-compliant policy pages (Terms, Privacy, Shipping, Returns,
+ * Cookies) from the store's niche brief and real business details already
+ * held in Wookiee Settings.
+ *
+ * Everything lands as a WordPress page titled "<Thing> (AI Draft)" in
+ * Draft status - never overwriting the theme's existing live pages,
+ * never auto-published. An admin reviews, edits, and republishes (or
+ * copies content across) manually. The policy prompt below is adapted
+ * from docs/policy writing law.txt (not shipped to the live server, since
+ * deployment only copies the theme folder - so the same instructions are
+ * reproduced here rather than read from that file at runtime).
+ */
+
+defined( 'ABSPATH' ) || exit;
+
+function wookiee_content_generator_pieces() {
+	return array(
+		'about'          => array( 'label' => 'About page narrative', 'title' => 'About (AI Draft)' ),
+		'homepage_copy'  => array( 'label' => 'Homepage hero & philosophy copy', 'title' => 'Homepage Copy (AI Draft)' ),
+		'terms'          => array( 'label' => 'Terms & Conditions', 'title' => 'Terms & Conditions (AI Draft)' ),
+		'privacy'        => array( 'label' => 'Privacy Policy', 'title' => 'Privacy Policy (AI Draft)' ),
+		'shipping'       => array( 'label' => 'Shipping Policy', 'title' => 'Shipping Policy (AI Draft)' ),
+		'returns'        => array( 'label' => 'Returns & Refunds Policy', 'title' => 'Returns & Refunds Policy (AI Draft)' ),
+		'cookies'        => array( 'label' => 'Cookie Policy', 'title' => 'Cookie Policy (AI Draft)' ),
+	);
+}
+
+add_action( 'admin_menu', 'wookiee_register_content_generator_page' );
+function wookiee_register_content_generator_page() {
+	add_theme_page(
+		'Wookiee Content Generator',
+		'Wookiee Content Generator',
+		'manage_options',
+		'wookiee-content-generator',
+		'wookiee_render_content_generator_page'
+	);
+}
+
+function wookiee_render_content_generator_page() {
+	if ( ! current_user_can( 'manage_options' ) ) {
+		return;
+	}
+	$has_key     = '' !== trim( (string) wookiee_get_setting( 'anthropic_api_key' ) );
+	$saved_brief = get_option( 'wookiee_niche_brief', '' );
+	?>
+	<div class="wrap">
+		<h1>Wookiee Content Generator</h1>
+		<p>Generates on-brand page copy and UK policy pages from the store's niche and the business details already saved in Wookiee Settings. Every result is created as a new page titled "<em>(AI Draft)</em>" in <strong>Draft</strong> status — it never touches or replaces an existing live page. Review each draft, edit as needed, then either copy its content into the real page or publish it and update the live page to match.</p>
+
+		<?php if ( ! $has_key ) : ?>
+			<div class="notice notice-warning"><p>No Anthropic API key set. Add one on the <a href="<?php echo esc_url( admin_url( 'themes.php?page=wookiee-settings' ) ); ?>">Wookiee Settings</a> page first.</p></div>
+		<?php endif; ?>
+
+		<table class="form-table" role="presentation">
+			<tr>
+				<th scope="row"><label for="wookiee-niche-brief-2">Niche brief</label></th>
+				<td>
+					<textarea id="wookiee-niche-brief-2" rows="3" class="large-text" placeholder="e.g. UK home-storage and organisation products - baskets, shelving, drawer organisers, aimed at small flats"><?php echo esc_textarea( $saved_brief ); ?></textarea>
+					<p class="description">Shared with the Product Generator's niche brief.</p>
+				</td>
+			</tr>
+			<tr>
+				<th scope="row">Content to generate</th>
+				<td>
+					<?php foreach ( wookiee_content_generator_pieces() as $key => $piece ) : ?>
+						<label style="display:block;margin-bottom:6px;">
+							<input type="checkbox" class="wookiee-content-piece" value="<?php echo esc_attr( $key ); ?>" checked>
+							<?php echo esc_html( $piece['label'] ); ?>
+						</label>
+					<?php endforeach; ?>
+				</td>
+			</tr>
+		</table>
+
+		<p>
+			<button type="button" class="button button-primary" id="wookiee-content-generate-btn" <?php disabled( ! $has_key ); ?>>Generate selected drafts</button>
+			<span id="wookiee-content-generate-status" style="margin-left:8px;"></span>
+		</p>
+
+		<div id="wookiee-content-generate-results"></div>
+	</div>
+	<script>
+	( function() {
+		var btn = document.getElementById( 'wookiee-content-generate-btn' );
+		if ( ! btn ) {
+			return;
+		}
+		btn.addEventListener( 'click', function() {
+			var status  = document.getElementById( 'wookiee-content-generate-status' );
+			var results = document.getElementById( 'wookiee-content-generate-results' );
+			var brief   = document.getElementById( 'wookiee-niche-brief-2' ).value.trim();
+			var checked = Array.prototype.slice.call( document.querySelectorAll( '.wookiee-content-piece:checked' ) ).map( function( el ) { return el.value; } );
+
+			if ( ! brief ) {
+				status.textContent = 'Describe the niche first.';
+				return;
+			}
+			if ( ! checked.length ) {
+				status.textContent = 'Select at least one item to generate.';
+				return;
+			}
+
+			btn.disabled = true;
+			results.innerHTML = '';
+			status.textContent = 'Generating ' + checked.length + ' item(s) with Claude… this can take a minute or two.';
+
+			var data = new FormData();
+			data.append( 'action', 'wookiee_generate_content' );
+			data.append( 'nonce', '<?php echo esc_js( wp_create_nonce( 'wookiee_generate_content' ) ); ?>' );
+			data.append( 'brief', brief );
+			checked.forEach( function( key ) { data.append( 'pieces[]', key ); } );
+
+			fetch( ajaxurl, { method: 'POST', credentials: 'same-origin', body: data } )
+				.then( function( r ) { return r.json(); } )
+				.then( function( res ) {
+					btn.disabled = false;
+					if ( ! res.success ) {
+						status.textContent = res.data && res.data.message ? res.data.message : 'Generation failed.';
+						return;
+					}
+					status.textContent = 'Done. ' + res.data.pages.length + ' draft page(s) ready for review.';
+					var html = '<table class="widefat"><thead><tr><th>Draft</th><th>Status</th><th></th></tr></thead><tbody>';
+					res.data.pages.forEach( function( p ) {
+						html += '<tr><td>' + p.title + '</td><td>' + ( p.error ? p.error : 'Created' ) + '</td><td>' + ( p.edit_link ? '<a href="' + p.edit_link + '" class="button">Review draft</a>' : '' ) + '</td></tr>';
+					} );
+					html += '</tbody></table>';
+					results.innerHTML = html;
+				} )
+				.catch( function() {
+					btn.disabled = false;
+					status.textContent = 'Generation failed — could not reach the server.';
+				} );
+		} );
+	} )();
+	</script>
+	<?php
+}
+
+add_action( 'wp_ajax_wookiee_generate_content', 'wookiee_generate_content_handler' );
+function wookiee_generate_content_handler() {
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_send_json_error( array( 'message' => 'Not allowed.' ), 403 );
+	}
+	check_ajax_referer( 'wookiee_generate_content', 'nonce' );
+
+	$brief  = isset( $_POST['brief'] ) ? sanitize_textarea_field( wp_unslash( $_POST['brief'] ) ) : '';
+	$pieces = isset( $_POST['pieces'] ) && is_array( $_POST['pieces'] ) ? array_map( 'sanitize_key', wp_unslash( $_POST['pieces'] ) ) : array();
+
+	if ( '' === trim( $brief ) ) {
+		wp_send_json_error( array( 'message' => 'Describe the niche first.' ) );
+	}
+	if ( empty( $pieces ) ) {
+		wp_send_json_error( array( 'message' => 'Select at least one item to generate.' ) );
+	}
+	if ( '' === trim( (string) wookiee_get_setting( 'anthropic_api_key' ) ) ) {
+		wp_send_json_error( array( 'message' => 'Add an Anthropic API key on the Wookiee Settings page first.' ) );
+	}
+
+	update_option( 'wookiee_niche_brief', $brief );
+
+	$available = wookiee_content_generator_pieces();
+	$results   = array();
+
+	foreach ( $pieces as $key ) {
+		if ( ! isset( $available[ $key ] ) ) {
+			continue;
+		}
+		$piece  = $available[ $key ];
+		$prompt = wookiee_build_content_prompt( $key, $brief );
+		$text   = wookiee_call_claude( $prompt, 2048 );
+
+		if ( is_wp_error( $text ) ) {
+			$results[] = array(
+				'title'     => esc_html( $piece['title'] ),
+				'error'     => esc_html( $text->get_error_message() ),
+				'edit_link' => '',
+			);
+			continue;
+		}
+
+		$post_id = wookiee_insert_or_update_ai_draft_page( $piece['title'], $text );
+		$results[] = array(
+			'title'     => esc_html( $piece['title'] ),
+			'error'     => '',
+			'edit_link' => $post_id ? get_edit_post_link( $post_id, 'raw' ) : '',
+		);
+	}
+
+	wp_send_json_success( array( 'pages' => $results ) );
+}
+
+/**
+ * A single block of real business details, shared by every prompt below
+ * so the model has the same facts to draw from and nothing to invent.
+ */
+function wookiee_business_details_block() {
+	$lines = array(
+		'Business/trading name: ' . wookiee_get_setting( 'business_name' ),
+		'Registered address: ' . str_replace( "\n", ', ', wookiee_get_setting( 'registered_address' ) ),
+		'Company number: ' . wookiee_get_setting( 'company_number' ),
+		'Contact email: ' . wookiee_get_setting( 'contact_email' ),
+		'Countries served: ' . wookiee_get_setting( 'countries_served' ),
+		'Typical delivery time: ' . wookiee_get_setting( 'shipping_dispatch' ),
+		'Flat shipping rate: £' . wookiee_get_setting( 'shipping_rate' ),
+		'Returns period: ' . wookiee_get_setting( 'returns_period_days' ) . ' days',
+		'Returns address: ' . str_replace( "\n", ', ', wookiee_get_returns_address() ),
+		'Website: ' . home_url( '/' ),
+	);
+	return implode( "\n", $lines );
+}
+
+function wookiee_build_content_prompt( $key, $brief ) {
+	$policy_labels = array(
+		'terms'    => 'Terms & Conditions',
+		'privacy'  => 'Privacy Policy',
+		'shipping' => 'Shipping Policy',
+		'returns'  => 'Returns & Refunds Policy',
+		'cookies'  => 'Cookie Policy',
+	);
+
+	if ( isset( $policy_labels[ $key ] ) ) {
+		return "Act as a UK e-commerce legal policy writer. Write a complete, ready-to-publish {$policy_labels[ $key ]} page for a UK online store.\n\n"
+			. "Store niche, in the owner's own words: \"{$brief}\"\n\n"
+			. "Real business details to use (do not invent anything beyond this list):\n" . wookiee_business_details_block() . "\n\n"
+			. "Rules:\n"
+			. "- Check against UK GDPR, the Data Protection Act 2018, the Consumer Rights Act 2015, the Consumer Contracts Regulations, the Electronic Commerce Regulations, and PECR, wherever relevant to this specific policy.\n"
+			. "- Do not invent any business fact beyond the details given above. If something relevant is missing, write a clear inline placeholder like \"[Business input required: X]\" instead of guessing.\n"
+			. "- Do not copy another company's policy text.\n"
+			. "- Write in plain, professional, customer-friendly English - not robotic or generic-sounding boilerplate.\n"
+			. "- End with a short note that this policy should be reviewed by a qualified UK solicitor before being relied on, since it is not legal advice.\n"
+			. "- Output ONLY the finished policy text as plain paragraphs separated by a blank line, starting with a single plain-text heading line. No markdown, no HTML, no commentary, no A/B/C-style breakdown - just the finished, publishable page.";
+	}
+
+	if ( 'about' === $key ) {
+		return "Write the About page narrative for a UK single-niche ecommerce store.\n\n"
+			. "Store niche, in the owner's own words: \"{$brief}\"\n"
+			. 'Business/trading name: ' . wookiee_get_setting( 'business_name' ) . "\n\n"
+			. "Rules:\n"
+			. "- Natural, human, on-brand voice for this niche - not generic AI-sounding filler, not overly formal.\n"
+			. "- Do not invent specific facts (founding year, headcount, awards, press mentions) that weren't given above.\n"
+			. "- Do not reference or imitate any specific real-world competitor brand.\n"
+			. "- About 150-250 words, plain paragraphs separated by a blank line, no markdown, no headings.\n"
+			. "- Output ONLY the finished copy - no preamble, no commentary.";
+	}
+
+	if ( 'homepage_copy' === $key ) {
+		return "Write homepage marketing copy for a UK single-niche ecommerce store.\n\n"
+			. "Store niche, in the owner's own words: \"{$brief}\"\n"
+			. 'Business/trading name: ' . wookiee_get_setting( 'business_name' ) . "\n\n"
+			. "Provide exactly these four labelled sections, each starting on its own line with the label shown (including the colon), and nothing else before or after them:\n"
+			. "EYEBROW: a very short tag line above the headline (2-5 words)\n"
+			. "HEADLINE: a short, punchy hero headline (under 10 words)\n"
+			. "SUBHEADLINE: one supporting sentence under the headline\n"
+			. "PHILOSOPHY: a 100-150 word paragraph about the store's approach and values for this niche\n\n"
+			. "Rules: natural, human, on-brand voice; do not invent specific facts; do not reference or imitate a real competitor brand; no markdown.";
+	}
+
+	return '';
+}
+
+/**
+ * Creates or refreshes a draft page by exact title. Refreshing (rather
+ * than skipping) on a repeat run is deliberate - unlike products, these
+ * are meant to be iterated on with a refined brief, not accumulated as
+ * separate candidates.
+ */
+function wookiee_insert_or_update_ai_draft_page( $title, $raw_text ) {
+	$content  = wpautop( esc_html( $raw_text ) );
+	$existing = get_page_by_title( $title, OBJECT, 'page' );
+
+	if ( $existing ) {
+		wp_update_post( array(
+			'ID'           => $existing->ID,
+			'post_content' => $content,
+			'post_status'  => 'draft',
+		) );
+		return $existing->ID;
+	}
+
+	$post_id = wp_insert_post( array(
+		'post_title'   => $title,
+		'post_content' => $content,
+		'post_status'  => 'draft',
+		'post_type'    => 'page',
+	) );
+
+	return ( $post_id && ! is_wp_error( $post_id ) ) ? $post_id : 0;
+}

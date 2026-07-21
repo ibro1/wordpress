@@ -14,7 +14,6 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'WOOKIEE_AI_MODEL', 'claude-sonnet-5' );
 define( 'WOOKIEE_AI_MAX_PRODUCTS', 8 );
 
 add_action( 'admin_menu', 'wookiee_register_product_generator_page' );
@@ -145,12 +144,11 @@ function wookiee_generate_products_handler() {
 
 	update_option( 'wookiee_niche_brief', $brief );
 
-	$api_key = wookiee_get_setting( 'anthropic_api_key' );
-	if ( '' === trim( (string) $api_key ) ) {
+	if ( '' === trim( (string) wookiee_get_setting( 'anthropic_api_key' ) ) ) {
 		wp_send_json_error( array( 'message' => 'Add an Anthropic API key on the Wookiee Settings page first.' ) );
 	}
 
-	$ideas = wookiee_ai_generate_product_ideas( $brief, $count, $api_key );
+	$ideas = wookiee_ai_generate_product_ideas( $brief, $count );
 	if ( is_wp_error( $ideas ) ) {
 		wp_send_json_error( array( 'message' => $ideas->get_error_message() ) );
 	}
@@ -177,7 +175,7 @@ function wookiee_generate_products_handler() {
  * WP_Error. Strict JSON-only instructions since this is parsed
  * programmatically, not shown to a human as chat output.
  */
-function wookiee_ai_generate_product_ideas( $brief, $count, $api_key ) {
+function wookiee_ai_generate_product_ideas( $brief, $count ) {
 	$prompt = "You are helping set up a single-niche UK ecommerce store. The store's niche, in the owner's own words:\n\"" . $brief . "\"\n\n"
 		. "Generate exactly {$count} product ideas that would all plausibly sit in this one store's catalog - same niche, consistent quality tier and price range, no duplicate concepts. Do not reference or imitate any specific real-world brand, retailer, or existing product listing.\n\n"
 		. "Respond with ONLY a raw JSON array (no markdown fences, no commentary before or after), where each element has exactly these keys:\n"
@@ -187,41 +185,11 @@ function wookiee_ai_generate_product_ideas( $brief, $count, $api_key ) {
 		. "- \"price_gbp\": a realistic price as a plain number string, e.g. \"24.99\"\n"
 		. "- \"image_brief\": a short phrase describing exactly what product photo is needed (angle, background, what's shown) so someone can go source or shoot the real image later - this is an instruction for a photographer/sourcer, not a description of an image that already exists";
 
-	$response = wp_remote_post(
-		'https://api.anthropic.com/v1/messages',
-		array(
-			'headers' => array(
-				'x-api-key'         => $api_key,
-				'anthropic-version' => '2023-06-01',
-				'content-type'      => 'application/json',
-			),
-			'body'    => wp_json_encode( array(
-				'model'      => WOOKIEE_AI_MODEL,
-				'max_tokens' => 2048,
-				'messages'   => array(
-					array( 'role' => 'user', 'content' => $prompt ),
-				),
-			) ),
-			'timeout' => 60,
-		)
-	);
-
-	if ( is_wp_error( $response ) ) {
-		return $response;
+	$text = wookiee_call_claude( $prompt, 2048 );
+	if ( is_wp_error( $text ) ) {
+		return $text;
 	}
-
-	$code = wp_remote_retrieve_response_code( $response );
-	if ( 200 !== $code ) {
-		$body = json_decode( wp_remote_retrieve_body( $response ), true );
-		$msg  = isset( $body['error']['message'] ) ? $body['error']['message'] : ( 'HTTP ' . intval( $code ) );
-		return new WP_Error( 'wookiee_ai_error', 'Anthropic API error: ' . $msg );
-	}
-
-	$body = json_decode( wp_remote_retrieve_body( $response ), true );
-	$text = isset( $body['content'][0]['text'] ) ? $body['content'][0]['text'] : '';
-	$text = trim( $text );
-	// Model occasionally wraps JSON in a markdown fence despite instructions.
-	$text = preg_replace( '/^```(?:json)?\s*|\s*```$/', '', $text );
+	$text = wookiee_strip_code_fence( $text );
 
 	$ideas = json_decode( $text, true );
 	if ( ! is_array( $ideas ) || empty( $ideas ) ) {

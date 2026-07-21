@@ -1,0 +1,81 @@
+# Wookiee Decor → Turnkey Niche E-Commerce Theme — Scoping v2
+
+**Status:** Planning only. No code in this phase — this document exists to size up what "install anywhere, configure it, boom it's a unique 1-niche store" actually requires, before committing to a build order.
+
+**Relationship to v1:** `docs/workflow/v1/spec.md` fixed Wookiee-the-specific-site based on stakeholder feedback. This document is about a different, larger goal: turning the theme itself into a reusable product that can spin up *any* single-niche store, not just Wookiee's.
+
+---
+
+## 1. What's actually hardcoded to Wookiee right now (audited, not guessed)
+
+| What | Where | Scale |
+|---|---|---|
+| Brand name "Wookiee" as copy (not just function prefixes) | Scattered across `inc/static-content.php`, `header.php`, `footer.php` | 34 lines |
+| Niche vocabulary (storage/organisation/shelving/drawer/bathroom/declutter) | Mostly `inc/static-content.php` | ~100 occurrences |
+| Page copy (About narrative, policy boilerplate, hero text, philosophy section, etc.) | `inc/static-content.php` | 1,041 lines total — the large majority of this is niche-specific prose |
+| Dummy product/category definitions | `inc/static-content.php` → `wookiee_create_dummy_products()` | 6 products, 4 categories, all storage-themed |
+| Function/option naming | `wookiee_*` prefix throughout | 43 distinct functions/options |
+| Business details (address, phone, email, company number) | Already solved | ✅ Wookiee Settings admin page, done in v1 |
+
+**Read on this:** the business-detail layer (name, address, contact, shipping rate) is already properly separated from code — that part of "configure it" already works today via the settings panel. The part that *isn't* separated yet is everything else: the actual words on the page. About page copy, policy page prose, hero headlines, product descriptions — all of it is English sentences written specifically for a UK home-storage brand, sitting in PHP as literal strings. That's the bulk of the "install anywhere, any niche" gap.
+
+---
+
+## 2. What "install anywhere, any niche" actually requires
+
+Breaking the vision into distinct capabilities, since they have very different build complexity and risk profiles:
+
+### 2a. Business identity via Companies House lookup
+**Complexity: low. Risk: none.** Companies House provides a free, official public API (`api.company-information.service.gov.uk`) built for exactly this — look up a company number, get back registered name, address, incorporation date, status, SIC codes. Requires a free API key registration (one-time, by whoever runs a given site).
+
+Feeds directly into the Wookiee Settings panel already built: instead of manually typing registered address/company number, an admin enters the company number once and those fields populate automatically. Still editable manually afterward for anything the API doesn't cover (returns address, contact email, social URLs, shipping rate — none of that lives on Companies House).
+
+### 2b. Niche-agnostic page content
+
+**Policy pages: mostly already solved, and there's an existing prompt for the rest.** Three files already sit in `docs/` that weren't part of this spec until discovered during this planning pass:
+
+- `docs/policy writing law.txt` — a UK-specific prompt (Consumer Rights Act 2015, UK GDPR, PECR, Consumer Contracts Regs) that reviews/rewrites policies against real business details, explicitly refusing to invent facts and flagging anything needing a solicitor's review. Written against placeholder business "Anyora Limited" — **needs confirming whether that's a real second site or a test placeholder** (see open question).
+- `docs/policy audit new.txt` — a broader US/Google Merchant Center + FTC + privacy compliance audit prompt, scored output, explicitly rejects "AI-generated sounding text" and demands natural, non-templated writing.
+- `docs/exif and webp.txt` — confirms product images are meant to come from a **real source** (supplier/dropship platform) and only get *technical* processing (WebP conversion, EXIF/metadata stripping, resizing, Google Merchant-safe naming/color conventions) — explicitly "Do NOT regenerate the product image with AI." This independently confirms the §2c position below: images aren't something to fabricate, they come from wherever the actual product data comes from.
+
+This means the policy-page piece of "niche-agnostic content" already has a working, tested prompt — the remaining engineering work is wiring it up (feed business details from Wookiee Settings + Companies House lookup into this prompt, run it, save the output as real page content) rather than designing a new one from scratch.
+
+**Non-policy copy (About narrative, hero text, philosophy section) still needs its own approach**, since the existing prompts don't cover brand-voice/marketing copy:
+- **(a) AI-generated at setup time**: admin describes a niche once during setup, AI generates the About narrative, hero copy, etc. in that voice, saved as real editable page content afterward (one-time generation, not regenerated live).
+- **(b) Structured templates with fill-in-the-blank slots**: less flexible, more predictable, no AI dependency, faster to build, weaker/more obviously-templated output.
+
+### 2c. Product catalog: research, generation, and legal boundaries
+**Complexity: high. Risk: real legal exposure if done wrong — see below.**
+
+What was proposed (research from Amazon/Walmart, AI edits descriptions/images) has a genuine problem: scraping product data and especially *images* from those platforms for republishing violates their Terms of Service and likely infringes copyright on the photography (usually owned by the brand or the platform's photography vendor, not freely reusable regardless of how the text around it is edited). This isn't a style preference — it's the kind of thing that gets a site's payment processor account or hosting terminated, or draws a takedown/legal notice. **This document does not include a scraper for those platforms, and any future phase touching this needs a different data source.**
+
+Legitimate alternatives that achieve the same actual goal (a real, single-niche, uniform-feeling product catalog):
+- **Licensed dropship/wholesale supplier APIs** (AliExpress, CJ Dropshipping, Spocket, or UK-specific wholesalers/distributors). These exist specifically for "build a store from a licensed product catalog" and — critically — come with actual fulfillment behind them, which anything sourced from Amazon/Walmart never would, since you can't fulfill an order for a product you don't have a supply relationship for.
+- **AI-generated original descriptions/categorization** within a niche brief (not copied from any specific existing listing), paired with either the theme's existing stock-photo approach or supplier-provided/licensed images.
+- Either way: AI-created products should land as **drafts requiring human review before publish**, not auto-live. A turnkey tool that lets anyone spin up live, orderable products with zero human verification is a real consumer-protection problem (UK Consumer Rights Act — misrepresenting goods that can't actually be fulfilled as described) the moment a real customer places an order.
+
+### 2d. Setup/onboarding flow
+**Complexity: medium.** Ties 2a–2c together into an actual "activate theme → configure → done" experience: a setup wizard (likely a dedicated admin screen, not the WP Customizer) that walks through: niche selection/description → business identity (Companies House lookup) → content generation (2b) → product sourcing (2c) → review/publish. This is the part that makes it feel "turnkey" rather than "here are some separate settings pages."
+
+---
+
+## 3. Suggested phased roadmap
+
+Roughly in order of (value delivered) ÷ (risk + complexity) — cheapest wins first, riskiest/most novel last:
+
+1. **Companies House lookup** (§2a) — small, clean, immediately useful even for Wookiee itself right now, no legal complexity.
+2. **Draft-only AI product content generator** (§2c, without a live supplier integration yet) — AI drafts description/categorization from a niche brief you provide, using stock or your own uploaded images, sitting as drafts for review. Proves out the "AI creates catalog content responsibly" piece without the bigger supplier-API integration.
+3. **Niche-agnostic page content generation** (§2b) — the biggest lift, best done after 1–2 are proven out since it benefits from the same "AI generates, human reviews, then it's saved as real content" pattern.
+4. **Supplier API integration** (§2c, full version) — connecting to an actual dropship/wholesale source for real, fulfillable inventory. This is its own significant integration project depending on which supplier(s) you want to support.
+5. **Setup wizard** (§2d) — once the underlying pieces exist, wrap them in a proper onboarding flow.
+
+## 4. Open questions
+
+| # | Question |
+|---|---|
+| 1 | For §2c, which supplier/dropship platform (if any) do you already have a relationship with, or want to integrate with first? This determines what's actually buildable vs. theoretical. |
+| 2 | For §2b, do you want AI-generated brand voice (a), or faster/simpler fill-in-the-blank templates (b)? They trade off quality vs. build time differently. |
+| 3 | Is the near-term goal "make Wookiee itself real" or "build the reusable product for resale to others"? These can share the same underlying code, but affects what to prioritize first — Wookiee's actual catalog vs. the general-purpose tooling. |
+| 4 | Do you have (or want to get) a Companies House API key now, so §2a can start immediately? |
+| 5 | Is "Anyora Limited" (company #16938766, `docs/policy writing law.txt`) a real second site already running on this same theme system, or just a placeholder example for that prompt? Affects whether this project needs to support multiple concurrent installs now or later. |
+| 6 | `docs/policy audit new.txt` is written for US law (FTC, CCPA/CPRA) alongside GDPR — Wookiee is UK-only ("Countries served: United Kingdom" in the sibling prompt). Should the audit prompt be used as-is, adapted to drop the US-specific framing, or reserved for a future US/international site? |

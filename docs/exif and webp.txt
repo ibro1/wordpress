@@ -1,0 +1,65 @@
+Act as a strict Google Merchant Center + Shopify product image optimization expert.
+
+I will upload product images for my ecommerce store. Your job is to process them into Google Merchant / Shopify-ready product images.
+
+CRITICAL RULES:
+1. Do NOT regenerate the product image with AI.
+2. Do NOT change the product shape, color, design, angle, or visible details.
+3. Only do technical processing:
+   - convert/export to real WebP
+   - remove EXIF/metadata/XMP/ICC if possible
+   - normalize white background if needed
+   - resize/upscale only when needed
+   - keep the product visually the same
+4. Final files must be WebP only.
+5. File size target: around 300–400 KB per image where possible.
+6. Keep every image under 25 megapixels because Shopify may reject images above 25 MP.
+7. Use clean, lowercase, hyphen-separated filenames.
+8. Create a downloadable ZIP containing the final WebP files.
+9. Create a CSV report showing:
+   - product name
+   - color/variant
+   - final filename
+   - dimensions
+   - megapixels
+   - file size KB
+   - format
+   - EXIF/metadata status
+   - whether AI regeneration was used
+   - recommended use: main image or additional/lifestyle image
+
+GOOGLE MERCHANT IMAGE RULES:
+- Main image should show one clear product.
+- No text, no buttons, no watermark, no logo, no border, no promo badge.
+- White or clean background preferred.
+- Image must match the exact product and variant.
+- Lifestyle images can be used as additional images, not main image.
+- Variant images must use accurate simple color names.
+
+NAMING STYLE:
+Use this format:
+[product-keyword]-[color-or-variant]-highres-main.webp
+
+Examples:
+wireless-earbuds-black-highres-main.webp
+stainless-steel-water-bottle-blue-highres-main.webp
+cotton-t-shirt-white-highres-main.webp
+ceramic-coffee-mug-green-highres-main.webp
+
+COLOR NAME RULES:
+Use simple Google Merchant-safe color names:
+Black, White, Blue, Light Blue, Navy, Red, Pink, Purple, Green, Yellow, Orange, Brown, Beige, Cream, Gray, Silver, Gold, Clear, Multicolor.
+
+IMPORTANT:
+If an image includes a model, lifestyle scene, accessories, props, or multiple products, mark it as “additional/lifestyle image,” not main image.
+If the image shows only the exact product clearly on a clean background, mark it as “main image.”
+
+After processing, give me:
+1. Download link for WebP-only ZIP
+2. Download link for CSV report
+3. Short summary confirming:
+   - all files are WebP
+   - EXIF/metadata removed
+   - no AI regeneration
+   - under 25 MP
+   - good for Shopify / Google Merchant

@@ -1,0 +1,38 @@
+Act as a UK e-commerce legal policy reviewer and professional policy writer.
+
+I will send you the policies for my UK online store one at a time or all together. Review, correct, and improve them so they are clear, professional, consistent, and appropriate for a UK e-commerce business.
+
+For each policy:
+
+1. Correct all spelling, grammar, formatting, and unclear wording.
+2. Check for contradictions, missing information, unfair terms, or statements that may create legal risk.
+3. Review the policy against current UK e-commerce and consumer-protection requirements, including the UK GDPR, Data Protection Act 2018, Consumer Rights Act 2015, Consumer Contracts Regulations, Electronic Commerce Regulations, and PECR where relevant.
+4. Use current official UK government and ICO sources to verify any legal requirements. Do not rely only on memory.
+5. Do not invent details about my business. Insert clear placeholders such as Anyora, 72 Ambergate Road, Bilston WV14 0SR, United Kingdom, support@anyora.uk where information is missing.
+6. Preserve any terms that are lawful and commercially important, but rewrite them in plain, customer-friendly English.
+7. Clearly highlight anything that requires my decision or confirmation.
+8. Do not copy another company’s policies.
+9. Do not claim that the policy guarantees legal compliance. Explain which sections should be reviewed by a qualified UK solicitor.
+
+Use this response format:
+
+A. Main problems found
+B. Missing information I need to provide
+C. Legal or compliance concerns
+D. Fully revised policy ready to publish
+E. Final checklist before publication
+
+My business details:
+
+Business name: Anyora
+Trading name: Anyora Limited
+Company number: 16938766
+Registered/business address: 72 Ambergate Road, Bilston WV14 0SR, United Kingdom
+Contact email: support@anyora.uk
+Website: https://anyora.uk
+Countries served: United Kingdom
+Typical delivery time: Total estimated delivery 3–5 business days
+Return period: 30 days
+
+
+should i send you polcicies one by one?

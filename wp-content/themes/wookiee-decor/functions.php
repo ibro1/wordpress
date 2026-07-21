@@ -5,7 +5,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'WOOKIEE_VERSION', '1.0.4' );
+define( 'WOOKIEE_VERSION', '1.0.5' );
 define( 'WOOKIEE_DIR', trailingslashit( get_template_directory() ) );
 define( 'WOOKIEE_URI', trailingslashit( get_template_directory_uri() ) );
 define( 'WOOKIEE_CONTACT_EMAIL', 'info@wookied.com' );
@@ -303,7 +303,7 @@ if ( class_exists( 'WooCommerce' ) ) {
 function wookiee_woocommerce_header_add_to_cart_fragment( $fragments ) {
 	ob_start();
 	?>
-	<a href="<?php echo esc_url( wc_get_cart_url() ); ?>" class="header-icon-btn cart-icon-btn" aria-label="Cart" style="color: var(--wookiee-navy); display: flex; align-items: center; position: relative; transition: opacity 0.2s;">
+	<a href="<?php echo esc_url( wc_get_cart_url() ); ?>" class="header-icon-btn cart-icon-btn" aria-label="Cart" style="color: var(--wookiee-ink); display: flex; align-items: center; position: relative; transition: opacity 0.2s;">
 		<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
 		<span class="cart-badge"><?php echo WC()->cart->get_cart_contents_count(); ?></span>
 	</a>
@@ -368,14 +368,14 @@ function wookiee_single_product_rating_mockup() {
                 $stars .= '☆';
             }
         }
-        echo '<div class="wookiee-dynamic-rating" style="display: flex; align-items: center; gap: 5px; margin-bottom: 15px; font-size: 14px; color: #dcb37b; box-sizing: border-box;">';
+        echo '<div class="wookiee-dynamic-rating" style="display: flex; align-items: center; gap: 5px; margin-bottom: 15px; font-size: 14px; color: #c9972f; box-sizing: border-box;">';
         echo esc_html( $stars );
-        echo '<span style="color: #666; font-size: 13px; margin-left: 5px;">' . esc_html( number_format( $average, 1 ) ) . ' (' . esc_html( $review_count ) . ' ' . esc_html( _n( 'review', 'reviews', $review_count, 'wookiee-commerce' ) ) . ')</span>';
+        echo '<span style="color: #6b6058; font-size: 13px; margin-left: 5px;">' . esc_html( number_format( $average, 1 ) ) . ' (' . esc_html( $review_count ) . ' ' . esc_html( _n( 'review', 'reviews', $review_count, 'wookiee-commerce' ) ) . ')</span>';
         echo '</div>';
     } else {
-        echo '<div class="wookiee-dynamic-rating" style="display: flex; align-items: center; gap: 5px; margin-bottom: 15px; font-size: 14px; color: #ccc; box-sizing: border-box;">';
+        echo '<div class="wookiee-dynamic-rating" style="display: flex; align-items: center; gap: 5px; margin-bottom: 15px; font-size: 14px; color: #d4c7b5; box-sizing: border-box;">';
         echo '☆☆☆☆☆';
-        echo '<span style="color: #888; font-size: 13px; margin-left: 5px;">No reviews yet</span>';
+        echo '<span style="color: #8a7d6d; font-size: 13px; margin-left: 5px;">No reviews yet</span>';
         echo '</div>';
     }
 }
@@ -398,13 +398,13 @@ if ( class_exists( 'WooCommerce' ) ) {
 function wookiee_single_product_trust_badges() {
     echo '
     <div style="margin-top: 30px; padding-top: 25px; border-top: 1px solid var(--wookiee-border); display: flex; flex-direction: column; gap: 15px; box-sizing: border-box;">
-        <div style="display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--wookiee-navy); font-weight: 600;">
+        <div style="display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--wookiee-ink); font-weight: 600;">
             <span style="font-size: 16px;">🚚</span> Free UK delivery on orders over £50
         </div>
-        <div style="display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--wookiee-navy); font-weight: 600;">
+        <div style="display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--wookiee-ink); font-weight: 600;">
             <span style="font-size: 16px;">🔄</span> 30-day hassle-free returns policy
         </div>
-        <div style="display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--wookiee-navy); font-weight: 600;">
+        <div style="display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--wookiee-ink); font-weight: 600;">
             <span style="font-size: 16px;">🔒</span> Secure checkout via Stripe & PayPal
         </div>
     </div>
@@ -443,7 +443,7 @@ function wookiee_custom_product_tabs( $tabs ) {
 // Shipping & Returns Tab Callback
 function wookiee_shipping_returns_tab_content() {
     ?>
-    <div class="wookiee-tab-content-wrapper" style="max-width: 800px; line-height: 1.7; color: #555;">
+    <div class="wookiee-tab-content-wrapper" style="max-width: 800px; line-height: 1.7; color: #5c5044;">
         <p style="margin: 0 0 15px 0;"><strong>Fulfillment & Delivery:</strong> All orders are stored, packed, and dispatched directly from our dedicated facility in Cowdenbeath, United Kingdom. We offer free standard UK delivery on all orders over £50. Standard delivery normally takes 3-5 working days.</p>
         <p style="margin: 0;"><strong>Hassle-Free Returns:</strong> We offer a 30-day return policy. If you are not completely satisfied with your storage products, please email info@wookied.com to request a returns authorization and prepaid shipping label.</p>
     </div>
@@ -496,7 +496,7 @@ function wookiee_custom_login_styles() {
     ?>
     <style type="text/css">
         body.login {
-            background-color: #f4f5f0 !important;
+            background-color: #ece2d3 !important;
             font-family: 'Inter', sans-serif !important;
             display: flex !important;
             align-items: center !important;
@@ -526,7 +526,7 @@ function wookiee_custom_login_styles() {
         }
         .login label {
             font-weight: 600 !important;
-            color: #081d34 !important;
+            color: #1a1614 !important;
         }
         .login input[type="text"], .login input[type="password"] {
             border-radius: 12px !important;
@@ -538,29 +538,29 @@ function wookiee_custom_login_styles() {
             margin-top: 5px !important;
         }
         .login input[type="text"]:focus, .login input[type="password"]:focus {
-            border-color: #081d34 !important;
-            box-shadow: 0 0 0 3px rgba(8, 29, 52, 0.1) !important;
+            border-color: #1a1614 !important;
+            box-shadow: 0 0 0 3px rgba(26, 22, 20, 0.1) !important;
             outline: none !important;
         }
         .login input[type="submit"] {
-            background-color: #081d34 !important;
+            background-color: #1a1614 !important;
             color: #fff !important;
             border-radius: 12px !important;
             font-weight: 700 !important;
             padding: 12px !important;
             font-size: 16px !important;
             border: none !important;
-            box-shadow: 0 5px 15px rgba(8, 29, 52, 0.15) !important;
+            box-shadow: 0 5px 15px rgba(26, 22, 20, 0.15) !important;
             width: 100% !important;
             text-shadow: none !important;
             height: auto !important;
         }
         .login input[type="submit"]:hover {
-            background-color: #6fbdbd !important;
-            color: #081d34 !important;
+            background-color: #c1704a !important;
+            color: #1a1614 !important;
         }
         .login #nav a, .login #backtoblog a {
-            color: #081d34 !important;
+            color: #1a1614 !important;
             font-weight: 600 !important;
         }
     </style>

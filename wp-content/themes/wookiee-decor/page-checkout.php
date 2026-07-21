@@ -18,12 +18,12 @@
             <div class="checkout-header-left">
                 <a href="<?php echo esc_url( home_url( '/' ) ); ?>" class="checkout-logo-link">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 38" width="150" height="34" fill="none">
-					<path d="M8 8 L12 30 L17.5 17 L23 30 L27 8" stroke="#081d34" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-					<rect x="10" y="11" width="4.5" height="4" rx="1" fill="#6fbdbd"/>
-					<rect x="20.5" y="11" width="4.5" height="4" rx="1" fill="#6fbdbd"/>
-					<line x1="11" y1="13" x2="13.5" y2="13" stroke="#081d34" stroke-width="1.2" stroke-linecap="round"/>
-					<line x1="21.5" y1="13" x2="24" y2="13" stroke="#081d34" stroke-width="1.2" stroke-linecap="round"/>
-					<text x="36" y="28" font-family="'Outfit', 'Inter', system-ui, sans-serif" font-weight="800" font-size="22" fill="#081d34" letter-spacing="-0.5px">Wookiee</text>
+					<path d="M8 8 L12 30 L17.5 17 L23 30 L27 8" stroke="#1a1614" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+					<rect x="10" y="11" width="4.5" height="4" rx="1" fill="#c1704a"/>
+					<rect x="20.5" y="11" width="4.5" height="4" rx="1" fill="#c1704a"/>
+					<line x1="11" y1="13" x2="13.5" y2="13" stroke="#1a1614" stroke-width="1.2" stroke-linecap="round"/>
+					<line x1="21.5" y1="13" x2="24" y2="13" stroke="#1a1614" stroke-width="1.2" stroke-linecap="round"/>
+					<text x="36" y="28" font-family="'Outfit', 'Inter', system-ui, sans-serif" font-weight="800" font-size="22" fill="#1a1614" letter-spacing="-0.5px">Wookiee</text>
 				</svg>
                 </a>
                 <a href="<?php echo esc_url( wc_get_cart_url() ); ?>" class="back-to-cart-link">

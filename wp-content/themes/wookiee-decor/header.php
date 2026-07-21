@@ -17,12 +17,12 @@
 		<div class="site-branding">
 			<a href="<?php echo esc_url( home_url( '/' ) ); ?>" class="site-logo-link" aria-label="<?php echo esc_attr( get_bloginfo( 'name' ) ); ?>">
 				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 38" width="150" height="34" fill="none" class="site-logo-svg">
-					<path d="M8 8 L12 30 L17.5 17 L23 30 L27 8" stroke="#081d34" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-					<rect x="10" y="11" width="4.5" height="4" rx="1" fill="#6fbdbd"/>
-					<rect x="20.5" y="11" width="4.5" height="4" rx="1" fill="#6fbdbd"/>
-					<line x1="11" y1="13" x2="13.5" y2="13" stroke="#081d34" stroke-width="1.2" stroke-linecap="round"/>
-					<line x1="21.5" y1="13" x2="24" y2="13" stroke="#081d34" stroke-width="1.2" stroke-linecap="round"/>
-					<text x="36" y="28" font-family="'Outfit', 'Inter', system-ui, sans-serif" font-weight="800" font-size="22" fill="#081d34" letter-spacing="-0.5px">Wookiee</text>
+					<path d="M8 8 L12 30 L17.5 17 L23 30 L27 8" stroke="#1a1614" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+					<rect x="10" y="11" width="4.5" height="4" rx="1" fill="#c1704a"/>
+					<rect x="20.5" y="11" width="4.5" height="4" rx="1" fill="#c1704a"/>
+					<line x1="11" y1="13" x2="13.5" y2="13" stroke="#1a1614" stroke-width="1.2" stroke-linecap="round"/>
+					<line x1="21.5" y1="13" x2="24" y2="13" stroke="#1a1614" stroke-width="1.2" stroke-linecap="round"/>
+					<text x="36" y="28" font-family="'Outfit', 'Inter', system-ui, sans-serif" font-weight="800" font-size="22" fill="#1a1614" letter-spacing="-0.5px">Wookiee</text>
 				</svg>
 			</a>
 		</div>
@@ -66,7 +66,7 @@
 	<div class="header-search-bar" id="header-search-bar">
 		<div class="container header-search-inner">
 			<form action="<?php echo esc_url( home_url( '/' ) ); ?>" method="get" class="header-search-form">
-				<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+				<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b6058" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
 				<input type="text" name="s" placeholder="Search for products, categories..." autocomplete="off" id="search-input">
 				<input type="hidden" name="post_type" value="product">
 			</form>

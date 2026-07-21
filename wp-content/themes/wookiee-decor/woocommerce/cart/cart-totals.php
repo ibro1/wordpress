@@ -19,7 +19,7 @@ $progress_pct = min( 100, ( $cart_subtotal_raw / $free_ship_threshold ) * 100 );
     <div class="wookiee-shipping-progress">
         <?php if ( $remaining > 0 ) : ?>
             <div class="shipping-progress-msg">
-                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#6fbdbd" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#c1704a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
                 Add <strong><?php echo wc_price( $remaining ); ?></strong> more for free shipping!
             </div>
         <?php else : ?>
@@ -95,7 +95,7 @@ $progress_pct = min( 100, ( $cart_subtotal_raw / $free_ship_threshold ) * 100 );
         <span class="payment-icons-label">Accepted payments</span>
         <div class="payment-icons-row">
             <svg class="payment-icon" viewBox="0 0 60 38" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="38" rx="5" fill="#1A1F71"/><text x="30" y="24" text-anchor="middle" font-family="Arial" font-weight="bold" font-size="11" fill="white">VISA</text></svg>
-            <svg class="payment-icon" viewBox="0 0 60 38" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="38" rx="5" fill="#fff" stroke="#e0e0e0"/><circle cx="23" cy="19" r="10" fill="#EB001B"/><circle cx="37" cy="19" r="10" fill="#F79E1B"/><path d="M30 11.3a10 10 0 010 15.4A10 10 0 0130 11.3z" fill="#FF5F00"/></svg>
+            <svg class="payment-icon" viewBox="0 0 60 38" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="38" rx="5" fill="#fff" stroke="#ddd0bd"/><circle cx="23" cy="19" r="10" fill="#EB001B"/><circle cx="37" cy="19" r="10" fill="#F79E1B"/><path d="M30 11.3a10 10 0 010 15.4A10 10 0 0130 11.3z" fill="#FF5F00"/></svg>
             <svg class="payment-icon" viewBox="0 0 60 38" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="38" rx="5" fill="#003087"/><text x="30" y="24" text-anchor="middle" font-family="Arial" font-weight="bold" font-size="9" fill="white">PayPal</text></svg>
             <svg class="payment-icon" viewBox="0 0 60 38" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="38" rx="5" fill="#000"/><text x="30" y="26" text-anchor="middle" font-family="Arial" font-weight="bold" font-size="14" fill="white">⬛ Pay</text></svg>
         </div>
@@ -104,15 +104,15 @@ $progress_pct = min( 100, ( $cart_subtotal_raw / $free_ship_threshold ) * 100 );
     <!-- Trust signals -->
     <div class="wookiee-mini-trust">
         <div class="mini-trust-row">
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6fbdbd" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c1704a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
             256-bit SSL Encrypted Checkout
         </div>
         <div class="mini-trust-row">
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6fbdbd" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c1704a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
             30-Day Hassle-Free Returns
         </div>
         <div class="mini-trust-row">
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6fbdbd" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c1704a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
             Fast UK Tracked Dispatch
         </div>
     </div>

@@ -12,11 +12,11 @@ do_action( 'woocommerce_cart_is_empty' );
 <div class="wookiee-empty-cart">
     <div class="empty-cart-icon">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
-            <circle cx="50" cy="50" r="50" fill="#f4f5f0"/>
-            <path d="M28 34h6l6 28h22l5-20H36" stroke="#081d34" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-            <circle cx="44" cy="68" r="3" fill="#6fbdbd"/>
-            <circle cx="58" cy="68" r="3" fill="#6fbdbd"/>
-            <path d="M40 46h20M40 53h14" stroke="#6fbdbd" stroke-width="2.5" stroke-linecap="round"/>
+            <circle cx="50" cy="50" r="50" fill="#ece2d3"/>
+            <path d="M28 34h6l6 28h22l5-20H36" stroke="#1a1614" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="44" cy="68" r="3" fill="#c1704a"/>
+            <circle cx="58" cy="68" r="3" fill="#c1704a"/>
+            <path d="M40 46h20M40 53h14" stroke="#c1704a" stroke-width="2.5" stroke-linecap="round"/>
         </svg>
     </div>
     <h2 class="empty-cart-title">Your cart is empty</h2>

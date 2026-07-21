@@ -4,7 +4,7 @@
 
 /* Reset & Page Setup */
 body.wookiee-checkout-funnel-page {
-    background-color: #f4f5f0;
+    background-color: #ece2d3;
     color: #2c3e50;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     margin: 0;
@@ -44,13 +44,13 @@ body.wookiee-checkout-funnel-page {
 .checkout-text-logo {
     font-size: 28px;
     font-weight: 800;
-    color: #081d34;
+    color: #1a1614;
     letter-spacing: -0.5px;
 }
 .back-to-cart-link {
     font-size: 14px;
     font-weight: 600;
-    color: #666;
+    color: #6b6058;
     text-decoration: none;
     transition: color 0.2s ease;
     border-left: 1px solid #ddd;
@@ -58,7 +58,7 @@ body.wookiee-checkout-funnel-page {
     line-height: 1.5;
 }
 .back-to-cart-link:hover {
-    color: #081d34;
+    color: #1a1614;
 }
 .checkout-header-badge {
     font-size: 14px;
@@ -86,7 +86,7 @@ body.wookiee-checkout-funnel-page {
 .checkout-page-title {
     font-size: 32px;
     font-weight: 800;
-    color: #081d34;
+    color: #1a1614;
     margin: 0 0 30px 0;
     letter-spacing: -0.5px;
 }
@@ -130,7 +130,7 @@ body.wookiee-checkout-funnel-page {
 .wookiee-checkout-funnel-page .wc-block-checkout__step-heading {
     font-size: 20px !important;
     font-weight: 800 !important;
-    color: #081d34 !important;
+    color: #1a1614 !important;
     letter-spacing: -0.3px;
     margin-bottom: 20px !important;
 }
@@ -149,15 +149,15 @@ body.wookiee-checkout-funnel-page {
 
 .wookiee-checkout-funnel-page .wc-block-components-text-input input:focus,
 .wookiee-checkout-funnel-page .wc-block-components-select-input select:focus {
-    border-color: #081d34 !important;
-    box-shadow: 0 0 0 4px rgba(8, 29, 52, 0.08) !important;
+    border-color: #1a1614 !important;
+    box-shadow: 0 0 0 4px rgba(26, 22, 20, 0.08) !important;
     outline: none !important;
     background: #fff !important;
 }
 
 /* Buttons */
 .wookiee-checkout-funnel-page .wc-block-components-button:not(.is-link) {
-    background-color: #081d34 !important;
+    background-color: #1a1614 !important;
     color: #fff !important;
     border-radius: 12px !important;
     font-weight: 700 !important;
@@ -166,7 +166,7 @@ body.wookiee-checkout-funnel-page {
     transition: all 0.3s ease !important;
     border: none !important;
     text-transform: none !important;
-    box-shadow: 0 8px 20px rgba(8, 29, 52, 0.15) !important;
+    box-shadow: 0 8px 20px rgba(26, 22, 20, 0.15) !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
@@ -175,15 +175,15 @@ body.wookiee-checkout-funnel-page {
 }
 
 .wookiee-checkout-funnel-page .wc-block-components-button:not(.is-link):hover {
-    background-color: #6fbdbd !important;
-    color: #081d34 !important;
+    background-color: #c1704a !important;
+    color: #1a1614 !important;
     transform: translateY(-1px) !important;
     box-shadow: 0 10px 25px rgba(111, 189, 189, 0.25) !important;
 }
 
 /* Totals and Order Summary Panel styling */
 .wookiee-checkout-funnel-page .wc-block-components-order-summary {
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid #e5dbc9;
     padding-bottom: 20px;
     margin-bottom: 20px;
 }
@@ -222,7 +222,7 @@ body.wookiee-checkout-funnel-page {
 .trust-text {
     font-size: 15px;
     font-weight: 600;
-    color: #081d34;
+    color: #1a1614;
 }
 .checkout-copyright {
     font-size: 13px;
@@ -251,7 +251,7 @@ body.wookiee-checkout-funnel-page {
    ============================================= */
 
 body.wookiee-cart-funnel-page {
-    background-color: #f4f5f0;
+    background-color: #ece2d3;
 }
 
 /* Cart Grid */
@@ -349,13 +349,13 @@ body.wookiee-cart-funnel-page {
 .wookiee-cart-product-name {
     font-weight: 700;
     font-size: 15px;
-    color: #081d34;
+    color: #1a1614;
     text-decoration: none;
     line-height: 1.3;
     display: block;
 }
 .wookiee-cart-product-name a:hover {
-    color: #6fbdbd;
+    color: #c1704a;
 }
 .wookiee-cart-sku {
     font-size: 12px;
@@ -367,7 +367,7 @@ body.wookiee-cart-funnel-page {
 .wookiee-cart-row .col-total {
     font-weight: 700;
     font-size: 16px;
-    color: #081d34;
+    color: #1a1614;
     text-align: left;
 }
 .wookiee-cart-row .col-qty {
@@ -378,25 +378,25 @@ body.wookiee-cart-funnel-page {
 .wookiee-cart-row .quantity input.qty {
     width: 64px;
     height: 44px;
-    border: 1px solid #e0e0e0;
+    border: 1px solid #ddd0bd;
     border-radius: 10px;
     text-align: center;
     font-size: 15px;
     font-weight: 600;
-    color: #081d34;
+    color: #1a1614;
     padding: 0;
     background: #fafafa;
     appearance: textfield;
     -moz-appearance: textfield;
 }
 .wookiee-cart-row .quantity input.qty:focus {
-    border-color: #081d34;
+    border-color: #1a1614;
     outline: none;
     background: #fff;
 }
 .wookiee-cart-qty-fixed {
     font-weight: 700;
-    color: #081d34;
+    color: #1a1614;
 }
 
 /* Cart Actions Row */
@@ -419,7 +419,7 @@ body.wookiee-cart-funnel-page {
     gap: 7px;
     font-size: 13px;
     font-weight: 600;
-    color: #555;
+    color: #5c5044;
     margin-bottom: 10px;
     cursor: pointer;
 }
@@ -429,35 +429,35 @@ body.wookiee-cart-funnel-page {
 }
 .wookiee-coupon-input {
     flex: 1;
-    border: 1px solid #e0e0e0;
+    border: 1px solid #ddd0bd;
     border-radius: 10px;
     padding: 12px 16px;
     font-size: 14px;
-    color: #081d34;
+    color: #1a1614;
     background: #fafafa;
     transition: border-color 0.2s;
 }
 .wookiee-coupon-input:focus {
-    border-color: #081d34;
+    border-color: #1a1614;
     outline: none;
     background: #fff;
 }
 .wookiee-coupon-btn {
     padding: 12px 20px;
-    background: #f4f5f0;
-    border: 1px solid #e0e0e0;
+    background: #ece2d3;
+    border: 1px solid #ddd0bd;
     border-radius: 10px;
     font-size: 14px;
     font-weight: 600;
-    color: #081d34;
+    color: #1a1614;
     cursor: pointer;
     transition: all 0.2s;
     white-space: nowrap;
 }
 .wookiee-coupon-btn:hover {
-    background: #081d34;
+    background: #1a1614;
     color: #fff;
-    border-color: #081d34;
+    border-color: #1a1614;
 }
 .wookiee-update-cart-btn {
     display: inline-flex;
@@ -469,14 +469,14 @@ body.wookiee-cart-funnel-page {
     border-radius: 10px;
     font-size: 14px;
     font-weight: 600;
-    color: #666;
+    color: #6b6058;
     cursor: pointer;
     transition: all 0.2s;
     white-space: nowrap;
 }
 .wookiee-update-cart-btn:hover {
-    border-color: #081d34;
-    color: #081d34;
+    border-color: #1a1614;
+    color: #1a1614;
 }
 
 /* =============================================
@@ -493,7 +493,7 @@ body.wookiee-cart-funnel-page {
 .wookiee-totals-title {
     font-size: 20px;
     font-weight: 800;
-    color: #081d34;
+    color: #1a1614;
     margin: 0 0 24px;
     letter-spacing: -0.3px;
 }
@@ -511,12 +511,12 @@ body.wookiee-cart-funnel-page {
     font-size: 15px;
 }
 .wookiee-totals-row .label {
-    color: #555;
+    color: #5c5044;
     font-weight: 500;
 }
 .wookiee-totals-row .value {
     font-weight: 600;
-    color: #081d34;
+    color: #1a1614;
 }
 .wookiee-totals-grand {
     display: flex;
@@ -524,17 +524,17 @@ body.wookiee-cart-funnel-page {
     align-items: center;
     padding: 20px 0;
     margin-top: 4px;
-    border-top: 2px solid #081d34;
+    border-top: 2px solid #1a1614;
 }
 .wookiee-totals-grand .label {
     font-size: 18px;
     font-weight: 800;
-    color: #081d34;
+    color: #1a1614;
 }
 .wookiee-totals-grand .value {
     font-size: 22px;
     font-weight: 800;
-    color: #081d34;
+    color: #1a1614;
 }
 
 /* Remove coupon link */
@@ -559,19 +559,19 @@ body.wookiee-cart-funnel-page {
     justify-content: center;
     gap: 10px;
     padding: 18px;
-    background: #081d34;
+    background: #1a1614;
     color: #fff;
     border-radius: 14px;
     font-size: 16px;
     font-weight: 700;
     text-decoration: none;
     transition: all 0.3s ease;
-    box-shadow: 0 8px 20px rgba(8, 29, 52, 0.18);
+    box-shadow: 0 8px 20px rgba(26, 22, 20, 0.18);
     letter-spacing: 0.2px;
 }
 .wookiee-checkout-btn:hover {
-    background: #6fbdbd;
-    color: #081d34;
+    background: #c1704a;
+    color: #1a1614;
     transform: translateY(-2px);
     box-shadow: 0 12px 28px rgba(111, 189, 189, 0.3);
 }
@@ -579,13 +579,13 @@ body.wookiee-cart-funnel-page {
     text-align: center;
     font-size: 14px;
     font-weight: 600;
-    color: #888;
+    color: #8a7d6d;
     text-decoration: none;
     padding: 6px;
     transition: color 0.2s;
 }
 .wookiee-continue-link:hover {
-    color: #081d34;
+    color: #1a1614;
 }
 
 /* Mini Trust */
@@ -600,7 +600,7 @@ body.wookiee-cart-funnel-page {
 .mini-trust-row {
     font-size: 13px;
     font-weight: 500;
-    color: #666;
+    color: #6b6058;
     display: flex;
     align-items: center;
     gap: 8px;
@@ -628,13 +628,13 @@ body.wookiee-cart-funnel-page {
 .empty-cart-title {
     font-size: 36px;
     font-weight: 800;
-    color: #081d34;
+    color: #1a1614;
     letter-spacing: -0.5px;
     margin: 0 0 16px;
 }
 .empty-cart-subtitle {
     font-size: 17px;
-    color: #666;
+    color: #6b6058;
     line-height: 1.7;
     margin: 0 0 40px;
 }
@@ -649,7 +649,7 @@ body.wookiee-cart-funnel-page {
     display: inline-flex;
     align-items: center;
     gap: 10px;
-    background: #081d34;
+    background: #1a1614;
     color: #fff;
     text-decoration: none;
     padding: 18px 32px;
@@ -657,14 +657,14 @@ body.wookiee-cart-funnel-page {
     font-size: 16px;
     font-weight: 700;
     transition: all 0.3s ease;
-    box-shadow: 0 8px 20px rgba(8, 29, 52, 0.18);
+    box-shadow: 0 8px 20px rgba(26, 22, 20, 0.18);
     width: 100%;
     max-width: 340px;
     justify-content: center;
 }
 .wookiee-btn-primary:hover {
-    background: #6fbdbd;
-    color: #081d34;
+    background: #c1704a;
+    color: #1a1614;
     transform: translateY(-2px);
     box-shadow: 0 12px 28px rgba(111, 189, 189, 0.3);
 }
@@ -673,7 +673,7 @@ body.wookiee-cart-funnel-page {
     align-items: center;
     justify-content: center;
     background: transparent;
-    color: #081d34;
+    color: #1a1614;
     text-decoration: none;
     padding: 16px 32px;
     border-radius: 14px;
@@ -685,8 +685,8 @@ body.wookiee-cart-funnel-page {
     max-width: 340px;
 }
 .wookiee-btn-outline:hover {
-    border-color: #081d34;
-    background: #081d34;
+    border-color: #1a1614;
+    background: #1a1614;
     color: #fff;
 }
 .empty-cart-features {
@@ -695,14 +695,14 @@ body.wookiee-cart-funnel-page {
     gap: 32px;
     flex-wrap: wrap;
     padding-top: 40px;
-    border-top: 1px solid #eee;
+    border-top: 1px solid #e5dbc9;
 }
 .empty-cart-feature {
     display: flex;
     align-items: center;
     gap: 8px;
     font-size: 14px;
-    color: #555;
+    color: #5c5044;
     font-weight: 600;
 }
 .feature-icon { font-size: 18px; }
@@ -746,7 +746,7 @@ body.wookiee-cart-funnel-page {
 .cart-item-count {
     font-size: 20px;
     font-weight: 500;
-    color: #6fbdbd;
+    color: #c1704a;
 }
 
 /* Cart Layout - WooCommerce Block Cart */
@@ -792,14 +792,14 @@ body.wookiee-cart-funnel-page {
     letter-spacing: 0.5px;
     color: #9a9a9a;
     padding-bottom: 16px;
-    border-bottom: 1px solid #eee !important;
+    border-bottom: 1px solid #e5dbc9 !important;
 }
 .wookiee-cart-funnel-page .wc-block-cart-item__image img {
     border-radius: 10px !important;
 }
 .wookiee-cart-funnel-page .wc-block-components-product-name a {
     font-weight: 700;
-    color: #081d34;
+    color: #1a1614;
     font-size: 16px;
     text-decoration: none;
 }
@@ -811,7 +811,7 @@ body.wookiee-cart-funnel-page {
 /* Proceed to Checkout Button */
 .wookiee-cart-funnel-page .wc-block-components-button:not(.is-link),
 .wookiee-cart-funnel-page .wc-block-cart__submit-button {
-    background-color: #081d34 !important;
+    background-color: #1a1614 !important;
     color: #fff !important;
     border-radius: 14px !important;
     font-weight: 700 !important;
@@ -819,7 +819,7 @@ body.wookiee-cart-funnel-page {
     font-size: 17px !important;
     transition: all 0.3s ease !important;
     border: none !important;
-    box-shadow: 0 8px 20px rgba(8, 29, 52, 0.18) !important;
+    box-shadow: 0 8px 20px rgba(26, 22, 20, 0.18) !important;
     width: 100% !important;
     min-height: 58px !important;
     display: flex !important;
@@ -829,8 +829,8 @@ body.wookiee-cart-funnel-page {
 }
 .wookiee-cart-funnel-page .wc-block-components-button:not(.is-link):hover,
 .wookiee-cart-funnel-page .wc-block-cart__submit-button:hover {
-    background-color: #6fbdbd !important;
-    color: #081d34 !important;
+    background-color: #c1704a !important;
+    color: #1a1614 !important;
     transform: translateY(-2px) !important;
     box-shadow: 0 12px 28px rgba(111, 189, 189, 0.3) !important;
 }
@@ -859,14 +859,14 @@ body.wookiee-cart-funnel-page {
 .empty-cart-title {
     font-size: 36px;
     font-weight: 800;
-    color: #081d34;
+    color: #1a1614;
     letter-spacing: -0.5px;
     margin: 0 0 16px;
 }
 
 .empty-cart-subtitle {
     font-size: 18px;
-    color: #666;
+    color: #6b6058;
     line-height: 1.7;
     margin: 0 0 40px;
 }
@@ -883,7 +883,7 @@ body.wookiee-cart-funnel-page {
     display: inline-flex;
     align-items: center;
     gap: 10px;
-    background-color: #081d34;
+    background-color: #1a1614;
     color: #fff;
     text-decoration: none;
     padding: 18px 32px;
@@ -891,14 +891,14 @@ body.wookiee-cart-funnel-page {
     font-size: 16px;
     font-weight: 700;
     transition: all 0.3s ease;
-    box-shadow: 0 8px 20px rgba(8, 29, 52, 0.18);
+    box-shadow: 0 8px 20px rgba(26, 22, 20, 0.18);
     width: 100%;
     max-width: 340px;
     justify-content: center;
 }
 .wookiee-btn-primary:hover {
-    background-color: #6fbdbd;
-    color: #081d34;
+    background-color: #c1704a;
+    color: #1a1614;
     transform: translateY(-2px);
     box-shadow: 0 12px 28px rgba(111, 189, 189, 0.3);
 }
@@ -908,7 +908,7 @@ body.wookiee-cart-funnel-page {
     align-items: center;
     justify-content: center;
     background-color: transparent;
-    color: #081d34;
+    color: #1a1614;
     text-decoration: none;
     padding: 16px 32px;
     border-radius: 14px;
@@ -920,8 +920,8 @@ body.wookiee-cart-funnel-page {
     max-width: 340px;
 }
 .wookiee-btn-outline:hover {
-    border-color: #081d34;
-    background-color: #081d34;
+    border-color: #1a1614;
+    background-color: #1a1614;
     color: #fff;
 }
 
@@ -931,14 +931,14 @@ body.wookiee-cart-funnel-page {
     gap: 32px;
     flex-wrap: wrap;
     padding-top: 40px;
-    border-top: 1px solid #eee;
+    border-top: 1px solid #e5dbc9;
 }
 .empty-cart-feature {
     display: flex;
     align-items: center;
     gap: 8px;
     font-size: 14px;
-    color: #555;
+    color: #5c5044;
     font-weight: 600;
 }
 .feature-icon {
@@ -985,18 +985,18 @@ body.wookiee-cart-funnel-page {
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #ccc;
+    color: #d4c7b5;
     transition: all 0.3s ease;
 }
 .step.active .step-bubble {
-    background: #081d34;
-    border-color: #081d34;
+    background: #1a1614;
+    border-color: #1a1614;
     color: #fff;
-    box-shadow: 0 4px 12px rgba(8, 29, 52, 0.2);
+    box-shadow: 0 4px 12px rgba(26, 22, 20, 0.2);
 }
 .step.done .step-bubble {
-    background: #6fbdbd;
-    border-color: #6fbdbd;
+    background: #c1704a;
+    border-color: #c1704a;
     color: #fff;
 }
 .step-label {
@@ -1007,12 +1007,12 @@ body.wookiee-cart-funnel-page {
     letter-spacing: 0.5px;
 }
 .step.active .step-label {
-    color: #081d34;
+    color: #1a1614;
 }
 .step-line {
     flex: 1;
     height: 2px;
-    background: #e0e0e0;
+    background: #ddd0bd;
     min-width: 60px;
     margin-bottom: 20px;
     margin: 0 8px 20px;
@@ -1025,14 +1025,14 @@ body.wookiee-cart-funnel-page {
 .wookiee-qty-stepper {
     display: inline-flex;
     align-items: center;
-    border: 1.5px solid #e0e0e0;
+    border: 1.5px solid #ddd0bd;
     border-radius: 12px;
     overflow: hidden;
     background: #fff;
     transition: border-color 0.2s;
 }
 .wookiee-qty-stepper:focus-within {
-    border-color: #081d34;
+    border-color: #1a1614;
 }
 .qty-btn {
     width: 36px;
@@ -1042,7 +1042,7 @@ body.wookiee-cart-funnel-page {
     cursor: pointer;
     font-size: 18px;
     font-weight: 300;
-    color: #081d34;
+    color: #1a1614;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1050,7 +1050,7 @@ body.wookiee-cart-funnel-page {
     flex-shrink: 0;
 }
 .qty-btn:hover {
-    background: #f4f5f0;
+    background: #ece2d3;
 }
 .qty-input {
     width: 44px;
@@ -1059,7 +1059,7 @@ body.wookiee-cart-funnel-page {
     text-align: center;
     font-size: 15px;
     font-weight: 700;
-    color: #081d34;
+    color: #1a1614;
     background: transparent;
     outline: none;
     -moz-appearance: textfield;
@@ -1083,12 +1083,12 @@ body.wookiee-cart-funnel-page {
     cursor: pointer;
     font-size: 14px;
     font-weight: 600;
-    color: #555;
+    color: #5c5044;
     padding: 0;
     transition: color 0.2s;
 }
 .wookiee-coupon-toggle:hover {
-    color: #081d34;
+    color: #1a1614;
 }
 .toggle-chevron {
     transition: transform 0.3s ease;
@@ -1142,26 +1142,26 @@ body.wookiee-cart-funnel-page {
     align-items: center;
     padding: 22px 0 18px;
     margin-top: 4px;
-    border-top: 2px solid #081d34;
+    border-top: 2px solid #1a1614;
 }
 .grand-label {
     display: block;
     font-size: 18px;
     font-weight: 800;
-    color: #081d34;
+    color: #1a1614;
     line-height: 1.2;
 }
 .grand-tax-note {
     display: block;
     font-size: 12px;
-    color: #999;
+    color: #9c8f7f;
     font-weight: 400;
     margin-top: 2px;
 }
 .grand-value {
     font-size: 24px;
     font-weight: 800;
-    color: #081d34;
+    color: #1a1614;
 }
 .grand-value .woocommerce-Price-amount {
     font-size: inherit;
@@ -1175,7 +1175,7 @@ body.wookiee-cart-funnel-page {
     align-items: center;
     gap: 6px;
     font-size: 13px;
-    color: #555;
+    color: #5c5044;
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
@@ -1190,7 +1190,7 @@ body.wookiee-cart-funnel-page {
 .wookiee-shipping-progress {
     margin-bottom: 24px;
     padding: 16px;
-    background: #f4f5f0;
+    background: #ece2d3;
     border-radius: 14px;
 }
 .shipping-progress-msg {
@@ -1199,7 +1199,7 @@ body.wookiee-cart-funnel-page {
     gap: 8px;
     font-size: 13px;
     font-weight: 500;
-    color: #555;
+    color: #5c5044;
     margin-bottom: 12px;
     line-height: 1.4;
 }
@@ -1208,13 +1208,13 @@ body.wookiee-cart-funnel-page {
 }
 .shipping-progress-bar-bg {
     height: 6px;
-    background: #e0e0e0;
+    background: #ddd0bd;
     border-radius: 10px;
     overflow: hidden;
 }
 .shipping-progress-bar-fill {
     height: 100%;
-    background: linear-gradient(90deg, #6fbdbd, #081d34);
+    background: linear-gradient(90deg, #c1704a, #1a1614);
     border-radius: 10px;
     transition: width 0.6s ease;
 }

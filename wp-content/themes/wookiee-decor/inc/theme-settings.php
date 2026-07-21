@@ -25,6 +25,8 @@ function wookiee_settings_fields() {
 		'company_number'     => array( 'label' => 'Company number', 'default' => 'SC769264', 'type' => 'text' ),
 		'companies_house_api_key' => array( 'label' => 'Companies House API key', 'default' => '', 'type' => 'password' ),
 		'anthropic_api_key'  => array( 'label' => 'Anthropic API key (for AI product generator)', 'default' => '', 'type' => 'password' ),
+		'cj_email'           => array( 'label' => 'CJ Dropshipping account email', 'default' => '', 'type' => 'email' ),
+		'cj_api_key'         => array( 'label' => 'CJ Dropshipping API key', 'default' => '', 'type' => 'password' ),
 		'returns_address'    => array( 'label' => 'Returns address (leave blank to use registered office address)', 'default' => '', 'type' => 'textarea' ),
 		'returns_period_days' => array( 'label' => 'Returns period (days)', 'default' => '30', 'type' => 'text' ),
 		'countries_served'   => array( 'label' => 'Countries served', 'default' => 'United Kingdom', 'type' => 'text' ),
@@ -122,6 +124,9 @@ function wookiee_render_settings_page() {
 							<?php endif; ?>
 							<?php if ( 'companies_house_api_key' === $key ) : ?>
 								<p class="description">Only needed to use the lookup button above. Free to obtain, one per WordPress install.</p>
+							<?php endif; ?>
+							<?php if ( 'cj_api_key' === $key ) : ?>
+								<p class="description">From your CJ Dropshipping account: My CJ → API Setting. Used with the email above to authenticate the <a href="<?php echo esc_url( admin_url( 'themes.php?page=wookiee-supplier-catalog' ) ); ?>">Wookiee Supplier Catalog</a> page.</p>
 							<?php endif; ?>
 							<?php if ( '' !== $field['default'] ) : ?>
 								<p class="description">Default if left blank: <?php echo esc_html( is_string( $field['default'] ) ? str_replace( "\n", ' / ', $field['default'] ) : '' ); ?></p>

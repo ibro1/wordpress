@@ -15,6 +15,7 @@ require_once WOOKIEE_DIR . 'inc/theme-settings.php';
 require_once WOOKIEE_DIR . 'inc/ai-client.php';
 require_once WOOKIEE_DIR . 'inc/product-generator.php';
 require_once WOOKIEE_DIR . 'inc/content-generator.php';
+require_once WOOKIEE_DIR . 'inc/supplier-cj.php';
 
 /**
  * Safely resolve a product category link, falling back to the shop page

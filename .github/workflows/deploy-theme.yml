@@ -1,0 +1,27 @@
+name: Deploy Wookiee Decor theme
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'wp-content/themes/wookiee-decor/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to server via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            set -e
+            rm -rf /tmp/wookiee-deploy
+            git clone --depth 1 https://github.com/ibro1/wordpress.git /tmp/wookiee-deploy
+            docker exec wordpress_multisite_app rm -rf /var/www/html/wp-content/themes/wookiee-decor
+            docker cp /tmp/wookiee-deploy/wp-content/themes/wookiee-decor wordpress_multisite_app:/var/www/html/wp-content/themes/wookiee-decor
+            docker exec wordpress_multisite_app chown -R www-data:www-data /var/www/html/wp-content/themes/wookiee-decor
+            rm -rf /tmp/wookiee-deploy
+            echo "Deployed wookiee-decor theme successfully"

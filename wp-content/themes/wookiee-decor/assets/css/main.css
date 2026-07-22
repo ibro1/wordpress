@@ -696,6 +696,9 @@ body.mobile-nav-active {
     box-shadow: 0 4px 15px rgba(0,0,0,0.02);
     transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s ease;
 }
+.collection-card-plain {
+    background: var(--wookiee-ink, #1a1614);
+}
 .collection-bg {
     position: absolute;
     top: 0;

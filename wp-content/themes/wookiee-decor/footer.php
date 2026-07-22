@@ -59,9 +59,9 @@
 			<div class="footer-eyebrow">Shop</div>
 			<ul class="footer-links-list">
 				<li><a href="<?php echo esc_url( home_url( '/shop/' ) ); ?>">All products</a></li>
-				<li><a href="<?php echo wookiee_product_cat_url( 'kitchen-storage' ); ?>">Kitchen storage</a></li>
-				<li><a href="<?php echo wookiee_product_cat_url( 'bathroom-storage' ); ?>">Bathroom storage</a></li>
-				<li><a href="<?php echo wookiee_product_cat_url( 'drawer-organisers' ); ?>">Drawer organisers</a></li>
+				<?php foreach ( wookiee_get_display_categories( 3 ) as $footer_cat ) : ?>
+					<li><a href="<?php echo esc_url( get_term_link( $footer_cat ) ); ?>"><?php echo esc_html( $footer_cat->name ); ?></a></li>
+				<?php endforeach; ?>
 			</ul>
 		</div>
 

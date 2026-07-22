@@ -156,6 +156,17 @@ function wookiee_render_setup_wizard_page() {
 		<?php if ( ! $has_woo ) : ?>
 			<p class="description">WooCommerce isn't active — activate it to use either product source.</p>
 		<?php endif; ?>
+		<?php
+		$display_cat_count = $has_woo ? count( wookiee_get_display_categories( 999 ) ) : 0;
+		?>
+		<p class="description">
+			<?php if ( $display_cat_count > 0 ) : ?>
+				<?php echo intval( $display_cat_count ); ?> product categor<?php echo 1 === $display_cat_count ? 'y currently has' : 'ies currently have'; ?> products — these are what show as the homepage's "Explore Our Categories" and "Shop by Collection" sections and the footer's Shop links, so they update automatically as you source/publish more products.
+			<?php else : ?>
+				No product categories with products yet, so the homepage collection sections are hidden for now — they'll appear automatically once products are published into categories, from either generator above.
+			<?php endif; ?>
+			<a href="<?php echo esc_url( admin_url( 'edit-tags.php?taxonomy=product_cat&post_type=product' ) ); ?>">Manage categories</a>.
+		</p>
 
 		<h2>5. Shipping</h2>
 		<table class="widefat" style="max-width:700px;">

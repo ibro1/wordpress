@@ -271,7 +271,7 @@ function wookiee_generate_products_handler() {
 
 	$created = array();
 	foreach ( $ideas as $idea ) {
-		$sourced = wookiee_source_real_product_for_idea( $idea['title'] );
+		$sourced = wookiee_source_real_product_for_idea( $idea['title'], 3, $idea['category'] );
 
 		// Concepts that didn't source a real product (no CJ match, or no
 		// good niche fit) are intentionally left out of the results the

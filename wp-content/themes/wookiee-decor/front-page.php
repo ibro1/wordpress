@@ -129,6 +129,8 @@ get_header(); ?>
 	</section>
 
 	<!-- Categories Grid Section -->
+	<?php $display_cats = wookiee_get_display_categories( 4 ); ?>
+	<?php if ( ! empty( $display_cats ) ) : ?>
 	<section class="container home-section" id="categories">
 		<div class="section-header text-center">
 			<div class="section-kicker">Organise Every Space</div>
@@ -137,65 +139,33 @@ get_header(); ?>
 		</div>
 
 		<div class="wookiee-cat-grid">
-
-			<!-- Card 1 -->
-			<a href="<?php echo esc_url( home_url( '/shop/' ) ); ?>" class="wookiee-cat-card" style="--cat-color:#e8f4f4; --cat-accent:#c1704a;">
+			<?php
+			$cat_palette = array(
+				array( 'color' => '#e8f4f4', 'accent' => '#c1704a', 'icon' => '<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>' ),
+				array( 'color' => '#fef6ec', 'accent' => '#c9972f', 'icon' => '<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>' ),
+				array( 'color' => '#edf4fb', 'accent' => '#5b9ecf', 'icon' => '<path d="M5 12h14"/><path d="M5 12a7 7 0 0 0 7 7"/><path d="M5 12a7 7 0 0 1 7-7"/><circle cx="12" cy="12" r="3"/>' ),
+				array( 'color' => '#f0f0f8', 'accent' => '#7b7bcc', 'icon' => '<rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>' ),
+			);
+			foreach ( $display_cats as $i => $cat ) :
+				$style = $cat_palette[ $i % count( $cat_palette ) ];
+				$desc  = $cat->description ? $cat->description : sprintf( 'Shop our %s range.', strtolower( $cat->name ) );
+			?>
+			<a href="<?php echo esc_url( get_term_link( $cat ) ); ?>" class="wookiee-cat-card" style="--cat-color:<?php echo esc_attr( $style['color'] ); ?>; --cat-accent:<?php echo esc_attr( $style['accent'] ); ?>;">
 				<div class="cat-card-icon-wrap">
-					<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#c1704a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+					<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="<?php echo esc_attr( $style['accent'] ); ?>" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><?php echo $style['icon']; ?></svg>
 				</div>
 				<div class="cat-card-body">
-					<h3 class="cat-card-title">Storage Solutions</h3>
-					<p class="cat-card-desc">Smart storage for every room — from drawer organisers to shelving units.</p>
+					<h3 class="cat-card-title"><?php echo esc_html( $cat->name ); ?></h3>
+					<p class="cat-card-desc"><?php echo esc_html( $desc ); ?></p>
 				</div>
-				<div class="cat-card-arrow">
+				<div class="cat-card-arrow" style="color: <?php echo esc_attr( $style['accent'] ); ?>;">
 					<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
 				</div>
 			</a>
-
-			<!-- Card 2 -->
-			<a href="<?php echo esc_url( home_url( '/shop/' ) ); ?>" class="wookiee-cat-card" style="--cat-color:#fef6ec; --cat-accent:#c9972f;">
-				<div class="cat-card-icon-wrap">
-					<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#c9972f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-				</div>
-				<div class="cat-card-body">
-					<h3 class="cat-card-title">Home Accessories</h3>
-					<p class="cat-card-desc">Finishing touches that elevate every space and make your house feel like home.</p>
-				</div>
-				<div class="cat-card-arrow" style="color: #c9972f;">
-					<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-				</div>
-			</a>
-
-			<!-- Card 3 -->
-			<a href="<?php echo esc_url( home_url( '/shop/' ) ); ?>" class="wookiee-cat-card" style="--cat-color:#edf4fb; --cat-accent:#5b9ecf;">
-				<div class="cat-card-icon-wrap">
-					<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#5b9ecf" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M5 12a7 7 0 0 0 7 7"/><path d="M5 12a7 7 0 0 1 7-7"/><circle cx="12" cy="12" r="3"/></svg>
-				</div>
-				<div class="cat-card-body">
-					<h3 class="cat-card-title">Bathroom Storage</h3>
-					<p class="cat-card-desc">Keep your bathroom neat and tidy with clever cabinet and counter solutions.</p>
-				</div>
-				<div class="cat-card-arrow" style="color: #5b9ecf;">
-					<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-				</div>
-			</a>
-
-			<!-- Card 4 -->
-			<a href="<?php echo esc_url( home_url( '/shop/' ) ); ?>" class="wookiee-cat-card" style="--cat-color:#f0f0f8; --cat-accent:#7b7bcc;">
-				<div class="cat-card-icon-wrap">
-					<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#7b7bcc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-				</div>
-				<div class="cat-card-body">
-					<h3 class="cat-card-title">Office &amp; Desk</h3>
-					<p class="cat-card-desc">Organise your workspace and boost productivity with premium desk solutions.</p>
-				</div>
-				<div class="cat-card-arrow" style="color: #7b7bcc;">
-					<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-				</div>
-			</a>
-
+			<?php endforeach; ?>
 		</div>
 	</section>
+	<?php endif; ?>
 
 	<!-- How it works Section -->
 	<section class="container home-section wookiee-content-grid-2 how-it-works">
@@ -243,50 +213,26 @@ get_header(); ?>
 	</section>
 
 	<!-- Collections Grid Section -->
+	<?php if ( ! empty( $display_cats ) ) : ?>
 	<section class="container home-section">
 		<div class="section-header text-center">
 			<div class="section-kicker">Product Lineup</div>
 			<h2 class="section-title">Shop by Collection</h2>
 		</div>
 		<div class="collections-grid">
-			<?php
-			$cols = array(
-				array(
-					'title' => 'Indoor Storage',
-					'desc'  => 'Shelves, baskets, and cabinets',
-					'img'   => WOOKIEE_URI . 'assets/images/wookiee-prod-shelves.png',
-					'slug'  => 'kitchen-storage',
-				),
-				array(
-					'title' => 'Home Accessories',
-					'desc'  => 'Finishing touches for every room',
-					'img'   => WOOKIEE_URI . 'assets/images/drawer-organizer.png',
-					'slug'  => 'drawer-organisers',
-				),
-				array(
-					'title' => 'Bathroom',
-					'desc'  => 'Towels, mats, and organizers',
-					'img'   => WOOKIEE_URI . 'assets/images/bathroom-shelf.png',
-					'slug'  => 'bathroom-storage',
-				),
-				array(
-					'title' => 'Office & Desk',
-					'desc'  => 'Workspace organization',
-					'img'   => WOOKIEE_URI . 'assets/images/wookiee-prod-organizer.png',
-					'slug'  => 'office-desk',
-				),
-			);
-			foreach ( $cols as $c ) :
-				$term_link = get_term_link( $c['slug'], 'product_cat' );
-				$url       = ! is_wp_error( $term_link ) ? esc_url( $term_link ) : esc_url( home_url( '/shop/' ) );
+			<?php foreach ( $display_cats as $cat ) :
+				$img  = wookiee_get_category_image_url( $cat );
+				$desc = $cat->description ? $cat->description : sprintf( '%d product%s', $cat->count, 1 === (int) $cat->count ? '' : 's' );
 			?>
-			<a href="<?php echo $url; ?>" class="collection-card-link">
-				<div class="collection-card">
-					<div class="collection-bg" style="background-image: url('<?php echo esc_url( $c['img'] ); ?>');"></div>
-					<div class="collection-overlay"></div>
+			<a href="<?php echo esc_url( get_term_link( $cat ) ); ?>" class="collection-card-link">
+				<div class="collection-card<?php echo $img ? '' : ' collection-card-plain'; ?>">
+					<?php if ( $img ) : ?>
+						<div class="collection-bg" style="background-image: url('<?php echo esc_url( $img ); ?>');"></div>
+						<div class="collection-overlay"></div>
+					<?php endif; ?>
 					<div class="collection-content">
-						<h3><?php echo esc_html( $c['title'] ); ?></h3>
-						<p><?php echo esc_html( $c['desc'] ); ?></p>
+						<h3><?php echo esc_html( $cat->name ); ?></h3>
+						<p><?php echo esc_html( $desc ); ?></p>
 					</div>
 					<div class="collection-arrow">&#10132;</div>
 				</div>
@@ -294,6 +240,7 @@ get_header(); ?>
 			<?php endforeach; ?>
 		</div>
 	</section>
+	<?php endif; ?>
 
 </main>
 

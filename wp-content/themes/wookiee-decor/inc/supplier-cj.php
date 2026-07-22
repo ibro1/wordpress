@@ -170,7 +170,7 @@ function wookiee_cj_search_products( $keyword, $page = 1 ) {
  * to the next result). Bounded to control LLM cost/time per idea - each
  * attempt runs its own AI cleanup call.
  */
-function wookiee_source_real_product_for_idea( $query, $max_attempts = 3 ) {
+function wookiee_source_real_product_for_idea( $query, $max_attempts = 3, $category_hint = '' ) {
 	$results = wookiee_cj_search_products( $query );
 	if ( is_wp_error( $results ) ) {
 		return $results;
@@ -186,7 +186,7 @@ function wookiee_source_real_product_for_idea( $query, $max_attempts = 3 ) {
 		}
 		$attempts++;
 
-		$imported = wookiee_cj_import_product( $result['pid'], true );
+		$imported = wookiee_cj_import_product( $result['pid'], true, $category_hint );
 		if ( ! is_wp_error( $imported ) ) {
 			return $imported;
 		}
@@ -270,7 +270,7 @@ function wookiee_extract_supplier_specs( $product, $variant ) {
  * prompted this showed). Degrades gracefully: if no LLM key is set, or
  * niche brief is missing, callers fall back to the raw CJ data.
  */
-function wookiee_ai_clean_supplier_product( $raw_title, $raw_description, $raw_category, $specs_text = '' ) {
+function wookiee_ai_clean_supplier_product( $raw_title, $raw_description, $raw_category, $specs_text = '', $category_hint = '' ) {
 	$brief = get_option( 'wookiee_niche_brief', '' );
 	if ( '' === trim( $brief ) ) {
 		return new WP_Error( 'wookiee_ai_no_brief', 'Set a niche brief on the Content Generator or Product Generator page first.' );
@@ -280,6 +280,15 @@ function wookiee_ai_clean_supplier_product( $raw_title, $raw_description, $raw_c
 	$existing_list  = ( ! is_wp_error( $existing_terms ) && ! empty( $existing_terms ) ) ? implode( ', ', $existing_terms ) : 'none yet';
 	$specs_block    = '' !== trim( $specs_text ) ? $specs_text : 'None provided by the supplier.';
 
+	$hint_line = '';
+	if ( '' !== trim( $category_hint ) ) {
+		// The Product Generator already worked out a coherent 2-4 category
+		// plan for this niche before ever searching the supplier catalog -
+		// without this, each product's category was re-guessed
+		// independently per-import and could drift from that plan.
+		$hint_line = "This product was sourced to fill the catalog's intended \"{$category_hint}\" category - use that (or the closest matching existing store category) unless the supplier data clearly makes it a poor fit.\n";
+	}
+
 	$prompt = "Act as a UK ecommerce copywriter preparing a supplier-sourced product for Google Merchant Center and a UK storefront.\n\n"
 		. "Store niche: \"{$brief}\"\n\n"
 		. "Supplier's raw product data (do not invent anything beyond this - only clean up the presentation of this same real product):\n"
@@ -287,7 +296,8 @@ function wookiee_ai_clean_supplier_product( $raw_title, $raw_description, $raw_c
 		. "Description: {$raw_description}\n"
 		. "Supplier category: {$raw_category}\n"
 		. "Known specs from the supplier (the ONLY specification values you may state - do not invent any others):\n{$specs_block}\n\n"
-		. "Existing store categories: {$existing_list}\n\n"
+		. "Existing store categories: {$existing_list}\n"
+		. $hint_line . "\n"
 		. "Respond with exactly these six labelled sections, each label on its own line, nothing else:\n"
 		. "FIT: yes or no - does this product genuinely belong in a store with the niche described above?\n"
 		. "REASON: one short sentence explaining the FIT answer\n"
@@ -355,7 +365,7 @@ function wookiee_find_existing_cj_product( $pid ) {
  * click, the admin already chose this exact item, so it still imports -
  * just with the AI's fit judgement attached as an advisory note.
  */
-function wookiee_cj_import_product( $pid, $auto_skip_low_fit = false ) {
+function wookiee_cj_import_product( $pid, $auto_skip_low_fit = false, $category_hint = '' ) {
 	$detail = wookiee_cj_request( 'GET', '/product/query?pid=' . rawurlencode( $pid ) );
 	if ( is_wp_error( $detail ) ) {
 		return $detail;
@@ -381,14 +391,22 @@ function wookiee_cj_import_product( $pid, $auto_skip_low_fit = false ) {
 	$raw_title        = $title;
 	$description      = ! empty( $p['description'] ) ? wp_strip_all_tags( $p['description'] ) : '';
 	$short_description = '';
+	// The Product Generator's own category plan wins over CJ's raw
+	// supplier category by default - the AI cleanup step below still gets
+	// a chance to override this (e.g. if the supplier data clearly
+	// contradicts it), but if that step fails outright, the hint is a
+	// better fallback than an arbitrary cross-border supplier category.
 	$category         = ! empty( $p['categoryName'] ) ? $p['categoryName'] : '';
+	if ( '' !== trim( $category_hint ) ) {
+		$category = $category_hint;
+	}
 	$note             = '';
 
 	$variants      = isset( $p['variants'] ) && is_array( $p['variants'] ) ? $p['variants'] : array();
 	$first_variant = ! empty( $variants ) ? $variants[0] : array();
 	$specs_text    = wookiee_extract_supplier_specs( $p, $first_variant );
 
-	$ai = wookiee_ai_clean_supplier_product( $raw_title, $description, $category, $specs_text );
+	$ai = wookiee_ai_clean_supplier_product( $raw_title, $description, $category, $specs_text, $category_hint );
 	if ( ! is_wp_error( $ai ) ) {
 		if ( 'no' === $ai['fit'] ) {
 			if ( $auto_skip_low_fit ) {

@@ -5,7 +5,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'WOOKIEE_VERSION', '1.0.11' );
+define( 'WOOKIEE_VERSION', '1.0.12' );
 define( 'WOOKIEE_DIR', trailingslashit( get_template_directory() ) );
 define( 'WOOKIEE_URI', trailingslashit( get_template_directory_uri() ) );
 define( 'WOOKIEE_CONTACT_EMAIL', 'info@wookied.com' );
@@ -24,13 +24,68 @@ require_once WOOKIEE_DIR . 'inc/supplier-cj.php';
 require_once WOOKIEE_DIR . 'inc/cookie-consent.php';
 
 /**
- * Safely resolve a product category link, falling back to the shop page
- * when the term doesn't exist yet (get_term_link() returns WP_Error then,
- * which must never be passed straight into esc_url()).
+ * Real product categories that currently have at least one product,
+ * ordered by product count - used by the homepage collection sections
+ * and the footer shop links so a fresh install of this theme (built to
+ * be reused across different store niches) shows whatever categories
+ * this particular store actually has, instead of the previous
+ * hardcoded "Kitchen storage" / "Bathroom Storage" / etc. names that
+ * only made sense for the original storage-niche demo content.
  */
-function wookiee_product_cat_url( $slug ) {
-	$term_link = get_term_link( $slug, 'product_cat' );
-	return ! is_wp_error( $term_link ) ? esc_url( $term_link ) : esc_url( home_url( '/shop/' ) );
+function wookiee_get_display_categories( $limit = 4 ) {
+	$exclude = array();
+	$default = (int) get_option( 'default_product_cat', 0 );
+	if ( $default ) {
+		$exclude[] = $default;
+	}
+
+	$terms = get_terms( array(
+		'taxonomy'   => 'product_cat',
+		'hide_empty' => true,
+		'orderby'    => 'count',
+		'order'      => 'DESC',
+		'number'     => $limit,
+		'exclude'    => $exclude,
+	) );
+
+	return is_wp_error( $terms ) ? array() : $terms;
+}
+
+/**
+ * The image to represent a product category on the homepage: the
+ * category's own thumbnail if the admin set one (Products > Categories),
+ * else the featured image of its first published product, else empty
+ * (callers should render a plain fallback rather than a bundled stock
+ * photo, since this theme is reused across unrelated niches).
+ */
+function wookiee_get_category_image_url( $term ) {
+	$thumbnail_id = get_term_meta( $term->term_id, 'thumbnail_id', true );
+	if ( $thumbnail_id ) {
+		$url = wp_get_attachment_image_url( $thumbnail_id, 'medium_large' );
+		if ( $url ) {
+			return $url;
+		}
+	}
+
+	$products = get_posts( array(
+		'post_type'      => 'product',
+		'post_status'    => 'publish',
+		'posts_per_page' => 1,
+		'tax_query'      => array( array(
+			'taxonomy' => 'product_cat',
+			'field'    => 'term_id',
+			'terms'    => $term->term_id,
+		) ),
+		'fields'         => 'ids',
+	) );
+	if ( ! empty( $products ) ) {
+		$url = get_the_post_thumbnail_url( $products[0], 'medium_large' );
+		if ( $url ) {
+			return $url;
+		}
+	}
+
+	return '';
 }
 
 /**

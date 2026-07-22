@@ -263,6 +263,12 @@ function wookiee_generate_products_handler() {
 	// how many came back, rather than trusting the model's compliance.
 	$ideas = array_slice( $ideas, 0, $count );
 
+	// Remember every concept attempted (not just ones that sourced
+	// successfully) so the next generation run - even with the same
+	// generic brief - doesn't keep landing on the same top-of-mind
+	// concept with nothing telling it "already covered."
+	wookiee_remember_concepts( wp_list_pluck( $ideas, 'title' ) );
+
 	$created = array();
 	foreach ( $ideas as $idea ) {
 		$sourced = wookiee_source_real_product_for_idea( $idea['title'] );
@@ -296,6 +302,40 @@ function wookiee_generate_products_handler() {
 }
 
 /**
+ * Rolling memory of recently-generated concept titles, so repeated
+ * generation runs (especially with a short, generic brief) don't keep
+ * converging on the same top-of-mind concept with no signal that it's
+ * already covered. Capped and de-duplicated case-insensitively.
+ */
+function wookiee_get_recent_concepts() {
+	$recent = get_option( 'wookiee_recent_product_concepts', array() );
+	return is_array( $recent ) ? $recent : array();
+}
+
+function wookiee_remember_concepts( array $titles ) {
+	$recent = wookiee_get_recent_concepts();
+	foreach ( $titles as $title ) {
+		$title = trim( (string) $title );
+		if ( '' !== $title ) {
+			$recent[] = $title;
+		}
+	}
+
+	$seen    = array();
+	$deduped = array();
+	foreach ( array_reverse( $recent ) as $title ) {
+		$key = strtolower( $title );
+		if ( isset( $seen[ $key ] ) ) {
+			continue;
+		}
+		$seen[ $key ] = true;
+		$deduped[]    = $title;
+	}
+
+	update_option( 'wookiee_recent_product_concepts', array_slice( array_reverse( $deduped ), -60 ), false );
+}
+
+/**
  * Calls the LLM and returns a plain array of {title, category} concepts
  * (plus real search-volume/CPC fields when Google Ads is configured),
  * or a WP_Error. Each "title" is deliberately a plain, keyword-style
@@ -313,8 +353,29 @@ function wookiee_generate_products_handler() {
  * set up, so this remains fully optional.
  */
 function wookiee_ai_generate_product_ideas( $brief, $count ) {
-	$keyword_data = wookiee_google_ads_configured() ? wookiee_google_ads_keyword_ideas( array( $brief ) ) : new WP_Error( 'wookiee_google_ads_not_configured', '' );
+	$is_configured = wookiee_google_ads_configured();
+	$keyword_data  = $is_configured ? wookiee_google_ads_keyword_ideas( array( $brief ) ) : new WP_Error( 'wookiee_google_ads_not_configured', '' );
+
+	// Configured-but-failing is worth knowing about (e.g. Basic access
+	// still pending, a bad customer ID) - configured-but-not-set-up
+	// yet isn't, so only log the former to avoid noise.
+	if ( $is_configured && is_wp_error( $keyword_data ) ) {
+		error_log( 'Wookiee Product Generator: Google Ads keyword lookup failed - ' . $keyword_data->get_error_message() );
+	}
+
 	$has_keywords = ! is_wp_error( $keyword_data ) && ! empty( $keyword_data );
+
+	// Don't let the model re-pick a concept this catalog already has -
+	// otherwise a generic brief run repeatedly just keeps returning its
+	// single most obvious answer for the niche every time.
+	$recent_concepts = wookiee_get_recent_concepts();
+	if ( $has_keywords && ! empty( $recent_concepts ) ) {
+		$recent_lower = array_map( 'strtolower', $recent_concepts );
+		$keyword_data = array_values( array_filter( $keyword_data, function ( $k ) use ( $recent_lower ) {
+			return ! in_array( strtolower( $k['keyword'] ), $recent_lower, true );
+		} ) );
+		$has_keywords = ! empty( $keyword_data );
+	}
 
 	if ( $has_keywords ) {
 		$top   = array_slice( $keyword_data, 0, 30 );
@@ -331,7 +392,13 @@ function wookiee_ai_generate_product_ideas( $brief, $count ) {
 			. "- \"title\": one of the exact keywords from the list above\n"
 			. "- \"category\": a short category name; reuse the same category string across concepts that belong together";
 	} else {
-		$prompt = "You are helping source real products for a single-niche UK ecommerce store from a wholesale/dropship catalog. The store's niche, in the owner's own words:\n\"" . $brief . "\"\n\n"
+		$exclude_note = '';
+		if ( ! empty( $recent_concepts ) ) {
+			$exclude_note = "\n\nThis store's catalog already includes these concepts - do not repeat any of them:\n- " . implode( "\n- ", array_slice( $recent_concepts, -30 ) ) . "\n";
+		}
+
+		$prompt = "You are helping source real products for a single-niche UK ecommerce store from a wholesale/dropship catalog. The store's niche, in the owner's own words:\n\"" . $brief . "\"\n"
+			. $exclude_note . "\n"
 			. "Generate exactly {$count} distinct product concepts this store's catalog should include - same niche, consistent quality tier, no duplicate concepts, forming 2-4 categories total, not {$count} unique ones. Do not reference or imitate any specific real-world brand or existing product listing.\n\n"
 			. "Each concept's title will be used as a search query against a real product catalog, so phrase it the way you'd search for that item - a few plain, common keywords (e.g. \"ceramic plant pot\"), not a stylized marketing title.\n\n"
 			. "Respond with ONLY a raw JSON array containing EXACTLY {$count} element(s) (no markdown fences, no commentary before or after), where each element has exactly these keys:\n"

@@ -5,7 +5,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'WOOKIEE_VERSION', '1.0.8' );
+define( 'WOOKIEE_VERSION', '1.0.9' );
 define( 'WOOKIEE_DIR', trailingslashit( get_template_directory() ) );
 define( 'WOOKIEE_URI', trailingslashit( get_template_directory_uri() ) );
 define( 'WOOKIEE_CONTACT_EMAIL', 'info@wookied.com' );
@@ -19,6 +19,7 @@ require_once WOOKIEE_DIR . 'inc/setup-wizard.php';
 require_once WOOKIEE_DIR . 'inc/product-generator.php';
 require_once WOOKIEE_DIR . 'inc/content-generator.php';
 require_once WOOKIEE_DIR . 'inc/supplier-cj.php';
+require_once WOOKIEE_DIR . 'inc/cookie-consent.php';
 
 /**
  * Safely resolve a product category link, falling back to the shop page

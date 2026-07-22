@@ -2405,6 +2405,103 @@ a.added_to_cart:hover,
     transform: translateX(5px);
 }
 
+/* Cookie consent banner + preferences panel (inc/cookie-consent.php) */
+.wookiee-cookie-banner {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 9999;
+    background: var(--wookiee-ink);
+    color: #fff;
+    padding: 20px;
+    box-shadow: var(--shadow-md);
+}
+.wookiee-cookie-banner-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+.wookiee-cookie-banner-inner p {
+    margin: 0;
+    flex: 1 1 400px;
+    font-size: 14px;
+    line-height: 1.5;
+}
+.wookiee-cookie-banner-inner a {
+    color: var(--wookiee-accent);
+}
+.wookiee-cookie-banner-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+.wookiee-cookie-btn {
+    padding: 10px 18px;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    background: transparent;
+    color: #fff;
+}
+.wookiee-cookie-btn--primary {
+    background: var(--wookiee-accent);
+    border-color: var(--wookiee-accent);
+}
+.wookiee-cookie-panel {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+.wookiee-cookie-panel-inner {
+    background: #fff;
+    color: var(--wookiee-ink);
+    max-width: 480px;
+    width: 100%;
+    border-radius: var(--radius-md);
+    padding: 28px;
+}
+.wookiee-cookie-panel-inner h2 {
+    margin-top: 0;
+    font-size: 20px;
+}
+.wookiee-cookie-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 14px 0;
+    border-bottom: 1px solid #eee;
+    font-size: 14px;
+}
+.wookiee-cookie-row:last-of-type {
+    border-bottom: none;
+}
+.wookiee-cookie-panel-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+}
+/* Inside the panel, the button colors need dark text on the outline variant */
+.wookiee-cookie-panel-inner .wookiee-cookie-btn {
+    color: var(--wookiee-ink);
+    border-color: #ccc;
+}
+.wookiee-cookie-panel-inner .wookiee-cookie-btn--primary {
+    color: #fff;
+}
+
 @media (max-width: 768px) {
     .wookiee-cat-grid {
         grid-template-columns: 1fr;

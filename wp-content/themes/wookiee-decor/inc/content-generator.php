@@ -98,6 +98,11 @@ function wookiee_render_content_generator_page() {
 			<span id="wookiee-audit-status" style="margin-left:8px;"></span>
 		</p>
 		<div id="wookiee-audit-results" style="white-space:pre-wrap;max-width:900px;"></div>
+		<p id="wookiee-audit-fix-row" style="display:none;">
+			<button type="button" class="button button-primary" id="wookiee-audit-fix-btn">Apply these fixes to the draft</button>
+			<span id="wookiee-audit-fix-status" style="margin-left:8px;"></span>
+		</p>
+		<p class="description">Rewrites the draft to resolve everything the report above lists, using the same real business details as generation - it still only updates the Draft page, and you can re-run the audit afterwards to check.</p>
 	</div>
 	<script>
 	( function() {
@@ -173,6 +178,9 @@ function wookiee_render_content_generator_page() {
 		} );
 
 		var auditBtn = document.getElementById( 'wookiee-audit-btn' );
+		var fixRow   = document.getElementById( 'wookiee-audit-fix-row' );
+		var fixBtn   = document.getElementById( 'wookiee-audit-fix-btn' );
+
 		auditBtn.addEventListener( 'click', function() {
 			var auditStatus  = document.getElementById( 'wookiee-audit-status' );
 			var auditResults = document.getElementById( 'wookiee-audit-results' );
@@ -183,6 +191,7 @@ function wookiee_render_content_generator_page() {
 			}
 			auditBtn.disabled = true;
 			auditResults.textContent = '';
+			fixRow.style.display = 'none';
 			auditStatus.textContent = 'Auditing… this can take a minute.';
 			var data = new FormData();
 			data.append( 'action', 'wookiee_audit_policy_page' );
@@ -198,10 +207,42 @@ function wookiee_render_content_generator_page() {
 					}
 					auditStatus.textContent = 'Done.';
 					auditResults.textContent = res.data.report;
+					fixRow.style.display = '';
 				} )
 				.catch( function() {
 					auditBtn.disabled = false;
 					auditStatus.textContent = 'Audit failed — could not reach the server.';
+				} );
+		} );
+
+		fixBtn.addEventListener( 'click', function() {
+			var fixStatus    = document.getElementById( 'wookiee-audit-fix-status' );
+			var auditResults = document.getElementById( 'wookiee-audit-results' );
+			var postId       = document.getElementById( 'wookiee-audit-page-select' ).value;
+			if ( ! postId || ! auditResults.textContent ) {
+				fixStatus.textContent = 'Run the audit first.';
+				return;
+			}
+			fixBtn.disabled = true;
+			fixStatus.textContent = 'Rewriting the draft… this can take a minute.';
+			var data = new FormData();
+			data.append( 'action', 'wookiee_apply_audit_fixes' );
+			data.append( 'nonce', '<?php echo esc_js( wp_create_nonce( 'wookiee_generate_content' ) ); ?>' );
+			data.append( 'post_id', postId );
+			data.append( 'audit_report', auditResults.textContent );
+			fetch( ajaxurl, { method: 'POST', credentials: 'same-origin', body: data } )
+				.then( function( r ) { return r.json(); } )
+				.then( function( res ) {
+					fixBtn.disabled = false;
+					if ( ! res.success ) {
+						fixStatus.textContent = res.data && res.data.message ? res.data.message : 'Failed to apply fixes.';
+						return;
+					}
+					fixStatus.innerHTML = 'Draft updated. <a href="' + res.data.edit_link + '">Review it</a>, then re-run the audit to check.';
+				} )
+				.catch( function() {
+					fixBtn.disabled = false;
+					fixStatus.textContent = 'Failed — could not reach the server.';
 				} );
 		} );
 	} )();
@@ -240,7 +281,7 @@ function wookiee_generate_content_handler() {
 		}
 		$piece  = $available[ $key ];
 		$prompt = wookiee_build_content_prompt( $key, $brief );
-		$text   = wookiee_call_llm( $prompt, 2048 );
+		$text   = wookiee_call_llm( $prompt, wookiee_content_piece_max_tokens( $key ) );
 
 		if ( is_wp_error( $text ) ) {
 			$results[] = array(
@@ -348,6 +389,17 @@ function wookiee_business_details_block() {
 	return implode( "\n", $lines );
 }
 
+/**
+ * Policy pages need more room than brand-voice copy - a cookie or terms
+ * page covering every required section can run well past 2048 tokens
+ * and get cut off mid-sentence, which is exactly what a compliance audit
+ * will (correctly) flag as an "incomplete" issue.
+ */
+function wookiee_content_piece_max_tokens( $key ) {
+	$policy_keys = array( 'terms', 'privacy', 'shipping', 'returns', 'cookies' );
+	return in_array( $key, $policy_keys, true ) ? 4096 : 2048;
+}
+
 function wookiee_build_content_prompt( $key, $brief ) {
 	$policy_labels = array(
 		'terms'    => 'Terms & Conditions',
@@ -358,7 +410,7 @@ function wookiee_build_content_prompt( $key, $brief ) {
 	);
 
 	if ( isset( $policy_labels[ $key ] ) ) {
-		return "Act as a UK e-commerce legal policy writer. Write a complete, ready-to-publish {$policy_labels[ $key ]} page for a UK online store.\n\n"
+		$prompt = "Act as a UK e-commerce legal policy writer. Write a complete, ready-to-publish {$policy_labels[ $key ]} page for a UK online store.\n\n"
 			. "Store niche, in the owner's own words: \"{$brief}\"\n\n"
 			. "Real business details to use (do not invent anything beyond this list):\n" . wookiee_business_details_block() . "\n\n"
 			. "Rules:\n"
@@ -366,8 +418,17 @@ function wookiee_build_content_prompt( $key, $brief ) {
 			. "- Do not invent any business fact beyond the details given above. If something relevant is missing, write a clear inline placeholder like \"[Business input required: X]\" instead of guessing.\n"
 			. "- Do not copy another company's policy text.\n"
 			. "- Write in plain, professional, customer-friendly English - not robotic or generic-sounding boilerplate.\n"
+			. "- Include a clearly labelled section near the end on how customers can contact the business about this policy, using the contact email given above.\n"
+			. "- Include a brief note that this policy may be updated from time to time and customers should check this page periodically.\n"
+			. "- Where genuinely relevant, refer to the store's other policies by name (e.g. mention the Privacy Policy when discussing personal data, the Returns Policy when discussing refunds) rather than repeating their content.\n"
 			. "- End with a short note that this policy should be reviewed by a qualified UK solicitor before being relied on, since it is not legal advice.\n"
 			. "- Output ONLY the finished policy text as plain paragraphs separated by a blank line, starting with a single plain-text heading line. No markdown, no HTML, no commentary, no A/B/C-style breakdown - just the finished, publishable page.";
+
+		if ( 'cookies' === $key ) {
+			$prompt .= "\n\nThis store's actual cookie consent mechanism, describe it accurately using these facts (do not describe any other mechanism, and do not omit it): " . wookiee_cookie_consent_mechanism_description();
+		}
+
+		return $prompt;
 	}
 
 	if ( 'about' === $key ) {
@@ -451,6 +512,69 @@ function wookiee_build_policy_audit_prompt( $title, $policy_text ) {
 		. "MISSING INFORMATION: anything the business needs to supply that isn't in the text\n"
 		. "RECOMMENDATION: a short closing paragraph\n\n"
 		. "Be critical and specific. This is a QA report for a human to act on - do not rewrite the policy, only assess it.";
+}
+
+/**
+ * Rewrites a policy draft to resolve everything a compliance audit
+ * flagged, instead of the admin manually retyping fixes an AI report
+ * already itemised. Still lands back on the same Draft page (via
+ * wookiee_insert_or_update_ai_draft_page()), so nothing goes live
+ * without the usual manual Publish step - only the tedious "now go make
+ * these exact edits by hand" part is what this removes.
+ */
+add_action( 'wp_ajax_wookiee_apply_audit_fixes', 'wookiee_apply_audit_fixes_handler' );
+function wookiee_apply_audit_fixes_handler() {
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_send_json_error( array( 'message' => 'Not allowed.' ), 403 );
+	}
+	check_ajax_referer( 'wookiee_generate_content', 'nonce' );
+
+	if ( '' === trim( (string) wookiee_get_setting( 'llm_api_key' ) ) ) {
+		wp_send_json_error( array( 'message' => 'Add an LLM API key on the Wookiee Settings page first.' ) );
+	}
+
+	$post_id = isset( $_POST['post_id'] ) ? intval( $_POST['post_id'] ) : 0;
+	$post    = $post_id ? get_post( $post_id ) : null;
+	if ( ! $post || 'page' !== $post->post_type ) {
+		wp_send_json_error( array( 'message' => 'Select a valid policy draft first.' ) );
+	}
+
+	$audit_report = isset( $_POST['audit_report'] ) ? sanitize_textarea_field( wp_unslash( $_POST['audit_report'] ) ) : '';
+	if ( '' === trim( $audit_report ) ) {
+		wp_send_json_error( array( 'message' => 'Run the compliance audit first.' ) );
+	}
+
+	$prompt = wookiee_build_policy_fix_prompt( $post->post_title, wp_strip_all_tags( $post->post_content ), $audit_report );
+	$text   = wookiee_call_llm( $prompt, 4096 );
+
+	if ( is_wp_error( $text ) ) {
+		wp_send_json_error( array( 'message' => $text->get_error_message() ) );
+	}
+
+	wookiee_insert_or_update_ai_draft_page( $post->post_title, $text );
+
+	wp_send_json_success( array( 'edit_link' => get_edit_post_link( $post->ID, 'raw' ) ) );
+}
+
+function wookiee_build_policy_fix_prompt( $title, $current_text, $audit_report ) {
+	$prompt = "You previously drafted a UK ecommerce policy page. Below is its CURRENT text, followed by a compliance audit report listing problems with it. Rewrite the complete policy to resolve every issue in the audit report while keeping everything that was already correct.\n\n"
+		. "Policy page: {$title}\n\n"
+		. "--- CURRENT POLICY TEXT ---\n{$current_text}\n--- END CURRENT POLICY TEXT ---\n\n"
+		. "--- AUDIT REPORT ---\n{$audit_report}\n--- END AUDIT REPORT ---\n\n"
+		. "Real business details (do not invent anything beyond this list):\n" . wookiee_business_details_block() . "\n\n"
+		. "Rules:\n"
+		. "- Resolve every item under \"ISSUES FOUND\".\n"
+		. "- For anything under \"MISSING INFORMATION\", either fill it in from the business details above, or if it's genuinely not available, use a clear \"[Business input required: X]\" placeholder - do not invent it.\n"
+		. "- Do not claim any feature, mechanism, or business practice exists unless it's in the business details above or already accurately stated in the current text - if the audit flagged something missing that isn't something this business actually has, use a placeholder rather than inventing it.\n"
+		. "- Write in plain, professional, customer-friendly English - not robotic or generic-sounding boilerplate.\n"
+		. "- End with a short note that this policy should be reviewed by a qualified UK solicitor before being relied on, since it is not legal advice.\n"
+		. "- Output ONLY the finished, complete policy text as plain paragraphs separated by a blank line, starting with a single plain-text heading line. No markdown, no HTML, no commentary, no changelog of what you fixed - just the finished, publishable page.";
+
+	if ( false !== stripos( $title, 'cookie' ) ) {
+		$prompt .= "\n\nThis store's actual cookie consent mechanism, describe it accurately using these facts: " . wookiee_cookie_consent_mechanism_description();
+	}
+
+	return $prompt;
 }
 
 /**

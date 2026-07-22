@@ -110,6 +110,14 @@ function wookiee_render_setup_wizard_page() {
 				<td><strong>Company number:</strong> <?php echo esc_html( wookiee_get_setting( 'company_number' ) ); ?></td>
 				<td><a href="<?php echo esc_url( $settings_url ); ?>" class="button">Edit / look up on Companies House</a></td>
 			</tr>
+			<tr>
+				<td colspan="2"><strong>Site title:</strong> <?php echo esc_html( get_bloginfo( 'name' ) ); ?> <span class="description">— shown in the header, footer, and browser tab</span></td>
+				<td><a href="<?php echo esc_url( admin_url( 'options-general.php' ) ); ?>" class="button">Edit site title</a></td>
+			</tr>
+			<tr>
+				<td colspan="2"><strong>Logo:</strong> <?php echo has_custom_logo() ? 'Custom logo set' : 'Using the default Wookiee wordmark'; ?></td>
+				<td><a href="<?php echo esc_url( admin_url( 'customize.php?autofocus[section]=title_tagline' ) ); ?>" class="button">Upload logo</a></td>
+			</tr>
 		</table>
 		<?php if ( ! $has_ch_key ) : ?>
 			<p class="description">No Companies House API key yet — the lookup button on Wookiee Settings needs one to auto-fill this.</p>

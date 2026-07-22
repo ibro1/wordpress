@@ -4,7 +4,7 @@
 	<div class="footer-newsletter-wrap">
 		<div class="container footer-newsletter">
 			<div class="newsletter-text">
-				<span class="newsletter-heading">Stay organised with Wookiee</span>
+				<span class="newsletter-heading">Stay organised with <?php echo esc_html( get_bloginfo( 'name' ) ); ?></span>
 				<span class="newsletter-sub">Home-organisation ideas and new-product updates, occasionally.</span>
 			</div>
 			<form class="newsletter-form">
@@ -18,14 +18,18 @@
 	<div class="container footer-columns-grid">
 
 		<div class="footer-col footer-col-brand">
-			<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 38" width="150" height="34" fill="none" class="footer-logo">
-				<path d="M8 8 L12 30 L17.5 17 L23 30 L27 8" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-				<rect x="10" y="11" width="4.5" height="4" rx="1" fill="#c1704a"/>
-				<rect x="20.5" y="11" width="4.5" height="4" rx="1" fill="#c1704a"/>
-				<line x1="11" y1="13" x2="13.5" y2="13" stroke="#ffffff" stroke-width="1.2" stroke-linecap="round"/>
-				<line x1="21.5" y1="13" x2="24" y2="13" stroke="#ffffff" stroke-width="1.2" stroke-linecap="round"/>
-				<text x="36" y="28" font-family="'Outfit', 'Inter', system-ui, sans-serif" font-weight="800" font-size="22" fill="#ffffff" letter-spacing="-0.5px">Wookiee</text>
-			</svg>
+			<?php if ( has_custom_logo() ) : ?>
+				<div class="footer-logo footer-logo-custom"><?php the_custom_logo(); ?></div>
+			<?php else : ?>
+				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 38" width="150" height="34" fill="none" class="footer-logo">
+					<path d="M8 8 L12 30 L17.5 17 L23 30 L27 8" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+					<rect x="10" y="11" width="4.5" height="4" rx="1" fill="#c1704a"/>
+					<rect x="20.5" y="11" width="4.5" height="4" rx="1" fill="#c1704a"/>
+					<line x1="11" y1="13" x2="13.5" y2="13" stroke="#ffffff" stroke-width="1.2" stroke-linecap="round"/>
+					<line x1="21.5" y1="13" x2="24" y2="13" stroke="#ffffff" stroke-width="1.2" stroke-linecap="round"/>
+					<text x="36" y="28" font-family="'Outfit', 'Inter', system-ui, sans-serif" font-weight="800" font-size="22" fill="#ffffff" letter-spacing="-0.5px"><?php echo esc_html( get_bloginfo( 'name' ) ); ?></text>
+				</svg>
+			<?php endif; ?>
 			<p class="footer-about-copy">
 				UK private-label home-storage brand operated by <?php echo esc_html( wookiee_get_setting( 'business_name' ) ); ?>.
 			</p>

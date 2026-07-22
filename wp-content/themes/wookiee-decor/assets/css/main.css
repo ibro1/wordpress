@@ -142,6 +142,10 @@ img {
 	display: flex;
 	align-items: center;
 }
+.site-logo-custom img {
+	max-height: 44px;
+	width: auto;
+}
 
 /* Desktop nav */
 .main-navigation {
@@ -1260,6 +1264,10 @@ body.mobile-nav-active {
 .footer-logo {
 	margin-bottom: 22px;
 	display: block;
+}
+.footer-logo-custom img {
+	max-height: 44px;
+	width: auto;
 }
 .footer-about-copy {
 	font-size: 14px;

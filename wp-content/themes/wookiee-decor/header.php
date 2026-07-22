@@ -15,16 +15,20 @@
 <header class="site-header">
 	<div class="container header-inner">
 		<div class="site-branding">
-			<a href="<?php echo esc_url( home_url( '/' ) ); ?>" class="site-logo-link" aria-label="<?php echo esc_attr( get_bloginfo( 'name' ) ); ?>">
-				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 38" width="150" height="34" fill="none" class="site-logo-svg">
-					<path d="M8 8 L12 30 L17.5 17 L23 30 L27 8" stroke="#1a1614" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-					<rect x="10" y="11" width="4.5" height="4" rx="1" fill="#c1704a"/>
-					<rect x="20.5" y="11" width="4.5" height="4" rx="1" fill="#c1704a"/>
-					<line x1="11" y1="13" x2="13.5" y2="13" stroke="#1a1614" stroke-width="1.2" stroke-linecap="round"/>
-					<line x1="21.5" y1="13" x2="24" y2="13" stroke="#1a1614" stroke-width="1.2" stroke-linecap="round"/>
-					<text x="36" y="28" font-family="'Outfit', 'Inter', system-ui, sans-serif" font-weight="800" font-size="22" fill="#1a1614" letter-spacing="-0.5px">Wookiee</text>
-				</svg>
-			</a>
+			<?php if ( has_custom_logo() ) : ?>
+				<div class="site-logo-link site-logo-custom"><?php the_custom_logo(); ?></div>
+			<?php else : ?>
+				<a href="<?php echo esc_url( home_url( '/' ) ); ?>" class="site-logo-link" aria-label="<?php echo esc_attr( get_bloginfo( 'name' ) ); ?>">
+					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 38" width="150" height="34" fill="none" class="site-logo-svg">
+						<path d="M8 8 L12 30 L17.5 17 L23 30 L27 8" stroke="#1a1614" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+						<rect x="10" y="11" width="4.5" height="4" rx="1" fill="#c1704a"/>
+						<rect x="20.5" y="11" width="4.5" height="4" rx="1" fill="#c1704a"/>
+						<line x1="11" y1="13" x2="13.5" y2="13" stroke="#1a1614" stroke-width="1.2" stroke-linecap="round"/>
+						<line x1="21.5" y1="13" x2="24" y2="13" stroke="#1a1614" stroke-width="1.2" stroke-linecap="round"/>
+						<text x="36" y="28" font-family="'Outfit', 'Inter', system-ui, sans-serif" font-weight="800" font-size="22" fill="#1a1614" letter-spacing="-0.5px"><?php echo esc_html( get_bloginfo( 'name' ) ); ?></text>
+					</svg>
+				</a>
+			<?php endif; ?>
 		</div>
 
 		<nav class="main-navigation" id="main-navigation" aria-label="Primary">

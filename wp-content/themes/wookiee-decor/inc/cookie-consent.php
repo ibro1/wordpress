@@ -25,7 +25,7 @@ defined( 'ABSPATH' ) || exit;
  * the real mechanism rather than inventing or omitting one.
  */
 function wookiee_cookie_consent_mechanism_description() {
-	return 'This site shows a cookie consent banner to first-time visitors, offering three choices: Accept All, Reject Non-Essential, or Manage Preferences (to individually allow or disallow Analytics and Marketing cookies; Strictly Necessary cookies cannot be disabled since the site cannot function without them). The visitor\'s choice is remembered for 6 months and can be changed at any time via the "Manage cookie preferences" button on the Cookie Preferences page.';
+	return 'This site shows a cookie consent banner to first-time visitors, offering three choices: Accept All, Reject Non-Essential, or Manage Preferences (to individually allow or disallow Analytics and Marketing cookies). Strictly Necessary cookies - the ones required to run the shopping cart, checkout, and basic site security - cannot be disabled since the site cannot function without them; this is the "essential" category. Analytics and Marketing cookies are the "non-essential" categories a visitor can freely accept or reject. The visitor\'s choice is remembered for 6 months and can be changed at any time via the "Manage cookie preferences" button on the Cookie Preferences page. This site does not currently have any third-party analytics or advertising scripts (e.g. Google Analytics, ad networks) actually installed - state this plainly rather than describing hypothetical third-party cookies.';
 }
 
 add_action( 'wp_footer', 'wookiee_render_cookie_consent_banner' );

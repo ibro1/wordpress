@@ -421,8 +421,13 @@ function wookiee_build_content_prompt( $key, $brief ) {
 			. "- Include a clearly labelled section near the end on how customers can contact the business about this policy, using the contact email given above.\n"
 			. "- Include a brief note that this policy may be updated from time to time and customers should check this page periodically.\n"
 			. "- Where genuinely relevant, refer to the store's other policies by name (e.g. mention the Privacy Policy when discussing personal data, the Returns Policy when discussing refunds) rather than repeating their content.\n"
+			. "- State the business's full legal/trading name and company registration number explicitly within the body text itself (not only implied) - UK company law expects this on formal business documents, and it must appear even if it feels repetitive with other sections.\n"
 			. "- End with a short note that this policy should be reviewed by a qualified UK solicitor before being relied on, since it is not legal advice.\n"
 			. "- Output ONLY the finished policy text as plain paragraphs separated by a blank line, starting with a single plain-text heading line. No markdown, no HTML, no commentary, no A/B/C-style breakdown - just the finished, publishable page.";
+
+		if ( in_array( $key, array( 'privacy', 'cookies' ), true ) ) {
+			$prompt .= "\n\nThis policy must explicitly explain the data subject's rights under UK GDPR: the right to access, rectify, erase, restrict processing of, and port their personal data, the right to object, and the right to withdraw consent at any time - and state plainly that requests to exercise these rights can be sent to the contact email given above.";
+		}
 
 		if ( 'cookies' === $key ) {
 			$prompt .= "\n\nThis store's actual cookie consent mechanism, describe it accurately using these facts (do not describe any other mechanism, and do not omit it): " . wookiee_cookie_consent_mechanism_description();
@@ -567,8 +572,13 @@ function wookiee_build_policy_fix_prompt( $title, $current_text, $audit_report )
 		. "- For anything under \"MISSING INFORMATION\", either fill it in from the business details above, or if it's genuinely not available, use a clear \"[Business input required: X]\" placeholder - do not invent it.\n"
 		. "- Do not claim any feature, mechanism, or business practice exists unless it's in the business details above or already accurately stated in the current text - if the audit flagged something missing that isn't something this business actually has, use a placeholder rather than inventing it.\n"
 		. "- Write in plain, professional, customer-friendly English - not robotic or generic-sounding boilerplate.\n"
+		. "- State the business's full legal/trading name and company registration number explicitly within the body text itself - UK company law expects this on formal business documents.\n"
 		. "- End with a short note that this policy should be reviewed by a qualified UK solicitor before being relied on, since it is not legal advice.\n"
 		. "- Output ONLY the finished, complete policy text as plain paragraphs separated by a blank line, starting with a single plain-text heading line. No markdown, no HTML, no commentary, no changelog of what you fixed - just the finished, publishable page.";
+
+	if ( false !== stripos( $title, 'privacy' ) || false !== stripos( $title, 'cookie' ) ) {
+		$prompt .= "\n\nThis policy must explicitly explain the data subject's rights under UK GDPR: the right to access, rectify, erase, restrict processing of, and port their personal data, the right to object, and the right to withdraw consent at any time - and state plainly that requests can be sent to the contact email given above.";
+	}
 
 	if ( false !== stripos( $title, 'cookie' ) ) {
 		$prompt .= "\n\nThis store's actual cookie consent mechanism, describe it accurately using these facts: " . wookiee_cookie_consent_mechanism_description();

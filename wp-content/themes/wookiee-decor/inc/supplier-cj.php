@@ -156,6 +156,46 @@ function wookiee_cj_search_products( $keyword, $page = 1 ) {
 }
 
 /**
+ * Bridges the AI Product Generator into this real supplier catalog: an
+ * AI-invented product idea (a title/concept the LLM thinks this niche
+ * needs) is used as a CJ search query, and the best real, fulfillable
+ * match is imported through the normal pipeline (AI-cleaned GMC-
+ * compliant title/description, markup pricing, white-background
+ * featured image) - the invented idea never itself becomes a product;
+ * it's only ever a search query pointed at real inventory.
+ *
+ * Tries up to $max_attempts search results before giving up, since the
+ * first hit isn't always a good fit (wookiee_cj_import_product()'s own
+ * AI fit-check, run with auto-skip on, will reject it and this moves on
+ * to the next result). Bounded to control LLM cost/time per idea - each
+ * attempt runs its own AI cleanup call.
+ */
+function wookiee_source_real_product_for_idea( $query, $max_attempts = 3 ) {
+	$results = wookiee_cj_search_products( $query );
+	if ( is_wp_error( $results ) ) {
+		return $results;
+	}
+	if ( empty( $results ) ) {
+		return new WP_Error( 'wookiee_no_cj_match', 'No matching product found on CJ Dropshipping for "' . $query . '".' );
+	}
+
+	$attempts = 0;
+	foreach ( $results as $result ) {
+		if ( $attempts >= $max_attempts ) {
+			break;
+		}
+		$attempts++;
+
+		$imported = wookiee_cj_import_product( $result['pid'], true );
+		if ( ! is_wp_error( $imported ) ) {
+			return $imported;
+		}
+	}
+
+	return new WP_Error( 'wookiee_no_suitable_match', 'Found results on CJ for "' . $query . '" but none were a good fit for the niche.' );
+}
+
+/**
  * Applies the configured markup to a CJ supplier cost price. Previously
  * CJ's raw supplier price was used as the live selling price with zero
  * margin - a real gap, not a rounding nicety. The original cost is kept

@@ -150,3 +150,87 @@ function wookiee_google_ads_keyword_ideas( $seed_keywords ) {
 
 	return $ideas;
 }
+
+/**
+ * One-click "Connect to Google Ads" flow: instead of the admin having
+ * to run some external script/tool to generate a refresh token by
+ * hand, this drives the standard OAuth2 authorization-code flow
+ * entirely through the browser and saves the resulting refresh token
+ * automatically. The Client ID/Secret must already be saved in Wookiee
+ * Settings before connecting, since the redirect-back exchange step
+ * needs them. access_type=offline + prompt=consent guarantees Google
+ * returns a refresh token (it's only ever returned on first consent
+ * unless consent is forced), and a WP nonce doubles as the OAuth
+ * `state` param for CSRF protection across the external redirect.
+ */
+function wookiee_google_ads_oauth_redirect_uri() {
+	return admin_url( 'admin-post.php?action=wookiee_google_ads_oauth_callback' );
+}
+
+function wookiee_google_ads_oauth_start_url() {
+	$params = array(
+		'client_id'     => wookiee_get_setting( 'google_ads_client_id' ),
+		'redirect_uri'  => wookiee_google_ads_oauth_redirect_uri(),
+		'response_type' => 'code',
+		'scope'         => 'https://www.googleapis.com/auth/adwords',
+		'access_type'   => 'offline',
+		'prompt'        => 'consent',
+		'state'         => wp_create_nonce( 'wookiee_google_ads_oauth' ),
+	);
+	return 'https://accounts.google.com/o/oauth2/v2/auth?' . http_build_query( $params );
+}
+
+add_action( 'admin_post_wookiee_google_ads_oauth_callback', 'wookiee_google_ads_oauth_callback' );
+function wookiee_google_ads_oauth_callback() {
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_die( 'Not allowed.' );
+	}
+
+	$settings_url = admin_url( 'admin.php?page=wookiee-settings#integrations' );
+
+	if ( ! empty( $_GET['error'] ) ) {
+		wp_safe_redirect( add_query_arg( 'wookiee_google_ads_error', rawurlencode( sanitize_text_field( wp_unslash( $_GET['error'] ) ) ), $settings_url ) );
+		exit;
+	}
+
+	$state = isset( $_GET['state'] ) ? sanitize_text_field( wp_unslash( $_GET['state'] ) ) : '';
+	if ( ! wp_verify_nonce( $state, 'wookiee_google_ads_oauth' ) ) {
+		wp_safe_redirect( add_query_arg( 'wookiee_google_ads_error', 'invalid_state', $settings_url ) );
+		exit;
+	}
+
+	$code = isset( $_GET['code'] ) ? sanitize_text_field( wp_unslash( $_GET['code'] ) ) : '';
+	if ( '' === $code ) {
+		wp_safe_redirect( add_query_arg( 'wookiee_google_ads_error', 'missing_code', $settings_url ) );
+		exit;
+	}
+
+	$response = wp_remote_post( 'https://oauth2.googleapis.com/token', array(
+		'timeout' => 30,
+		'body'    => array(
+			'code'          => $code,
+			'client_id'     => wookiee_get_setting( 'google_ads_client_id' ),
+			'client_secret' => wookiee_get_setting( 'google_ads_client_secret' ),
+			'redirect_uri'  => wookiee_google_ads_oauth_redirect_uri(),
+			'grant_type'    => 'authorization_code',
+		),
+	) );
+
+	if ( is_wp_error( $response ) ) {
+		wp_safe_redirect( add_query_arg( 'wookiee_google_ads_error', rawurlencode( $response->get_error_message() ), $settings_url ) );
+		exit;
+	}
+
+	$data = json_decode( wp_remote_retrieve_body( $response ), true );
+	if ( empty( $data['refresh_token'] ) ) {
+		$msg = isset( $data['error_description'] ) ? $data['error_description'] : 'Google did not return a refresh token.';
+		wp_safe_redirect( add_query_arg( 'wookiee_google_ads_error', rawurlencode( $msg ), $settings_url ) );
+		exit;
+	}
+
+	update_option( 'wookiee_setting_google_ads_refresh_token', sanitize_text_field( $data['refresh_token'] ) );
+	delete_transient( 'wookiee_google_ads_access_token' );
+
+	wp_safe_redirect( add_query_arg( 'wookiee_google_ads_connected', '1', $settings_url ) );
+	exit;
+}

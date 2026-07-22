@@ -202,7 +202,15 @@ function wookiee_render_settings_field_row( $key, $field ) {
 				<p class="description">From a Google Cloud project with the Google Ads API enabled (APIs &amp; Services → Credentials → OAuth client ID).</p>
 			<?php endif; ?>
 			<?php if ( 'google_ads_refresh_token' === $key ) : ?>
-				<p class="description">Generated once via Google's OAuth consent flow using the client ID/secret above - this is what lets WordPress request fresh access tokens without a browser involved each time.</p>
+				<?php $google_client_id = wookiee_get_setting( 'google_ads_client_id' ); $google_client_secret = wookiee_get_setting( 'google_ads_client_secret' ); ?>
+				<?php if ( '' !== trim( (string) $google_client_id ) && '' !== trim( (string) $google_client_secret ) ) : ?>
+					<p>
+						<a href="<?php echo esc_url( wookiee_google_ads_oauth_start_url() ); ?>" class="button button-primary">Connect to Google Ads</a>
+					</p>
+					<p class="description">Redirects to Google to authorize access, then fills in this field automatically - no manual token copying. Before clicking, add this exact URL to the OAuth client's "Authorized redirect URIs" in Google Cloud Console (Credentials → your OAuth client), or Google will reject the connection:<br><code><?php echo esc_html( wookiee_google_ads_oauth_redirect_uri() ); ?></code></p>
+				<?php else : ?>
+					<p class="description">Enter the Client ID and Client Secret above, click Save Changes, then reload this page - a "Connect to Google Ads" button will appear here to fetch this automatically instead of generating it by hand.</p>
+				<?php endif; ?>
 			<?php endif; ?>
 			<?php if ( 'google_ads_customer_id' === $key ) : ?>
 				<p class="description">The Google Ads account ID to run keyword queries against, digits only (no dashes) - e.g. <code>1234567890</code> for an account shown as 123-456-7890.</p>
@@ -228,6 +236,12 @@ function wookiee_render_settings_page() {
 	<div class="wrap">
 		<h1>Wookiee Settings</h1>
 		<p>These values are used across the site (footer, contact form, shipping messaging, policy pages) and update everywhere immediately when saved — including on pages that were already created.</p>
+
+		<?php if ( ! empty( $_GET['wookiee_google_ads_connected'] ) ) : ?>
+			<div class="notice notice-success is-dismissible"><p>Connected to Google Ads — the refresh token was saved automatically.</p></div>
+		<?php elseif ( ! empty( $_GET['wookiee_google_ads_error'] ) ) : ?>
+			<div class="notice notice-error"><p>Google Ads connection failed: <?php echo esc_html( sanitize_text_field( wp_unslash( $_GET['wookiee_google_ads_error'] ) ) ); ?></p></div>
+		<?php endif; ?>
 
 		<h2 class="nav-tab-wrapper" id="wookiee-settings-tabs" role="tablist">
 			<?php $is_first = true; ?>

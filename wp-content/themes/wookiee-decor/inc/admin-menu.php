@@ -21,7 +21,7 @@ function wookiee_register_admin_menu() {
 		58
 	);
 
-	add_submenu_page( 'wookiee-setup', 'Wookiee Setup', 'Setup', 'manage_options', 'wookiee-setup', 'wookiee_render_setup_wizard_page' );
+	$GLOBALS['wookiee_niche_suggest_hooks'][] = add_submenu_page( 'wookiee-setup', 'Wookiee Setup', 'Setup', 'manage_options', 'wookiee-setup', 'wookiee_render_setup_wizard_page' );
 	$GLOBALS['wookiee_niche_suggest_hooks'][] = add_submenu_page( 'wookiee-setup', 'Wookiee Settings', 'Settings', 'manage_options', 'wookiee-settings', 'wookiee_render_settings_page' );
 	$GLOBALS['wookiee_niche_suggest_hooks'][] = add_submenu_page( 'wookiee-setup', 'Wookiee Product Generator', 'Product Generator', 'manage_options', 'wookiee-product-generator', 'wookiee_render_product_generator_page' );
 	$GLOBALS['wookiee_niche_suggest_hooks'][] = add_submenu_page( 'wookiee-setup', 'Wookiee Content Generator', 'Content Generator', 'manage_options', 'wookiee-content-generator', 'wookiee_render_content_generator_page' );
@@ -94,6 +94,94 @@ function wookiee_enqueue_niche_suggest_assets( $hook ) {
 					} );
 			} );
 		} );
+
+		// The Homepage Copy / About & Contact Copy \"Generate with AI\"
+		// buttons - shared here (rather than living only in
+		// inc/theme-settings.php) since the Setup wizard renders these
+		// exact same fields/buttons too and needs identical wiring.
+		// wireInlineGenerator() no-ops safely if its button id isn't on
+		// the current page, so calling it for both is harmless.
+		function wireInlineGenerator( btnId, briefId, statusId, action, nonceAction ) {
+			var btn = document.getElementById( btnId );
+			if ( ! btn ) { return; }
+			btn.addEventListener( 'click', function() {
+				var status = document.getElementById( statusId );
+				var brief  = document.getElementById( briefId ).value.trim();
+				if ( ! brief ) {
+					status.textContent = 'Describe the niche first.';
+					return;
+				}
+				btn.disabled = true;
+				status.textContent = 'Generating… this can take up to a minute.';
+				var data = new FormData();
+				data.append( 'action', action );
+				data.append( 'nonce', nonceAction );
+				data.append( 'brief', brief );
+				fetch( ajaxurl, { method: 'POST', credentials: 'same-origin', body: data } )
+					.then( function( r ) { return r.json(); } )
+					.then( function( res ) {
+						btn.disabled = false;
+						if ( ! res.success ) {
+							status.textContent = res.data && res.data.message ? res.data.message : 'Generation failed.';
+							return;
+						}
+						Object.keys( res.data.fields ).forEach( function( key ) {
+							var field = document.getElementById( 'wookiee_setting_' + key );
+							if ( field && res.data.fields[ key ] ) {
+								field.value = res.data.fields[ key ];
+							}
+						} );
+						status.textContent = 'Drafted below. Review, then click Save Changes.';
+					} )
+					.catch( function() {
+						btn.disabled = false;
+						status.textContent = 'Generation failed — could not reach the server.';
+					} );
+			} );
+		}
+
+		wireInlineGenerator( 'wookiee-homepage-ai-btn', 'wookiee-homepage-ai-brief', 'wookiee-homepage-ai-status', 'wookiee_inline_generate_homepage_copy', " . wp_json_encode( wp_create_nonce( 'wookiee_inline_homepage_copy' ) ) . " );
+		wireInlineGenerator( 'wookiee-about-ai-btn', 'wookiee-about-ai-brief', 'wookiee-about-ai-status', 'wookiee_inline_generate_about_contact_copy', " . wp_json_encode( wp_create_nonce( 'wookiee_inline_about_contact_copy' ) ) . " );
+
+		// Companies House lookup button - fills business_name/registered_address
+		// from the company number, wherever that field row is rendered
+		// (Settings' Business Identity tab, or the Setup wizard's step 1).
+		var chBtn = document.getElementById( 'wookiee-ch-lookup-btn' );
+		if ( chBtn ) {
+			chBtn.addEventListener( 'click', function() {
+				var status      = document.getElementById( 'wookiee-ch-lookup-status' );
+				var numberField = document.getElementById( 'wookiee_setting_company_number' );
+				var number      = numberField ? numberField.value.trim() : '';
+				if ( ! number ) {
+					status.textContent = 'Enter a company number first.';
+					return;
+				}
+				chBtn.disabled = true;
+				status.textContent = 'Looking up…';
+				var chData = new FormData();
+				chData.append( 'action', 'wookiee_ch_lookup' );
+				chData.append( 'nonce', " . wp_json_encode( wp_create_nonce( 'wookiee_ch_lookup' ) ) . " );
+				chData.append( 'company_number', number );
+				fetch( ajaxurl, { method: 'POST', credentials: 'same-origin', body: chData } )
+					.then( function( r ) { return r.json(); } )
+					.then( function( res ) {
+						chBtn.disabled = false;
+						if ( ! res.success ) {
+							status.textContent = res.data && res.data.message ? res.data.message : 'Lookup failed.';
+							return;
+						}
+						var nameField = document.getElementById( 'wookiee_setting_business_name' );
+						var addrField = document.getElementById( 'wookiee_setting_registered_address' );
+						if ( nameField ) { nameField.value = res.data.company_name; }
+						if ( addrField ) { addrField.value = res.data.address; }
+						status.textContent = 'Found: ' + res.data.company_name + ' (status: ' + res.data.company_status + '). Review the fields, then click Save Changes.';
+					} )
+					.catch( function() {
+						chBtn.disabled = false;
+						status.textContent = 'Lookup failed — could not reach the server.';
+					} );
+			} );
+		}
 	} )();
 	";
 	wp_register_script( 'wookiee-niche-suggest', false, array(), false, true );

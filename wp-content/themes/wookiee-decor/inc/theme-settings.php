@@ -294,12 +294,78 @@ function wookiee_render_settings_field_row( $key, $field ) {
 	<?php
 }
 
+/**
+ * The "Generate with AI" notice + niche-brief-with-sparkle + button for
+ * the Homepage Copy / About & Contact Copy tabs - extracted so the
+ * Setup wizard's equivalent step can render the exact same markup
+ * instead of a second hand-copied version. The click-wiring JS lives
+ * once in wookiee_enqueue_niche_suggest_assets() (inc/admin-menu.php),
+ * shared across every screen this can appear on.
+ */
+function wookiee_render_ai_copy_generator_notice( $tab_key ) {
+	$config = array(
+		'homepage'      => array(
+			'brief_id'  => 'wookiee-homepage-ai-brief',
+			'btn_id'    => 'wookiee-homepage-ai-btn',
+			'status_id' => 'wookiee-homepage-ai-status',
+			'desc'      => 'rewrites every field below (hero, trust bar, section headers, "how it works", philosophy) to match a one-line description of the store\'s niche, keeping the page\'s design/layout exactly as-is.',
+		),
+		'about_contact' => array(
+			'brief_id'  => 'wookiee-about-ai-brief',
+			'btn_id'    => 'wookiee-about-ai-btn',
+			'status_id' => 'wookiee-about-ai-status',
+			'desc'      => 'rewrites every field below (About page hero/copy, Contact page intro) to match a one-line description of the store\'s niche, keeping both pages\' existing design/layout exactly as-is - only the text changes.',
+		),
+	);
+	if ( ! isset( $config[ $tab_key ] ) ) {
+		return;
+	}
+	$c           = $config[ $tab_key ];
+	$has_llm_key = '' !== trim( (string) wookiee_get_setting( 'llm_api_key' ) );
+	?>
+	<div style="background:#f6f7f7;border:1px solid #dcdcde;border-radius:4px;padding:12px 16px;margin-bottom:20px;max-width:900px;">
+		<p style="margin-top:0;"><strong>Generate with AI</strong> — <?php echo $c['desc']; ?> Review and edit before clicking Save Changes at the bottom; nothing changes on the live site until then.</p>
+		<p>
+			<span class="wookiee-niche-input-wrap">
+				<input type="text" id="<?php echo esc_attr( $c['brief_id'] ); ?>" class="regular-text" value="<?php echo esc_attr( get_option( 'wookiee_niche_brief', '' ) ); ?>" placeholder="e.g. UK home-storage and organisation products - baskets, shelving, drawer organisers">
+				<?php wookiee_niche_suggest_button( $c['brief_id'] ); ?>
+			</span>
+			<button type="button" class="button button-primary" id="<?php echo esc_attr( $c['btn_id'] ); ?>" <?php disabled( ! $has_llm_key ); ?>>Generate with AI</button>
+			<span id="<?php echo esc_attr( $c['status_id'] ); ?>" style="margin-left:8px;"></span>
+		</p>
+		<?php if ( ! $has_llm_key ) : ?>
+			<p class="description">Needs an LLM API key on the <a href="#integrations">AI &amp; Integrations</a> tab first.</p>
+		<?php endif; ?>
+	</div>
+	<?php
+}
+
+/**
+ * A plain <table class="form-table"> of settings field rows for an
+ * arbitrary list of field keys - the same rendering the tabbed Settings
+ * page uses per-tab, extracted so any other screen (the Setup wizard)
+ * can render the same real, saveable fields for just the keys it needs,
+ * without re-implementing wookiee_render_settings_field_row() calls by
+ * hand or duplicating field definitions.
+ */
+function wookiee_render_settings_fields_table( array $keys ) {
+	$all_fields = wookiee_settings_fields();
+	?>
+	<table class="form-table" role="presentation">
+		<?php foreach ( $keys as $key ) : ?>
+			<?php if ( isset( $all_fields[ $key ] ) ) : ?>
+				<?php wookiee_render_settings_field_row( $key, $all_fields[ $key ] ); ?>
+			<?php endif; ?>
+		<?php endforeach; ?>
+	</table>
+	<?php
+}
+
 function wookiee_render_settings_page() {
 	if ( ! current_user_can( 'manage_options' ) ) {
 		return;
 	}
-	$all_fields = wookiee_settings_fields();
-	$tabs       = wookiee_settings_tabs();
+	$tabs = wookiee_settings_tabs();
 	?>
 	<div class="wrap">
 		<h1>Wookiee Settings</h1>
@@ -324,45 +390,8 @@ function wookiee_render_settings_page() {
 			<?php $is_first = true; ?>
 			<?php foreach ( $tabs as $tab_key => $tab ) : ?>
 				<div class="wookiee-tab-panel" id="wookiee-panel-<?php echo esc_attr( $tab_key ); ?>" data-tab-panel="<?php echo esc_attr( $tab_key ); ?>" role="tabpanel" aria-labelledby="wookiee-tab-<?php echo esc_attr( $tab_key ); ?>" <?php echo $is_first ? '' : 'hidden'; ?>>
-					<?php if ( 'homepage' === $tab_key ) : $has_llm_key = '' !== trim( (string) wookiee_get_setting( 'llm_api_key' ) ); ?>
-						<div style="background:#f6f7f7;border:1px solid #dcdcde;border-radius:4px;padding:12px 16px;margin-bottom:20px;max-width:900px;">
-							<p style="margin-top:0;"><strong>Generate with AI</strong> — rewrites every field below (hero, trust bar, section headers, "how it works", philosophy) to match a one-line description of the store's niche, keeping the page's design/layout exactly as-is. Review and edit before clicking Save Changes at the bottom; nothing changes on the live site until then.</p>
-							<p>
-								<span class="wookiee-niche-input-wrap">
-									<input type="text" id="wookiee-homepage-ai-brief" class="regular-text" value="<?php echo esc_attr( get_option( 'wookiee_niche_brief', '' ) ); ?>" placeholder="e.g. UK home-storage and organisation products - baskets, shelving, drawer organisers">
-									<?php wookiee_niche_suggest_button( 'wookiee-homepage-ai-brief' ); ?>
-								</span>
-								<button type="button" class="button button-primary" id="wookiee-homepage-ai-btn" <?php disabled( ! $has_llm_key ); ?>>Generate with AI</button>
-								<span id="wookiee-homepage-ai-status" style="margin-left:8px;"></span>
-							</p>
-							<?php if ( ! $has_llm_key ) : ?>
-								<p class="description">Needs an LLM API key on the <a href="#integrations">AI &amp; Integrations</a> tab first.</p>
-							<?php endif; ?>
-						</div>
-					<?php endif; ?>
-					<?php if ( 'about_contact' === $tab_key ) : $has_llm_key = '' !== trim( (string) wookiee_get_setting( 'llm_api_key' ) ); ?>
-						<div style="background:#f6f7f7;border:1px solid #dcdcde;border-radius:4px;padding:12px 16px;margin-bottom:20px;max-width:900px;">
-							<p style="margin-top:0;"><strong>Generate with AI</strong> — rewrites every field below (About page hero/copy, Contact page intro) to match a one-line description of the store's niche, keeping both pages' existing design/layout exactly as-is - only the text changes. Review and edit before clicking Save Changes at the bottom; nothing changes on the live site until then.</p>
-							<p>
-								<span class="wookiee-niche-input-wrap">
-									<input type="text" id="wookiee-about-ai-brief" class="regular-text" value="<?php echo esc_attr( get_option( 'wookiee_niche_brief', '' ) ); ?>" placeholder="e.g. UK home-storage and organisation products - baskets, shelving, drawer organisers">
-									<?php wookiee_niche_suggest_button( 'wookiee-about-ai-brief' ); ?>
-								</span>
-								<button type="button" class="button button-primary" id="wookiee-about-ai-btn" <?php disabled( ! $has_llm_key ); ?>>Generate with AI</button>
-								<span id="wookiee-about-ai-status" style="margin-left:8px;"></span>
-							</p>
-							<?php if ( ! $has_llm_key ) : ?>
-								<p class="description">Needs an LLM API key on the <a href="#integrations">AI &amp; Integrations</a> tab first.</p>
-							<?php endif; ?>
-						</div>
-					<?php endif; ?>
-					<table class="form-table" role="presentation">
-						<?php foreach ( $tab['fields'] as $key ) : ?>
-							<?php if ( isset( $all_fields[ $key ] ) ) : ?>
-								<?php wookiee_render_settings_field_row( $key, $all_fields[ $key ] ); ?>
-							<?php endif; ?>
-						<?php endforeach; ?>
-					</table>
+					<?php wookiee_render_ai_copy_generator_notice( $tab_key ); ?>
+					<?php wookiee_render_settings_fields_table( $tab['fields'] ); ?>
 				</div>
 				<?php $is_first = false; ?>
 			<?php endforeach; ?>
@@ -439,99 +468,13 @@ function wookiee_render_settings_page() {
 		} );
 	} )();
 	</script>
-	<script>
-	( function() {
-		var btn = document.getElementById( 'wookiee-ch-lookup-btn' );
-		if ( ! btn ) {
-			return;
-		}
-		btn.addEventListener( 'click', function() {
-			var status = document.getElementById( 'wookiee-ch-lookup-status' );
-			var numberField = document.getElementById( 'wookiee_setting_company_number' );
-			var number = numberField ? numberField.value.trim() : '';
-			if ( ! number ) {
-				status.textContent = 'Enter a company number first.';
-				return;
-			}
-			btn.disabled = true;
-			status.textContent = 'Looking up…';
-			var data = new FormData();
-			data.append( 'action', 'wookiee_ch_lookup' );
-			data.append( 'nonce', '<?php echo esc_js( wp_create_nonce( 'wookiee_ch_lookup' ) ); ?>' );
-			data.append( 'company_number', number );
-			fetch( ajaxurl, { method: 'POST', credentials: 'same-origin', body: data } )
-				.then( function( r ) { return r.json(); } )
-				.then( function( res ) {
-					btn.disabled = false;
-					if ( ! res.success ) {
-						status.textContent = res.data && res.data.message ? res.data.message : 'Lookup failed.';
-						return;
-					}
-					var nameField = document.getElementById( 'wookiee_setting_business_name' );
-					var addrField = document.getElementById( 'wookiee_setting_registered_address' );
-					if ( nameField ) {
-						nameField.value = res.data.company_name;
-					}
-					if ( addrField ) {
-						addrField.value = res.data.address;
-					}
-					status.textContent = 'Found: ' + res.data.company_name + ' (status: ' + res.data.company_status + '). Review the fields, then click Save Changes.';
-				} )
-				.catch( function() {
-					btn.disabled = false;
-					status.textContent = 'Lookup failed — could not reach the server.';
-				} );
-		} );
-	} )();
-	</script>
-	<script>
-	( function() {
-		function wireInlineGenerator( btnId, briefId, statusId, action, nonceAction ) {
-			var btn = document.getElementById( btnId );
-			if ( ! btn ) {
-				return;
-			}
-			btn.addEventListener( 'click', function() {
-				var status = document.getElementById( statusId );
-				var brief  = document.getElementById( briefId ).value.trim();
-				if ( ! brief ) {
-					status.textContent = 'Describe the niche first.';
-					return;
-				}
-				btn.disabled = true;
-				status.textContent = 'Generating… this can take up to a minute.';
-				var data = new FormData();
-				data.append( 'action', action );
-				data.append( 'nonce', nonceAction );
-				data.append( 'brief', brief );
-				fetch( ajaxurl, { method: 'POST', credentials: 'same-origin', body: data } )
-					.then( function( r ) { return r.json(); } )
-					.then( function( res ) {
-						btn.disabled = false;
-						if ( ! res.success ) {
-							status.textContent = res.data && res.data.message ? res.data.message : 'Generation failed.';
-							return;
-						}
-						Object.keys( res.data.fields ).forEach( function( key ) {
-							var field = document.getElementById( 'wookiee_setting_' + key );
-							if ( field && res.data.fields[ key ] ) {
-								field.value = res.data.fields[ key ];
-							}
-						} );
-						status.textContent = 'Drafted below. Review, then click Save Changes.';
-					} )
-					.catch( function() {
-						btn.disabled = false;
-						status.textContent = 'Generation failed — could not reach the server.';
-					} );
-			} );
-		}
-
-		wireInlineGenerator( 'wookiee-homepage-ai-btn', 'wookiee-homepage-ai-brief', 'wookiee-homepage-ai-status', 'wookiee_inline_generate_homepage_copy', '<?php echo esc_js( wp_create_nonce( 'wookiee_inline_homepage_copy' ) ); ?>' );
-		wireInlineGenerator( 'wookiee-about-ai-btn', 'wookiee-about-ai-brief', 'wookiee-about-ai-status', 'wookiee_inline_generate_about_contact_copy', '<?php echo esc_js( wp_create_nonce( 'wookiee_inline_about_contact_copy' ) ); ?>' );
-	} )();
-	</script>
 	<?php
+	// The Companies House lookup button's click-wiring, and the
+	// "Generate with AI" buttons' wiring, both live in
+	// wookiee_enqueue_niche_suggest_assets() (inc/admin-menu.php) instead
+	// of here, since the Setup wizard renders these exact same fields/
+	// buttons too and needs the same wiring - one shared script instead
+	// of two copies that could drift apart.
 }
 
 /**

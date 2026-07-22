@@ -770,3 +770,27 @@ function wookiee_suggest_niche_handler() {
 		'grounded' => $grounded,
 	) );
 }
+
+/**
+ * Plain save for the shared niche-brief option, used by the Setup
+ * wizard's own step (which doesn't otherwise submit through the
+ * Settings API form, since wookiee_niche_brief is a standalone option
+ * read directly by the Product/Content Generators and CJ import, not
+ * part of wookiee_settings_group).
+ */
+add_action( 'wp_ajax_wookiee_save_niche_brief', 'wookiee_save_niche_brief_handler' );
+function wookiee_save_niche_brief_handler() {
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_send_json_error( array( 'message' => 'Not allowed.' ), 403 );
+	}
+	check_ajax_referer( 'wookiee_save_niche_brief', 'nonce' );
+
+	$brief = isset( $_POST['brief'] ) ? sanitize_textarea_field( wp_unslash( $_POST['brief'] ) ) : '';
+	if ( '' === trim( $brief ) ) {
+		wp_send_json_error( array( 'message' => 'Describe the niche first.' ) );
+	}
+
+	update_option( 'wookiee_niche_brief', $brief );
+
+	wp_send_json_success( array( 'message' => 'Niche brief saved.' ) );
+}

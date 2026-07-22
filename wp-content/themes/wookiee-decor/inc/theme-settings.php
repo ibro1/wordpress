@@ -29,6 +29,7 @@ function wookiee_settings_fields() {
 		'llm_default_model'  => array( 'label' => 'LLM default model', 'default' => 'gpt-4o-mini', 'type' => 'text' ),
 		'cj_email'           => array( 'label' => 'CJ Dropshipping account email', 'default' => '', 'type' => 'email' ),
 		'cj_api_key'         => array( 'label' => 'CJ Dropshipping API key', 'default' => '', 'type' => 'password' ),
+		'product_markup_percent' => array( 'label' => 'CJ product markup (%)', 'default' => '0', 'type' => 'text' ),
 		'returns_address'    => array( 'label' => 'Returns address (leave blank to use registered office address)', 'default' => '', 'type' => 'textarea' ),
 		'returns_period_days' => array( 'label' => 'Returns period (days)', 'default' => '30', 'type' => 'text' ),
 		'countries_served'   => array( 'label' => 'Countries served', 'default' => 'United Kingdom', 'type' => 'text' ),
@@ -78,7 +79,7 @@ function wookiee_settings_tabs() {
 		),
 		'integrations' => array(
 			'label'  => 'AI & Integrations',
-			'fields' => array( 'llm_api_key', 'llm_base_url', 'llm_default_model', 'cj_email', 'cj_api_key' ),
+			'fields' => array( 'llm_api_key', 'llm_base_url', 'llm_default_model', 'cj_email', 'cj_api_key', 'product_markup_percent' ),
 		),
 	);
 }
@@ -163,6 +164,9 @@ function wookiee_render_settings_field_row( $key, $field ) {
 			<?php endif; ?>
 			<?php if ( 'llm_base_url' === $key ) : ?>
 				<p class="description">The API root, without a trailing <code>/chat/completions</code> — e.g. <code>https://api.openai.com/v1</code> for OpenAI, or your provider's equivalent.</p>
+			<?php endif; ?>
+			<?php if ( 'product_markup_percent' === $key ) : ?>
+				<p class="description">Applied automatically to CJ Dropshipping's supplier price when importing - e.g. 50 turns a &pound;10 supplier cost into a &pound;15 selling price. Leave at 0 to import at the raw supplier price with no markup.</p>
 			<?php endif; ?>
 			<?php if ( '' !== $field['default'] ) : ?>
 				<p class="description">Default if left blank: <?php echo esc_html( is_string( $field['default'] ) ? str_replace( "\n", ' / ', $field['default'] ) : '' ); ?></p>

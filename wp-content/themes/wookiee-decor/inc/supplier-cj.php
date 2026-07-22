@@ -156,6 +156,18 @@ function wookiee_cj_search_products( $keyword, $page = 1 ) {
 }
 
 /**
+ * Applies the configured markup to a CJ supplier cost price. Previously
+ * CJ's raw supplier price was used as the live selling price with zero
+ * margin - a real gap, not a rounding nicety. The original cost is kept
+ * as postmeta (_wookiee_cj_cost_price) alongside the marked-up price.
+ */
+function wookiee_apply_product_markup( $cost_price ) {
+	$markup_percent = (float) wookiee_get_setting( 'product_markup_percent' );
+	$marked_up      = (float) $cost_price * ( 1 + ( $markup_percent / 100 ) );
+	return number_format( $marked_up, 2, '.', '' );
+}
+
+/**
  * Runs a supplier's raw title/description through the LLM before import:
  * this is the GMC-compliance piece. Raw CJ listings are written by and
  * for cross-border sellers - keyword-stuffed titles ("Cross-border
@@ -273,7 +285,8 @@ function wookiee_cj_import_product( $pid, $auto_skip_low_fit = false ) {
 
 	$variants      = isset( $p['variants'] ) && is_array( $p['variants'] ) ? $p['variants'] : array();
 	$first_variant = ! empty( $variants ) ? $variants[0] : array();
-	$price         = ! empty( $first_variant['variantSellPrice'] ) ? $first_variant['variantSellPrice'] : ( isset( $p['sellPrice'] ) ? $p['sellPrice'] : '0.00' );
+	$cost_price    = ! empty( $first_variant['variantSellPrice'] ) ? $first_variant['variantSellPrice'] : ( isset( $p['sellPrice'] ) ? $p['sellPrice'] : '0.00' );
+	$price         = wookiee_apply_product_markup( $cost_price );
 	$vid           = isset( $first_variant['vid'] ) ? $first_variant['vid'] : '';
 	$sku           = isset( $first_variant['variantSku'] ) ? $first_variant['variantSku'] : '';
 
@@ -296,6 +309,7 @@ function wookiee_cj_import_product( $pid, $auto_skip_low_fit = false ) {
 	update_post_meta( $post_id, '_sku', $sku );
 	update_post_meta( $post_id, '_wookiee_cj_pid', $pid );
 	update_post_meta( $post_id, '_wookiee_cj_vid', $vid );
+	update_post_meta( $post_id, '_wookiee_cj_cost_price', $cost_price );
 
 	$images = array();
 	if ( ! empty( $p['productImage'] ) ) {

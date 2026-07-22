@@ -146,7 +146,7 @@ function wookiee_render_content_generator_page() {
 					status.textContent = 'Done. ' + res.data.pages.length + ' draft page(s) ready for review.';
 					var html = '<table class="widefat"><thead><tr><th>Draft</th><th>Status</th><th></th></tr></thead><tbody>';
 					res.data.pages.forEach( function( p ) {
-						html += '<tr><td>' + p.title + '</td><td>' + ( p.error ? p.error : 'Created' ) + '</td><td>' + ( p.edit_link ? '<a href="' + p.edit_link + '" class="button">Review draft</a>' : '' ) + '</td></tr>';
+						html += '<tr><td>' + p.title + '</td><td>' + ( p.error ? p.error : 'Created' ) + '</td><td>' + ( p.edit_link ? '<a href="' + p.edit_link + '" class="button" target="_blank" rel="noopener">Review draft</a>' : '' ) + '</td></tr>';
 					} );
 					html += '</tbody></table>';
 					results.innerHTML = html;
@@ -238,7 +238,7 @@ function wookiee_render_content_generator_page() {
 						fixStatus.textContent = res.data && res.data.message ? res.data.message : 'Failed to apply fixes.';
 						return;
 					}
-					fixStatus.innerHTML = 'Draft updated. <a href="' + res.data.edit_link + '">Review it</a>, then re-run the audit to check.';
+					fixStatus.innerHTML = 'Draft updated. <a href="' + res.data.edit_link + '" target="_blank" rel="noopener">Review it</a>, then re-run the audit to check.';
 				} )
 				.catch( function() {
 					fixBtn.disabled = false;

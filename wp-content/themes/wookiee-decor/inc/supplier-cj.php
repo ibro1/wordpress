@@ -305,7 +305,7 @@ function wookiee_render_supplier_catalog_page() {
 						return;
 					}
 					btn.textContent = 'Imported ✓';
-					btn.outerHTML = '<a href="' + res.data.edit_link + '" class="button">Edit draft</a>';
+					btn.outerHTML = '<a href="' + res.data.edit_link + '" class="button" target="_blank" rel="noopener">Edit draft</a>';
 				} )
 				.catch( function() {
 					btn.disabled = false;

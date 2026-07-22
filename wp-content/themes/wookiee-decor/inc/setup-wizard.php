@@ -129,7 +129,7 @@ function wookiee_render_setup_wizard_page() {
 			<tr>
 				<td><?php echo intval( $pending['pages'] ); ?> "(AI Draft)" page(s) currently waiting for review.</td>
 				<td><a href="<?php echo esc_url( $content_url ); ?>" class="button button-primary" <?php disabled( ! $has_ai_key ); ?>>Open Content Generator</a></td>
-				<td><a href="<?php echo esc_url( admin_url( 'edit.php?post_type=page&post_status=draft' ) ); ?>" class="button">Review draft pages</a></td>
+				<td><a href="<?php echo esc_url( admin_url( 'edit.php?post_type=page&post_status=draft' ) ); ?>" class="button" target="_blank" rel="noopener">Review draft pages</a></td>
 			</tr>
 		</table>
 		<?php if ( ! $has_ai_key ) : ?>
@@ -142,7 +142,7 @@ function wookiee_render_setup_wizard_page() {
 				<td><?php echo intval( $pending['ai_products'] ); ?> AI-drafted product(s) and <?php echo intval( $pending['cj_products'] ); ?> CJ-sourced product(s) waiting for review.</td>
 				<td><a href="<?php echo esc_url( $product_url ); ?>" class="button" <?php disabled( ! $has_ai_key || ! $has_woo ); ?>>AI Product Generator</a></td>
 				<td><a href="<?php echo esc_url( $catalog_url ); ?>" class="button" <?php disabled( ! $has_cj_creds || ! $has_woo ); ?>>CJ Supplier Catalog</a></td>
-				<td><a href="<?php echo esc_url( admin_url( 'edit.php?post_type=product&post_status=draft' ) ); ?>" class="button">Review draft products</a></td>
+				<td><a href="<?php echo esc_url( admin_url( 'edit.php?post_type=product&post_status=draft' ) ); ?>" class="button" target="_blank" rel="noopener">Review draft products</a></td>
 			</tr>
 		</table>
 		<?php if ( ! $has_woo ) : ?>

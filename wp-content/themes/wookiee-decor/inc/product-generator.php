@@ -97,7 +97,7 @@ function wookiee_render_product_generator_page() {
 					status.textContent = 'Created ' + res.data.products.length + ' draft product(s). Review each before publishing.';
 					var html = '<table class="widefat"><thead><tr><th>Title</th><th>Category</th><th>Price</th><th>Photo needed</th><th></th></tr></thead><tbody>';
 					res.data.products.forEach( function( p ) {
-						html += '<tr><td>' + p.title + '</td><td>' + p.category + '</td><td>£' + p.price + '</td><td>' + p.image_brief + '</td><td><a href="' + p.edit_link + '" class="button">Edit draft</a></td></tr>';
+						html += '<tr><td>' + p.title + '</td><td>' + p.category + '</td><td>£' + p.price + '</td><td>' + p.image_brief + '</td><td><a href="' + p.edit_link + '" class="button" target="_blank" rel="noopener">Edit draft</a></td></tr>';
 					} );
 					html += '</tbody></table>';
 					results.innerHTML = html;

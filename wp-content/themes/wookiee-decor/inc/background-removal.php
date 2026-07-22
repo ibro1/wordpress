@@ -141,19 +141,49 @@ function wookiee_bg_removal_cloudinary( $image_url ) {
 /**
  * Calls a self-hosted rembg server (the danielgatis/rembg Docker image
  * running in "serve" mode - see the compose snippet supplied alongside
- * this feature). Verified against the live container's own
- * /openapi.json: rembg exposes two unrelated routes under the same
- * path - GET /api/remove?url=... ("Remove from URL", query param) and
- * POST /api/remove ("Remove from Stream", requiring a raw multipart
- * file upload, not a URL). The original implementation POSTed a `url`
- * form field, which matches neither route - hence the 422s. Fixed to
- * use the GET+query route, which is the one actually meant for this.
+ * this feature). rembg exposes two routes: GET /api/remove?url=...
+ * ("Remove from URL", has rembg fetch the image itself) and POST
+ * /api/remove ("Remove from Stream", a multipart file upload).
+ *
+ * The GET+url route was tried first (matching its documented purpose)
+ * but proved to have a real bug: live logs showed it returning 500
+ * errors with "image file is truncated" for real CJ CDN images, while
+ * `curl` from inside the exact same container fetched the exact same
+ * URL completely and successfully - isolating the problem to rembg's
+ * own internal URL-fetch code, not the network or this integration.
+ *
+ * Fixed by sidestepping that route entirely: WordPress downloads the
+ * image itself (the same wp_remote_get() method already used reliably
+ * elsewhere in this theme) and uploads the bytes directly to the
+ * multipart "Remove from Stream" route instead, so rembg never has to
+ * fetch anything externally on its own.
  */
 function wookiee_bg_removal_rembg( $image_url ) {
 	$endpoint = rtrim( (string) wookiee_get_setting( 'rembg_endpoint_url' ), '/' );
 
-	$response = wp_remote_get( $endpoint . '/api/remove?url=' . rawurlencode( $image_url ), array(
+	$image_response = wp_remote_get( $image_url, array( 'timeout' => 30 ) );
+	if ( is_wp_error( $image_response ) ) {
+		return $image_response;
+	}
+	if ( 200 !== wp_remote_retrieve_response_code( $image_response ) ) {
+		return new WP_Error( 'wookiee_rembg_fetch_failed', 'Could not download the source image (HTTP ' . intval( wp_remote_retrieve_response_code( $image_response ) ) . ').' );
+	}
+	$image_bytes = wp_remote_retrieve_body( $image_response );
+	if ( '' === $image_bytes ) {
+		return new WP_Error( 'wookiee_rembg_fetch_empty', 'Downloaded source image was empty.' );
+	}
+
+	$boundary = wp_generate_password( 24, false, false );
+	$body     = "--{$boundary}\r\n"
+		. "Content-Disposition: form-data; name=\"file\"; filename=\"source.jpg\"\r\n"
+		. "Content-Type: image/jpeg\r\n\r\n"
+		. $image_bytes . "\r\n"
+		. "--{$boundary}--\r\n";
+
+	$response = wp_remote_post( $endpoint . '/api/remove', array(
 		'timeout' => 60,
+		'headers' => array( 'Content-Type' => 'multipart/form-data; boundary=' . $boundary ),
+		'body'    => $body,
 	) );
 
 	if ( is_wp_error( $response ) ) {
@@ -167,12 +197,12 @@ function wookiee_bg_removal_rembg( $image_url ) {
 		return new WP_Error( 'wookiee_rembg_error', 'Self-hosted rembg service error: ' . $msg );
 	}
 
-	$body = wp_remote_retrieve_body( $response );
-	if ( '' === $body ) {
+	$result_bytes = wp_remote_retrieve_body( $response );
+	if ( '' === $result_bytes ) {
 		return new WP_Error( 'wookiee_rembg_empty', 'Self-hosted rembg service returned an empty response.' );
 	}
 
-	return $body;
+	return $result_bytes;
 }
 
 /**

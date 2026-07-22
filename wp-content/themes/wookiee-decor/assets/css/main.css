@@ -2463,6 +2463,13 @@ a.added_to_cart:hover,
     justify-content: center;
     padding: 20px;
 }
+/* The hidden attribute (toggled via JS: panel.hidden = true/false) is
+   overridden by the unconditional display:flex above unless countered
+   here with higher specificity - a well-known conflict between the
+   hidden attribute and an author display rule on the same element. */
+.wookiee-cookie-panel[hidden] {
+    display: none;
+}
 .wookiee-cookie-panel-inner {
     background: #fff;
     color: var(--wookiee-ink);

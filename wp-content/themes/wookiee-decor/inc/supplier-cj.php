@@ -321,8 +321,23 @@ function wookiee_cj_import_product( $pid, $auto_skip_low_fit = false ) {
 	$images = array_slice( array_unique( array_filter( $images ) ), 0, 5 );
 
 	$attach_ids = array();
-	foreach ( $images as $url ) {
-		$attach_id = wookiee_sideload_remote_image( $url, $title );
+	foreach ( $images as $index => $url ) {
+		$attach_id = 0;
+
+		// Only the first/featured image gets the white-background
+		// treatment - the rest of the gallery are real supplier
+		// lifestyle/detail shots that should stay as-is.
+		if ( 0 === $index ) {
+			$flattened = wookiee_remove_background_to_white( $url );
+			if ( ! is_wp_error( $flattened ) ) {
+				$attach_id = wookiee_sideload_image_from_binary( $flattened, 'product-' . sanitize_title( $title ) . '-main.jpg', $title );
+			}
+		}
+
+		if ( ! $attach_id ) {
+			$attach_id = wookiee_sideload_remote_image( $url, $title );
+		}
+
 		if ( $attach_id ) {
 			$attach_ids[] = $attach_id;
 		}

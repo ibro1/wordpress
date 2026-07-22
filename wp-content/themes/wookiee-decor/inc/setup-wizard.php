@@ -128,24 +128,25 @@ function wookiee_render_setup_wizard_page() {
 		<h1>Wookiee Setup</h1>
 		<p>The guided path from a blank install to a reviewed, ready-to-launch single-niche store. Every step writes real, live changes for you to review as you go — revisiting this wizard any time is safe, nothing is ever duplicated.</p>
 
-		<h2 class="nav-tab-wrapper" id="wookiee-setup-steps" role="tablist">
-			<?php $is_first = true; ?>
-			<?php foreach ( $steps as $step_key => $label ) : ?>
-				<a href="#<?php echo esc_attr( $step_key ); ?>" class="nav-tab<?php echo $is_first ? ' nav-tab-active' : ''; ?>" data-step="<?php echo esc_attr( $step_key ); ?>" role="tab"><?php echo esc_html( $label ); ?></a>
-				<?php $is_first = false; ?>
+		<div class="wookiee-setup-progress" id="wookiee-setup-steps">
+			<?php $i = 0; foreach ( $steps as $step_key => $label ) : $i++; ?>
+				<div class="wookiee-setup-progress-step<?php echo 1 === $i ? ' is-active' : ''; ?>" data-step="<?php echo esc_attr( $step_key ); ?>">
+					<div class="wookiee-setup-progress-circle"><?php echo intval( $i ); ?></div>
+					<div class="wookiee-setup-progress-label"><?php echo esc_html( preg_replace( '/^\d+\.\s*/', '', $label ) ); ?></div>
+				</div>
 			<?php endforeach; ?>
-		</h2>
+		</div>
 
 		<?php // ---------------- Step 1: Business identity ---------------- ?>
 		<div class="wookiee-setup-step" data-step-panel="business">
 			<h2>Business identity</h2>
 			<form method="post" action="options.php">
 				<?php settings_fields( 'wookiee_settings_group' ); ?>
-				<?php wookiee_render_settings_fields_table( array( 'company_number', 'companies_house_api_key', 'business_name', 'registered_address', 'countries_served' ) ); ?>
+				<?php wookiee_render_settings_fields_table( array( 'company_number', 'business_name', 'registered_address', 'countries_served' ) ); ?>
 				<p><button type="submit" class="button button-primary">Save changes</button></p>
 			</form>
 			<?php if ( ! $has_ch_key ) : ?>
-				<p class="description">No Companies House API key yet — add one above, then the lookup button will auto-fill the registered name/address.</p>
+				<p class="description">Want the company name/address above auto-filled instead of typing them? Add a free Companies House API key on the <a href="<?php echo esc_url( $settings_url . '#business' ); ?>">Wookiee Settings</a> page, then come back here.</p>
 			<?php endif; ?>
 
 			<h3>Site title &amp; logo</h3>
@@ -311,17 +312,102 @@ function wookiee_render_setup_wizard_page() {
 		</div>
 	</div>
 	<style>
-		.wookiee-setup-nav { margin-top: 20px; padding-top: 16px; border-top: 1px solid #dcdcde; }
+		.wookiee-setup-progress {
+			display: flex;
+			justify-content: space-between;
+			margin: 28px 0 32px;
+			max-width: 900px;
+		}
+		.wookiee-setup-progress-step {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			flex: 1;
+			position: relative;
+			cursor: pointer;
+		}
+		.wookiee-setup-progress-step:not(:last-child)::after {
+			content: '';
+			position: absolute;
+			top: 17px;
+			left: 50%;
+			width: 100%;
+			height: 2px;
+			background: #dcdcde;
+			z-index: 0;
+		}
+		.wookiee-setup-progress-step.is-complete:not(:last-child)::after {
+			background: #2271b1;
+		}
+		.wookiee-setup-progress-circle {
+			width: 34px;
+			height: 34px;
+			border-radius: 50%;
+			background: #fff;
+			border: 2px solid #dcdcde;
+			color: #646970;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			font-weight: 700;
+			font-size: 14px;
+			position: relative;
+			z-index: 1;
+			transition: background-color .15s, border-color .15s, color .15s;
+		}
+		.wookiee-setup-progress-step.is-active .wookiee-setup-progress-circle {
+			border-color: #2271b1;
+			color: #2271b1;
+			background: #fff;
+			box-shadow: 0 0 0 3px rgba(34,113,177,0.15);
+		}
+		.wookiee-setup-progress-step.is-complete .wookiee-setup-progress-circle {
+			border-color: #2271b1;
+			background: #2271b1;
+			color: #fff;
+		}
+		.wookiee-setup-progress-label {
+			margin-top: 8px;
+			font-size: 12px;
+			color: #646970;
+			text-align: center;
+			max-width: 110px;
+			line-height: 1.3;
+		}
+		.wookiee-setup-progress-step.is-active .wookiee-setup-progress-label {
+			color: #1d2327;
+			font-weight: 600;
+		}
+		.wookiee-setup-step {
+			background: #fff;
+			border: 1px solid #dcdcde;
+			border-radius: 8px;
+			padding: 28px 32px;
+			margin-bottom: 24px;
+			box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+			max-width: 900px;
+		}
+		.wookiee-setup-step h2 { margin-top: 0; }
+		.wookiee-setup-step h3 {
+			margin-top: 32px;
+			padding-top: 24px;
+			border-top: 1px solid #f0f0f1;
+		}
+		.wookiee-setup-nav { margin-top: 24px; padding-top: 16px; border-top: 1px solid #dcdcde; }
 	</style>
 	<script>
 	( function() {
 		var STORAGE_KEY = 'wookiee_setup_active_step';
-		var tabs   = document.querySelectorAll( '#wookiee-setup-steps .nav-tab' );
+		var steps  = document.querySelectorAll( '#wookiee-setup-steps .wookiee-setup-progress-step' );
 		var panels = document.querySelectorAll( '.wookiee-setup-step' );
+		var stepOrder = Array.prototype.map.call( steps, function( s ) { return s.getAttribute( 'data-step' ); } );
 
 		function activateStep( stepKey ) {
-			tabs.forEach( function( t ) {
-				t.classList.toggle( 'nav-tab-active', t.getAttribute( 'data-step' ) === stepKey );
+			var activeIndex = stepOrder.indexOf( stepKey );
+			steps.forEach( function( s ) {
+				var stepIndex = stepOrder.indexOf( s.getAttribute( 'data-step' ) );
+				s.classList.toggle( 'is-active', stepIndex === activeIndex );
+				s.classList.toggle( 'is-complete', stepIndex < activeIndex );
 			} );
 			panels.forEach( function( p ) {
 				p.hidden = ( p.getAttribute( 'data-step-panel' ) !== stepKey );
@@ -330,10 +416,9 @@ function wookiee_render_setup_wizard_page() {
 			window.scrollTo( { top: 0, behavior: 'instant' } );
 		}
 
-		tabs.forEach( function( t ) {
-			t.addEventListener( 'click', function( e ) {
-				e.preventDefault();
-				activateStep( t.getAttribute( 'data-step' ) );
+		steps.forEach( function( s ) {
+			s.addEventListener( 'click', function() {
+				activateStep( s.getAttribute( 'data-step' ) );
 			} );
 		} );
 

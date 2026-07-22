@@ -432,13 +432,16 @@ function wookiee_cj_import_product( $pid, $auto_skip_low_fit = false ) {
 	update_post_meta( $post_id, '_wookiee_cj_vid', $vid );
 	update_post_meta( $post_id, '_wookiee_cj_cost_price', $cost_price );
 
-	$images = array();
-	if ( ! empty( $p['productImage'] ) ) {
-		$images[] = $p['productImage'];
-	}
-	if ( ! empty( $p['productImageSet'] ) && is_array( $p['productImageSet'] ) ) {
-		$images = array_merge( $images, $p['productImageSet'] );
-	}
+	// CJ sometimes returns productImage as a JSON-encoded array-as-string
+	// (e.g. '["https://...jpg","https://...jpg"]') rather than a plain URL -
+	// confirmed by a live 400 Bad Request from rembg after that whole
+	// string got passed through as a single "url" value. Normalizing both
+	// fields the same way handles a plain URL, a real array, or a JSON-
+	// array-as-string uniformly instead of assuming one shape.
+	$images = array_merge(
+		wookiee_normalize_cj_image_list( isset( $p['productImage'] ) ? $p['productImage'] : '' ),
+		wookiee_normalize_cj_image_list( isset( $p['productImageSet'] ) ? $p['productImageSet'] : '' )
+	);
 	$images = array_slice( array_unique( array_filter( $images ) ), 0, 5 );
 
 	$attach_ids = array();
@@ -482,6 +485,25 @@ function wookiee_cj_import_product( $pid, $auto_skip_low_fit = false ) {
 	}
 
 	return array( 'post_id' => $post_id, 'note' => $note );
+}
+
+/**
+ * Normalizes a CJ image field into a plain array of URL strings,
+ * regardless of whether CJ returned one bare URL, a real array of URLs,
+ * or (confirmed live) a JSON-encoded array-as-string for that field.
+ */
+function wookiee_normalize_cj_image_list( $value ) {
+	if ( is_array( $value ) ) {
+		return array_values( array_filter( $value, 'is_string' ) );
+	}
+	if ( is_string( $value ) && '' !== trim( $value ) ) {
+		$decoded = json_decode( $value, true );
+		if ( is_array( $decoded ) ) {
+			return array_values( array_filter( $decoded, 'is_string' ) );
+		}
+		return array( $value );
+	}
+	return array();
 }
 
 /**

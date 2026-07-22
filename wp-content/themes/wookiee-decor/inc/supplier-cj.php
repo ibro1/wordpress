@@ -23,6 +23,7 @@
 defined( 'ABSPATH' ) || exit;
 
 define( 'WOOKIEE_CJ_BASE', 'https://developers.cjdropshipping.com/api2.0/v1' );
+define( 'WOOKIEE_CJ_MAX_BULK_IMPORT', 10 );
 
 /**
  * Returns a valid CJ access token, authenticating or refreshing as
@@ -155,11 +156,87 @@ function wookiee_cj_search_products( $keyword, $page = 1 ) {
 }
 
 /**
+ * Runs a supplier's raw title/description through the LLM before import:
+ * this is the GMC-compliance piece. Raw CJ listings are written by and
+ * for cross-border sellers - keyword-stuffed titles ("Cross-border
+ * Aluminum Material Serpentine Night Light..."), trade jargon a UK
+ * customer has no reason to see, and category assignments that
+ * sometimes don't even match the product (a leg massager filed under
+ * "Home Office Storage"). Google Merchant Center requires accurate,
+ * clear, non-keyword-stuffed titles - importing CJ's raw text verbatim
+ * risks exactly the misrepresentation issues GMC audits flag.
+ *
+ * This does NOT invent product facts - it only rewrites presentation of
+ * the same real product CJ described, and separately judges whether the
+ * product actually belongs in this store's one niche at all (CJ's own
+ * keyword search returns plenty of noise, as the screenshot that
+ * prompted this showed). Degrades gracefully: if no LLM key is set, or
+ * niche brief is missing, callers fall back to the raw CJ data.
+ */
+function wookiee_ai_clean_supplier_product( $raw_title, $raw_description, $raw_category ) {
+	$brief = get_option( 'wookiee_niche_brief', '' );
+	if ( '' === trim( $brief ) ) {
+		return new WP_Error( 'wookiee_ai_no_brief', 'Set a niche brief on the Content Generator or Product Generator page first.' );
+	}
+
+	$existing_terms = get_terms( array( 'taxonomy' => 'product_cat', 'hide_empty' => false, 'fields' => 'names' ) );
+	$existing_list  = ( ! is_wp_error( $existing_terms ) && ! empty( $existing_terms ) ) ? implode( ', ', $existing_terms ) : 'none yet';
+
+	$prompt = "Act as a UK ecommerce copywriter preparing a supplier-sourced product for Google Merchant Center and a UK storefront.\n\n"
+		. "Store niche: \"{$brief}\"\n\n"
+		. "Supplier's raw product data (do not invent anything beyond this - only clean up the presentation of this same real product):\n"
+		. "Title: {$raw_title}\n"
+		. "Description: {$raw_description}\n"
+		. "Supplier category: {$raw_category}\n\n"
+		. "Existing store categories: {$existing_list}\n\n"
+		. "Respond with exactly these five labelled lines, nothing else:\n"
+		. "FIT: yes or no - does this product genuinely belong in a store with the niche described above?\n"
+		. "REASON: one short sentence explaining the FIT answer\n"
+		. "CLEAN_TITLE: a clear, accurate Google Merchant Center-compliant product title - no keyword stuffing, no supplier/trade jargon (e.g. \"cross-border\"), no ALL CAPS, no promotional symbols\n"
+		. "CLEAN_DESCRIPTION: a factual 1-3 sentence product description suitable for both the product page and Google Shopping\n"
+		. "CATEGORY: prefer an existing store category from the list above if a good match exists, otherwise a short new category name\n\n"
+		. "Do not invent features, materials, or claims beyond what the supplier's original title/description imply.";
+
+	$text = wookiee_call_llm( $prompt, 500 );
+	if ( is_wp_error( $text ) ) {
+		return $text;
+	}
+
+	$map    = array(
+		'FIT'               => 'fit',
+		'REASON'            => 'reason',
+		'CLEAN_TITLE'       => 'clean_title',
+		'CLEAN_DESCRIPTION' => 'clean_description',
+		'CATEGORY'          => 'category',
+	);
+	$fields = array_fill_keys( array_values( $map ), '' );
+
+	foreach ( explode( "\n", $text ) as $line ) {
+		$line = trim( $line );
+		foreach ( $map as $label => $field_key ) {
+			if ( 0 === strpos( $line, $label . ':' ) ) {
+				$fields[ $field_key ] = trim( substr( $line, strlen( $label ) + 1 ) );
+			}
+		}
+	}
+	$fields['fit'] = strtolower( trim( $fields['fit'] ) );
+
+	return $fields;
+}
+
+/**
  * Imports one CJ product (by pid) as a WooCommerce Draft product using
  * the first variant's price/SKU. Skips creating a duplicate if a product
  * with the same title already exists.
+ *
+ * Runs the raw supplier data through wookiee_ai_clean_supplier_product()
+ * first. When $auto_skip_low_fit is true (bulk import), a "no" FIT
+ * answer skips the product entirely rather than cluttering the draft
+ * list with catalog noise. For a single explicit "Import as draft"
+ * click, the admin already chose this exact item, so it still imports -
+ * just with the AI's fit judgement attached as an advisory note.
  */
-function wookiee_cj_import_product( $pid ) {
+function wookiee_cj_import_product( $pid, $auto_skip_low_fit = false ) {
 	$detail = wookiee_cj_request( 'GET', '/product/query?pid=' . rawurlencode( $pid ) );
 	if ( is_wp_error( $detail ) ) {
 		return $detail;
@@ -170,11 +247,28 @@ function wookiee_cj_import_product( $pid ) {
 		return new WP_Error( 'wookiee_cj_not_found', 'Product not found on CJ Dropshipping.' );
 	}
 
-	$title = ! empty( $p['productNameEn'] ) ? $p['productNameEn'] : ( isset( $p['productName'] ) ? $p['productName'] : 'Untitled product' );
+	$title       = ! empty( $p['productNameEn'] ) ? $p['productNameEn'] : ( isset( $p['productName'] ) ? $p['productName'] : 'Untitled product' );
+	$raw_title   = $title;
+	$description = ! empty( $p['description'] ) ? wp_strip_all_tags( $p['description'] ) : '';
+	$category    = ! empty( $p['categoryName'] ) ? $p['categoryName'] : '';
+	$note        = '';
+
+	$ai = wookiee_ai_clean_supplier_product( $raw_title, $description, $category );
+	if ( ! is_wp_error( $ai ) ) {
+		if ( 'no' === $ai['fit'] ) {
+			if ( $auto_skip_low_fit ) {
+				return new WP_Error( 'wookiee_cj_low_fit', 'Skipped - ' . ( $ai['reason'] ? $ai['reason'] : 'doesn\'t fit the store niche.' ) );
+			}
+			$note = 'AI note: this may not fit your niche - ' . $ai['reason'];
+		}
+		$title       = ! empty( $ai['clean_title'] ) ? $ai['clean_title'] : $title;
+		$description = ! empty( $ai['clean_description'] ) ? $ai['clean_description'] : $description;
+		$category    = ! empty( $ai['category'] ) ? $ai['category'] : $category;
+	}
 
 	$existing = get_page_by_title( $title, OBJECT, 'product' );
 	if ( $existing ) {
-		return $existing->ID;
+		return array( 'post_id' => $existing->ID, 'note' => $note );
 	}
 
 	$variants      = isset( $p['variants'] ) && is_array( $p['variants'] ) ? $p['variants'] : array();
@@ -182,11 +276,10 @@ function wookiee_cj_import_product( $pid ) {
 	$price         = ! empty( $first_variant['variantSellPrice'] ) ? $first_variant['variantSellPrice'] : ( isset( $p['sellPrice'] ) ? $p['sellPrice'] : '0.00' );
 	$vid           = isset( $first_variant['vid'] ) ? $first_variant['vid'] : '';
 	$sku           = isset( $first_variant['variantSku'] ) ? $first_variant['variantSku'] : '';
-	$description   = ! empty( $p['description'] ) ? wp_kses_post( $p['description'] ) : '';
 
 	$post_id = wp_insert_post( array(
 		'post_title'   => $title,
-		'post_content' => $description,
+		'post_content' => wp_kses_post( $description ),
 		'post_status'  => 'draft',
 		'post_type'    => 'product',
 	) );
@@ -227,10 +320,10 @@ function wookiee_cj_import_product( $pid ) {
 		}
 	}
 
-	if ( ! empty( $p['categoryName'] ) ) {
-		$slug = sanitize_title( $p['categoryName'] );
+	if ( ! empty( $category ) ) {
+		$slug = sanitize_title( $category );
 		if ( ! term_exists( $slug, 'product_cat' ) ) {
-			wp_insert_term( $p['categoryName'], 'product_cat', array( 'slug' => $slug ) );
+			wp_insert_term( $category, 'product_cat', array( 'slug' => $slug ) );
 		}
 		$term = get_term_by( 'slug', $slug, 'product_cat' );
 		if ( $term ) {
@@ -238,7 +331,7 @@ function wookiee_cj_import_product( $pid ) {
 		}
 	}
 
-	return $post_id;
+	return array( 'post_id' => $post_id, 'note' => $note );
 }
 
 /**
@@ -279,16 +372,31 @@ function wookiee_render_supplier_catalog_page() {
 			<button type="button" class="button button-primary" id="wookiee-cj-search-btn" <?php disabled( ! $has_woo || ! $has_creds ); ?>>Search</button>
 			<span id="wookiee-cj-search-status" style="margin-left:8px;"></span>
 		</p>
+		<p class="description">Every import (single or bulk) runs the supplier's raw title/description through the AI first — it cleans up presentation for Google Merchant Center (no keyword stuffing, no supplier jargon) without inventing anything, and flags results that don't genuinely fit your niche brief (CJ's own keyword search returns plenty of unrelated items, as its results often show). Bulk import skips low-fit items automatically; a single "Import as draft" click still imports what you explicitly picked, with an advisory note instead.</p>
+
+		<p>
+			<button type="button" class="button button-primary" id="wookiee-cj-bulk-import-btn" disabled>Import selected as drafts</button>
+			<span id="wookiee-cj-bulk-status" style="margin-left:8px;"></span>
+		</p>
 
 		<div id="wookiee-cj-search-results"></div>
 	</div>
 	<script>
 	( function() {
-		var searchBtn = document.getElementById( 'wookiee-cj-search-btn' );
+		var searchBtn    = document.getElementById( 'wookiee-cj-search-btn' );
+		var bulkBtn      = document.getElementById( 'wookiee-cj-bulk-import-btn' );
+		var bulkStatus   = document.getElementById( 'wookiee-cj-bulk-status' );
 		if ( ! searchBtn ) {
 			return;
 		}
-		var nonce = '<?php echo esc_js( wp_create_nonce( 'wookiee_cj_catalog' ) ); ?>';
+		var nonce   = '<?php echo esc_js( wp_create_nonce( 'wookiee_cj_catalog' ) ); ?>';
+		var maxBulk = <?php echo (int) WOOKIEE_CJ_MAX_BULK_IMPORT; ?>;
+
+		function updateBulkButton() {
+			var checked = document.querySelectorAll( '.wookiee-cj-select:checked' ).length;
+			bulkBtn.disabled = checked === 0;
+			bulkBtn.textContent = checked ? 'Import ' + checked + ' selected as drafts' : 'Import selected as drafts';
+		}
 
 		function importProduct( pid, btn ) {
 			btn.disabled = true;
@@ -304,14 +412,61 @@ function wookiee_render_supplier_catalog_page() {
 						btn.textContent = res.data && res.data.message ? res.data.message : 'Import failed';
 						return;
 					}
-					btn.textContent = 'Imported ✓';
-					btn.outerHTML = '<a href="' + res.data.edit_link + '" class="button" target="_blank" rel="noopener">Edit draft</a>';
+					btn.outerHTML = '<a href="' + res.data.edit_link + '" class="button" target="_blank" rel="noopener">Edit draft</a>' + ( res.data.note ? '<div style="color:#996800;font-size:12px;margin-top:4px;">' + res.data.note + '</div>' : '' );
 				} )
 				.catch( function() {
 					btn.disabled = false;
 					btn.textContent = 'Import failed — retry';
 				} );
 		}
+
+		bulkBtn.addEventListener( 'click', function() {
+			var pids = Array.prototype.slice.call( document.querySelectorAll( '.wookiee-cj-select:checked' ) ).map( function( el ) { return el.value; } );
+			if ( ! pids.length ) {
+				return;
+			}
+			if ( pids.length > maxBulk ) {
+				pids = pids.slice( 0, maxBulk );
+			}
+			bulkBtn.disabled = true;
+			bulkStatus.textContent = 'Importing ' + pids.length + ' product(s)… this can take a minute or two.';
+
+			var data = new FormData();
+			data.append( 'action', 'wookiee_cj_bulk_import_products' );
+			data.append( 'nonce', nonce );
+			pids.forEach( function( pid ) { data.append( 'pids[]', pid ); } );
+
+			fetch( ajaxurl, { method: 'POST', credentials: 'same-origin', body: data } )
+				.then( function( r ) { return r.json(); } )
+				.then( function( res ) {
+					if ( ! res.success ) {
+						bulkStatus.textContent = res.data && res.data.message ? res.data.message : 'Bulk import failed.';
+						updateBulkButton();
+						return;
+					}
+					var imported = 0, skipped = 0;
+					res.data.results.forEach( function( r ) {
+						var row = document.querySelector( '.wookiee-cj-select[value="' + r.pid + '"]' );
+						if ( ! row ) { return; }
+						var tr = row.closest( 'tr' );
+						var statusCell = tr.querySelector( '.wookiee-cj-row-status' );
+						if ( r.edit_link ) {
+							imported++;
+							statusCell.innerHTML = '<a href="' + r.edit_link + '" target="_blank" rel="noopener">' + r.status + '</a>';
+						} else {
+							skipped++;
+							statusCell.textContent = r.status;
+						}
+						row.disabled = true;
+					} );
+					bulkStatus.textContent = imported + ' imported, ' + skipped + ' skipped.';
+					updateBulkButton();
+				} )
+				.catch( function() {
+					bulkStatus.textContent = 'Bulk import failed — could not reach the server.';
+					updateBulkButton();
+				} );
+		} );
 
 		searchBtn.addEventListener( 'click', function() {
 			var status  = document.getElementById( 'wookiee-cj-search-status' );
@@ -324,6 +479,9 @@ function wookiee_render_supplier_catalog_page() {
 			searchBtn.disabled = true;
 			status.textContent = 'Searching…';
 			results.innerHTML = '';
+			bulkStatus.textContent = '';
+			bulkBtn.disabled = true;
+			bulkBtn.textContent = 'Import selected as drafts';
 
 			var data = new FormData();
 			data.append( 'action', 'wookiee_cj_search_products' );
@@ -342,10 +500,10 @@ function wookiee_render_supplier_catalog_page() {
 						status.textContent = 'No results.';
 						return;
 					}
-					status.textContent = res.data.products.length + ' result(s).';
-					var html = '<table class="widefat"><thead><tr><th>Photo</th><th>Name</th><th>Category</th><th>Price</th><th></th></tr></thead><tbody>';
-					res.data.products.forEach( function( p, i ) {
-						html += '<tr><td>' + ( p.image ? '<img src="' + p.image + '" style="width:50px;height:50px;object-fit:cover;">' : '' ) + '</td><td>' + p.name + '</td><td>' + p.category + '</td><td>' + p.price + '</td><td><button type="button" class="button wookiee-cj-import-btn" data-pid="' + p.pid + '">Import as draft</button></td></tr>';
+					status.textContent = res.data.products.length + ' result(s). Select up to ' + maxBulk + ' for bulk import, or import one at a time.';
+					var html = '<table class="widefat"><thead><tr><th></th><th>Photo</th><th>Name</th><th>Category</th><th>Price</th><th colspan="2"></th></tr></thead><tbody>';
+					res.data.products.forEach( function( p ) {
+						html += '<tr><td><input type="checkbox" class="wookiee-cj-select" value="' + p.pid + '"></td><td>' + ( p.image ? '<img src="' + p.image + '" style="width:50px;height:50px;object-fit:cover;">' : '' ) + '</td><td>' + p.name + '</td><td>' + p.category + '</td><td>' + p.price + '</td><td><button type="button" class="button wookiee-cj-import-btn" data-pid="' + p.pid + '">Import as draft</button></td><td class="wookiee-cj-row-status"></td></tr>';
 					} );
 					html += '</tbody></table>';
 					results.innerHTML = html;
@@ -354,6 +512,9 @@ function wookiee_render_supplier_catalog_page() {
 						btn.addEventListener( 'click', function() {
 							importProduct( btn.getAttribute( 'data-pid' ), btn );
 						} );
+					} );
+					results.querySelectorAll( '.wookiee-cj-select' ).forEach( function( cb ) {
+						cb.addEventListener( 'change', updateBulkButton );
 					} );
 				} )
 				.catch( function() {
@@ -412,12 +573,59 @@ function wookiee_cj_import_product_handler() {
 		wp_send_json_error( array( 'message' => 'Missing product ID.' ) );
 	}
 
-	$post_id = wookiee_cj_import_product( $pid );
-	if ( is_wp_error( $post_id ) ) {
-		wp_send_json_error( array( 'message' => $post_id->get_error_message() ) );
+	$result = wookiee_cj_import_product( $pid );
+	if ( is_wp_error( $result ) ) {
+		wp_send_json_error( array( 'message' => $result->get_error_message() ) );
 	}
 
-	wp_send_json_success( array( 'edit_link' => get_edit_post_link( $post_id, 'raw' ) ) );
+	wp_send_json_success( array(
+		'edit_link' => get_edit_post_link( $result['post_id'], 'raw' ),
+		'note'      => $result['note'],
+	) );
+}
+
+/**
+ * Imports several selected CJ products in one call, capped at
+ * WOOKIEE_CJ_MAX_BULK_IMPORT to keep LLM cost/time bounded. Unlike the
+ * single-import path, a low AI fit judgement here skips the product
+ * rather than importing it - bulk import is exactly the case where
+ * curating out catalog noise (the CJ search screenshot that prompted
+ * this had a leg massager next to home-decor results) matters most,
+ * since there's no per-item human decision happening along the way.
+ */
+add_action( 'wp_ajax_wookiee_cj_bulk_import_products', 'wookiee_cj_bulk_import_products_handler' );
+function wookiee_cj_bulk_import_products_handler() {
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_send_json_error( array( 'message' => 'Not allowed.' ), 403 );
+	}
+	check_ajax_referer( 'wookiee_cj_catalog', 'nonce' );
+
+	if ( ! class_exists( 'WooCommerce' ) ) {
+		wp_send_json_error( array( 'message' => 'WooCommerce is not active.' ) );
+	}
+
+	$pids = isset( $_POST['pids'] ) && is_array( $_POST['pids'] ) ? array_map( 'sanitize_text_field', wp_unslash( $_POST['pids'] ) ) : array();
+	$pids = array_slice( array_filter( $pids ), 0, WOOKIEE_CJ_MAX_BULK_IMPORT );
+
+	if ( empty( $pids ) ) {
+		wp_send_json_error( array( 'message' => 'Select at least one product first.' ) );
+	}
+
+	$results = array();
+	foreach ( $pids as $pid ) {
+		$result = wookiee_cj_import_product( $pid, true );
+		if ( is_wp_error( $result ) ) {
+			$results[] = array( 'pid' => $pid, 'status' => $result->get_error_message(), 'edit_link' => '' );
+			continue;
+		}
+		$results[] = array(
+			'pid'       => $pid,
+			'status'    => $result['note'] ? $result['note'] : 'Imported',
+			'edit_link' => get_edit_post_link( $result['post_id'], 'raw' ),
+		);
+	}
+
+	wp_send_json_success( array( 'results' => $results ) );
 }
 
 /**

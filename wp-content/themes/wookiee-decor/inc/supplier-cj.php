@@ -324,13 +324,15 @@ function wookiee_ai_clean_supplier_product( $raw_title, $raw_description, $raw_c
  * Finds an already-imported product for this exact CJ product ID, using
  * the _wookiee_cj_pid postmeta set on every CJ import - deterministic
  * regardless of what title the AI cleanup step generates, unlike a
- * title-based lookup. Checks 'any' post_status so a product already
- * published (no longer Draft) still counts as "already imported".
+ * title-based lookup. Explicitly excludes 'trash' (and 'auto-draft') -
+ * 'any' includes trashed posts, which meant a product someone had
+ * deliberately deleted would still count as "already imported" and get
+ * returned as a dead edit link instead of a fresh import happening.
  */
 function wookiee_find_existing_cj_product( $pid ) {
 	$existing = get_posts( array(
 		'post_type'      => 'product',
-		'post_status'    => 'any',
+		'post_status'    => array( 'publish', 'draft', 'pending', 'private', 'future' ),
 		'posts_per_page' => 1,
 		'meta_key'       => '_wookiee_cj_pid',
 		'meta_value'     => $pid,

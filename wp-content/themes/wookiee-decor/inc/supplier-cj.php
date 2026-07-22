@@ -857,3 +857,48 @@ function wookiee_cj_maybe_push_order( $order_id ) {
 	$order->add_order_note( 'Pushed to CJ Dropshipping for fulfillment.' );
 	$order->save();
 }
+
+/**
+ * Publishes one or more WooCommerce products by ID - shared by the
+ * Product Generator and Supplier Catalog results tables so either can
+ * offer a "Publish" action without leaving the page. Deliberately still
+ * requires an explicit admin action per product (a checkbox tick or a
+ * per-row click, never pre-selected) - the Draft-first, human-reviews-
+ * before-publish rule stays intact, this only removes the extra trip
+ * through the WordPress editor for someone who's already decided to
+ * publish.
+ */
+add_action( 'wp_ajax_wookiee_publish_products', 'wookiee_publish_products_handler' );
+function wookiee_publish_products_handler() {
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_send_json_error( array( 'message' => 'Not allowed.' ), 403 );
+	}
+	check_ajax_referer( 'wookiee_publish_products', 'nonce' );
+
+	$post_ids = isset( $_POST['post_ids'] ) && is_array( $_POST['post_ids'] ) ? array_map( 'intval', $_POST['post_ids'] ) : array();
+	if ( empty( $post_ids ) ) {
+		wp_send_json_error( array( 'message' => 'No products selected.' ) );
+	}
+
+	$results = array();
+	foreach ( $post_ids as $post_id ) {
+		$post = get_post( $post_id );
+		if ( ! $post || 'product' !== $post->post_type ) {
+			$results[] = array( 'post_id' => $post_id, 'status' => 'Not found' );
+			continue;
+		}
+		if ( 'publish' === $post->post_status ) {
+			$results[] = array( 'post_id' => $post_id, 'status' => 'Already published' );
+			continue;
+		}
+
+		$updated = wp_update_post( array( 'ID' => $post_id, 'post_status' => 'publish' ), true );
+		if ( is_wp_error( $updated ) ) {
+			$results[] = array( 'post_id' => $post_id, 'status' => 'Failed: ' . $updated->get_error_message() );
+			continue;
+		}
+		$results[] = array( 'post_id' => $post_id, 'status' => 'Published' );
+	}
+
+	wp_send_json_success( array( 'results' => $results ) );
+}

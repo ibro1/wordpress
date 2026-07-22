@@ -208,6 +208,42 @@ function wookiee_apply_product_markup( $cost_price ) {
 }
 
 /**
+ * Pulls whatever real weight/dimension/material fields CJ actually
+ * provided into a plain-text block the AI is only allowed to quote from
+ * (never invent numbers for). Field names are a best-effort match
+ * against CJ's typical Open API v2 product/variant schema - NOT yet
+ * confirmed against a live response (same caveat as the rest of this
+ * integration); if none of these happen to match, the block comes back
+ * empty and the description prompt is instructed to mark specs as not
+ * provided rather than silently guessing.
+ */
+function wookiee_extract_supplier_specs( $product, $variant ) {
+	$candidates = array(
+		'Weight'  => array( 'variantWeight', 'productWeight' ),
+		'Length'  => array( 'variantLength' ),
+		'Width'   => array( 'variantWidth' ),
+		'Height'  => array( 'variantHeight' ),
+		'Material' => array( 'materialNameEn', 'materialName', 'material' ),
+	);
+
+	$lines = array();
+	foreach ( $candidates as $label => $keys ) {
+		foreach ( $keys as $key ) {
+			if ( ! empty( $variant[ $key ] ) ) {
+				$lines[] = $label . ': ' . $variant[ $key ];
+				continue 2;
+			}
+			if ( ! empty( $product[ $key ] ) ) {
+				$lines[] = $label . ': ' . $product[ $key ];
+				continue 2;
+			}
+		}
+	}
+
+	return $lines ? implode( "\n", $lines ) : '';
+}
+
+/**
  * Runs a supplier's raw title/description through the LLM before import:
  * this is the GMC-compliance piece. Raw CJ listings are written by and
  * for cross-border sellers - keyword-stuffed titles ("Cross-border
@@ -218,6 +254,15 @@ function wookiee_apply_product_markup( $cost_price ) {
  * clear, non-keyword-stuffed titles - importing CJ's raw text verbatim
  * risks exactly the misrepresentation issues GMC audits flag.
  *
+ * Also produces a genuinely detailed product description (overview,
+ * features, a real spec sheet, how-to-use/care guidance) instead of the
+ * 1-3 sentence blurb this used to be capped at - flagged as not reading
+ * like a real product page. Specs are only ever quoted from
+ * $specs_text (real supplier data); anything not present there gets an
+ * honest "[Not specified by supplier]" placeholder rather than an
+ * invented number - same principle as the policy-generation prompts
+ * never inventing business facts.
+ *
  * This does NOT invent product facts - it only rewrites presentation of
  * the same real product CJ described, and separately judges whether the
  * product actually belongs in this store's one niche at all (CJ's own
@@ -225,7 +270,7 @@ function wookiee_apply_product_markup( $cost_price ) {
  * prompted this showed). Degrades gracefully: if no LLM key is set, or
  * niche brief is missing, callers fall back to the raw CJ data.
  */
-function wookiee_ai_clean_supplier_product( $raw_title, $raw_description, $raw_category ) {
+function wookiee_ai_clean_supplier_product( $raw_title, $raw_description, $raw_category, $specs_text = '' ) {
 	$brief = get_option( 'wookiee_niche_brief', '' );
 	if ( '' === trim( $brief ) ) {
 		return new WP_Error( 'wookiee_ai_no_brief', 'Set a niche brief on the Content Generator or Product Generator page first.' );
@@ -233,44 +278,43 @@ function wookiee_ai_clean_supplier_product( $raw_title, $raw_description, $raw_c
 
 	$existing_terms = get_terms( array( 'taxonomy' => 'product_cat', 'hide_empty' => false, 'fields' => 'names' ) );
 	$existing_list  = ( ! is_wp_error( $existing_terms ) && ! empty( $existing_terms ) ) ? implode( ', ', $existing_terms ) : 'none yet';
+	$specs_block    = '' !== trim( $specs_text ) ? $specs_text : 'None provided by the supplier.';
 
 	$prompt = "Act as a UK ecommerce copywriter preparing a supplier-sourced product for Google Merchant Center and a UK storefront.\n\n"
 		. "Store niche: \"{$brief}\"\n\n"
 		. "Supplier's raw product data (do not invent anything beyond this - only clean up the presentation of this same real product):\n"
 		. "Title: {$raw_title}\n"
 		. "Description: {$raw_description}\n"
-		. "Supplier category: {$raw_category}\n\n"
+		. "Supplier category: {$raw_category}\n"
+		. "Known specs from the supplier (the ONLY specification values you may state - do not invent any others):\n{$specs_block}\n\n"
 		. "Existing store categories: {$existing_list}\n\n"
-		. "Respond with exactly these five labelled lines, nothing else:\n"
+		. "Respond with exactly these six labelled sections, each label on its own line, nothing else:\n"
 		. "FIT: yes or no - does this product genuinely belong in a store with the niche described above?\n"
 		. "REASON: one short sentence explaining the FIT answer\n"
-		. "CLEAN_TITLE: a clear, accurate Google Merchant Center-compliant product title - no keyword stuffing, no supplier/trade jargon (e.g. \"cross-border\"), no ALL CAPS, no promotional symbols\n"
-		. "CLEAN_DESCRIPTION: a factual 1-3 sentence product description suitable for both the product page and Google Shopping\n"
-		. "CATEGORY: prefer an existing store category from the list above if a good match exists, otherwise a short new category name\n\n"
-		. "Do not invent features, materials, or claims beyond what the supplier's original title/description imply.";
+		. "CLEAN_TITLE: a clear, accurate Google Merchant Center-compliant product title on one line - no keyword stuffing, no supplier/trade jargon (e.g. \"cross-border\"), no ALL CAPS, no promotional symbols\n"
+		. "CATEGORY: one line - prefer an existing store category from the list above if a good match exists, otherwise a short new category name\n"
+		. "SHORT_DESCRIPTION: one line, 1-2 sentences - a hook description for the cart/catalog view\n"
+		. "LONG_DESCRIPTION: the full product page description, written as several plain-text paragraphs separated by blank lines, in this order:\n"
+		. "  1. An overview paragraph - what it is, who it's for, the core benefit, in this niche's voice.\n"
+		. "  2. A \"Key features\" paragraph or list of short lines (one per line, starting with \"- \").\n"
+		. "  3. A \"Specifications\" list (one \"- Label: value\" line per spec) using ONLY the known specs given above - for any specification a real product page would normally list but wasn't provided (e.g. exact dimensions, weight, material), write \"- [Spec name]: Not specified by supplier\" instead of guessing a number.\n"
+		. "  4. A short \"How to use / install\" paragraph with generic, accurate guidance appropriate to this type of product (e.g. general mounting/assembly/care advice) - do not state specific measurements, hardware, or steps that weren't given.\n"
+		. "  5. A brief closing care/maintenance sentence if relevant to this product type.\n"
+		. "Do not invent features, materials, exact measurements, or claims beyond what the supplier's data and the known specs above provide.";
 
-	$text = wookiee_call_llm( $prompt, 500 );
+	$text = wookiee_call_llm( $prompt, 1400 );
 	if ( is_wp_error( $text ) ) {
 		return $text;
 	}
 
-	$map    = array(
+	$fields = wookiee_parse_labelled_sections( $text, array(
 		'FIT'               => 'fit',
 		'REASON'            => 'reason',
 		'CLEAN_TITLE'       => 'clean_title',
-		'CLEAN_DESCRIPTION' => 'clean_description',
 		'CATEGORY'          => 'category',
-	);
-	$fields = array_fill_keys( array_values( $map ), '' );
-
-	foreach ( explode( "\n", $text ) as $line ) {
-		$line = trim( $line );
-		foreach ( $map as $label => $field_key ) {
-			if ( 0 === strpos( $line, $label . ':' ) ) {
-				$fields[ $field_key ] = trim( substr( $line, strlen( $label ) + 1 ) );
-			}
-		}
-	}
+		'SHORT_DESCRIPTION' => 'short_description',
+		'LONG_DESCRIPTION'  => 'long_description',
+	) );
 	$fields['fit'] = strtolower( trim( $fields['fit'] ) );
 
 	return $fields;
@@ -331,13 +375,18 @@ function wookiee_cj_import_product( $pid, $auto_skip_low_fit = false ) {
 		return array( 'post_id' => $existing_id, 'note' => '' );
 	}
 
-	$title       = ! empty( $p['productNameEn'] ) ? $p['productNameEn'] : ( isset( $p['productName'] ) ? $p['productName'] : 'Untitled product' );
-	$raw_title   = $title;
-	$description = ! empty( $p['description'] ) ? wp_strip_all_tags( $p['description'] ) : '';
-	$category    = ! empty( $p['categoryName'] ) ? $p['categoryName'] : '';
-	$note        = '';
+	$title            = ! empty( $p['productNameEn'] ) ? $p['productNameEn'] : ( isset( $p['productName'] ) ? $p['productName'] : 'Untitled product' );
+	$raw_title        = $title;
+	$description      = ! empty( $p['description'] ) ? wp_strip_all_tags( $p['description'] ) : '';
+	$short_description = '';
+	$category         = ! empty( $p['categoryName'] ) ? $p['categoryName'] : '';
+	$note             = '';
 
-	$ai = wookiee_ai_clean_supplier_product( $raw_title, $description, $category );
+	$variants      = isset( $p['variants'] ) && is_array( $p['variants'] ) ? $p['variants'] : array();
+	$first_variant = ! empty( $variants ) ? $variants[0] : array();
+	$specs_text    = wookiee_extract_supplier_specs( $p, $first_variant );
+
+	$ai = wookiee_ai_clean_supplier_product( $raw_title, $description, $category, $specs_text );
 	if ( ! is_wp_error( $ai ) ) {
 		if ( 'no' === $ai['fit'] ) {
 			if ( $auto_skip_low_fit ) {
@@ -345,9 +394,10 @@ function wookiee_cj_import_product( $pid, $auto_skip_low_fit = false ) {
 			}
 			$note = 'AI note: this may not fit your niche - ' . $ai['reason'];
 		}
-		$title       = ! empty( $ai['clean_title'] ) ? $ai['clean_title'] : $title;
-		$description = ! empty( $ai['clean_description'] ) ? $ai['clean_description'] : $description;
-		$category    = ! empty( $ai['category'] ) ? $ai['category'] : $category;
+		$title             = ! empty( $ai['clean_title'] ) ? $ai['clean_title'] : $title;
+		$description       = ! empty( $ai['long_description'] ) ? $ai['long_description'] : $description;
+		$short_description = ! empty( $ai['short_description'] ) ? $ai['short_description'] : '';
+		$category          = ! empty( $ai['category'] ) ? $ai['category'] : $category;
 	}
 
 	$existing = get_page_by_title( $title, OBJECT, 'product' );
@@ -355,16 +405,15 @@ function wookiee_cj_import_product( $pid, $auto_skip_low_fit = false ) {
 		return array( 'post_id' => $existing->ID, 'note' => $note );
 	}
 
-	$variants      = isset( $p['variants'] ) && is_array( $p['variants'] ) ? $p['variants'] : array();
-	$first_variant = ! empty( $variants ) ? $variants[0] : array();
-	$cost_price    = ! empty( $first_variant['variantSellPrice'] ) ? $first_variant['variantSellPrice'] : ( isset( $p['sellPrice'] ) ? $p['sellPrice'] : '0.00' );
-	$price         = wookiee_apply_product_markup( $cost_price );
-	$vid           = isset( $first_variant['vid'] ) ? $first_variant['vid'] : '';
-	$sku           = isset( $first_variant['variantSku'] ) ? $first_variant['variantSku'] : '';
+	$cost_price = ! empty( $first_variant['variantSellPrice'] ) ? $first_variant['variantSellPrice'] : ( isset( $p['sellPrice'] ) ? $p['sellPrice'] : '0.00' );
+	$price      = wookiee_apply_product_markup( $cost_price );
+	$vid        = isset( $first_variant['vid'] ) ? $first_variant['vid'] : '';
+	$sku        = isset( $first_variant['variantSku'] ) ? $first_variant['variantSku'] : '';
 
 	$post_id = wp_insert_post( array(
 		'post_title'   => $title,
-		'post_content' => wp_kses_post( $description ),
+		'post_content' => wpautop( wp_kses_post( $description ) ),
+		'post_excerpt' => sanitize_textarea_field( $short_description ),
 		'post_status'  => 'draft',
 		'post_type'    => 'product',
 	) );

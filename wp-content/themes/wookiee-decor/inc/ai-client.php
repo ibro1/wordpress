@@ -77,3 +77,38 @@ function wookiee_call_llm( $prompt, $max_tokens = 2048 ) {
 function wookiee_strip_code_fence( $text ) {
 	return preg_replace( '/^```(?:json)?\s*|\s*```$/', '', trim( $text ) );
 }
+
+/**
+ * Splits a response into labelled sections, where each section's value
+ * can span multiple lines/paragraphs (unlike a simple per-line label
+ * match, which only captures one line per label - fine for short single-
+ * line fields like a headline, useless for a real multi-paragraph
+ * product description). $labels maps LABEL => array key, e.g.
+ * array( 'LONG_DESCRIPTION' => 'long_description' ). Expects the model
+ * to have put each label on its own line as "LABEL:" followed by that
+ * section's content, in the order given.
+ */
+function wookiee_parse_labelled_sections( $text, array $labels ) {
+	$fields  = array_fill_keys( array_values( $labels ), '' );
+	$pattern = '/(?:^|\n)(' . implode( '|', array_map( function ( $l ) { return preg_quote( $l, '/' ); }, array_keys( $labels ) ) ) . '):[ \t]*/';
+
+	$parts = preg_split( $pattern, $text, -1, PREG_SPLIT_DELIM_CAPTURE );
+	if ( ! $parts ) {
+		return $fields;
+	}
+
+	$current = null;
+	foreach ( $parts as $part ) {
+		$trimmed = trim( $part );
+		if ( isset( $labels[ $trimmed ] ) ) {
+			$current = $labels[ $trimmed ];
+			continue;
+		}
+		if ( null !== $current ) {
+			$fields[ $current ] = trim( $part );
+			$current = null;
+		}
+	}
+
+	return $fields;
+}

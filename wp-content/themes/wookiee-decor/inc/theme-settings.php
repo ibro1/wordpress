@@ -47,6 +47,43 @@ function wookiee_settings_fields() {
 }
 
 /**
+ * Groups settings fields into tabs for the settings page. Business
+ * Identity leads with company_number + the Companies House lookup so
+ * that's the first thing an admin sees, with the manual name/address
+ * fields already visible right below - not gated behind a separate
+ * "enter manually" toggle, since not every install of this theme will
+ * have a UK company number to look up.
+ */
+function wookiee_settings_tabs() {
+	return array(
+		'business' => array(
+			'label'  => 'Business Identity',
+			'fields' => array( 'company_number', 'companies_house_api_key', 'business_name', 'registered_address', 'countries_served' ),
+		),
+		'contact' => array(
+			'label'  => 'Contact & Support',
+			'fields' => array( 'contact_email', 'contact_phone' ),
+		),
+		'shipping' => array(
+			'label'  => 'Shipping & Returns',
+			'fields' => array( 'shipping_rate', 'shipping_dispatch', 'returns_address', 'returns_period_days' ),
+		),
+		'homepage' => array(
+			'label'  => 'Homepage Copy',
+			'fields' => array( 'hero_eyebrow', 'hero_headline', 'hero_subheadline', 'homepage_philosophy_heading', 'homepage_philosophy' ),
+		),
+		'social' => array(
+			'label'  => 'Social Media',
+			'fields' => array( 'facebook_url', 'instagram_url', 'linkedin_url', 'pinterest_url' ),
+		),
+		'integrations' => array(
+			'label'  => 'AI & Integrations',
+			'fields' => array( 'llm_api_key', 'llm_base_url', 'llm_default_model', 'cj_email', 'cj_api_key' ),
+		),
+	);
+}
+
+/**
  * Read a single setting, falling back to its declared default.
  */
 function wookiee_get_setting( $key, $default_override = null ) {
@@ -91,55 +128,114 @@ function wookiee_sanitizer_for( $type ) {
 	}
 }
 
+/**
+ * Renders one settings field's <tr> - the input/textarea itself, plus
+ * any field-specific helper UI (the Companies House lookup button, the
+ * various provider descriptions) that used to live inline in the big
+ * foreach loop. Pulled into its own function so the tabbed loop below
+ * doesn't have to duplicate it per tab.
+ */
+function wookiee_render_settings_field_row( $key, $field ) {
+	?>
+	<tr>
+		<th scope="row"><label for="wookiee_setting_<?php echo esc_attr( $key ); ?>"><?php echo esc_html( $field['label'] ); ?></label></th>
+		<td>
+			<?php if ( 'textarea' === $field['type'] ) : ?>
+				<textarea name="wookiee_setting_<?php echo esc_attr( $key ); ?>" id="wookiee_setting_<?php echo esc_attr( $key ); ?>" rows="3" class="large-text" placeholder="<?php echo esc_attr( $field['default'] ); ?>"><?php echo esc_textarea( get_option( 'wookiee_setting_' . $key, '' ) ); ?></textarea>
+			<?php else : ?>
+				<input type="<?php echo 'url' === $field['type'] ? 'url' : ( 'email' === $field['type'] ? 'email' : ( 'password' === $field['type'] ? 'password' : 'text' ) ); ?>" name="wookiee_setting_<?php echo esc_attr( $key ); ?>" id="wookiee_setting_<?php echo esc_attr( $key ); ?>" value="<?php echo esc_attr( get_option( 'wookiee_setting_' . $key, '' ) ); ?>" placeholder="<?php echo esc_attr( $field['default'] ); ?>" class="regular-text" autocomplete="off">
+			<?php endif; ?>
+			<?php if ( 'company_number' === $key ) : ?>
+				<p>
+					<button type="button" class="button" id="wookiee-ch-lookup-btn">Look up on Companies House</button>
+					<span id="wookiee-ch-lookup-status" style="margin-left:8px;"></span>
+				</p>
+				<p class="description">Fills in the registered company name and address below from the official Companies House register. Requires an API key (below) — get one free at <a href="https://developer.company-information.service.gov.uk/" target="_blank" rel="noopener">developer.company-information.service.gov.uk</a>. Review the filled-in fields before saving.</p>
+			<?php endif; ?>
+			<?php if ( 'companies_house_api_key' === $key ) : ?>
+				<p class="description">Only needed to use the lookup button above. Free to obtain, one per WordPress install.</p>
+			<?php endif; ?>
+			<?php if ( 'cj_api_key' === $key ) : ?>
+				<p class="description">From your CJ Dropshipping account: My CJ → API Setting. Used with the email above to authenticate the <a href="<?php echo esc_url( admin_url( 'admin.php?page=wookiee-supplier-catalog' ) ); ?>">Wookiee Supplier Catalog</a> page.</p>
+			<?php endif; ?>
+			<?php if ( 'llm_api_key' === $key ) : ?>
+				<p class="description">Powers the Product Generator, Content Generator, and policy audit. Works with any OpenAI-compatible provider (OpenAI itself, OpenRouter, Groq, a self-hosted vLLM/llama.cpp server, etc.) — just match the base URL and model below to whichever provider this key is for.</p>
+			<?php endif; ?>
+			<?php if ( 'llm_base_url' === $key ) : ?>
+				<p class="description">The API root, without a trailing <code>/chat/completions</code> — e.g. <code>https://api.openai.com/v1</code> for OpenAI, or your provider's equivalent.</p>
+			<?php endif; ?>
+			<?php if ( '' !== $field['default'] ) : ?>
+				<p class="description">Default if left blank: <?php echo esc_html( is_string( $field['default'] ) ? str_replace( "\n", ' / ', $field['default'] ) : '' ); ?></p>
+			<?php endif; ?>
+		</td>
+	</tr>
+	<?php
+}
+
 function wookiee_render_settings_page() {
 	if ( ! current_user_can( 'manage_options' ) ) {
 		return;
 	}
+	$all_fields = wookiee_settings_fields();
+	$tabs       = wookiee_settings_tabs();
 	?>
 	<div class="wrap">
 		<h1>Wookiee Settings</h1>
 		<p>These values are used across the site (footer, contact form, shipping messaging, policy pages) and update everywhere immediately when saved — including on pages that were already created.</p>
+
+		<h2 class="nav-tab-wrapper" id="wookiee-settings-tabs">
+			<?php $is_first = true; ?>
+			<?php foreach ( $tabs as $tab_key => $tab ) : ?>
+				<a href="#<?php echo esc_attr( $tab_key ); ?>" class="nav-tab<?php echo $is_first ? ' nav-tab-active' : ''; ?>" data-tab="<?php echo esc_attr( $tab_key ); ?>"><?php echo esc_html( $tab['label'] ); ?></a>
+				<?php $is_first = false; ?>
+			<?php endforeach; ?>
+		</h2>
+
 		<form method="post" action="options.php">
 			<?php settings_fields( 'wookiee_settings_group' ); ?>
-			<table class="form-table" role="presentation">
-				<?php foreach ( wookiee_settings_fields() as $key => $field ) : ?>
-					<tr>
-						<th scope="row"><label for="wookiee_setting_<?php echo esc_attr( $key ); ?>"><?php echo esc_html( $field['label'] ); ?></label></th>
-						<td>
-							<?php if ( 'textarea' === $field['type'] ) : ?>
-								<textarea name="wookiee_setting_<?php echo esc_attr( $key ); ?>" id="wookiee_setting_<?php echo esc_attr( $key ); ?>" rows="3" class="large-text" placeholder="<?php echo esc_attr( $field['default'] ); ?>"><?php echo esc_textarea( get_option( 'wookiee_setting_' . $key, '' ) ); ?></textarea>
-							<?php else : ?>
-								<input type="<?php echo 'url' === $field['type'] ? 'url' : ( 'email' === $field['type'] ? 'email' : ( 'password' === $field['type'] ? 'password' : 'text' ) ); ?>" name="wookiee_setting_<?php echo esc_attr( $key ); ?>" id="wookiee_setting_<?php echo esc_attr( $key ); ?>" value="<?php echo esc_attr( get_option( 'wookiee_setting_' . $key, '' ) ); ?>" placeholder="<?php echo esc_attr( $field['default'] ); ?>" class="regular-text" autocomplete="off">
+			<?php $is_first = true; ?>
+			<?php foreach ( $tabs as $tab_key => $tab ) : ?>
+				<div class="wookiee-tab-panel" data-tab-panel="<?php echo esc_attr( $tab_key ); ?>" style="<?php echo $is_first ? '' : 'display:none;'; ?>">
+					<table class="form-table" role="presentation">
+						<?php foreach ( $tab['fields'] as $key ) : ?>
+							<?php if ( isset( $all_fields[ $key ] ) ) : ?>
+								<?php wookiee_render_settings_field_row( $key, $all_fields[ $key ] ); ?>
 							<?php endif; ?>
-							<?php if ( 'company_number' === $key ) : ?>
-								<p>
-									<button type="button" class="button" id="wookiee-ch-lookup-btn">Look up on Companies House</button>
-									<span id="wookiee-ch-lookup-status" style="margin-left:8px;"></span>
-								</p>
-								<p class="description">Fills in the registered company name and address below from the official Companies House register. Requires an API key (below) — get one free at <a href="https://developer.company-information.service.gov.uk/" target="_blank" rel="noopener">developer.company-information.service.gov.uk</a>. Review the filled-in fields before saving.</p>
-							<?php endif; ?>
-							<?php if ( 'companies_house_api_key' === $key ) : ?>
-								<p class="description">Only needed to use the lookup button above. Free to obtain, one per WordPress install.</p>
-							<?php endif; ?>
-							<?php if ( 'cj_api_key' === $key ) : ?>
-								<p class="description">From your CJ Dropshipping account: My CJ → API Setting. Used with the email above to authenticate the <a href="<?php echo esc_url( admin_url( 'admin.php?page=wookiee-supplier-catalog' ) ); ?>">Wookiee Supplier Catalog</a> page.</p>
-							<?php endif; ?>
-							<?php if ( 'llm_api_key' === $key ) : ?>
-								<p class="description">Powers the Product Generator, Content Generator, and policy audit. Works with any OpenAI-compatible provider (OpenAI itself, OpenRouter, Groq, a self-hosted vLLM/llama.cpp server, etc.) — just match the base URL and model below to whichever provider this key is for.</p>
-							<?php endif; ?>
-							<?php if ( 'llm_base_url' === $key ) : ?>
-								<p class="description">The API root, without a trailing <code>/chat/completions</code> — e.g. <code>https://api.openai.com/v1</code> for OpenAI, or your provider's equivalent.</p>
-							<?php endif; ?>
-							<?php if ( '' !== $field['default'] ) : ?>
-								<p class="description">Default if left blank: <?php echo esc_html( is_string( $field['default'] ) ? str_replace( "\n", ' / ', $field['default'] ) : '' ); ?></p>
-							<?php endif; ?>
-						</td>
-					</tr>
-				<?php endforeach; ?>
-			</table>
+						<?php endforeach; ?>
+					</table>
+				</div>
+				<?php $is_first = false; ?>
+			<?php endforeach; ?>
 			<?php submit_button(); ?>
 		</form>
 	</div>
+	<script>
+	( function() {
+		var tabs   = document.querySelectorAll( '#wookiee-settings-tabs .nav-tab' );
+		var panels = document.querySelectorAll( '.wookiee-tab-panel' );
+
+		function activateTab( tabKey ) {
+			tabs.forEach( function( t ) { t.classList.toggle( 'nav-tab-active', t.getAttribute( 'data-tab' ) === tabKey ); } );
+			panels.forEach( function( p ) { p.style.display = ( p.getAttribute( 'data-tab-panel' ) === tabKey ) ? '' : 'none'; } );
+		}
+
+		tabs.forEach( function( t ) {
+			t.addEventListener( 'click', function( e ) {
+				e.preventDefault();
+				var key = t.getAttribute( 'data-tab' );
+				activateTab( key );
+				history.replaceState( null, '', '#' + key );
+			} );
+		} );
+
+		if ( window.location.hash ) {
+			var hashKey = window.location.hash.replace( '#', '' );
+			if ( document.querySelector( '.wookiee-tab-panel[data-tab-panel="' + hashKey + '"]' ) ) {
+				activateTab( hashKey );
+			}
+		}
+	} )();
+	</script>
 	<script>
 	( function() {
 		var btn = document.getElementById( 'wookiee-ch-lookup-btn' );

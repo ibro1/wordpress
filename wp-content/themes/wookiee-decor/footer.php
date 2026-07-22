@@ -93,8 +93,10 @@
 				<a href="<?php echo esc_url( home_url( '/terms/' ) ); ?>">Terms</a>
 				<a href="<?php echo esc_url( home_url( '/shipping/' ) ); ?>">Shipping</a>
 				<a href="<?php echo esc_url( home_url( '/returns/' ) ); ?>">Returns</a>
+				<a href="<?php echo esc_url( home_url( '/payment/' ) ); ?>">Payment</a>
 				<a href="<?php echo esc_url( home_url( '/privacy/' ) ); ?>">Privacy</a>
 				<a href="<?php echo esc_url( home_url( '/cookie/' ) ); ?>">Cookies</a>
+				<a href="<?php echo esc_url( home_url( '/cookie-pref/' ) ); ?>">Cookie preferences</a>
 			</div>
 
 			<div class="footer-bottom-row">

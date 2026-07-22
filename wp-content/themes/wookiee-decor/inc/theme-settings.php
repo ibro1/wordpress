@@ -196,6 +196,19 @@ function wookiee_render_settings_page() {
 			<?php $is_first = true; ?>
 			<?php foreach ( $tabs as $tab_key => $tab ) : ?>
 				<div class="wookiee-tab-panel" id="wookiee-panel-<?php echo esc_attr( $tab_key ); ?>" data-tab-panel="<?php echo esc_attr( $tab_key ); ?>" role="tabpanel" aria-labelledby="wookiee-tab-<?php echo esc_attr( $tab_key ); ?>" <?php echo $is_first ? '' : 'hidden'; ?>>
+					<?php if ( 'homepage' === $tab_key ) : $has_llm_key = '' !== trim( (string) wookiee_get_setting( 'llm_api_key' ) ); ?>
+						<div style="background:#f6f7f7;border:1px solid #dcdcde;border-radius:4px;padding:12px 16px;margin-bottom:20px;max-width:900px;">
+							<p style="margin-top:0;"><strong>Generate with AI</strong> — drafts all 5 fields below from a one-line description of the store's niche. Review and edit before clicking Save Changes at the bottom; nothing changes on the live site until then.</p>
+							<p>
+								<input type="text" id="wookiee-homepage-ai-brief" class="regular-text" value="<?php echo esc_attr( get_option( 'wookiee_niche_brief', '' ) ); ?>" placeholder="e.g. UK home-storage and organisation products - baskets, shelving, drawer organisers">
+								<button type="button" class="button button-primary" id="wookiee-homepage-ai-btn" <?php disabled( ! $has_llm_key ); ?>>Generate with AI</button>
+								<span id="wookiee-homepage-ai-status" style="margin-left:8px;"></span>
+							</p>
+							<?php if ( ! $has_llm_key ) : ?>
+								<p class="description">Needs an LLM API key on the <a href="#integrations">AI &amp; Integrations</a> tab first.</p>
+							<?php endif; ?>
+						</div>
+					<?php endif; ?>
 					<table class="form-table" role="presentation">
 						<?php foreach ( $tab['fields'] as $key ) : ?>
 							<?php if ( isset( $all_fields[ $key ] ) ) : ?>
@@ -266,6 +279,17 @@ function wookiee_render_settings_page() {
 			activateTab( targetKey );
 		}
 		rememberTab( targetKey || tabs[ 0 ].getAttribute( 'data-tab' ) );
+
+		// Covers hash changes that don't go through the tab-bar click
+		// handler above (e.g. the "AI & Integrations" link in the
+		// homepage-copy notice below) and native back/forward navigation.
+		window.addEventListener( 'hashchange', function() {
+			var key = window.location.hash.replace( '#', '' );
+			if ( key && document.querySelector( '.wookiee-tab-panel[data-tab-panel="' + key + '"]' ) ) {
+				activateTab( key );
+				rememberTab( key );
+			}
+		} );
 	} )();
 	</script>
 	<script>
@@ -313,7 +337,92 @@ function wookiee_render_settings_page() {
 		} );
 	} )();
 	</script>
+	<script>
+	( function() {
+		var btn = document.getElementById( 'wookiee-homepage-ai-btn' );
+		if ( ! btn ) {
+			return;
+		}
+		var fieldMap = {
+			eyebrow: 'wookiee_setting_hero_eyebrow',
+			headline: 'wookiee_setting_hero_headline',
+			subheadline: 'wookiee_setting_hero_subheadline',
+			philosophy_heading: 'wookiee_setting_homepage_philosophy_heading',
+			philosophy: 'wookiee_setting_homepage_philosophy'
+		};
+		btn.addEventListener( 'click', function() {
+			var status = document.getElementById( 'wookiee-homepage-ai-status' );
+			var brief  = document.getElementById( 'wookiee-homepage-ai-brief' ).value.trim();
+			if ( ! brief ) {
+				status.textContent = 'Describe the niche first.';
+				return;
+			}
+			btn.disabled = true;
+			status.textContent = 'Generating… this can take up to a minute.';
+			var data = new FormData();
+			data.append( 'action', 'wookiee_inline_generate_homepage_copy' );
+			data.append( 'nonce', '<?php echo esc_js( wp_create_nonce( 'wookiee_inline_homepage_copy' ) ); ?>' );
+			data.append( 'brief', brief );
+			fetch( ajaxurl, { method: 'POST', credentials: 'same-origin', body: data } )
+				.then( function( r ) { return r.json(); } )
+				.then( function( res ) {
+					btn.disabled = false;
+					if ( ! res.success ) {
+						status.textContent = res.data && res.data.message ? res.data.message : 'Generation failed.';
+						return;
+					}
+					Object.keys( fieldMap ).forEach( function( key ) {
+						var field = document.getElementById( fieldMap[ key ] );
+						if ( field && res.data.fields[ key ] ) {
+							field.value = res.data.fields[ key ];
+						}
+					} );
+					status.textContent = 'Drafted below. Review, then click Save Changes.';
+				} )
+				.catch( function() {
+					btn.disabled = false;
+					status.textContent = 'Generation failed — could not reach the server.';
+				} );
+		} );
+	} )();
+	</script>
 	<?php
+}
+
+/**
+ * Generates homepage hero/philosophy copy directly from the Homepage
+ * Copy tab, instead of the admin having to go to the Content Generator
+ * page and click a separate "Apply" step - this writes straight into
+ * the same 5 fields that tab already shows, so generating and reviewing
+ * happen in one place. Reuses the prompt/parsing already built for the
+ * Content Generator (wookiee_build_content_prompt(), wookiee_parse_homepage_copy())
+ * rather than duplicating that logic here.
+ */
+add_action( 'wp_ajax_wookiee_inline_generate_homepage_copy', 'wookiee_inline_generate_homepage_copy_handler' );
+function wookiee_inline_generate_homepage_copy_handler() {
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_send_json_error( array( 'message' => 'Not allowed.' ), 403 );
+	}
+	check_ajax_referer( 'wookiee_inline_homepage_copy', 'nonce' );
+
+	$brief = isset( $_POST['brief'] ) ? sanitize_textarea_field( wp_unslash( $_POST['brief'] ) ) : '';
+	if ( '' === trim( $brief ) ) {
+		wp_send_json_error( array( 'message' => 'Describe the niche first.' ) );
+	}
+	if ( '' === trim( (string) wookiee_get_setting( 'llm_api_key' ) ) ) {
+		wp_send_json_error( array( 'message' => 'Add an LLM API key on the AI & Integrations tab first.' ) );
+	}
+
+	update_option( 'wookiee_niche_brief', $brief );
+
+	$prompt = wookiee_build_content_prompt( 'homepage_copy', $brief );
+	$text   = wookiee_call_llm( $prompt, 2048 );
+
+	if ( is_wp_error( $text ) ) {
+		wp_send_json_error( array( 'message' => $text->get_error_message() ) );
+	}
+
+	wp_send_json_success( array( 'fields' => wookiee_parse_homepage_copy( $text ) ) );
 }
 
 /**

@@ -16,6 +16,7 @@ require_once WOOKIEE_DIR . 'inc/admin-menu.php';
 require_once WOOKIEE_DIR . 'inc/shipping.php';
 require_once WOOKIEE_DIR . 'inc/ai-client.php';
 require_once WOOKIEE_DIR . 'inc/setup-wizard.php';
+require_once WOOKIEE_DIR . 'inc/keyword-research.php';
 require_once WOOKIEE_DIR . 'inc/product-generator.php';
 require_once WOOKIEE_DIR . 'inc/content-generator.php';
 require_once WOOKIEE_DIR . 'inc/background-removal.php';

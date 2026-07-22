@@ -34,11 +34,12 @@ function wookiee_render_product_generator_page() {
 	$has_key      = '' !== trim( (string) wookiee_get_setting( 'llm_api_key' ) );
 	$has_cj_creds = '' !== trim( (string) wookiee_get_setting( 'cj_email' ) ) && '' !== trim( (string) wookiee_get_setting( 'cj_api_key' ) );
 	$has_woo      = class_exists( 'WooCommerce' );
+	$has_ads      = wookiee_google_ads_configured();
 	$saved_brief  = get_option( 'wookiee_niche_brief', '' );
 	?>
 	<div class="wrap">
 		<h1>Wookiee Product Generator</h1>
-		<p>Describe the one niche this store sells in. The AI works out what concepts this catalog needs, then sources a <strong>real, fulfillable product</strong> for each one from the CJ Dropshipping catalog - real title and description (cleaned up for Google Merchant Center), real price (with your markup applied), real photo (background automatically replaced with white). Every result lands as a WooCommerce product in <strong>Draft</strong> status by default — nothing appears on the live site, and nothing is orderable, until you review it and publish (below, or in the editor).</p>
+		<p>Describe the one niche this store sells in. The AI works out what concepts this catalog needs<?php echo $has_ads ? ', grounded in real UK search-volume and CPC data from Google Ads' : ''; ?>, then sources a <strong>real, fulfillable product</strong> for each one from the CJ Dropshipping catalog - real title and description (cleaned up for Google Merchant Center), real price (with your markup applied), real photo (background automatically replaced with white). Every result lands as a WooCommerce product in <strong>Draft</strong> status by default — nothing appears on the live site, and nothing is orderable, until you review it and publish (below, or in the editor).</p>
 
 		<?php if ( ! $has_woo ) : ?>
 			<div class="notice notice-error"><p>WooCommerce isn't active, so sourced products have nowhere to be created. Activate WooCommerce first.</p></div>
@@ -48,6 +49,9 @@ function wookiee_render_product_generator_page() {
 		<?php endif; ?>
 		<?php if ( ! $has_cj_creds ) : ?>
 			<div class="notice notice-warning"><p>Add your CJ Dropshipping email and API key on <a href="<?php echo esc_url( admin_url( 'admin.php?page=wookiee-settings' ) ); ?>">Wookiee Settings</a> first - this tool now sources real products from that catalog rather than inventing fictional ones.</p></div>
+		<?php endif; ?>
+		<?php if ( ! $has_ads ) : ?>
+			<div class="notice notice-info"><p>Optional: add Google Ads API credentials on <a href="<?php echo esc_url( admin_url( 'admin.php?page=wookiee-settings' ) ); ?>">Wookiee Settings</a> to ground concept picks in real UK search-volume/CPC data instead of AI guessing. Works without it, just less informed.</p></div>
 		<?php endif; ?>
 
 		<table class="form-table" role="presentation">
@@ -142,9 +146,9 @@ function wookiee_render_product_generator_page() {
 						return;
 					}
 
-					var html = '<table class="widefat"><thead><tr><th></th><th>Concept</th><th>Status</th><th colspan="2"></th></tr></thead><tbody>';
+					var html = '<table class="widefat"><thead><tr><th></th><th>Concept</th><th>Est. demand</th><th>Status</th><th colspan="2"></th></tr></thead><tbody>';
 					products.forEach( function( p ) {
-						html += '<tr data-post-id="' + p.post_id + '"><td><input type="checkbox" class="wookiee-product-select" value="' + p.post_id + '"></td><td>' + p.title + '</td><td class="wookiee-row-status">' + p.status + '</td><td><a href="' + p.edit_link + '" class="button" target="_blank" rel="noopener">Edit draft</a></td><td><button type="button" class="button wookiee-publish-one-btn">Publish</button></td></tr>';
+						html += '<tr data-post-id="' + p.post_id + '"><td><input type="checkbox" class="wookiee-product-select" value="' + p.post_id + '"></td><td>' + p.title + '</td><td>' + ( p.demand || '—' ) + '</td><td class="wookiee-row-status">' + p.status + '</td><td><a href="' + p.edit_link + '" class="button" target="_blank" rel="noopener">Edit draft</a></td><td><button type="button" class="button wookiee-publish-one-btn">Publish</button></td></tr>';
 					} );
 					html += '</tbody></table>';
 					results.innerHTML = html;
@@ -271,9 +275,18 @@ function wookiee_generate_products_handler() {
 			continue;
 		}
 
+		$demand = '';
+		if ( isset( $idea['avg_monthly_searches'] ) ) {
+			$demand = number_format_i18n( $idea['avg_monthly_searches'] ) . '/mo';
+			if ( isset( $idea['low_cpc_gbp'], $idea['high_cpc_gbp'] ) && null !== $idea['low_cpc_gbp'] ) {
+				$demand .= ' · £' . esc_html( $idea['low_cpc_gbp'] ) . '-£' . esc_html( $idea['high_cpc_gbp'] ) . ' CPC';
+			}
+		}
+
 		$created[] = array(
 			'post_id'   => $sourced['post_id'],
 			'title'     => esc_html( $idea['title'] ),
+			'demand'    => esc_html( $demand ),
 			'status'    => esc_html( $sourced['note'] ? $sourced['note'] : 'Sourced from CJ Dropshipping' ),
 			'edit_link' => get_edit_post_link( $sourced['post_id'], 'raw' ),
 		);
@@ -283,20 +296,48 @@ function wookiee_generate_products_handler() {
 }
 
 /**
- * Calls the LLM and returns a plain array of {title, category} concepts,
+ * Calls the LLM and returns a plain array of {title, category} concepts
+ * (plus real search-volume/CPC fields when Google Ads is configured),
  * or a WP_Error. Each "title" is deliberately a plain, keyword-style
  * search query (not a polished marketing title) since it's used as a CJ
  * Dropshipping search term, not shown to a customer - the real title
  * customers see comes from wookiee_ai_clean_supplier_product() during
  * import, generated from the actual matched product.
+ *
+ * When Google Ads is configured (inc/keyword-research.php), this grounds
+ * concept selection in real UK search-volume and CPC data instead of
+ * pure LLM guessing: the model picks its {$count} concepts FROM that
+ * real keyword list rather than inventing them, so "would this get
+ * traffic" and "what would ads cost" have actual numbers behind them.
+ * Falls back to the previous pure-LLM brainstorming if Google Ads isn't
+ * set up, so this remains fully optional.
  */
 function wookiee_ai_generate_product_ideas( $brief, $count ) {
-	$prompt = "You are helping source real products for a single-niche UK ecommerce store from a wholesale/dropship catalog. The store's niche, in the owner's own words:\n\"" . $brief . "\"\n\n"
-		. "Generate exactly {$count} distinct product concepts this store's catalog should include - same niche, consistent quality tier, no duplicate concepts, forming 2-4 categories total, not {$count} unique ones. Do not reference or imitate any specific real-world brand or existing product listing.\n\n"
-		. "Each concept's title will be used as a search query against a real product catalog, so phrase it the way you'd search for that item - a few plain, common keywords (e.g. \"ceramic plant pot\"), not a stylized marketing title.\n\n"
-		. "Respond with ONLY a raw JSON array containing EXACTLY {$count} element(s) (no markdown fences, no commentary before or after), where each element has exactly these keys:\n"
-		. "- \"title\": the plain keyword search query for this product concept\n"
-		. "- \"category\": a short category name; reuse the same category string across concepts that belong together";
+	$keyword_data = wookiee_google_ads_configured() ? wookiee_google_ads_keyword_ideas( array( $brief ) ) : new WP_Error( 'wookiee_google_ads_not_configured', '' );
+	$has_keywords = ! is_wp_error( $keyword_data ) && ! empty( $keyword_data );
+
+	if ( $has_keywords ) {
+		$top   = array_slice( $keyword_data, 0, 30 );
+		$lines = array();
+		foreach ( $top as $k ) {
+			$cpc       = ( null !== $k['low_cpc_gbp'] && null !== $k['high_cpc_gbp'] ) ? ( '£' . $k['low_cpc_gbp'] . '-£' . $k['high_cpc_gbp'] . ' CPC' ) : 'CPC unknown';
+			$lines[]   = "- \"{$k['keyword']}\" - {$k['avg_monthly_searches']} avg monthly UK searches, {$k['competition']} competition, {$cpc}";
+		}
+
+		$prompt = "You are helping source real products for a single-niche UK ecommerce store from a wholesale/dropship catalog. The store's niche, in the owner's own words:\n\"" . $brief . "\"\n\n"
+			. "Real UK search-volume and cost-per-click data for this niche, from Google Ads Keyword Planner:\n" . implode( "\n", $lines ) . "\n\n"
+			. "Using ONLY the keywords listed above, pick exactly {$count} of the best ones to build this store's catalog around - prioritise genuine search demand (higher avg monthly searches) balanced against reasonable ad cost (lower CPC), while keeping the set feeling like one coherent niche catalog (2-4 categories total, not {$count} unique ones). Do not invent a keyword that isn't in the list above, and do not alter the wording of the keywords you choose.\n\n"
+			. "Respond with ONLY a raw JSON array containing EXACTLY {$count} element(s) (no markdown fences, no commentary before or after), where each element has exactly these keys:\n"
+			. "- \"title\": one of the exact keywords from the list above\n"
+			. "- \"category\": a short category name; reuse the same category string across concepts that belong together";
+	} else {
+		$prompt = "You are helping source real products for a single-niche UK ecommerce store from a wholesale/dropship catalog. The store's niche, in the owner's own words:\n\"" . $brief . "\"\n\n"
+			. "Generate exactly {$count} distinct product concepts this store's catalog should include - same niche, consistent quality tier, no duplicate concepts, forming 2-4 categories total, not {$count} unique ones. Do not reference or imitate any specific real-world brand or existing product listing.\n\n"
+			. "Each concept's title will be used as a search query against a real product catalog, so phrase it the way you'd search for that item - a few plain, common keywords (e.g. \"ceramic plant pot\"), not a stylized marketing title.\n\n"
+			. "Respond with ONLY a raw JSON array containing EXACTLY {$count} element(s) (no markdown fences, no commentary before or after), where each element has exactly these keys:\n"
+			. "- \"title\": the plain keyword search query for this product concept\n"
+			. "- \"category\": a short category name; reuse the same category string across concepts that belong together";
+	}
 
 	$text = wookiee_call_llm( $prompt, 1024 );
 	if ( is_wp_error( $text ) ) {
@@ -314,10 +355,23 @@ function wookiee_ai_generate_product_ideas( $brief, $count ) {
 		if ( ! is_array( $idea ) || empty( $idea['title'] ) ) {
 			continue;
 		}
-		$clean[] = array(
+		$entry = array(
 			'title'    => sanitize_text_field( $idea['title'] ),
 			'category' => ! empty( $idea['category'] ) ? sanitize_text_field( $idea['category'] ) : 'General',
 		);
+
+		if ( $has_keywords ) {
+			foreach ( $keyword_data as $k ) {
+				if ( 0 === strcasecmp( $k['keyword'], $entry['title'] ) ) {
+					$entry['avg_monthly_searches'] = $k['avg_monthly_searches'];
+					$entry['low_cpc_gbp']          = $k['low_cpc_gbp'];
+					$entry['high_cpc_gbp']         = $k['high_cpc_gbp'];
+					break;
+				}
+			}
+		}
+
+		$clean[] = $entry;
 	}
 
 	if ( empty( $clean ) ) {

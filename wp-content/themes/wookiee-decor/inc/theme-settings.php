@@ -35,6 +35,12 @@ function wookiee_settings_fields() {
 		'cloudinary_api_key' => array( 'label' => 'Cloudinary API key', 'default' => '', 'type' => 'text' ),
 		'cloudinary_api_secret' => array( 'label' => 'Cloudinary API secret', 'default' => '', 'type' => 'password' ),
 		'rembg_endpoint_url' => array( 'label' => 'Self-hosted rembg URL', 'default' => 'http://rembg:7000', 'type' => 'text' ),
+		'google_ads_developer_token' => array( 'label' => 'Google Ads developer token', 'default' => '', 'type' => 'password' ),
+		'google_ads_client_id' => array( 'label' => 'Google Ads OAuth client ID', 'default' => '', 'type' => 'text' ),
+		'google_ads_client_secret' => array( 'label' => 'Google Ads OAuth client secret', 'default' => '', 'type' => 'password' ),
+		'google_ads_refresh_token' => array( 'label' => 'Google Ads OAuth refresh token', 'default' => '', 'type' => 'password' ),
+		'google_ads_customer_id' => array( 'label' => 'Google Ads customer ID', 'default' => '', 'type' => 'text' ),
+		'google_ads_login_customer_id' => array( 'label' => 'Google Ads manager (MCC) customer ID (if applicable)', 'default' => '', 'type' => 'text' ),
 		'returns_address'    => array( 'label' => 'Returns address (leave blank to use registered office address)', 'default' => '', 'type' => 'textarea' ),
 		'returns_period_days' => array( 'label' => 'Returns period (days)', 'default' => '30', 'type' => 'text' ),
 		'countries_served'   => array( 'label' => 'Countries served', 'default' => 'United Kingdom', 'type' => 'text' ),
@@ -84,7 +90,7 @@ function wookiee_settings_tabs() {
 		),
 		'integrations' => array(
 			'label'  => 'AI & Integrations',
-			'fields' => array( 'llm_api_key', 'llm_base_url', 'llm_default_model', 'cj_email', 'cj_api_key', 'product_markup_percent', 'bg_removal_provider', 'cloudinary_cloud_name', 'cloudinary_api_key', 'cloudinary_api_secret', 'rembg_endpoint_url' ),
+			'fields' => array( 'llm_api_key', 'llm_base_url', 'llm_default_model', 'cj_email', 'cj_api_key', 'product_markup_percent', 'bg_removal_provider', 'cloudinary_cloud_name', 'cloudinary_api_key', 'cloudinary_api_secret', 'rembg_endpoint_url', 'google_ads_developer_token', 'google_ads_client_id', 'google_ads_client_secret', 'google_ads_refresh_token', 'google_ads_customer_id', 'google_ads_login_customer_id' ),
 		),
 	);
 }
@@ -188,6 +194,21 @@ function wookiee_render_settings_field_row( $key, $field ) {
 			<?php endif; ?>
 			<?php if ( 'rembg_endpoint_url' === $key ) : ?>
 				<p class="description">The internal address of the self-hosted rembg container on your Docker network - see the compose service added alongside this feature. Default assumes a service named <code>rembg</code> on the same network as WordPress.</p>
+			<?php endif; ?>
+			<?php if ( 'google_ads_developer_token' === $key ) : ?>
+				<p class="description">Powers real keyword search-volume and CPC data for the Product Generator, grounding its AI concept picks in actual demand instead of guessing. From your Google Ads Manager account - "Basic access" is needed for real (non-test) data; Google reviews that application separately from creating the token itself.</p>
+			<?php endif; ?>
+			<?php if ( 'google_ads_client_id' === $key || 'google_ads_client_secret' === $key ) : ?>
+				<p class="description">From a Google Cloud project with the Google Ads API enabled (APIs &amp; Services → Credentials → OAuth client ID).</p>
+			<?php endif; ?>
+			<?php if ( 'google_ads_refresh_token' === $key ) : ?>
+				<p class="description">Generated once via Google's OAuth consent flow using the client ID/secret above - this is what lets WordPress request fresh access tokens without a browser involved each time.</p>
+			<?php endif; ?>
+			<?php if ( 'google_ads_customer_id' === $key ) : ?>
+				<p class="description">The Google Ads account ID to run keyword queries against, digits only (no dashes) - e.g. <code>1234567890</code> for an account shown as 123-456-7890.</p>
+			<?php endif; ?>
+			<?php if ( 'google_ads_login_customer_id' === $key ) : ?>
+				<p class="description">Only needed if the customer ID above is a client account under a Manager (MCC) account - set this to the Manager's own customer ID. Leave blank otherwise.</p>
 			<?php endif; ?>
 			<?php if ( '' !== $field['default'] ) : ?>
 				<p class="description">Default if left blank: <?php echo esc_html( is_string( $field['default'] ) ? str_replace( "\n", ' / ', $field['default'] ) : '' ); ?></p>

@@ -65,8 +65,11 @@ function wookiee_render_content_generator_page() {
 			<tr>
 				<th scope="row"><label for="wookiee-niche-brief-2">Niche brief</label></th>
 				<td>
-					<textarea id="wookiee-niche-brief-2" rows="3" class="large-text" placeholder="e.g. UK home-storage and organisation products - baskets, shelving, drawer organisers, aimed at small flats"><?php echo esc_textarea( $saved_brief ); ?></textarea>
-					<p class="description">Shared with the Product Generator's niche brief.</p>
+					<div class="wookiee-niche-input-wrap is-textarea">
+						<textarea id="wookiee-niche-brief-2" rows="3" class="large-text" placeholder="e.g. UK home-storage and organisation products - baskets, shelving, drawer organisers, aimed at small flats"><?php echo esc_textarea( $saved_brief ); ?></textarea>
+						<?php wookiee_niche_suggest_button( 'wookiee-niche-brief-2' ); ?>
+					</div>
+					<p class="description">Shared with the Product Generator's niche brief. Click the sparkle to have AI suggest one.</p>
 				</td>
 			</tr>
 			<tr>
@@ -435,8 +438,8 @@ function wookiee_build_content_prompt( $key, $brief ) {
 
 	if ( 'homepage_copy' === $key ) {
 		return "Write homepage marketing copy for a UK single-niche ecommerce store, to slot into an EXISTING page design - you are only rewriting text, the layout/sections themselves are fixed and already built.\n\n"
-			. "Store niche, in the owner's own words: \"{$brief}\"\n"
-			. 'Business/trading name: ' . wookiee_get_setting( 'business_name' ) . "\n\n"
+			. "Store niche, in the owner's own words: \"{$brief}\"\n\n"
+			. "Real business details to use (do not invent anything beyond this list):\n" . wookiee_business_details_block() . "\n\n"
 			. "The page has these fixed sections, in this order: a hero (eyebrow tag, headline, subheadline, two buttons, a shipping stat badge), a 3-item trust bar, a best-selling-products section (kicker+title only, products are real and already listed), a categories section (kicker+title+subtitle, cards are real categories already listed), a \"how it works\" section (kicker, title, lead paragraph, 3 numbered steps each with a title+description, a button), a philosophy section (heading+paragraph), and a collections section (kicker+title).\n\n"
 			. "Provide EXACTLY these labelled sections, each on its own line as \"LABEL: value\" (including the colon), nothing before or after them, in this exact order:\n"
 			. "HERO_EYEBROW: very short tag line above the headline (2-5 words)\n"
@@ -474,8 +477,8 @@ function wookiee_build_content_prompt( $key, $brief ) {
 
 	if ( 'about_contact' === $key ) {
 		return "Write About-page and Contact-page copy for a UK single-niche ecommerce store, to slot into TWO EXISTING page designs - you are only rewriting text, the layout/sections are fixed and already built.\n\n"
-			. "Store niche, in the owner's own words: \"{$brief}\"\n"
-			. 'Business/trading name: ' . wookiee_get_setting( 'business_name' ) . "\n\n"
+			. "Store niche, in the owner's own words: \"{$brief}\"\n\n"
+			. "Real business details to use (do not invent anything beyond this list):\n" . wookiee_business_details_block() . "\n\n"
 			. "The About page has: a hero (kicker, heading, one bold lead sentence, one body paragraph, two buttons), a small stat badge (kicker only - the business name/tagline is filled in automatically), a 4-item facts strip (a short note on legal registration; a fulfilment title+note; a delivery note), a second section (kicker, heading, bold lead sentence, two body paragraphs) and one small highlight card (title+description).\n"
 			. "The Contact page has: a kicker, a heading, one lead sentence, and a form subtitle.\n\n"
 			. "Provide EXACTLY these labelled sections, each on its own line as \"LABEL: value\" (including the colon), nothing before or after them, in this exact order:\n"
@@ -486,10 +489,10 @@ function wookiee_build_content_prompt( $key, $brief ) {
 			. "ABOUT_CTA_PRIMARY: primary button label (2-4 words)\n"
 			. "ABOUT_CTA_SECONDARY: secondary button label (2-4 words)\n"
 			. "ABOUT_STAT_KICKER: a short label for the stat badge, e.g. describing the retail model (2-5 words)\n"
-			. "ABOUT_LEGAL_NOTE: a short factual-sounding note (2-4 words) - leave a natural placeholder tone if the registered country/region isn't given\n"
-			. "ABOUT_FULFILMENT_TITLE: a short phrase naming where orders are fulfilled from (2-5 words) - do not invent a specific town if none was given, keep it generic (e.g. \"Fulfilled in the UK\")\n"
+			. "ABOUT_LEGAL_NOTE: a short factual note naming the real registered country/region from the business details above (e.g. \"Registered in Scotland\") - use the actual registered address given, do not guess a different one\n"
+			. "ABOUT_FULFILMENT_TITLE: a short phrase naming where orders are fulfilled from, based on the real registered/returns address above (2-5 words, e.g. \"Fulfilled from Cowdenbeath\") - only go generic (\"Fulfilled in the UK\") if no address was given\n"
 			. "ABOUT_FULFILMENT_NOTE: a short note on storage/packing/dispatch (under 6 words)\n"
-			. "ABOUT_DELIVERY_NOTE: a short delivery-speed note (under 6 words)\n"
+			. "ABOUT_DELIVERY_NOTE: a short delivery-speed note based on the real typical delivery time given above (under 6 words)\n"
 			. "ABOUT_SECTION2_KICKER: short kicker tag (2-4 words)\n"
 			. "ABOUT_SECTION2_HEADING: a heading about the product range/approach (under 8 words)\n"
 			. "ABOUT_SECTION2_LEAD: one bold sentence about the product range\n"
@@ -662,4 +665,108 @@ function wookiee_update_real_static_page( $slug, $title, $raw_text ) {
 	) );
 
 	return ( $post_id && ! is_wp_error( $post_id ) ) ? $post_id : 0;
+}
+
+/**
+ * "Suggest a niche" (the sparkle icon inside every niche-brief field) -
+ * picks a candidate niche the admin might not have thought of, instead
+ * of requiring them to already know what to type. Grounded in real UK
+ * search-volume/CPC data when Google Ads is configured (the same
+ * integration the Product Generator already uses), so "genuine demand"
+ * is an actual claim, not LLM guessing dressed up as one; falls back to
+ * a plain LLM brainstorm otherwise, same fail-safe pattern as everywhere
+ * else this integration is used.
+ */
+function wookiee_niche_suggestion_seed_categories() {
+	return array(
+		'home decor', 'kitchen gadgets', 'pet supplies', 'baby products', 'fitness equipment',
+		'garden tools', 'phone accessories', 'car accessories', 'beauty tools', 'office supplies',
+		'camping gear', 'craft supplies', 'health and wellness gadgets', 'jewellery', 'travel accessories',
+		'cleaning supplies', 'sports equipment', 'baking supplies', 'gaming accessories', 'skincare tools',
+	);
+}
+
+function wookiee_get_recent_niche_suggestions() {
+	$recent = get_option( 'wookiee_recent_niche_suggestions', array() );
+	return is_array( $recent ) ? $recent : array();
+}
+
+function wookiee_remember_niche_suggestion( $brief ) {
+	$recent   = wookiee_get_recent_niche_suggestions();
+	$recent[] = $brief;
+	update_option( 'wookiee_recent_niche_suggestions', array_slice( $recent, -10 ), false );
+}
+
+add_action( 'wp_ajax_wookiee_suggest_niche', 'wookiee_suggest_niche_handler' );
+function wookiee_suggest_niche_handler() {
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_send_json_error( array( 'message' => 'Not allowed.' ), 403 );
+	}
+	check_ajax_referer( 'wookiee_suggest_niche', 'nonce' );
+
+	if ( '' === trim( (string) wookiee_get_setting( 'llm_api_key' ) ) ) {
+		wp_send_json_error( array( 'message' => 'Add an LLM API key on the AI & Integrations tab first.' ) );
+	}
+
+	$recent_suggestions = wookiee_get_recent_niche_suggestions();
+
+	// A different shortlist each click, not just a different pick from
+	// the same list, so repeated clicks genuinely explore new ground
+	// rather than circling the same handful of categories.
+	$seed_categories = wookiee_niche_suggestion_seed_categories();
+	shuffle( $seed_categories );
+	$candidates = array_slice( $seed_categories, 0, 6 );
+
+	$grounded      = false;
+	$keyword_lines = array();
+
+	if ( wookiee_google_ads_configured() ) {
+		$keyword_data = wookiee_google_ads_keyword_ideas( $candidates );
+		if ( ! is_wp_error( $keyword_data ) && ! empty( $keyword_data ) ) {
+			$grounded = true;
+			foreach ( array_slice( $keyword_data, 0, 20 ) as $k ) {
+				$cpc               = ( null !== $k['low_cpc_gbp'] && null !== $k['high_cpc_gbp'] ) ? ( '£' . $k['low_cpc_gbp'] . '-£' . $k['high_cpc_gbp'] . ' CPC' ) : 'CPC unknown';
+				$keyword_lines[]   = "- \"{$k['keyword']}\" - {$k['avg_monthly_searches']} avg monthly UK searches, {$k['competition']} competition, {$cpc}";
+			}
+		}
+	}
+
+	$exclude_note = '';
+	if ( ! empty( $recent_suggestions ) ) {
+		$exclude_note = "\n\nDo not suggest any of these niches already suggested recently:\n- " . implode( "\n- ", array_slice( $recent_suggestions, -8 ) ) . "\n";
+	}
+
+	$example = 'UK home-storage and organisation products - baskets, shelving, drawer organisers, aimed at small flats';
+
+	if ( $grounded ) {
+		$prompt = "You are helping a UK dropshipping ecommerce store owner pick a promising single-niche to build a store around.\n\n"
+			. "Real UK search-volume and CPC data for several candidate categories, from Google Ads Keyword Planner:\n" . implode( "\n", $keyword_lines ) . "\n"
+			. $exclude_note . "\n"
+			. "Pick the ONE candidate niche from the data above with the best combination of genuine search demand (higher avg monthly searches) and reasonable ad cost (lower CPC/competition) for a small dropshipping store to realistically compete in.\n\n"
+			. "Respond with ONLY a single, concise niche brief in the same style as this example (one sentence, plain and specific, no markdown, no preamble/commentary): \"{$example}\"";
+	} else {
+		$prompt = "You are helping a UK dropshipping ecommerce store owner pick a promising single-niche to build a store around - one they might not have thought of themselves, but with genuine, steady consumer demand and realistic to source/ship as a small operation (lightweight, not fragile, not heavily regulated).\n"
+			. $exclude_note . "\n"
+			. "Suggest ONE such niche, favouring evergreen demand over fleeting trends.\n\n"
+			. "Respond with ONLY a single, concise niche brief in the same style as this example (one sentence, plain and specific, no markdown, no preamble/commentary): \"{$example}\"";
+	}
+
+	$text = wookiee_call_llm( $prompt, 200 );
+	if ( is_wp_error( $text ) ) {
+		wp_send_json_error( array( 'message' => $text->get_error_message() ) );
+	}
+
+	$brief = trim( wookiee_strip_code_fence( $text ) );
+	$brief = trim( $brief, "\"' \t\n" );
+
+	if ( '' === $brief ) {
+		wp_send_json_error( array( 'message' => 'Could not come up with a suggestion - try again.' ) );
+	}
+
+	wookiee_remember_niche_suggestion( $brief );
+
+	wp_send_json_success( array(
+		'brief'    => sanitize_text_field( $brief ),
+		'grounded' => $grounded,
+	) );
 }

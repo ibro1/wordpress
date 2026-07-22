@@ -328,7 +328,10 @@ function wookiee_render_settings_page() {
 						<div style="background:#f6f7f7;border:1px solid #dcdcde;border-radius:4px;padding:12px 16px;margin-bottom:20px;max-width:900px;">
 							<p style="margin-top:0;"><strong>Generate with AI</strong> — rewrites every field below (hero, trust bar, section headers, "how it works", philosophy) to match a one-line description of the store's niche, keeping the page's design/layout exactly as-is. Review and edit before clicking Save Changes at the bottom; nothing changes on the live site until then.</p>
 							<p>
-								<input type="text" id="wookiee-homepage-ai-brief" class="regular-text" value="<?php echo esc_attr( get_option( 'wookiee_niche_brief', '' ) ); ?>" placeholder="e.g. UK home-storage and organisation products - baskets, shelving, drawer organisers">
+								<span class="wookiee-niche-input-wrap">
+									<input type="text" id="wookiee-homepage-ai-brief" class="regular-text" value="<?php echo esc_attr( get_option( 'wookiee_niche_brief', '' ) ); ?>" placeholder="e.g. UK home-storage and organisation products - baskets, shelving, drawer organisers">
+									<?php wookiee_niche_suggest_button( 'wookiee-homepage-ai-brief' ); ?>
+								</span>
 								<button type="button" class="button button-primary" id="wookiee-homepage-ai-btn" <?php disabled( ! $has_llm_key ); ?>>Generate with AI</button>
 								<span id="wookiee-homepage-ai-status" style="margin-left:8px;"></span>
 							</p>
@@ -341,7 +344,10 @@ function wookiee_render_settings_page() {
 						<div style="background:#f6f7f7;border:1px solid #dcdcde;border-radius:4px;padding:12px 16px;margin-bottom:20px;max-width:900px;">
 							<p style="margin-top:0;"><strong>Generate with AI</strong> — rewrites every field below (About page hero/copy, Contact page intro) to match a one-line description of the store's niche, keeping both pages' existing design/layout exactly as-is - only the text changes. Review and edit before clicking Save Changes at the bottom; nothing changes on the live site until then.</p>
 							<p>
-								<input type="text" id="wookiee-about-ai-brief" class="regular-text" value="<?php echo esc_attr( get_option( 'wookiee_niche_brief', '' ) ); ?>" placeholder="e.g. UK home-storage and organisation products - baskets, shelving, drawer organisers">
+								<span class="wookiee-niche-input-wrap">
+									<input type="text" id="wookiee-about-ai-brief" class="regular-text" value="<?php echo esc_attr( get_option( 'wookiee_niche_brief', '' ) ); ?>" placeholder="e.g. UK home-storage and organisation products - baskets, shelving, drawer organisers">
+									<?php wookiee_niche_suggest_button( 'wookiee-about-ai-brief' ); ?>
+								</span>
 								<button type="button" class="button button-primary" id="wookiee-about-ai-btn" <?php disabled( ! $has_llm_key ); ?>>Generate with AI</button>
 								<span id="wookiee-about-ai-status" style="margin-left:8px;"></span>
 							</p>

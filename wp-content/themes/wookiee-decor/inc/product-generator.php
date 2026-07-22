@@ -58,8 +58,11 @@ function wookiee_render_product_generator_page() {
 			<tr>
 				<th scope="row"><label for="wookiee-niche-brief">Niche brief</label></th>
 				<td>
-					<textarea id="wookiee-niche-brief" rows="3" class="large-text" placeholder="e.g. UK home-storage and organisation products - baskets, shelving, drawer organisers, aimed at small flats"><?php echo esc_textarea( $saved_brief ); ?></textarea>
-					<p class="description">One niche for the whole site — every sourced product should feel like it belongs in the same catalog.</p>
+					<div class="wookiee-niche-input-wrap is-textarea">
+						<textarea id="wookiee-niche-brief" rows="3" class="large-text" placeholder="e.g. UK home-storage and organisation products - baskets, shelving, drawer organisers, aimed at small flats"><?php echo esc_textarea( $saved_brief ); ?></textarea>
+						<?php wookiee_niche_suggest_button( 'wookiee-niche-brief' ); ?>
+					</div>
+					<p class="description">One niche for the whole site — every sourced product should feel like it belongs in the same catalog. Click the sparkle to have AI suggest one, grounded in real UK search demand when Google Ads is connected.</p>
 				</td>
 			</tr>
 			<tr>

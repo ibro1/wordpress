@@ -140,27 +140,19 @@ function wookiee_render_setup_wizard_page() {
 		<?php // ---------------- Step 1: Business identity ---------------- ?>
 		<div class="wookiee-setup-step" data-step-panel="business">
 			<h2>Business identity</h2>
-			<form method="post" action="options.php">
-				<?php settings_fields( 'wookiee_settings_group' ); ?>
-				<?php wookiee_render_settings_fields_table( array( 'company_number', 'business_name', 'registered_address', 'countries_served' ) ); ?>
-				<p><button type="submit" class="button button-primary">Save changes</button></p>
-			</form>
+			<?php wookiee_render_settings_fields_table( array( 'company_number', 'business_name', 'registered_address', 'countries_served' ) ); ?>
 			<?php if ( ! $has_ch_key ) : ?>
 				<p class="description">Want the company name/address above auto-filled instead of typing them? Add a free Companies House API key on the <a href="<?php echo esc_url( $settings_url . '#business' ); ?>">Wookiee Settings</a> page, then come back here.</p>
 			<?php endif; ?>
 
 			<h3>Site title &amp; logo</h3>
-			<form method="post" action="options.php">
-				<?php settings_fields( 'general' ); ?>
-				<table class="form-table" role="presentation">
-					<tr>
-						<th scope="row"><label for="blogname">Site title</label></th>
-						<td><input type="text" name="blogname" id="blogname" value="<?php echo esc_attr( get_bloginfo( 'name' ) ); ?>" class="regular-text">
-						<p class="description">Shown in the header, footer, and browser tab.</p></td>
-					</tr>
-				</table>
-				<p><button type="submit" class="button">Save site title</button></p>
-			</form>
+			<table class="form-table" role="presentation">
+				<tr>
+					<th scope="row"><label for="blogname">Site title</label></th>
+					<td><input type="text" name="blogname" id="blogname" value="<?php echo esc_attr( get_bloginfo( 'name' ) ); ?>" class="regular-text">
+					<p class="description">Shown in the header, footer, and browser tab.</p></td>
+				</tr>
+			</table>
 			<table class="widefat" style="max-width:700px;">
 				<tr>
 					<td><strong>Logo:</strong> <?php echo has_custom_logo() ? 'Custom logo set' : 'Using the default wordmark'; ?></td>
@@ -168,7 +160,10 @@ function wookiee_render_setup_wizard_page() {
 				</tr>
 			</table>
 
-			<p class="wookiee-setup-nav"><button type="button" class="button button-primary wookiee-setup-nav-next" data-next="niche">Continue to Niche brief &rarr;</button></p>
+			<p class="wookiee-setup-nav">
+				<button type="button" class="button button-primary wookiee-setup-save-continue" data-next="niche">Save &amp; continue &rarr;</button>
+				<span class="wookiee-setup-save-status" style="margin-left:8px;"></span>
+			</p>
 		</div>
 
 		<?php // ---------------- Step 2: Niche brief ---------------- ?>
@@ -179,13 +174,10 @@ function wookiee_render_setup_wizard_page() {
 				<textarea id="wookiee-setup-niche-brief" rows="3" class="large-text" placeholder="e.g. UK home-storage and organisation products - baskets, shelving, drawer organisers, aimed at small flats"><?php echo esc_textarea( $brief ); ?></textarea>
 				<?php wookiee_niche_suggest_button( 'wookiee-setup-niche-brief' ); ?>
 			</span>
-			<p>
-				<button type="button" class="button button-primary" id="wookiee-setup-niche-save-btn">Save changes</button>
-				<span id="wookiee-setup-niche-status" style="margin-left:8px;"></span>
-			</p>
 			<p class="wookiee-setup-nav">
 				<button type="button" class="button wookiee-setup-nav-prev" data-prev="business">&larr; Back</button>
-				<button type="button" class="button button-primary wookiee-setup-nav-next" data-next="content">Continue to Page content &rarr;</button>
+				<button type="button" class="button button-primary" id="wookiee-setup-niche-save-btn">Save &amp; continue &rarr;</button>
+				<span id="wookiee-setup-niche-status" style="margin-left:8px;"></span>
 			</p>
 		</div>
 
@@ -199,24 +191,21 @@ function wookiee_render_setup_wizard_page() {
 				<?php wookiee_render_content_generator_page(); ?>
 
 				<h3>Homepage copy</h3>
-				<form method="post" action="options.php">
-					<?php settings_fields( 'wookiee_settings_group' ); ?>
-					<?php wookiee_render_ai_copy_generator_notice( 'homepage' ); ?>
-					<?php wookiee_render_settings_fields_table( $tabs['homepage']['fields'] ); ?>
-					<p><button type="submit" class="button button-primary">Save homepage copy</button></p>
-				</form>
+				<?php wookiee_render_ai_copy_generator_notice( 'homepage' ); ?>
+				<?php wookiee_render_settings_fields_table( $tabs['homepage']['fields'] ); ?>
 
 				<h3>About &amp; Contact copy</h3>
-				<form method="post" action="options.php">
-					<?php settings_fields( 'wookiee_settings_group' ); ?>
-					<?php wookiee_render_ai_copy_generator_notice( 'about_contact' ); ?>
-					<?php wookiee_render_settings_fields_table( $tabs['about_contact']['fields'] ); ?>
-					<p><button type="submit" class="button button-primary">Save About &amp; Contact copy</button></p>
-				</form>
+				<?php wookiee_render_ai_copy_generator_notice( 'about_contact' ); ?>
+				<?php wookiee_render_settings_fields_table( $tabs['about_contact']['fields'] ); ?>
 			<?php endif; ?>
 			<p class="wookiee-setup-nav">
 				<button type="button" class="button wookiee-setup-nav-prev" data-prev="niche">&larr; Back</button>
-				<button type="button" class="button button-primary wookiee-setup-nav-next" data-next="products">Continue to Source products &rarr;</button>
+				<?php if ( $has_ai_key ) : ?>
+					<button type="button" class="button button-primary wookiee-setup-save-continue" data-next="products">Save &amp; continue &rarr;</button>
+					<span class="wookiee-setup-save-status" style="margin-left:8px;"></span>
+				<?php else : ?>
+					<button type="button" class="button button-primary wookiee-setup-nav-next" data-next="products">Continue to Source products &rarr;</button>
+				<?php endif; ?>
 			</p>
 		</div>
 
@@ -251,11 +240,7 @@ function wookiee_render_setup_wizard_page() {
 		<?php // ---------------- Step 5: Shipping ---------------- ?>
 		<div class="wookiee-setup-step" data-step-panel="shipping" hidden>
 			<h2>Shipping</h2>
-			<form method="post" action="options.php">
-				<?php settings_fields( 'wookiee_settings_group' ); ?>
-				<?php wookiee_render_settings_fields_table( array( 'shipping_rate', 'shipping_dispatch', 'returns_address', 'returns_period_days' ) ); ?>
-				<p><button type="submit" class="button button-primary">Save changes</button></p>
-			</form>
+			<?php wookiee_render_settings_fields_table( array( 'shipping_rate', 'shipping_dispatch', 'returns_address', 'returns_period_days' ) ); ?>
 			<p>
 				<?php if ( $shipping_zone ) : ?>
 					Live checkout shipping is active: £<?php echo esc_html( wookiee_get_setting( 'shipping_rate' ) ); ?> flat rate for United Kingdom, kept in sync with the rate above.
@@ -265,7 +250,8 @@ function wookiee_render_setup_wizard_page() {
 			</p>
 			<p class="wookiee-setup-nav">
 				<button type="button" class="button wookiee-setup-nav-prev" data-prev="products">&larr; Back</button>
-				<button type="button" class="button button-primary wookiee-setup-nav-next" data-next="review">Continue to Review &amp; publish &rarr;</button>
+				<button type="button" class="button button-primary wookiee-setup-save-continue" data-next="review">Save &amp; continue &rarr;</button>
+				<span class="wookiee-setup-save-status" style="margin-left:8px;"></span>
 			</p>
 		</div>
 
@@ -429,6 +415,43 @@ function wookiee_render_setup_wizard_page() {
 			btn.addEventListener( 'click', function() { activateStep( btn.getAttribute( 'data-prev' ) ); } );
 		} );
 
+		// One "Save & Continue" per step: collects every real settings
+		// field (and the site title, if present) within that step's own
+		// panel and saves them all in a single request, then advances -
+		// instead of a separate Settings-API form/button per options
+		// group, which is what used to force 2-3 buttons on one step.
+		var SAVE_STEP_NONCE = <?php echo wp_json_encode( wp_create_nonce( 'wookiee_save_setup_step' ) ); ?>;
+		document.querySelectorAll( '.wookiee-setup-save-continue' ).forEach( function( btn ) {
+			btn.addEventListener( 'click', function() {
+				var panel  = btn.closest( '.wookiee-setup-step' );
+				var status = panel.querySelector( '.wookiee-setup-save-status' );
+				var data   = new FormData();
+				data.append( 'action', 'wookiee_save_setup_step' );
+				data.append( 'nonce', SAVE_STEP_NONCE );
+				panel.querySelectorAll( '[name^="wookiee_setting_"], #blogname' ).forEach( function( field ) {
+					data.append( field.name, field.value );
+				} );
+
+				btn.disabled = true;
+				if ( status ) { status.textContent = 'Saving…'; }
+				fetch( ajaxurl, { method: 'POST', credentials: 'same-origin', body: data } )
+					.then( function( r ) { return r.json(); } )
+					.then( function( res ) {
+						btn.disabled = false;
+						if ( ! res.success ) {
+							if ( status ) { status.textContent = res.data && res.data.message ? res.data.message : 'Failed to save.'; }
+							return;
+						}
+						if ( status ) { status.textContent = ''; }
+						activateStep( btn.getAttribute( 'data-next' ) );
+					} )
+					.catch( function() {
+						btn.disabled = false;
+						if ( status ) { status.textContent = 'Failed — could not reach the server.'; }
+					} );
+			} );
+		} );
+
 		var hashKey   = window.location.hash ? window.location.hash.replace( '#', '' ) : '';
 		var storedKey = '';
 		try { storedKey = window.localStorage.getItem( STORAGE_KEY ) || ''; } catch ( e ) {}
@@ -464,16 +487,19 @@ function wookiee_render_setup_wizard_page() {
 					.then( function( r ) { return r.json(); } )
 					.then( function( res ) {
 						nicheSaveBtn.disabled = false;
-						status.textContent = res.success ? 'Saved.' : ( res.data && res.data.message ? res.data.message : 'Failed to save.' );
-						if ( res.success ) {
-							// Steps 3/4 embed the Content/Product Generator's own
-							// niche-brief fields, rendered once at page load - keep
-							// them in sync without needing a full page reload.
-							[ 'wookiee-niche-brief', 'wookiee-niche-brief-2', 'wookiee-homepage-ai-brief', 'wookiee-about-ai-brief' ].forEach( function( id ) {
-								var el = document.getElementById( id );
-								if ( el ) { el.value = brief; }
-							} );
+						if ( ! res.success ) {
+							status.textContent = res.data && res.data.message ? res.data.message : 'Failed to save.';
+							return;
 						}
+						status.textContent = '';
+						// Steps 3/4 embed the Content/Product Generator's own
+						// niche-brief fields, rendered once at page load - keep
+						// them in sync without needing a full page reload.
+						[ 'wookiee-niche-brief', 'wookiee-niche-brief-2', 'wookiee-homepage-ai-brief', 'wookiee-about-ai-brief' ].forEach( function( id ) {
+							var el = document.getElementById( id );
+							if ( el ) { el.value = brief; }
+						} );
+						activateStep( 'content' );
 					} )
 					.catch( function() {
 						nicheSaveBtn.disabled = false;

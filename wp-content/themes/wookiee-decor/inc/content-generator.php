@@ -794,3 +794,37 @@ function wookiee_save_niche_brief_handler() {
 
 	wp_send_json_success( array( 'message' => 'Niche brief saved.' ) );
 }
+
+/**
+ * Saves whichever wookiee_setting_* fields (and/or the core site title)
+ * were present in this particular request - used by the Setup wizard's
+ * single "Save & Continue" button per step, instead of the WordPress
+ * Settings API's one-form-per-options-group flow, which would otherwise
+ * force separate buttons for e.g. business fields vs. the site title
+ * (different option groups) plus a distinct AJAX save for Homepage/
+ * About/Contact copy. Only ever writes a key that's BOTH a real
+ * registered wookiee_setting_* field AND present in this request - same
+ * effective whitelist as register_setting() would enforce, just without
+ * needing a real page-reloading <form> per group.
+ */
+add_action( 'wp_ajax_wookiee_save_setup_step', 'wookiee_save_setup_step_handler' );
+function wookiee_save_setup_step_handler() {
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_send_json_error( array( 'message' => 'Not allowed.' ), 403 );
+	}
+	check_ajax_referer( 'wookiee_save_setup_step', 'nonce' );
+
+	foreach ( wookiee_settings_fields() as $key => $field ) {
+		$post_key = 'wookiee_setting_' . $key;
+		if ( isset( $_POST[ $post_key ] ) ) {
+			$sanitizer = wookiee_sanitizer_for( $field['type'] );
+			update_option( $post_key, call_user_func( $sanitizer, wp_unslash( $_POST[ $post_key ] ) ) );
+		}
+	}
+
+	if ( isset( $_POST['blogname'] ) ) {
+		update_option( 'blogname', sanitize_text_field( wp_unslash( $_POST['blogname'] ) ) );
+	}
+
+	wp_send_json_success( array( 'message' => 'Saved.' ) );
+}

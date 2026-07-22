@@ -277,9 +277,30 @@ function wookiee_ai_clean_supplier_product( $raw_title, $raw_description, $raw_c
 }
 
 /**
+ * Finds an already-imported product for this exact CJ product ID, using
+ * the _wookiee_cj_pid postmeta set on every CJ import - deterministic
+ * regardless of what title the AI cleanup step generates, unlike a
+ * title-based lookup. Checks 'any' post_status so a product already
+ * published (no longer Draft) still counts as "already imported".
+ */
+function wookiee_find_existing_cj_product( $pid ) {
+	$existing = get_posts( array(
+		'post_type'      => 'product',
+		'post_status'    => 'any',
+		'posts_per_page' => 1,
+		'meta_key'       => '_wookiee_cj_pid',
+		'meta_value'     => $pid,
+		'fields'         => 'ids',
+	) );
+	return ! empty( $existing ) ? (int) $existing[0] : 0;
+}
+
+/**
  * Imports one CJ product (by pid) as a WooCommerce Draft product using
- * the first variant's price/SKU. Skips creating a duplicate if a product
- * with the same title already exists.
+ * the first variant's price/SKU. Skips creating a duplicate if this
+ * exact CJ product has already been imported (checked by pid, before
+ * the AI cleanup runs) or if a product with the AI-cleaned title
+ * already exists as a secondary safety net.
  *
  * Runs the raw supplier data through wookiee_ai_clean_supplier_product()
  * first. When $auto_skip_low_fit is true (bulk import), a "no" FIT
@@ -297,6 +318,17 @@ function wookiee_cj_import_product( $pid, $auto_skip_low_fit = false ) {
 	$p = isset( $detail['data'] ) && is_array( $detail['data'] ) ? $detail['data'] : array();
 	if ( empty( $p ) ) {
 		return new WP_Error( 'wookiee_cj_not_found', 'Product not found on CJ Dropshipping.' );
+	}
+
+	// Check by the real, deterministic CJ product ID before running the
+	// AI cleanup at all - checking by AI-generated title instead (further
+	// below, as a secondary safety net) isn't reliable on its own, since
+	// re-importing the same CJ product twice could produce two slightly
+	// different "clean" titles from the LLM and slip past a title-only
+	// check, creating a duplicate WooCommerce product for one real item.
+	$existing_id = wookiee_find_existing_cj_product( $pid );
+	if ( $existing_id ) {
+		return array( 'post_id' => $existing_id, 'note' => '' );
 	}
 
 	$title       = ! empty( $p['productNameEn'] ) ? $p['productNameEn'] : ( isset( $p['productName'] ) ? $p['productName'] : 'Untitled product' );

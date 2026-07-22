@@ -1,38 +1,43 @@
 <?php
 /**
- * Shared Anthropic API caller, used by both the product generator
+ * Shared LLM caller, used by both the product generator
  * (inc/product-generator.php) and the page content generator
  * (inc/content-generator.php) so the request/error-handling plumbing
  * exists in exactly one place.
+ *
+ * Talks to any OpenAI-compatible Chat Completions endpoint - not tied to
+ * one vendor - configured entirely from Wookiee Settings: an API key, a
+ * base URL (defaults to OpenAI itself), and a model name. Swapping to a
+ * different OpenAI-compatible provider (OpenRouter, Groq, a self-hosted
+ * vLLM/llama.cpp server, etc.) is just changing the base URL and model,
+ * no code change.
  */
 
 defined( 'ABSPATH' ) || exit;
 
-if ( ! defined( 'WOOKIEE_AI_MODEL' ) ) {
-	define( 'WOOKIEE_AI_MODEL', 'claude-sonnet-5' );
-}
-
 /**
- * Sends a single-turn prompt to Claude and returns the raw text reply, or
- * a WP_Error. Callers decide how to parse the text (plain prose, JSON,
- * etc.) since that varies by use case.
+ * Sends a single-turn prompt to the configured LLM and returns the raw
+ * text reply, or a WP_Error. Callers decide how to parse the text (plain
+ * prose, JSON, etc.) since that varies by use case.
  */
-function wookiee_call_claude( $prompt, $max_tokens = 2048 ) {
-	$api_key = wookiee_get_setting( 'anthropic_api_key' );
+function wookiee_call_llm( $prompt, $max_tokens = 2048 ) {
+	$api_key = wookiee_get_setting( 'llm_api_key' );
 	if ( '' === trim( (string) $api_key ) ) {
-		return new WP_Error( 'wookiee_ai_no_key', 'Add an Anthropic API key on the Wookiee Settings page first.' );
+		return new WP_Error( 'wookiee_ai_no_key', 'Add an LLM API key on the Wookiee Settings page first.' );
 	}
 
+	$base_url = rtrim( (string) wookiee_get_setting( 'llm_base_url' ), '/' );
+	$model    = wookiee_get_setting( 'llm_default_model' );
+
 	$response = wp_remote_post(
-		'https://api.anthropic.com/v1/messages',
+		$base_url . '/chat/completions',
 		array(
 			'headers' => array(
-				'x-api-key'         => $api_key,
-				'anthropic-version' => '2023-06-01',
-				'content-type'      => 'application/json',
+				'Authorization' => 'Bearer ' . $api_key,
+				'Content-Type'  => 'application/json',
 			),
 			'body'    => wp_json_encode( array(
-				'model'      => WOOKIEE_AI_MODEL,
+				'model'      => $model,
 				'max_tokens' => $max_tokens,
 				'messages'   => array(
 					array( 'role' => 'user', 'content' => $prompt ),
@@ -47,18 +52,18 @@ function wookiee_call_claude( $prompt, $max_tokens = 2048 ) {
 	}
 
 	$code = wp_remote_retrieve_response_code( $response );
+	$body = json_decode( wp_remote_retrieve_body( $response ), true );
+
 	if ( 200 !== $code ) {
-		$body = json_decode( wp_remote_retrieve_body( $response ), true );
-		$msg  = isset( $body['error']['message'] ) ? $body['error']['message'] : ( 'HTTP ' . intval( $code ) );
-		return new WP_Error( 'wookiee_ai_error', 'Anthropic API error: ' . $msg );
+		$msg = isset( $body['error']['message'] ) ? $body['error']['message'] : ( 'HTTP ' . intval( $code ) );
+		return new WP_Error( 'wookiee_ai_error', 'LLM API error: ' . $msg );
 	}
 
-	$body = json_decode( wp_remote_retrieve_body( $response ), true );
-	$text = isset( $body['content'][0]['text'] ) ? $body['content'][0]['text'] : '';
+	$text = isset( $body['choices'][0]['message']['content'] ) ? $body['choices'][0]['message']['content'] : '';
 	$text = trim( $text );
 
 	if ( '' === $text ) {
-		return new WP_Error( 'wookiee_ai_empty', 'Claude returned an empty response.' );
+		return new WP_Error( 'wookiee_ai_empty', 'The LLM returned an empty response.' );
 	}
 
 	return $text;

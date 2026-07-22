@@ -33,7 +33,7 @@ function wookiee_render_content_generator_page() {
 	if ( ! current_user_can( 'manage_options' ) ) {
 		return;
 	}
-	$has_key     = '' !== trim( (string) wookiee_get_setting( 'anthropic_api_key' ) );
+	$has_key     = '' !== trim( (string) wookiee_get_setting( 'llm_api_key' ) );
 	$saved_brief = get_option( 'wookiee_niche_brief', '' );
 	?>
 	<div class="wrap">
@@ -41,7 +41,7 @@ function wookiee_render_content_generator_page() {
 		<p>Generates on-brand page copy and UK policy pages from the store's niche and the business details already saved in Wookiee Settings. Every result is created as a new page titled "<em>(AI Draft)</em>" in <strong>Draft</strong> status — it never touches or replaces an existing live page. Review each draft, edit as needed, then either copy its content into the real page or publish it and update the live page to match.</p>
 
 		<?php if ( ! $has_key ) : ?>
-			<div class="notice notice-warning"><p>No Anthropic API key set. Add one on the <a href="<?php echo esc_url( admin_url( 'admin.php?page=wookiee-settings' ) ); ?>">Wookiee Settings</a> page first.</p></div>
+			<div class="notice notice-warning"><p>No LLM API key set. Add one on the <a href="<?php echo esc_url( admin_url( 'admin.php?page=wookiee-settings' ) ); ?>">Wookiee Settings</a> page first.</p></div>
 		<?php endif; ?>
 
 		<table class="form-table" role="presentation">
@@ -122,7 +122,7 @@ function wookiee_render_content_generator_page() {
 
 			btn.disabled = true;
 			results.innerHTML = '';
-			status.textContent = 'Generating ' + checked.length + ' item(s) with Claude… this can take a minute or two.';
+			status.textContent = 'Generating ' + checked.length + ' item(s) with the LLM… this can take a minute or two.';
 
 			var data = new FormData();
 			data.append( 'action', 'wookiee_generate_content' );
@@ -225,8 +225,8 @@ function wookiee_generate_content_handler() {
 	if ( empty( $pieces ) ) {
 		wp_send_json_error( array( 'message' => 'Select at least one item to generate.' ) );
 	}
-	if ( '' === trim( (string) wookiee_get_setting( 'anthropic_api_key' ) ) ) {
-		wp_send_json_error( array( 'message' => 'Add an Anthropic API key on the Wookiee Settings page first.' ) );
+	if ( '' === trim( (string) wookiee_get_setting( 'llm_api_key' ) ) ) {
+		wp_send_json_error( array( 'message' => 'Add an LLM API key on the Wookiee Settings page first.' ) );
 	}
 
 	update_option( 'wookiee_niche_brief', $brief );
@@ -240,7 +240,7 @@ function wookiee_generate_content_handler() {
 		}
 		$piece  = $available[ $key ];
 		$prompt = wookiee_build_content_prompt( $key, $brief );
-		$text   = wookiee_call_claude( $prompt, 2048 );
+		$text   = wookiee_call_llm( $prompt, 2048 );
 
 		if ( is_wp_error( $text ) ) {
 			$results[] = array(
@@ -414,8 +414,8 @@ function wookiee_audit_policy_page_handler() {
 	}
 	check_ajax_referer( 'wookiee_generate_content', 'nonce' );
 
-	if ( '' === trim( (string) wookiee_get_setting( 'anthropic_api_key' ) ) ) {
-		wp_send_json_error( array( 'message' => 'Add an Anthropic API key on the Wookiee Settings page first.' ) );
+	if ( '' === trim( (string) wookiee_get_setting( 'llm_api_key' ) ) ) {
+		wp_send_json_error( array( 'message' => 'Add an LLM API key on the Wookiee Settings page first.' ) );
 	}
 
 	$post_id = isset( $_POST['post_id'] ) ? intval( $_POST['post_id'] ) : 0;
@@ -425,7 +425,7 @@ function wookiee_audit_policy_page_handler() {
 	}
 
 	$prompt = wookiee_build_policy_audit_prompt( $post->post_title, wp_strip_all_tags( $post->post_content ) );
-	$report = wookiee_call_claude( $prompt, 3000 );
+	$report = wookiee_call_llm( $prompt, 3000 );
 
 	if ( is_wp_error( $report ) ) {
 		wp_send_json_error( array( 'message' => $report->get_error_message() ) );

@@ -1,7 +1,7 @@
 <?php
 /**
  * Draft-only AI product content generator (v2 spec §2c, phase 2 of the
- * roadmap). Given a one-line niche brief, asks Claude for a small batch of
+ * roadmap). Given a one-line niche brief, asks the configured LLM for a small batch of
  * uniform, plausible product ideas (title, category, short description,
  * price, and a photo brief) and creates each as a real WooCommerce product
  * in Draft status. Nothing here fabricates a product photo or auto-
@@ -20,7 +20,7 @@ function wookiee_render_product_generator_page() {
 	if ( ! current_user_can( 'manage_options' ) ) {
 		return;
 	}
-	$has_key   = '' !== trim( (string) wookiee_get_setting( 'anthropic_api_key' ) );
+	$has_key   = '' !== trim( (string) wookiee_get_setting( 'llm_api_key' ) );
 	$has_woo   = class_exists( 'WooCommerce' );
 	$saved_brief = get_option( 'wookiee_niche_brief', '' );
 	?>
@@ -32,7 +32,7 @@ function wookiee_render_product_generator_page() {
 			<div class="notice notice-error"><p>WooCommerce isn't active, so generated products have nowhere to be created. Activate WooCommerce first.</p></div>
 		<?php endif; ?>
 		<?php if ( ! $has_key ) : ?>
-			<div class="notice notice-warning"><p>No Anthropic API key set. Add one on the <a href="<?php echo esc_url( admin_url( 'admin.php?page=wookiee-settings' ) ); ?>">Wookiee Settings</a> page first.</p></div>
+			<div class="notice notice-warning"><p>No LLM API key set. Add one on the <a href="<?php echo esc_url( admin_url( 'admin.php?page=wookiee-settings' ) ); ?>">Wookiee Settings</a> page first.</p></div>
 		<?php endif; ?>
 
 		<table class="form-table" role="presentation">
@@ -78,7 +78,7 @@ function wookiee_render_product_generator_page() {
 
 			btn.disabled = true;
 			results.innerHTML = '';
-			status.textContent = 'Asking Claude for ' + count + ' product ideas… this can take up to a minute.';
+			status.textContent = 'Asking the LLM for ' + count + ' product ideas… this can take up to a minute.';
 
 			var data = new FormData();
 			data.append( 'action', 'wookiee_generate_products' );
@@ -133,8 +133,8 @@ function wookiee_generate_products_handler() {
 
 	update_option( 'wookiee_niche_brief', $brief );
 
-	if ( '' === trim( (string) wookiee_get_setting( 'anthropic_api_key' ) ) ) {
-		wp_send_json_error( array( 'message' => 'Add an Anthropic API key on the Wookiee Settings page first.' ) );
+	if ( '' === trim( (string) wookiee_get_setting( 'llm_api_key' ) ) ) {
+		wp_send_json_error( array( 'message' => 'Add an LLM API key on the Wookiee Settings page first.' ) );
 	}
 
 	$ideas = wookiee_ai_generate_product_ideas( $brief, $count );
@@ -160,7 +160,7 @@ function wookiee_generate_products_handler() {
 }
 
 /**
- * Calls Claude and returns a plain array of product idea arrays, or a
+ * Calls the LLM and returns a plain array of product idea arrays, or a
  * WP_Error. Strict JSON-only instructions since this is parsed
  * programmatically, not shown to a human as chat output.
  */
@@ -174,7 +174,7 @@ function wookiee_ai_generate_product_ideas( $brief, $count ) {
 		. "- \"price_gbp\": a realistic price as a plain number string, e.g. \"24.99\"\n"
 		. "- \"image_brief\": a short phrase describing exactly what product photo is needed (angle, background, what's shown) so someone can go source or shoot the real image later - this is an instruction for a photographer/sourcer, not a description of an image that already exists";
 
-	$text = wookiee_call_claude( $prompt, 2048 );
+	$text = wookiee_call_llm( $prompt, 2048 );
 	if ( is_wp_error( $text ) ) {
 		return $text;
 	}

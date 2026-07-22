@@ -88,7 +88,7 @@ function wookiee_render_setup_wizard_page() {
 
 	$brief         = get_option( 'wookiee_niche_brief', '' );
 	$has_ch_key    = '' !== trim( (string) wookiee_get_setting( 'companies_house_api_key' ) );
-	$has_ai_key    = '' !== trim( (string) wookiee_get_setting( 'anthropic_api_key' ) );
+	$has_ai_key    = '' !== trim( (string) wookiee_get_setting( 'llm_api_key' ) );
 	$has_cj_creds  = '' !== trim( (string) wookiee_get_setting( 'cj_email' ) ) && '' !== trim( (string) wookiee_get_setting( 'cj_api_key' ) );
 	$has_woo       = class_exists( 'WooCommerce' );
 	$shipping_zone = $has_woo ? wookiee_find_uk_shipping_zone() : null;
@@ -133,7 +133,7 @@ function wookiee_render_setup_wizard_page() {
 			</tr>
 		</table>
 		<?php if ( ! $has_ai_key ) : ?>
-			<p class="description">Needs an Anthropic API key on <a href="<?php echo esc_url( $settings_url ); ?>">Wookiee Settings</a> first.</p>
+			<p class="description">Needs an LLM API key on <a href="<?php echo esc_url( $settings_url ); ?>">Wookiee Settings</a> first.</p>
 		<?php endif; ?>
 
 		<h2>4. Source products</h2>

@@ -38,24 +38,16 @@ function wookiee_maybe_redirect_to_setup() {
 }
 
 /**
- * Draft pages/products created by the AI or supplier tools, so the
- * dashboard can show "N items waiting for review" instead of the admin
- * having to remember to check three different places.
+ * Draft products created by the AI or supplier tools, so the dashboard
+ * can show "N items waiting for review" instead of the admin having to
+ * remember to check separately. Page content generation used to have
+ * an equivalent "(AI Draft) pages waiting for review" count here, but
+ * that concept no longer exists - policy pages are edited live in
+ * place, and Home/About/Contact copy is generated straight into
+ * Settings fields for review there, so there's no draft-page backlog
+ * to count anymore (see wookiee_render_setup_wizard_page()'s step 3).
  */
 function wookiee_count_pending_ai_drafts() {
-	$draft_pages = get_posts( array(
-		'post_type'      => 'page',
-		'post_status'    => 'draft',
-		'posts_per_page' => -1,
-		'fields'         => 'ids',
-	) );
-	$ai_pages = 0;
-	foreach ( $draft_pages as $page_id ) {
-		if ( false !== strpos( get_the_title( $page_id ), '(AI Draft)' ) ) {
-			$ai_pages++;
-		}
-	}
-
 	$ai_products = 0;
 	$cj_products = 0;
 	if ( class_exists( 'WooCommerce' ) ) {
@@ -75,7 +67,6 @@ function wookiee_count_pending_ai_drafts() {
 	}
 
 	return array(
-		'pages'        => $ai_pages,
 		'ai_products'  => $ai_products,
 		'cj_products'  => $cj_products,
 	);
@@ -135,9 +126,13 @@ function wookiee_render_setup_wizard_page() {
 		<h2>3. Generate page content</h2>
 		<table class="widefat" style="max-width:700px;">
 			<tr>
-				<td><?php echo intval( $pending['pages'] ); ?> "(AI Draft)" page(s) currently waiting for review.</td>
+				<td>7 policy pages (Terms, Privacy, Shipping, Returns, Payment, Cookie Policy, Cookie Preferences) — generated straight onto the real, live pages.</td>
 				<td><a href="<?php echo esc_url( $content_url ); ?>" class="button button-primary" <?php disabled( ! $has_ai_key ); ?>>Open Content Generator</a></td>
-				<td><a href="<?php echo esc_url( admin_url( 'edit.php?post_type=page&post_status=draft' ) ); ?>" class="button" target="_blank" rel="noopener">Review draft pages</a></td>
+			</tr>
+			<tr>
+				<td>Homepage, About &amp; Contact copy — regenerated in place, reviewed right on the settings form before saving.</td>
+				<td><a href="<?php echo esc_url( $settings_url . '#homepage' ); ?>" class="button" <?php disabled( ! $has_ai_key ); ?>>Homepage Copy</a></td>
+				<td><a href="<?php echo esc_url( $settings_url . '#about_contact' ); ?>" class="button" <?php disabled( ! $has_ai_key ); ?>>About &amp; Contact Copy</a></td>
 			</tr>
 		</table>
 		<?php if ( ! $has_ai_key ) : ?>

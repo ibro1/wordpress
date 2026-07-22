@@ -1,31 +1,47 @@
 <?php
 /**
- * Niche-agnostic page content generator (v2 spec §2b, phase 3 of the
- * roadmap). Generates brand-voice copy (About, homepage hero/philosophy)
- * and UK-compliant policy pages (Terms, Privacy, Shipping, Returns,
- * Cookies) from the store's niche brief and real business details already
- * held in Wookiee Settings.
+ * Niche-agnostic UK policy page generator (v2 spec §2b, phase 3 of the
+ * roadmap - revised). Generates Terms, Privacy, Shipping, Returns,
+ * Payment, Cookie Policy, and Cookie Preferences from the store's niche
+ * brief and real business details already held in Wookiee Settings.
  *
- * Everything lands as a WordPress page titled "<Thing> (AI Draft)" in
- * Draft status - never overwriting the theme's existing live pages,
- * never auto-published. An admin reviews, edits, and republishes (or
- * copies content across) manually. The policy prompt below is adapted
- * from docs/policy writing law.txt (not shipped to the live server, since
- * deployment only copies the theme folder - so the same instructions are
- * reproduced here rather than read from that file at runtime).
+ * Writes straight into the REAL, live page for each (creating it if
+ * somehow missing) - these are plain legal/informational text pages
+ * with nothing visual to preserve, so there's no separate "(AI Draft)"
+ * copy to review and manually copy across; the compliance audit below
+ * is the review step instead. The policy prompt below is adapted from
+ * docs/policy writing law.txt (not shipped to the live server, since
+ * deployment only copies the theme folder - so the same instructions
+ * are reproduced here rather than read from that file at runtime).
+ *
+ * The Homepage, About, and Contact pages have real visual designs to
+ * preserve, so they're handled differently - see the "Homepage Copy"
+ * and "About & Contact Copy" tabs on Wookiee Settings (inc/theme-settings.php),
+ * which regenerate every text slot in place via [wookiee_field] merge
+ * tags / live settings, using the shared prompt-building/parsing
+ * helpers below (wookiee_homepage_copy_fields(), wookiee_about_contact_copy_fields(),
+ * wookiee_parse_copy_fields()).
  */
 
 defined( 'ABSPATH' ) || exit;
 
+/**
+ * The 7 policy-style pages this generator can write - each maps to a
+ * real starter-page slug (inc/static-content.php's wookiee_starter_pages()).
+ * Generation edits that REAL page's content directly (creating it if
+ * it's somehow missing), never a separate "(AI Draft)" copy - these
+ * pages are plain legal/informational text with no visual design to
+ * preserve, unlike About/Contact/Home, so editing in place is safe.
+ */
 function wookiee_content_generator_pieces() {
 	return array(
-		'about'          => array( 'label' => 'About page narrative', 'title' => 'About (AI Draft)' ),
-		'homepage_copy'  => array( 'label' => 'Homepage hero & philosophy copy', 'title' => 'Homepage Copy (AI Draft)' ),
-		'terms'          => array( 'label' => 'Terms & Conditions', 'title' => 'Terms & Conditions (AI Draft)' ),
-		'privacy'        => array( 'label' => 'Privacy Policy', 'title' => 'Privacy Policy (AI Draft)' ),
-		'shipping'       => array( 'label' => 'Shipping Policy', 'title' => 'Shipping Policy (AI Draft)' ),
-		'returns'        => array( 'label' => 'Returns & Refunds Policy', 'title' => 'Returns & Refunds Policy (AI Draft)' ),
-		'cookies'        => array( 'label' => 'Cookie Policy', 'title' => 'Cookie Policy (AI Draft)' ),
+		'terms'       => array( 'label' => 'Terms & Conditions', 'slug' => 'terms', 'title' => 'Terms and conditions' ),
+		'privacy'     => array( 'label' => 'Privacy Policy', 'slug' => 'privacy', 'title' => 'Privacy policy' ),
+		'shipping'    => array( 'label' => 'Shipping Policy', 'slug' => 'shipping', 'title' => 'Shipping policy' ),
+		'returns'     => array( 'label' => 'Returns & Refunds Policy', 'slug' => 'returns', 'title' => 'Returns, refunds and cancellations' ),
+		'payment'     => array( 'label' => 'Payment Policy', 'slug' => 'payment', 'title' => 'Payment policy' ),
+		'cookies'     => array( 'label' => 'Cookie Policy', 'slug' => 'cookie', 'title' => 'Cookie policy' ),
+		'cookie_pref' => array( 'label' => 'Cookie Preferences page', 'slug' => 'cookie-pref', 'title' => 'Cookie preferences' ),
 	);
 }
 
@@ -38,7 +54,8 @@ function wookiee_render_content_generator_page() {
 	?>
 	<div class="wrap">
 		<h1>Wookiee Content Generator</h1>
-		<p>Generates on-brand page copy and UK policy pages from the store's niche and the business details already saved in Wookiee Settings. Every result is created as a new page titled "<em>(AI Draft)</em>" in <strong>Draft</strong> status — it never touches or replaces an existing live page. Review each draft, edit as needed, then either copy its content into the real page or publish it and update the live page to match.</p>
+		<p>Generates UK policy pages from the store's niche and the business details already saved in Wookiee Settings. Generating edits the <strong>real, live page directly</strong> (creating it if it's somehow missing) — there's no separate draft copy to review and copy across manually. Run the compliance audit below before/after generating to check the result.</p>
+		<p class="description">Looking to update the <strong>Homepage</strong> or <strong>About/Contact</strong> pages instead? Those have real visual designs to preserve, so they're regenerated from the <a href="<?php echo esc_url( admin_url( 'admin.php?page=wookiee-settings#homepage' ) ); ?>">Homepage Copy</a> and <a href="<?php echo esc_url( admin_url( 'admin.php?page=wookiee-settings#about_contact' ) ); ?>">About &amp; Contact Copy</a> tabs on Wookiee Settings instead, where you can review the new text right in place before saving.</p>
 
 		<?php if ( ! $has_key ) : ?>
 			<div class="notice notice-warning"><p>No LLM API key set. Add one on the <a href="<?php echo esc_url( admin_url( 'admin.php?page=wookiee-settings' ) ); ?>">Wookiee Settings</a> page first.</p></div>
@@ -53,7 +70,7 @@ function wookiee_render_content_generator_page() {
 				</td>
 			</tr>
 			<tr>
-				<th scope="row">Content to generate</th>
+				<th scope="row">Policy pages to generate</th>
 				<td>
 					<?php foreach ( wookiee_content_generator_pieces() as $key => $piece ) : ?>
 						<label style="display:block;margin-bottom:6px;">
@@ -66,28 +83,21 @@ function wookiee_render_content_generator_page() {
 		</table>
 
 		<p>
-			<button type="button" class="button button-primary" id="wookiee-content-generate-btn" <?php disabled( ! $has_key ); ?>>Generate selected drafts</button>
+			<button type="button" class="button button-primary" id="wookiee-content-generate-btn" <?php disabled( ! $has_key ); ?>>Generate selected pages</button>
 			<span id="wookiee-content-generate-status" style="margin-left:8px;"></span>
 		</p>
 
 		<div id="wookiee-content-generate-results"></div>
 
-		<p style="margin-top:16px;">
-			<button type="button" class="button" id="wookiee-apply-homepage-btn">Apply reviewed homepage copy to live site</button>
-			<span id="wookiee-apply-homepage-status" style="margin-left:8px;"></span>
-		</p>
-		<p class="description">Only click this after you've generated the homepage hero &amp; philosophy copy above and reviewed it on the "Homepage Copy (AI Draft)" page — this writes straight into the live homepage's hero and philosophy section.</p>
-
 		<hr>
 		<h2>Policy compliance audit</h2>
-		<p>Runs a UK compliance QA pass (Google Merchant Center risk, UK consumer/privacy law, quality) over an already-generated policy draft — adapted from <code>docs/policy audit new.txt</code>'s US/GMC audit format for a UK-only store. This only produces a report for you to act on; it does not edit the page.</p>
+		<p>Runs a UK compliance QA pass (Google Merchant Center risk, UK consumer/privacy law, quality) over one of the live policy pages above — adapted from <code>docs/policy audit new.txt</code>'s US/GMC audit format for a UK-only store. This only produces a report for you to act on; "Apply these fixes" is a separate explicit step below.</p>
 		<p>
 			<select id="wookiee-audit-page-select">
-				<option value="">Select a policy draft to audit…</option>
+				<option value="">Select a policy page to audit…</option>
 				<?php
-				foreach ( array( 'terms', 'privacy', 'shipping', 'returns', 'cookies' ) as $policy_key ) {
-					$piece = wookiee_content_generator_pieces()[ $policy_key ];
-					$page  = get_page_by_title( $piece['title'], OBJECT, 'page' );
+				foreach ( wookiee_content_generator_pieces() as $piece ) {
+					$page = get_page_by_path( $piece['slug'], OBJECT, 'page' );
 					if ( $page ) {
 						echo '<option value="' . esc_attr( $page->ID ) . '">' . esc_html( $piece['title'] ) . '</option>';
 					}
@@ -99,10 +109,10 @@ function wookiee_render_content_generator_page() {
 		</p>
 		<div id="wookiee-audit-results" style="white-space:pre-wrap;max-width:900px;"></div>
 		<p id="wookiee-audit-fix-row" style="display:none;">
-			<button type="button" class="button button-primary" id="wookiee-audit-fix-btn">Apply these fixes to the draft</button>
+			<button type="button" class="button button-primary" id="wookiee-audit-fix-btn">Apply these fixes to the live page</button>
 			<span id="wookiee-audit-fix-status" style="margin-left:8px;"></span>
 		</p>
-		<p class="description">Rewrites the draft to resolve everything the report above lists, using the same real business details as generation - it still only updates the Draft page, and you can re-run the audit afterwards to check.</p>
+		<p class="description">Rewrites the live page to resolve everything the report above lists, using the same real business details as generation - you can re-run the audit afterwards to check.</p>
 	</div>
 	<script>
 	( function() {
@@ -143,10 +153,10 @@ function wookiee_render_content_generator_page() {
 						status.textContent = res.data && res.data.message ? res.data.message : 'Generation failed.';
 						return;
 					}
-					status.textContent = 'Done. ' + res.data.pages.length + ' draft page(s) ready for review.';
-					var html = '<table class="widefat"><thead><tr><th>Draft</th><th>Status</th><th></th></tr></thead><tbody>';
+					status.textContent = 'Done. ' + res.data.pages.length + ' live page(s) updated.';
+					var html = '<table class="widefat"><thead><tr><th>Page</th><th>Status</th><th></th></tr></thead><tbody>';
 					res.data.pages.forEach( function( p ) {
-						html += '<tr><td>' + p.title + '</td><td>' + ( p.error ? p.error : 'Created' ) + '</td><td>' + ( p.edit_link ? '<a href="' + p.edit_link + '" class="button" target="_blank" rel="noopener">Review draft</a>' : '' ) + '</td></tr>';
+						html += '<tr><td>' + p.title + '</td><td>' + ( p.error ? p.error : 'Updated' ) + '</td><td>' + ( p.edit_link ? '<a href="' + p.edit_link + '" class="button" target="_blank" rel="noopener">View / edit page</a>' : '' ) + '</td></tr>';
 					} );
 					html += '</tbody></table>';
 					results.innerHTML = html;
@@ -154,26 +164,6 @@ function wookiee_render_content_generator_page() {
 				.catch( function() {
 					btn.disabled = false;
 					status.textContent = 'Generation failed — could not reach the server.';
-				} );
-		} );
-
-		var applyBtn = document.getElementById( 'wookiee-apply-homepage-btn' );
-		applyBtn.addEventListener( 'click', function() {
-			var applyStatus = document.getElementById( 'wookiee-apply-homepage-status' );
-			applyBtn.disabled = true;
-			applyStatus.textContent = 'Applying…';
-			var data = new FormData();
-			data.append( 'action', 'wookiee_apply_homepage_copy' );
-			data.append( 'nonce', '<?php echo esc_js( wp_create_nonce( 'wookiee_generate_content' ) ); ?>' );
-			fetch( ajaxurl, { method: 'POST', credentials: 'same-origin', body: data } )
-				.then( function( r ) { return r.json(); } )
-				.then( function( res ) {
-					applyBtn.disabled = false;
-					applyStatus.textContent = res.success ? res.data.message : ( res.data && res.data.message ? res.data.message : 'Failed to apply.' );
-				} )
-				.catch( function() {
-					applyBtn.disabled = false;
-					applyStatus.textContent = 'Failed — could not reach the server.';
 				} );
 		} );
 
@@ -186,7 +176,7 @@ function wookiee_render_content_generator_page() {
 			var auditResults = document.getElementById( 'wookiee-audit-results' );
 			var postId       = document.getElementById( 'wookiee-audit-page-select' ).value;
 			if ( ! postId ) {
-				auditStatus.textContent = 'Select a policy draft first.';
+				auditStatus.textContent = 'Select a policy page first.';
 				return;
 			}
 			auditBtn.disabled = true;
@@ -238,7 +228,7 @@ function wookiee_render_content_generator_page() {
 						fixStatus.textContent = res.data && res.data.message ? res.data.message : 'Failed to apply fixes.';
 						return;
 					}
-					fixStatus.innerHTML = 'Draft updated. <a href="' + res.data.edit_link + '" target="_blank" rel="noopener">Review it</a>, then re-run the audit to check.';
+					fixStatus.innerHTML = 'Live page updated. <a href="' + res.data.edit_link + '" target="_blank" rel="noopener">Review it</a>, then re-run the audit to check.';
 				} )
 				.catch( function() {
 					fixBtn.disabled = false;
@@ -292,11 +282,7 @@ function wookiee_generate_content_handler() {
 			continue;
 		}
 
-		if ( 'homepage_copy' === $key ) {
-			update_option( 'wookiee_homepage_copy_parsed', wookiee_parse_homepage_copy( $text ) );
-		}
-
-		$post_id = wookiee_insert_or_update_ai_draft_page( $piece['title'], $text );
+		$post_id = wookiee_update_real_static_page( $piece['slug'], $piece['title'], $text );
 		$results[] = array(
 			'title'     => esc_html( $piece['title'] ),
 			'error'     => '',
@@ -308,65 +294,59 @@ function wookiee_generate_content_handler() {
 }
 
 /**
- * Pulls the five labelled sections out of the homepage_copy response.
- * Each label is expected on its own line per the prompt above, so this
- * is a simple per-line match rather than a general-purpose parser.
+ * The full list of homepage copy slots an AI regeneration writes to -
+ * every one of these is a real wookiee_setting_* option that
+ * front-page.php reads live, so writing fresh text into them updates
+ * the homepage's design/layout as-is, without ever creating a separate
+ * draft page. Field key === the labelled-section name (lowercased) ===
+ * the setting key, so parsing and applying need no separate mapping.
  */
-function wookiee_parse_homepage_copy( $text ) {
-	$map = array(
-		'EYEBROW'            => 'eyebrow',
-		'HEADLINE'           => 'headline',
-		'SUBHEADLINE'        => 'subheadline',
-		'PHILOSOPHY_HEADING' => 'philosophy_heading',
-		'PHILOSOPHY'         => 'philosophy',
+function wookiee_homepage_copy_fields() {
+	return array( 'hero_eyebrow', 'hero_headline', 'hero_subheadline', 'hero_cta_primary', 'hero_cta_secondary', 'hero_stat_label',
+		'trust_1_title', 'trust_2_title', 'trust_2_desc', 'trust_3_title', 'trust_3_desc',
+		'products_kicker', 'products_title',
+		'categories_kicker', 'categories_title', 'categories_subtitle',
+		'how_it_works_kicker', 'how_it_works_title', 'how_it_works_lead',
+		'how_it_works_step1_title', 'how_it_works_step1_desc',
+		'how_it_works_step2_title', 'how_it_works_step2_desc',
+		'how_it_works_step3_title', 'how_it_works_step3_desc', 'how_it_works_cta',
+		'collections_kicker', 'collections_title',
+		'homepage_philosophy_heading', 'homepage_philosophy',
 	);
-	$fields = array_fill_keys( array_values( $map ), '' );
-
-	foreach ( explode( "\n", $text ) as $line ) {
-		$line = trim( $line );
-		foreach ( $map as $label => $field_key ) {
-			if ( 0 === strpos( $line, $label . ':' ) ) {
-				$fields[ $field_key ] = trim( substr( $line, strlen( $label ) + 1 ) );
-			}
-		}
-	}
-
-	return $fields;
 }
 
 /**
- * Copies the parsed homepage_copy fields into the live settings that
- * front-page.php actually reads - a deliberate, explicit action the admin
- * takes after reviewing the generated copy, not something that happens
- * automatically at generation time.
+ * The full list of About/Contact page copy slots - same principle as
+ * the homepage fields above, but for the two other "designed" pages
+ * (real layout/HTML, not plain policy text). Each is embedded in the
+ * live page via a [wookiee_field key="..."] merge tag, so rewriting
+ * these settings updates the actual page without touching its markup.
  */
-add_action( 'wp_ajax_wookiee_apply_homepage_copy', 'wookiee_apply_homepage_copy_handler' );
-function wookiee_apply_homepage_copy_handler() {
-	if ( ! current_user_can( 'manage_options' ) ) {
-		wp_send_json_error( array( 'message' => 'Not allowed.' ), 403 );
-	}
-	check_ajax_referer( 'wookiee_generate_content', 'nonce' );
-
-	$parsed = get_option( 'wookiee_homepage_copy_parsed', array() );
-	if ( empty( array_filter( $parsed ) ) ) {
-		wp_send_json_error( array( 'message' => 'Generate the homepage hero & philosophy copy first.' ) );
-	}
-
-	$setting_map = array(
-		'eyebrow'            => 'hero_eyebrow',
-		'headline'           => 'hero_headline',
-		'subheadline'        => 'hero_subheadline',
-		'philosophy_heading' => 'homepage_philosophy_heading',
-		'philosophy'         => 'homepage_philosophy',
+function wookiee_about_contact_copy_fields() {
+	return array( 'about_hero_kicker', 'about_hero_heading', 'about_hero_lead', 'about_hero_body', 'about_cta_primary', 'about_cta_secondary',
+		'about_stat_kicker', 'about_legal_note', 'about_fulfilment_title', 'about_fulfilment_note', 'about_delivery_note',
+		'about_section2_kicker', 'about_section2_heading', 'about_section2_lead', 'about_section2_body1', 'about_section2_body2',
+		'about_highlight_title', 'about_highlight_desc',
+		'contact_kicker', 'contact_heading', 'contact_lead', 'contact_form_subtitle',
 	);
+}
 
-	foreach ( $setting_map as $parsed_key => $setting_key ) {
-		if ( ! empty( $parsed[ $parsed_key ] ) ) {
-			update_option( 'wookiee_setting_' . $setting_key, sanitize_text_field( $parsed[ $parsed_key ] ) );
-		}
+/**
+ * Parses a labelled-section AI response (LABEL_NAME: value, one per
+ * field) into a plain array keyed by lowercased label - shared by the
+ * homepage and About/Contact generators since both use the same
+ * "one label per setting key" convention.
+ */
+function wookiee_parse_copy_fields( $text, array $field_keys ) {
+	$labels = array();
+	foreach ( $field_keys as $key ) {
+		$labels[ strtoupper( $key ) ] = $key;
 	}
+	return wookiee_parse_labelled_sections( $text, $labels );
+}
 
-	wp_send_json_success( array( 'message' => 'Live homepage copy updated.' ) );
+function wookiee_parse_homepage_copy( $text ) {
+	return wookiee_parse_copy_fields( $text, wookiee_homepage_copy_fields() );
 }
 
 /**
@@ -396,8 +376,10 @@ function wookiee_business_details_block() {
  * will (correctly) flag as an "incomplete" issue.
  */
 function wookiee_content_piece_max_tokens( $key ) {
-	$policy_keys = array( 'terms', 'privacy', 'shipping', 'returns', 'cookies' );
-	return in_array( $key, $policy_keys, true ) ? 4096 : 2048;
+	// Every piece this generator handles is now a full policy page (see
+	// wookiee_content_generator_pieces()) - these can run well past 2048
+	// tokens and get cut off mid-sentence otherwise.
+	return 4096;
 }
 
 function wookiee_build_content_prompt( $key, $brief ) {
@@ -406,6 +388,7 @@ function wookiee_build_content_prompt( $key, $brief ) {
 		'privacy'  => 'Privacy Policy',
 		'shipping' => 'Shipping Policy',
 		'returns'  => 'Returns & Refunds Policy',
+		'payment'  => 'Payment Policy',
 		'cookies'  => 'Cookie Policy',
 	);
 
@@ -436,29 +419,89 @@ function wookiee_build_content_prompt( $key, $brief ) {
 		return $prompt;
 	}
 
-	if ( 'about' === $key ) {
-		return "Write the About page narrative for a UK single-niche ecommerce store.\n\n"
-			. "Store niche, in the owner's own words: \"{$brief}\"\n"
-			. 'Business/trading name: ' . wookiee_get_setting( 'business_name' ) . "\n\n"
+	if ( 'cookie_pref' === $key ) {
+		return "Write a plain-English \"Cookie Preferences\" help page for a UK online store - this is a short customer-facing explainer, not a formal legal policy (the full legal Cookie Policy is a separate page).\n\n"
+			. "Store niche, in the owner's own words: \"{$brief}\"\n\n"
+			. "Real business details to use (do not invent anything beyond this list):\n" . wookiee_business_details_block() . "\n\n"
+			. "This store's actual cookie consent mechanism, describe it accurately using these facts (do not describe any other mechanism, and do not omit it): " . wookiee_cookie_consent_mechanism_description() . "\n\n"
 			. "Rules:\n"
-			. "- Natural, human, on-brand voice for this niche - not generic AI-sounding filler, not overly formal.\n"
-			. "- Do not invent specific facts (founding year, headcount, awards, press mentions) that weren't given above.\n"
-			. "- Do not reference or imitate any specific real-world competitor brand.\n"
-			. "- About 150-250 words, plain paragraphs separated by a blank line, no markdown, no headings.\n"
-			. "- Output ONLY the finished copy - no preamble, no commentary.";
+			. "- Briefly explain each of the three standard cookie categories (Strictly Necessary, Analytics, Marketing/Advertising) in plain language and how a customer can manage each.\n"
+			. "- Explain how to manage/delete cookies via common browsers (Chrome, Firefox, Safari, Edge) in general terms, without fake links.\n"
+			. "- Point customers to the full Cookie Policy page by name for complete details, and give the contact email for questions.\n"
+			. "- Do not invent any business fact beyond the details given above.\n"
+			. "- Write in plain, professional, customer-friendly English - not robotic or generic-sounding boilerplate.\n"
+			. "- Output ONLY the finished page text as plain paragraphs/short headings separated by a blank line, starting with a single plain-text heading line. No markdown, no HTML, no commentary.";
 	}
 
 	if ( 'homepage_copy' === $key ) {
-		return "Write homepage marketing copy for a UK single-niche ecommerce store.\n\n"
+		return "Write homepage marketing copy for a UK single-niche ecommerce store, to slot into an EXISTING page design - you are only rewriting text, the layout/sections themselves are fixed and already built.\n\n"
 			. "Store niche, in the owner's own words: \"{$brief}\"\n"
 			. 'Business/trading name: ' . wookiee_get_setting( 'business_name' ) . "\n\n"
-			. "Provide exactly these five labelled sections, each starting on its own line with the label shown (including the colon), and nothing else before or after them:\n"
-			. "EYEBROW: a very short tag line above the headline (2-5 words)\n"
-			. "HEADLINE: a short, punchy hero headline (under 10 words)\n"
-			. "SUBHEADLINE: one supporting sentence under the headline\n"
-			. "PHILOSOPHY_HEADING: a short heading for the store's values/approach section (under 8 words)\n"
-			. "PHILOSOPHY: a 100-150 word paragraph about the store's approach and values for this niche\n\n"
-			. "Rules: natural, human, on-brand voice; do not invent specific facts; do not reference or imitate a real competitor brand; no markdown.";
+			. "The page has these fixed sections, in this order: a hero (eyebrow tag, headline, subheadline, two buttons, a shipping stat badge), a 3-item trust bar, a best-selling-products section (kicker+title only, products are real and already listed), a categories section (kicker+title+subtitle, cards are real categories already listed), a \"how it works\" section (kicker, title, lead paragraph, 3 numbered steps each with a title+description, a button), a philosophy section (heading+paragraph), and a collections section (kicker+title).\n\n"
+			. "Provide EXACTLY these labelled sections, each on its own line as \"LABEL: value\" (including the colon), nothing before or after them, in this exact order:\n"
+			. "HERO_EYEBROW: very short tag line above the headline (2-5 words)\n"
+			. "HERO_HEADLINE: short, punchy hero headline (under 10 words)\n"
+			. "HERO_SUBHEADLINE: one supporting sentence under the headline\n"
+			. "HERO_CTA_PRIMARY: primary hero button label (2-4 words, e.g. \"Shop now\")\n"
+			. "HERO_CTA_SECONDARY: secondary hero button label (2-4 words)\n"
+			. "HERO_STAT_LABEL: a short phrase completing \"[shipping icon] £X \" about delivery, e.g. \"flat-rate UK shipping\" - do not include the price, just the phrase after it\n"
+			. "TRUST_1_TITLE: trust-bar item 1 title (2-3 words, about shipping)\n"
+			. "TRUST_2_TITLE: trust-bar item 2 title (2-3 words, about returns)\n"
+			. "TRUST_2_DESC: trust-bar item 2 subtext (short)\n"
+			. "TRUST_3_TITLE: trust-bar item 3 title (2-3 words, about payment security)\n"
+			. "TRUST_3_DESC: trust-bar item 3 subtext (short)\n"
+			. "PRODUCTS_KICKER: short kicker tag for the best-sellers section (2-4 words)\n"
+			. "PRODUCTS_TITLE: title for the best-sellers section (under 8 words)\n"
+			. "CATEGORIES_KICKER: short kicker tag for the categories section (2-4 words)\n"
+			. "CATEGORIES_TITLE: title for the categories section (under 8 words)\n"
+			. "CATEGORIES_SUBTITLE: one supporting sentence under the categories title\n"
+			. "HOW_IT_WORKS_KICKER: short kicker tag (2-4 words)\n"
+			. "HOW_IT_WORKS_TITLE: title for the how-it-works section (under 10 words)\n"
+			. "HOW_IT_WORKS_LEAD: one supporting sentence/lead paragraph\n"
+			. "HOW_IT_WORKS_STEP1_TITLE: step 1 short title (2-4 words)\n"
+			. "HOW_IT_WORKS_STEP1_DESC: step 1 one-sentence description\n"
+			. "HOW_IT_WORKS_STEP2_TITLE: step 2 short title (2-4 words)\n"
+			. "HOW_IT_WORKS_STEP2_DESC: step 2 one-sentence description\n"
+			. "HOW_IT_WORKS_STEP3_TITLE: step 3 short title (2-4 words)\n"
+			. "HOW_IT_WORKS_STEP3_DESC: step 3 one-sentence description\n"
+			. "HOW_IT_WORKS_CTA: button label (2-4 words)\n"
+			. "COLLECTIONS_KICKER: short kicker tag for the collections section (2-4 words)\n"
+			. "COLLECTIONS_TITLE: title for the collections section (under 8 words)\n"
+			. "HOMEPAGE_PHILOSOPHY_HEADING: short heading for the store's values/approach section (under 8 words)\n"
+			. "HOMEPAGE_PHILOSOPHY: a 80-120 word paragraph about the store's approach and values for this niche, on one line (no internal line breaks)\n\n"
+			. "Rules: natural, human, on-brand voice for THIS niche - not generic AI-sounding filler; do not invent specific facts (materials, awards, founding year) that weren't given above and do not reference or imitate a real competitor brand; no markdown; every value on a single line (no line breaks within a value).";
+	}
+
+	if ( 'about_contact' === $key ) {
+		return "Write About-page and Contact-page copy for a UK single-niche ecommerce store, to slot into TWO EXISTING page designs - you are only rewriting text, the layout/sections are fixed and already built.\n\n"
+			. "Store niche, in the owner's own words: \"{$brief}\"\n"
+			. 'Business/trading name: ' . wookiee_get_setting( 'business_name' ) . "\n\n"
+			. "The About page has: a hero (kicker, heading, one bold lead sentence, one body paragraph, two buttons), a small stat badge (kicker only - the business name/tagline is filled in automatically), a 4-item facts strip (a short note on legal registration; a fulfilment title+note; a delivery note), a second section (kicker, heading, bold lead sentence, two body paragraphs) and one small highlight card (title+description).\n"
+			. "The Contact page has: a kicker, a heading, one lead sentence, and a form subtitle.\n\n"
+			. "Provide EXACTLY these labelled sections, each on its own line as \"LABEL: value\" (including the colon), nothing before or after them, in this exact order:\n"
+			. "ABOUT_HERO_KICKER: short kicker tag (2-4 words)\n"
+			. "ABOUT_HERO_HEADING: page heading, e.g. \"About {Business Name}\" (adapt naturally)\n"
+			. "ABOUT_HERO_LEAD: one bold, confident sentence about what the business is and does\n"
+			. "ABOUT_HERO_BODY: one paragraph (2-3 sentences) on what customers get and why it matters\n"
+			. "ABOUT_CTA_PRIMARY: primary button label (2-4 words)\n"
+			. "ABOUT_CTA_SECONDARY: secondary button label (2-4 words)\n"
+			. "ABOUT_STAT_KICKER: a short label for the stat badge, e.g. describing the retail model (2-5 words)\n"
+			. "ABOUT_LEGAL_NOTE: a short factual-sounding note (2-4 words) - leave a natural placeholder tone if the registered country/region isn't given\n"
+			. "ABOUT_FULFILMENT_TITLE: a short phrase naming where orders are fulfilled from (2-5 words) - do not invent a specific town if none was given, keep it generic (e.g. \"Fulfilled in the UK\")\n"
+			. "ABOUT_FULFILMENT_NOTE: a short note on storage/packing/dispatch (under 6 words)\n"
+			. "ABOUT_DELIVERY_NOTE: a short delivery-speed note (under 6 words)\n"
+			. "ABOUT_SECTION2_KICKER: short kicker tag (2-4 words)\n"
+			. "ABOUT_SECTION2_HEADING: a heading about the product range/approach (under 8 words)\n"
+			. "ABOUT_SECTION2_LEAD: one bold sentence about the product range\n"
+			. "ABOUT_SECTION2_BODY1: one paragraph about the nature of the product range\n"
+			. "ABOUT_SECTION2_BODY2: one paragraph about who operates the business and what they handle (order admin, delivery, support)\n"
+			. "ABOUT_HIGHLIGHT_TITLE: a short highlight-card title (2-4 words)\n"
+			. "ABOUT_HIGHLIGHT_DESC: a one-sentence highlight-card description\n"
+			. "CONTACT_KICKER: short kicker tag (2-4 words)\n"
+			. "CONTACT_HEADING: contact page heading (under 6 words)\n"
+			. "CONTACT_LEAD: one welcoming sentence inviting the customer to get in touch\n"
+			. "CONTACT_FORM_SUBTITLE: a short reassurance about reply time (under 10 words) - do not invent a specific number of hours if none is implied by typical UK ecommerce practice; \"within 1-2 business days\" is a safe default phrase\n\n"
+			. "Rules: natural, human, on-brand voice for THIS niche - not generic AI-sounding filler; do not invent specific business facts (founding year, headcount, awards, exact locations) that weren't given above; do not reference or imitate a real competitor brand; no markdown; every value on a single line (no line breaks within a value).";
 	}
 
 	return '';
@@ -520,12 +563,10 @@ function wookiee_build_policy_audit_prompt( $title, $policy_text ) {
 }
 
 /**
- * Rewrites a policy draft to resolve everything a compliance audit
+ * Rewrites a live policy page to resolve everything a compliance audit
  * flagged, instead of the admin manually retyping fixes an AI report
- * already itemised. Still lands back on the same Draft page (via
- * wookiee_insert_or_update_ai_draft_page()), so nothing goes live
- * without the usual manual Publish step - only the tedious "now go make
- * these exact edits by hand" part is what this removes.
+ * already itemised. Writes directly to the same real page (preserving
+ * its status) - there's no draft copy in between.
  */
 add_action( 'wp_ajax_wookiee_apply_audit_fixes', 'wookiee_apply_audit_fixes_handler' );
 function wookiee_apply_audit_fixes_handler() {
@@ -541,7 +582,7 @@ function wookiee_apply_audit_fixes_handler() {
 	$post_id = isset( $_POST['post_id'] ) ? intval( $_POST['post_id'] ) : 0;
 	$post    = $post_id ? get_post( $post_id ) : null;
 	if ( ! $post || 'page' !== $post->post_type ) {
-		wp_send_json_error( array( 'message' => 'Select a valid policy draft first.' ) );
+		wp_send_json_error( array( 'message' => 'Select a valid policy page first.' ) );
 	}
 
 	$audit_report = isset( $_POST['audit_report'] ) ? sanitize_textarea_field( wp_unslash( $_POST['audit_report'] ) ) : '';
@@ -556,7 +597,10 @@ function wookiee_apply_audit_fixes_handler() {
 		wp_send_json_error( array( 'message' => $text->get_error_message() ) );
 	}
 
-	wookiee_insert_or_update_ai_draft_page( $post->post_title, $text );
+	wp_update_post( array(
+		'ID'           => $post->ID,
+		'post_content' => wpautop( esc_html( $text ) ),
+	) );
 
 	wp_send_json_success( array( 'edit_link' => get_edit_post_link( $post->ID, 'raw' ) ) );
 }
@@ -588,28 +632,32 @@ function wookiee_build_policy_fix_prompt( $title, $current_text, $audit_report )
 }
 
 /**
- * Creates or refreshes a draft page by exact title. Refreshing (rather
- * than skipping) on a repeat run is deliberate - unlike products, these
- * are meant to be iterated on with a refined brief, not accumulated as
- * separate candidates.
+ * Writes generated policy text straight into the REAL page for that
+ * slug - creating it (published, matching wookiee_starter_pages()'s
+ * own convention) if it's somehow missing, or updating its content in
+ * place if it already exists, preserving whatever status it currently
+ * has. These pages are plain legal/informational text with nothing
+ * visual to lose, unlike About/Contact/Home, so there's no need for a
+ * separate draft-then-manually-copy-across step - edit in place is the
+ * whole point.
  */
-function wookiee_insert_or_update_ai_draft_page( $title, $raw_text ) {
+function wookiee_update_real_static_page( $slug, $title, $raw_text ) {
 	$content  = wpautop( esc_html( $raw_text ) );
-	$existing = get_page_by_title( $title, OBJECT, 'page' );
+	$existing = get_page_by_path( $slug, OBJECT, 'page' );
 
 	if ( $existing ) {
 		wp_update_post( array(
 			'ID'           => $existing->ID,
 			'post_content' => $content,
-			'post_status'  => 'draft',
 		) );
 		return $existing->ID;
 	}
 
 	$post_id = wp_insert_post( array(
 		'post_title'   => $title,
+		'post_name'    => $slug,
 		'post_content' => $content,
-		'post_status'  => 'draft',
+		'post_status'  => 'publish',
 		'post_type'    => 'page',
 	) );
 

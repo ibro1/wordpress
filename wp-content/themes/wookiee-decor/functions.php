@@ -5,10 +5,15 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'WOOKIEE_VERSION', '1.0.12' );
+define( 'WOOKIEE_VERSION', '1.0.13' );
 define( 'WOOKIEE_DIR', trailingslashit( get_template_directory() ) );
 define( 'WOOKIEE_URI', trailingslashit( get_template_directory_uri() ) );
 define( 'WOOKIEE_CONTACT_EMAIL', 'info@wookied.com' );
+
+// Bump only when About/Contact's HTML template itself changes (new
+// [wookiee_field] slots, structural markup changes) - separate from
+// WOOKIEE_VERSION so unrelated version bumps don't keep re-running this.
+define( 'WOOKIEE_DESIGNED_PAGES_TEMPLATE_VERSION', '1' );
 
 require_once WOOKIEE_DIR . 'inc/static-content.php';
 require_once WOOKIEE_DIR . 'inc/theme-settings.php';
@@ -327,6 +332,45 @@ function wookiee_maybe_create_starter_content() {
 	if ( $needs_repair ) {
 		wookiee_create_starter_content();
 	}
+}
+
+/**
+ * Rewrites the About and Contact pages' post_content to the current
+ * [wookiee_field]-driven template from wookiee_starter_pages(), so
+ * sites created before that template existed (with the old copy baked
+ * in directly) pick up the merge-tag version too - otherwise the new
+ * "Generate with AI" / manual settings fields would have nowhere to
+ * actually render on an already-existing site. Only touches About/
+ * Contact: Home has no baked content (front-page.php reads settings
+ * live already) and the 7 policy pages are edited directly by the
+ * Content Generator, not templated via settings fields.
+ */
+add_action( 'init', 'wookiee_maybe_repair_designed_page_templates', 20 );
+function wookiee_maybe_repair_designed_page_templates() {
+	if ( wp_installing() ) {
+		return;
+	}
+
+	if ( get_option( 'wookiee_designed_pages_template_version', '' ) === WOOKIEE_DESIGNED_PAGES_TEMPLATE_VERSION ) {
+		return;
+	}
+
+	$pages = wookiee_starter_pages();
+	foreach ( array( 'about', 'contact' ) as $slug ) {
+		if ( empty( $pages[ $slug ]['content'] ) ) {
+			continue;
+		}
+		$page = get_page_by_path( $slug, OBJECT, 'page' );
+		if ( ! $page ) {
+			continue;
+		}
+		wp_update_post( array(
+			'ID'           => $page->ID,
+			'post_content' => $pages[ $slug ]['content'],
+		) );
+	}
+
+	update_option( 'wookiee_designed_pages_template_version', WOOKIEE_DESIGNED_PAGES_TEMPLATE_VERSION );
 }
 
 function wookiee_create_starter_content() {

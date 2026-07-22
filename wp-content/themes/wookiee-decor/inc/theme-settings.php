@@ -49,6 +49,53 @@ function wookiee_settings_fields() {
 		'hero_subheadline'   => array( 'label' => 'Homepage hero subheadline', 'default' => 'Discover our collection of thoughtful storage solutions and home accessories designed for modern living.', 'type' => 'textarea' ),
 		'homepage_philosophy_heading' => array( 'label' => 'Homepage philosophy heading', 'default' => 'Organisation should feel simple.', 'type' => 'text' ),
 		'homepage_philosophy' => array( 'label' => 'Homepage philosophy paragraph', 'default' => "We believe that a tidy home leads to a clearer mind. That's why we design products that are not only functional but also beautiful, helping you create spaces you love to spend time in without the stress of clutter.", 'type' => 'textarea' ),
+		'hero_cta_primary'   => array( 'label' => 'Hero button: primary', 'default' => 'Shop all storage', 'type' => 'text' ),
+		'hero_cta_secondary' => array( 'label' => 'Hero button: secondary', 'default' => 'Explore categories', 'type' => 'text' ),
+		'hero_stat_label'    => array( 'label' => 'Hero stat badge text', 'default' => 'flat-rate UK shipping, dispatched from Cowdenbeath', 'type' => 'text' ),
+		'trust_1_title'      => array( 'label' => 'Trust bar item 1: title', 'default' => 'Flat-rate shipping', 'type' => 'text' ),
+		'trust_2_title'      => array( 'label' => 'Trust bar item 2: title', 'default' => '30 day returns', 'type' => 'text' ),
+		'trust_2_desc'       => array( 'label' => 'Trust bar item 2: subtext', 'default' => 'Hassle-free refunds', 'type' => 'text' ),
+		'trust_3_title'      => array( 'label' => 'Trust bar item 3: title', 'default' => 'Secure payments', 'type' => 'text' ),
+		'trust_3_desc'       => array( 'label' => 'Trust bar item 3: subtext', 'default' => 'Fully SSL encrypted', 'type' => 'text' ),
+		'products_kicker'    => array( 'label' => 'Best-sellers section kicker', 'default' => 'Curated Catalog', 'type' => 'text' ),
+		'products_title'     => array( 'label' => 'Best-sellers section title', 'default' => 'Premium Storage Best-Sellers', 'type' => 'text' ),
+		'categories_kicker'  => array( 'label' => 'Categories section kicker', 'default' => 'Organise Every Space', 'type' => 'text' ),
+		'categories_title'   => array( 'label' => 'Categories section title', 'default' => 'Explore Our Categories', 'type' => 'text' ),
+		'categories_subtitle' => array( 'label' => 'Categories section subtitle', 'default' => 'Everything you need to bring calm and order to every corner of your home.', 'type' => 'textarea' ),
+		'how_it_works_kicker' => array( 'label' => '"How it works" kicker', 'default' => 'How it works', 'type' => 'text' ),
+		'how_it_works_title' => array( 'label' => '"How it works" title', 'default' => 'See how it works in your space.', 'type' => 'text' ),
+		'how_it_works_lead'  => array( 'label' => '"How it works" lead paragraph', 'default' => 'Our storage solutions are designed to blend seamlessly into your home. Watch how easily they assemble and transform cluttered spaces into calm, organised areas.', 'type' => 'textarea' ),
+		'how_it_works_step1_title' => array( 'label' => '"How it works" step 1 title', 'default' => 'Versatile use', 'type' => 'text' ),
+		'how_it_works_step1_desc' => array( 'label' => '"How it works" step 1 text', 'default' => 'Perfect for living rooms, bedrooms, or home offices.', 'type' => 'text' ),
+		'how_it_works_step2_title' => array( 'label' => '"How it works" step 2 title', 'default' => 'Easy to assemble', 'type' => 'text' ),
+		'how_it_works_step2_desc' => array( 'label' => '"How it works" step 2 text', 'default' => 'No complex tools required, put it together in minutes.', 'type' => 'text' ),
+		'how_it_works_step3_title' => array( 'label' => '"How it works" step 3 title', 'default' => 'Durable materials', 'type' => 'text' ),
+		'how_it_works_step3_desc' => array( 'label' => '"How it works" step 3 text', 'default' => 'Built to last with sustainable bamboo and sturdy metals.', 'type' => 'text' ),
+		'how_it_works_cta'   => array( 'label' => '"How it works" button', 'default' => 'Shop the collection', 'type' => 'text' ),
+		'collections_kicker' => array( 'label' => 'Collections section kicker', 'default' => 'Product Lineup', 'type' => 'text' ),
+		'collections_title'  => array( 'label' => 'Collections section title', 'default' => 'Shop by Collection', 'type' => 'text' ),
+		'about_hero_kicker'  => array( 'label' => 'About: hero kicker', 'default' => 'About our business', 'type' => 'text' ),
+		'about_hero_heading' => array( 'label' => 'About: hero heading', 'default' => 'About Wookiee', 'type' => 'text' ),
+		'about_hero_lead'    => array( 'label' => 'About: hero lead sentence', 'default' => 'Wookiee is a UK private-label home-storage brand and online retailer operated by Wookiee Decor Ltd.', 'type' => 'textarea' ),
+		'about_hero_body'    => array( 'label' => 'About: hero paragraph', 'default' => 'We offer practical storage products for everyday areas of the home, with clear product, delivery and returns information to help customers make informed purchasing decisions.', 'type' => 'textarea' ),
+		'about_cta_primary'  => array( 'label' => 'About: primary button', 'default' => 'Shop our products', 'type' => 'text' ),
+		'about_cta_secondary' => array( 'label' => 'About: secondary button', 'default' => 'Contact us', 'type' => 'text' ),
+		'about_stat_kicker'  => array( 'label' => 'About: stat badge kicker', 'default' => 'UK private-label retailer', 'type' => 'text' ),
+		'about_legal_note'   => array( 'label' => 'About: legal business note', 'default' => 'Registered in Scotland', 'type' => 'text' ),
+		'about_fulfilment_title' => array( 'label' => 'About: fulfilment title', 'default' => 'Wookiee in Cowdenbeath', 'type' => 'text' ),
+		'about_fulfilment_note' => array( 'label' => 'About: fulfilment note', 'default' => 'Stored, packed and dispatched in the UK', 'type' => 'text' ),
+		'about_delivery_note' => array( 'label' => 'About: delivery note', 'default' => '3-5 working days normally', 'type' => 'text' ),
+		'about_section2_kicker' => array( 'label' => 'About: 2nd section kicker', 'default' => 'Our range and approach', 'type' => 'text' ),
+		'about_section2_heading' => array( 'label' => 'About: 2nd section heading', 'default' => 'Practical storage, clearly presented.', 'type' => 'text' ),
+		'about_section2_lead' => array( 'label' => 'About: 2nd section lead', 'default' => 'Our range focuses on useful storage products for kitchens, bathrooms, drawers, footwear and other everyday spaces.', 'type' => 'textarea' ),
+		'about_section2_body1' => array( 'label' => 'About: 2nd section paragraph 1', 'default' => 'Products sold as Wookiee-branded goods form part of our private-label range. These products may be produced for the Wookiee brand by selected third-party manufacturers.', 'type' => 'textarea' ),
+		'about_section2_body2' => array( 'label' => 'About: 2nd section paragraph 2', 'default' => 'Wookiee Decor Ltd operates the brand and is the retailer responsible for purchases made through this website. We manage the customer-facing product information, pricing, order administration, delivery arrangements and customer support.', 'type' => 'textarea' ),
+		'about_highlight_title' => array( 'label' => 'About: highlight card title', 'default' => 'Practical selection', 'type' => 'text' ),
+		'about_highlight_desc' => array( 'label' => 'About: highlight card text', 'default' => 'Products are selected for useful home organisation and everyday storage.', 'type' => 'text' ),
+		'contact_kicker'     => array( 'label' => 'Contact: kicker', 'default' => 'Get In Touch', 'type' => 'text' ),
+		'contact_heading'    => array( 'label' => 'Contact: heading', 'default' => 'Contact our team', 'type' => 'text' ),
+		'contact_lead'       => array( 'label' => 'Contact: lead sentence', 'default' => "Have a question about an order, shipping, or returns? We're here to help. Drop us a line below or reach out via email or phone.", 'type' => 'textarea' ),
+		'contact_form_subtitle' => array( 'label' => 'Contact: form subtitle', 'default' => 'We typically reply within 24 business hours.', 'type' => 'text' ),
 		'shipping_rate'      => array( 'label' => 'Flat shipping rate (£)', 'default' => '5.99', 'type' => 'text' ),
 		'shipping_dispatch'  => array( 'label' => 'Dispatch / transit time', 'default' => 'Dispatched within 24 hours, 3-5 working days transit', 'type' => 'text' ),
 		'facebook_url'       => array( 'label' => 'Facebook URL (leave blank to hide the icon)', 'default' => '', 'type' => 'url' ),
@@ -82,7 +129,28 @@ function wookiee_settings_tabs() {
 		),
 		'homepage' => array(
 			'label'  => 'Homepage Copy',
-			'fields' => array( 'hero_eyebrow', 'hero_headline', 'hero_subheadline', 'homepage_philosophy_heading', 'homepage_philosophy' ),
+			'fields' => array(
+				'hero_eyebrow', 'hero_headline', 'hero_subheadline', 'hero_cta_primary', 'hero_cta_secondary', 'hero_stat_label',
+				'trust_1_title', 'trust_2_title', 'trust_2_desc', 'trust_3_title', 'trust_3_desc',
+				'products_kicker', 'products_title',
+				'categories_kicker', 'categories_title', 'categories_subtitle',
+				'how_it_works_kicker', 'how_it_works_title', 'how_it_works_lead',
+				'how_it_works_step1_title', 'how_it_works_step1_desc',
+				'how_it_works_step2_title', 'how_it_works_step2_desc',
+				'how_it_works_step3_title', 'how_it_works_step3_desc', 'how_it_works_cta',
+				'collections_kicker', 'collections_title',
+				'homepage_philosophy_heading', 'homepage_philosophy',
+			),
+		),
+		'about_contact' => array(
+			'label'  => 'About & Contact Copy',
+			'fields' => array(
+				'about_hero_kicker', 'about_hero_heading', 'about_hero_lead', 'about_hero_body', 'about_cta_primary', 'about_cta_secondary',
+				'about_stat_kicker', 'about_legal_note', 'about_fulfilment_title', 'about_fulfilment_note', 'about_delivery_note',
+				'about_section2_kicker', 'about_section2_heading', 'about_section2_lead', 'about_section2_body1', 'about_section2_body2',
+				'about_highlight_title', 'about_highlight_desc',
+				'contact_kicker', 'contact_heading', 'contact_lead', 'contact_form_subtitle',
+			),
 		),
 		'social' => array(
 			'label'  => 'Social Media',
@@ -258,11 +326,24 @@ function wookiee_render_settings_page() {
 				<div class="wookiee-tab-panel" id="wookiee-panel-<?php echo esc_attr( $tab_key ); ?>" data-tab-panel="<?php echo esc_attr( $tab_key ); ?>" role="tabpanel" aria-labelledby="wookiee-tab-<?php echo esc_attr( $tab_key ); ?>" <?php echo $is_first ? '' : 'hidden'; ?>>
 					<?php if ( 'homepage' === $tab_key ) : $has_llm_key = '' !== trim( (string) wookiee_get_setting( 'llm_api_key' ) ); ?>
 						<div style="background:#f6f7f7;border:1px solid #dcdcde;border-radius:4px;padding:12px 16px;margin-bottom:20px;max-width:900px;">
-							<p style="margin-top:0;"><strong>Generate with AI</strong> — drafts all 5 fields below from a one-line description of the store's niche. Review and edit before clicking Save Changes at the bottom; nothing changes on the live site until then.</p>
+							<p style="margin-top:0;"><strong>Generate with AI</strong> — rewrites every field below (hero, trust bar, section headers, "how it works", philosophy) to match a one-line description of the store's niche, keeping the page's design/layout exactly as-is. Review and edit before clicking Save Changes at the bottom; nothing changes on the live site until then.</p>
 							<p>
 								<input type="text" id="wookiee-homepage-ai-brief" class="regular-text" value="<?php echo esc_attr( get_option( 'wookiee_niche_brief', '' ) ); ?>" placeholder="e.g. UK home-storage and organisation products - baskets, shelving, drawer organisers">
 								<button type="button" class="button button-primary" id="wookiee-homepage-ai-btn" <?php disabled( ! $has_llm_key ); ?>>Generate with AI</button>
 								<span id="wookiee-homepage-ai-status" style="margin-left:8px;"></span>
+							</p>
+							<?php if ( ! $has_llm_key ) : ?>
+								<p class="description">Needs an LLM API key on the <a href="#integrations">AI &amp; Integrations</a> tab first.</p>
+							<?php endif; ?>
+						</div>
+					<?php endif; ?>
+					<?php if ( 'about_contact' === $tab_key ) : $has_llm_key = '' !== trim( (string) wookiee_get_setting( 'llm_api_key' ) ); ?>
+						<div style="background:#f6f7f7;border:1px solid #dcdcde;border-radius:4px;padding:12px 16px;margin-bottom:20px;max-width:900px;">
+							<p style="margin-top:0;"><strong>Generate with AI</strong> — rewrites every field below (About page hero/copy, Contact page intro) to match a one-line description of the store's niche, keeping both pages' existing design/layout exactly as-is - only the text changes. Review and edit before clicking Save Changes at the bottom; nothing changes on the live site until then.</p>
+							<p>
+								<input type="text" id="wookiee-about-ai-brief" class="regular-text" value="<?php echo esc_attr( get_option( 'wookiee_niche_brief', '' ) ); ?>" placeholder="e.g. UK home-storage and organisation products - baskets, shelving, drawer organisers">
+								<button type="button" class="button button-primary" id="wookiee-about-ai-btn" <?php disabled( ! $has_llm_key ); ?>>Generate with AI</button>
+								<span id="wookiee-about-ai-status" style="margin-left:8px;"></span>
 							</p>
 							<?php if ( ! $has_llm_key ) : ?>
 								<p class="description">Needs an LLM API key on the <a href="#integrations">AI &amp; Integrations</a> tab first.</p>
@@ -399,64 +480,63 @@ function wookiee_render_settings_page() {
 	</script>
 	<script>
 	( function() {
-		var btn = document.getElementById( 'wookiee-homepage-ai-btn' );
-		if ( ! btn ) {
-			return;
-		}
-		var fieldMap = {
-			eyebrow: 'wookiee_setting_hero_eyebrow',
-			headline: 'wookiee_setting_hero_headline',
-			subheadline: 'wookiee_setting_hero_subheadline',
-			philosophy_heading: 'wookiee_setting_homepage_philosophy_heading',
-			philosophy: 'wookiee_setting_homepage_philosophy'
-		};
-		btn.addEventListener( 'click', function() {
-			var status = document.getElementById( 'wookiee-homepage-ai-status' );
-			var brief  = document.getElementById( 'wookiee-homepage-ai-brief' ).value.trim();
-			if ( ! brief ) {
-				status.textContent = 'Describe the niche first.';
+		function wireInlineGenerator( btnId, briefId, statusId, action, nonceAction ) {
+			var btn = document.getElementById( btnId );
+			if ( ! btn ) {
 				return;
 			}
-			btn.disabled = true;
-			status.textContent = 'Generating… this can take up to a minute.';
-			var data = new FormData();
-			data.append( 'action', 'wookiee_inline_generate_homepage_copy' );
-			data.append( 'nonce', '<?php echo esc_js( wp_create_nonce( 'wookiee_inline_homepage_copy' ) ); ?>' );
-			data.append( 'brief', brief );
-			fetch( ajaxurl, { method: 'POST', credentials: 'same-origin', body: data } )
-				.then( function( r ) { return r.json(); } )
-				.then( function( res ) {
-					btn.disabled = false;
-					if ( ! res.success ) {
-						status.textContent = res.data && res.data.message ? res.data.message : 'Generation failed.';
-						return;
-					}
-					Object.keys( fieldMap ).forEach( function( key ) {
-						var field = document.getElementById( fieldMap[ key ] );
-						if ( field && res.data.fields[ key ] ) {
-							field.value = res.data.fields[ key ];
+			btn.addEventListener( 'click', function() {
+				var status = document.getElementById( statusId );
+				var brief  = document.getElementById( briefId ).value.trim();
+				if ( ! brief ) {
+					status.textContent = 'Describe the niche first.';
+					return;
+				}
+				btn.disabled = true;
+				status.textContent = 'Generating… this can take up to a minute.';
+				var data = new FormData();
+				data.append( 'action', action );
+				data.append( 'nonce', nonceAction );
+				data.append( 'brief', brief );
+				fetch( ajaxurl, { method: 'POST', credentials: 'same-origin', body: data } )
+					.then( function( r ) { return r.json(); } )
+					.then( function( res ) {
+						btn.disabled = false;
+						if ( ! res.success ) {
+							status.textContent = res.data && res.data.message ? res.data.message : 'Generation failed.';
+							return;
 						}
+						Object.keys( res.data.fields ).forEach( function( key ) {
+							var field = document.getElementById( 'wookiee_setting_' + key );
+							if ( field && res.data.fields[ key ] ) {
+								field.value = res.data.fields[ key ];
+							}
+						} );
+						status.textContent = 'Drafted below. Review, then click Save Changes.';
+					} )
+					.catch( function() {
+						btn.disabled = false;
+						status.textContent = 'Generation failed — could not reach the server.';
 					} );
-					status.textContent = 'Drafted below. Review, then click Save Changes.';
-				} )
-				.catch( function() {
-					btn.disabled = false;
-					status.textContent = 'Generation failed — could not reach the server.';
-				} );
-		} );
+			} );
+		}
+
+		wireInlineGenerator( 'wookiee-homepage-ai-btn', 'wookiee-homepage-ai-brief', 'wookiee-homepage-ai-status', 'wookiee_inline_generate_homepage_copy', '<?php echo esc_js( wp_create_nonce( 'wookiee_inline_homepage_copy' ) ); ?>' );
+		wireInlineGenerator( 'wookiee-about-ai-btn', 'wookiee-about-ai-brief', 'wookiee-about-ai-status', 'wookiee_inline_generate_about_contact_copy', '<?php echo esc_js( wp_create_nonce( 'wookiee_inline_about_contact_copy' ) ); ?>' );
 	} )();
 	</script>
 	<?php
 }
 
 /**
- * Generates homepage hero/philosophy copy directly from the Homepage
- * Copy tab, instead of the admin having to go to the Content Generator
- * page and click a separate "Apply" step - this writes straight into
- * the same 5 fields that tab already shows, so generating and reviewing
- * happen in one place. Reuses the prompt/parsing already built for the
- * Content Generator (wookiee_build_content_prompt(), wookiee_parse_homepage_copy())
- * rather than duplicating that logic here.
+ * Generates every homepage copy field directly from the Homepage Copy
+ * tab, instead of the admin having to go to a separate page and click
+ * an extra "Apply" step - this writes straight into the same fields
+ * that tab already shows, so generating and reviewing happen in one
+ * place, and nothing reaches the live site until Save Changes is
+ * clicked. Reuses the prompt/parsing built in inc/content-generator.php
+ * (wookiee_build_content_prompt(), wookiee_parse_homepage_copy()) rather
+ * than duplicating that logic here.
  */
 add_action( 'wp_ajax_wookiee_inline_generate_homepage_copy', 'wookiee_inline_generate_homepage_copy_handler' );
 function wookiee_inline_generate_homepage_copy_handler() {
@@ -476,13 +556,46 @@ function wookiee_inline_generate_homepage_copy_handler() {
 	update_option( 'wookiee_niche_brief', $brief );
 
 	$prompt = wookiee_build_content_prompt( 'homepage_copy', $brief );
-	$text   = wookiee_call_llm( $prompt, 2048 );
+	$text   = wookiee_call_llm( $prompt, 3072 );
 
 	if ( is_wp_error( $text ) ) {
 		wp_send_json_error( array( 'message' => $text->get_error_message() ) );
 	}
 
 	wp_send_json_success( array( 'fields' => wookiee_parse_homepage_copy( $text ) ) );
+}
+
+/**
+ * Same pattern as the homepage generator above, but for the About &
+ * Contact Copy tab's fields - both pages have a real visual design
+ * (hero, stat badge, facts strip, sidebar cards) that stays fixed;
+ * only the text embedded via [wookiee_field] merge tags changes.
+ */
+add_action( 'wp_ajax_wookiee_inline_generate_about_contact_copy', 'wookiee_inline_generate_about_contact_copy_handler' );
+function wookiee_inline_generate_about_contact_copy_handler() {
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_send_json_error( array( 'message' => 'Not allowed.' ), 403 );
+	}
+	check_ajax_referer( 'wookiee_inline_about_contact_copy', 'nonce' );
+
+	$brief = isset( $_POST['brief'] ) ? sanitize_textarea_field( wp_unslash( $_POST['brief'] ) ) : '';
+	if ( '' === trim( $brief ) ) {
+		wp_send_json_error( array( 'message' => 'Describe the niche first.' ) );
+	}
+	if ( '' === trim( (string) wookiee_get_setting( 'llm_api_key' ) ) ) {
+		wp_send_json_error( array( 'message' => 'Add an LLM API key on the AI & Integrations tab first.' ) );
+	}
+
+	update_option( 'wookiee_niche_brief', $brief );
+
+	$prompt = wookiee_build_content_prompt( 'about_contact', $brief );
+	$text   = wookiee_call_llm( $prompt, 2048 );
+
+	if ( is_wp_error( $text ) ) {
+		wp_send_json_error( array( 'message' => $text->get_error_message() ) );
+	}
+
+	wp_send_json_success( array( 'fields' => wookiee_parse_copy_fields( $text, wookiee_about_contact_copy_fields() ) ) );
 }
 
 /**

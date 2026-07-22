@@ -13,26 +13,26 @@ function wookiee_starter_pages() {
     <div class="wookiee-content-grid-2" style="max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center;">
         <div>
             <div style="color: #c1704a; font-size: 12px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 20px; display: flex; align-items: center; gap: 15px;">
-                <span style="width: 30px; height: 2px; background: #c1704a; display: inline-block;"></span> ABOUT OUR BUSINESS
+                <span style="width: 30px; height: 2px; background: #c1704a; display: inline-block;"></span> [wookiee_field key="about_hero_kicker"]
             </div>
-            <h1 style="font-size: 48px; color: var(--wookiee-ink); margin: 0 0 20px 0; font-weight: 800; letter-spacing: -2px; line-height: 1;">About Wookiee</h1>
+            <h1 style="font-size: 48px; color: var(--wookiee-ink); margin: 0 0 20px 0; font-weight: 800; letter-spacing: -2px; line-height: 1;">[wookiee_field key="about_hero_heading"]</h1>
             <p style="font-size: 18px; color: var(--wookiee-ink); font-weight: 700; margin-bottom: 20px;">
-                Wookiee is a UK private-label home-storage brand and online retailer operated by Wookiee Decor Ltd.
+                [wookiee_field key="about_hero_lead"]
             </p>
             <p style="font-size: 16px; color: #5c5044; line-height: 1.7; margin-bottom: 25px;">
-                We offer practical storage products for everyday areas of the home, with clear product, delivery and returns information to help customers make informed purchasing decisions.
+                [wookiee_field key="about_hero_body"]
             </p>
             <div style="display: flex; gap: 15px;">
-                <a href="/shop/" class="btn">Shop our products</a>
-                <a href="/contact/" class="btn-outline" style="border-radius: 30px; padding: 12px 24px; font-weight: 600; text-decoration: none; border: 2px solid var(--wookiee-ink); color: var(--wookiee-ink); display: inline-block;">Contact us</a>
+                <a href="/shop/" class="btn">[wookiee_field key="about_cta_primary"]</a>
+                <a href="/contact/" class="btn-outline" style="border-radius: 30px; padding: 12px 24px; font-weight: 600; text-decoration: none; border: 2px solid var(--wookiee-ink); color: var(--wookiee-ink); display: inline-block;">[wookiee_field key="about_cta_secondary"]</a>
             </div>
         </div>
         <div class="about-hero-image-wrap">
             <img src="' . WOOKIEE_URI . 'assets/images/drawer-organizer.png" alt="Drawer Organizer" style="border-radius: 20px; width: 100%; max-height: 380px; object-fit: cover; box-shadow: 0 20px 40px rgba(0,0,0,0.1);">
             <div class="about-stat-badge">
-                <div class="about-stat-kicker">UK PRIVATE-LABEL RETAILER</div>
-                <div class="about-stat-name">Wookiee</div>
-                <div class="about-stat-desc">Operated by Wookiee Decor Ltd</div>
+                <div class="about-stat-kicker">[wookiee_field key="about_stat_kicker"]</div>
+                <div class="about-stat-name">[wookiee_field key="business_name"]</div>
+                <div class="about-stat-desc">Operated by [wookiee_field key="business_name"]</div>
             </div>
         </div>
     </div>
@@ -42,23 +42,23 @@ function wookiee_starter_pages() {
     <div class="wookiee-content-grid-4" style="max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: repeat(4, 1fr); gap: 0;">
         <div style="padding: 40px 20px; border-right: 1px solid var(--wookiee-border);">
             <div style="font-size: 10px; font-weight: 700; color: #8a7d6d; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;">LEGAL BUSINESS</div>
-            <div style="font-size: 16px; font-weight: 700; color: var(--wookiee-ink); margin-bottom: 5px;">Wookiee Decor Ltd</div>
-            <div style="font-size: 12px; color: #6b6058;">Registered in Scotland</div>
+            <div style="font-size: 16px; font-weight: 700; color: var(--wookiee-ink); margin-bottom: 5px;">[wookiee_field key="business_name"]</div>
+            <div style="font-size: 12px; color: #6b6058;">[wookiee_field key="about_legal_note"]</div>
         </div>
         <div style="padding: 40px 20px; border-right: 1px solid var(--wookiee-border);">
             <div style="font-size: 10px; font-weight: 700; color: #8a7d6d; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;">COMPANY NUMBER</div>
             <div style="font-size: 16px; font-weight: 700; color: var(--wookiee-ink); margin-bottom: 5px;">[wookiee_field key="company_number"]</div>
-            <div style="font-size: 12px; color: #6b6058;">Incorporated 2 January 2026</div>
+            <div style="font-size: 12px; color: #6b6058;">Registered business</div>
         </div>
         <div style="padding: 40px 20px; border-right: 1px solid var(--wookiee-border);">
             <div style="font-size: 10px; font-weight: 700; color: #8a7d6d; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;">ORDER FULFILMENT</div>
-            <div style="font-size: 16px; font-weight: 700; color: var(--wookiee-ink); margin-bottom: 5px;">Wookiee in Cowdenbeath</div>
-            <div style="font-size: 12px; color: #6b6058;">Stored, packed and dispatched in the UK</div>
+            <div style="font-size: 16px; font-weight: 700; color: var(--wookiee-ink); margin-bottom: 5px;">[wookiee_field key="about_fulfilment_title"]</div>
+            <div style="font-size: 12px; color: #6b6058;">[wookiee_field key="about_fulfilment_note"]</div>
         </div>
         <div style="padding: 40px 20px;">
             <div style="font-size: 10px; font-weight: 700; color: #8a7d6d; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;">DELIVERY MARKET</div>
-            <div style="font-size: 16px; font-weight: 700; color: var(--wookiee-ink); margin-bottom: 5px;">United Kingdom</div>
-            <div style="font-size: 12px; color: #6b6058;">3-5 working days normally</div>
+            <div style="font-size: 16px; font-weight: 700; color: var(--wookiee-ink); margin-bottom: 5px;">[wookiee_field key="countries_served"]</div>
+            <div style="font-size: 12px; color: #6b6058;">[wookiee_field key="about_delivery_note"]</div>
         </div>
     </div>
 </div>
@@ -70,24 +70,24 @@ function wookiee_starter_pages() {
         </div>
         <div>
             <div style="color: #c1704a; font-size: 12px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 20px; display: flex; align-items: center; gap: 15px;">
-                <span style="width: 30px; height: 2px; background: #c1704a; display: inline-block;"></span> OUR RANGE AND APPROACH
+                <span style="width: 30px; height: 2px; background: #c1704a; display: inline-block;"></span> [wookiee_field key="about_section2_kicker"]
             </div>
-            <h2 style="font-size: 48px; color: var(--wookiee-ink); margin: 0 0 30px 0; font-weight: 800; letter-spacing: -1.5px; line-height: 1.1;">Practical storage, clearly presented.</h2>
+            <h2 style="font-size: 48px; color: var(--wookiee-ink); margin: 0 0 30px 0; font-weight: 800; letter-spacing: -1.5px; line-height: 1.1;">[wookiee_field key="about_section2_heading"]</h2>
             <p style="font-size: 18px; color: var(--wookiee-ink); font-weight: 700; margin-bottom: 20px; line-height: 1.5;">
-                Our range focuses on useful storage products for kitchens, bathrooms, drawers, footwear and other everyday spaces.
+                [wookiee_field key="about_section2_lead"]
             </p>
             <p style="font-size: 16px; color: #6b6058; line-height: 1.7; margin-bottom: 20px;">
-                Products sold as Wookiee-branded goods form part of our private-label range. These products may be produced for the Wookiee brand by selected third-party manufacturers.
+                [wookiee_field key="about_section2_body1"]
             </p>
             <p style="font-size: 16px; color: #6b6058; line-height: 1.7; margin-bottom: 25px;">
-                Wookiee Decor Ltd operates the brand and is the retailer responsible for purchases made through this website. We manage the customer-facing product information, pricing, order administration, delivery arrangements and customer support.
+                [wookiee_field key="about_section2_body2"]
             </p>
-            
+
             <div style="background: var(--wookiee-bg); border-radius: 15px; padding: 30px; display: flex; gap: 20px; align-items: flex-start;">
                 <div style="color: #c9972f; font-weight: 700; font-size: 14px; margin-top: 3px;">01</div>
                 <div>
-                    <h4 style="margin: 0 0 10px 0; font-size: 18px; color: var(--wookiee-ink);">Practical selection</h4>
-                    <p style="margin: 0; color: #6b6058; font-size: 14px; line-height: 1.6;">Products are selected for useful home organisation and everyday storage.</p>
+                    <h4 style="margin: 0 0 10px 0; font-size: 18px; color: var(--wookiee-ink);">[wookiee_field key="about_highlight_title"]</h4>
+                    <p style="margin: 0; color: #6b6058; font-size: 14px; line-height: 1.6;">[wookiee_field key="about_highlight_desc"]</p>
                 </div>
             </div>
         </div>
@@ -96,9 +96,9 @@ function wookiee_starter_pages() {
 		'contact' => array( 'title' => 'Contact', 'menu' => 'Contact', 'content' => '<section class="contact-page">
     <div class="container">
         <div class="contact-header">
-            <div class="section-kicker">Get In Touch</div>
-            <h1 class="contact-title">Contact our team</h1>
-            <p class="contact-lead">Have a question about an order, shipping, or returns? We\'re here to help. Drop us a line below or reach out via email or phone.</p>
+            <div class="section-kicker">[wookiee_field key="contact_kicker"]</div>
+            <h1 class="contact-title">[wookiee_field key="contact_heading"]</h1>
+            <p class="contact-lead">[wookiee_field key="contact_lead"]</p>
         </div>
 
         <div id="wookiee-contact-banner" class="contact-banner"></div>
@@ -107,7 +107,7 @@ function wookiee_starter_pages() {
 
             <div class="contact-card">
                 <h2 class="contact-card-title">Send a message</h2>
-                <p class="contact-card-sub">We typically reply within 24 business hours.</p>
+                <p class="contact-card-sub">[wookiee_field key="contact_form_subtitle"]</p>
 
                 <form action="/wp-admin/admin-post.php" method="POST" class="contact-form">
                     <input type="hidden" name="action" value="wookiee_contact_form">

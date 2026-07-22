@@ -183,10 +183,10 @@ function wookiee_render_settings_page() {
 		<h1>Wookiee Settings</h1>
 		<p>These values are used across the site (footer, contact form, shipping messaging, policy pages) and update everywhere immediately when saved — including on pages that were already created.</p>
 
-		<h2 class="nav-tab-wrapper" id="wookiee-settings-tabs">
+		<h2 class="nav-tab-wrapper" id="wookiee-settings-tabs" role="tablist">
 			<?php $is_first = true; ?>
 			<?php foreach ( $tabs as $tab_key => $tab ) : ?>
-				<a href="#<?php echo esc_attr( $tab_key ); ?>" class="nav-tab<?php echo $is_first ? ' nav-tab-active' : ''; ?>" data-tab="<?php echo esc_attr( $tab_key ); ?>"><?php echo esc_html( $tab['label'] ); ?></a>
+				<a href="#<?php echo esc_attr( $tab_key ); ?>" id="wookiee-tab-<?php echo esc_attr( $tab_key ); ?>" class="nav-tab<?php echo $is_first ? ' nav-tab-active' : ''; ?>" data-tab="<?php echo esc_attr( $tab_key ); ?>" role="tab" aria-selected="<?php echo $is_first ? 'true' : 'false'; ?>" aria-controls="wookiee-panel-<?php echo esc_attr( $tab_key ); ?>"><?php echo esc_html( $tab['label'] ); ?></a>
 				<?php $is_first = false; ?>
 			<?php endforeach; ?>
 		</h2>
@@ -195,7 +195,7 @@ function wookiee_render_settings_page() {
 			<?php settings_fields( 'wookiee_settings_group' ); ?>
 			<?php $is_first = true; ?>
 			<?php foreach ( $tabs as $tab_key => $tab ) : ?>
-				<div class="wookiee-tab-panel" data-tab-panel="<?php echo esc_attr( $tab_key ); ?>" style="<?php echo $is_first ? '' : 'display:none;'; ?>">
+				<div class="wookiee-tab-panel" id="wookiee-panel-<?php echo esc_attr( $tab_key ); ?>" data-tab-panel="<?php echo esc_attr( $tab_key ); ?>" role="tabpanel" aria-labelledby="wookiee-tab-<?php echo esc_attr( $tab_key ); ?>" <?php echo $is_first ? '' : 'hidden'; ?>>
 					<table class="form-table" role="presentation">
 						<?php foreach ( $tab['fields'] as $key ) : ?>
 							<?php if ( isset( $all_fields[ $key ] ) ) : ?>
@@ -211,12 +211,27 @@ function wookiee_render_settings_page() {
 	</div>
 	<script>
 	( function() {
+		var STORAGE_KEY = 'wookiee_settings_active_tab';
 		var tabs   = document.querySelectorAll( '#wookiee-settings-tabs .nav-tab' );
 		var panels = document.querySelectorAll( '.wookiee-tab-panel' );
 
+		function rememberTab( tabKey ) {
+			try {
+				window.localStorage.setItem( STORAGE_KEY, tabKey );
+			} catch ( e ) {
+				// Storage unavailable (privacy mode, disabled, etc.) - tab switching still works, it just won't persist.
+			}
+		}
+
 		function activateTab( tabKey ) {
-			tabs.forEach( function( t ) { t.classList.toggle( 'nav-tab-active', t.getAttribute( 'data-tab' ) === tabKey ); } );
-			panels.forEach( function( p ) { p.style.display = ( p.getAttribute( 'data-tab-panel' ) === tabKey ) ? '' : 'none'; } );
+			tabs.forEach( function( t ) {
+				var isActive = t.getAttribute( 'data-tab' ) === tabKey;
+				t.classList.toggle( 'nav-tab-active', isActive );
+				t.setAttribute( 'aria-selected', isActive ? 'true' : 'false' );
+			} );
+			panels.forEach( function( p ) {
+				p.hidden = ( p.getAttribute( 'data-tab-panel' ) !== tabKey );
+			} );
 		}
 
 		tabs.forEach( function( t ) {
@@ -224,16 +239,33 @@ function wookiee_render_settings_page() {
 				e.preventDefault();
 				var key = t.getAttribute( 'data-tab' );
 				activateTab( key );
+				rememberTab( key );
 				history.replaceState( null, '', '#' + key );
 			} );
 		} );
 
-		if ( window.location.hash ) {
-			var hashKey = window.location.hash.replace( '#', '' );
-			if ( document.querySelector( '.wookiee-tab-panel[data-tab-panel="' + hashKey + '"]' ) ) {
-				activateTab( hashKey );
-			}
+		// Priority: URL hash (direct links/bookmarks) > last-used tab in
+		// localStorage (survives the full-page reload that Save Changes
+		// causes, since the browser never sends the hash to the server -
+		// options.php's redirect has no way to know which tab was active)
+		// > the first tab, already active by default in the markup above.
+		var hashKey = window.location.hash ? window.location.hash.replace( '#', '' ) : '';
+		var storedKey = '';
+		try {
+			storedKey = window.localStorage.getItem( STORAGE_KEY ) || '';
+		} catch ( e ) {}
+
+		var targetKey = '';
+		if ( hashKey && document.querySelector( '.wookiee-tab-panel[data-tab-panel="' + hashKey + '"]' ) ) {
+			targetKey = hashKey;
+		} else if ( storedKey && document.querySelector( '.wookiee-tab-panel[data-tab-panel="' + storedKey + '"]' ) ) {
+			targetKey = storedKey;
 		}
+
+		if ( targetKey ) {
+			activateTab( targetKey );
+		}
+		rememberTab( targetKey || tabs[ 0 ].getAttribute( 'data-tab' ) );
 	} )();
 	</script>
 	<script>

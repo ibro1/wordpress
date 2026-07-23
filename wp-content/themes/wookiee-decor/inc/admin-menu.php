@@ -47,14 +47,17 @@ function wookiee_enqueue_niche_suggest_assets( $hook ) {
 		.wookiee-niche-input-wrap { position: relative; display: inline-block; vertical-align: middle; }
 		.wookiee-niche-input-wrap.is-textarea { display: block; }
 		.wookiee-niche-input-wrap input[type=text],
-		.wookiee-niche-input-wrap textarea { padding-right: 34px !important; box-sizing: border-box; }
+		.wookiee-niche-input-wrap textarea { padding-right: 46px !important; box-sizing: border-box; }
 		.wookiee-niche-suggest-btn {
-			position: absolute; right: 4px; top: 50%; transform: translateY(-50%);
-			background: none; border: none; cursor: pointer; padding: 4px; line-height: 0;
-			color: #8a7d6d; border-radius: 4px;
+			position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+			width: 32px; height: 32px;
+			display: flex; align-items: center; justify-content: center;
+			background: #f6f0e8; border: 1px solid #e5d9c8; cursor: pointer; padding: 0;
+			color: #c1704a; border-radius: 6px; z-index: 2;
 		}
+		.wookiee-niche-suggest-btn svg { width: 20px; height: 20px; }
 		.wookiee-niche-input-wrap.is-textarea .wookiee-niche-suggest-btn { top: 8px; transform: none; }
-		.wookiee-niche-suggest-btn:hover { color: #c1704a; background: #f0f0f0; }
+		.wookiee-niche-suggest-btn:hover { background: #c1704a; border-color: #c1704a; color: #fff; }
 		.wookiee-niche-suggest-btn.is-loading svg { animation: wookiee-suggest-spin 0.9s linear infinite; }
 		@keyframes wookiee-suggest-spin { to { transform: rotate(360deg); } }
 	';
@@ -65,12 +68,31 @@ function wookiee_enqueue_niche_suggest_assets( $hook ) {
 	$js = "
 	( function() {
 		var NONCE = " . wp_json_encode( wp_create_nonce( 'wookiee_suggest_niche' ) ) . ";
+
+		// Errors here used to only set the button's hover tooltip, which
+		// looks exactly like \"nothing happened\" if you don't hover over
+		// it (e.g. no LLM key configured yet) - show a real, visible
+		// message under the field instead, created on demand so it works
+		// regardless of which page/step the button is on.
+		function showNicheStatus( btn, message ) {
+			var wrap = btn.closest( '.wookiee-niche-input-wrap' );
+			if ( ! wrap ) { return; }
+			var status = wrap.parentNode.querySelector( '.wookiee-niche-suggest-inline-status' );
+			if ( ! status ) {
+				status = document.createElement( 'p' );
+				status.className = 'wookiee-niche-suggest-inline-status description';
+				wrap.insertAdjacentElement( 'afterend', status );
+			}
+			status.textContent = message;
+		}
+
 		document.querySelectorAll( '.wookiee-niche-suggest-btn' ).forEach( function( btn ) {
 			btn.addEventListener( 'click', function() {
 				var field = document.getElementById( btn.getAttribute( 'data-target' ) );
 				if ( ! field ) { return; }
 				btn.disabled = true;
 				btn.classList.add( 'is-loading' );
+				showNicheStatus( btn, 'Thinking of a niche…' );
 				var data = new FormData();
 				data.append( 'action', 'wookiee_suggest_niche' );
 				data.append( 'nonce', NONCE );
@@ -80,16 +102,21 @@ function wookiee_enqueue_niche_suggest_assets( $hook ) {
 						btn.disabled = false;
 						btn.classList.remove( 'is-loading' );
 						if ( ! res.success ) {
-							btn.title = res.data && res.data.message ? res.data.message : 'Failed to suggest a niche.';
+							var msg = res.data && res.data.message ? res.data.message : 'Failed to suggest a niche.';
+							showNicheStatus( btn, msg );
+							btn.title = msg;
 							return;
 						}
 						field.value = res.data.brief;
 						field.dispatchEvent( new Event( 'input', { bubbles: true } ) );
-						btn.title = res.data.grounded ? 'Suggested from real UK search-demand data - click again for another' : 'Suggested niche - click again for another';
+						var okMsg = res.data.grounded ? 'Suggested from real UK search-demand data - click again for another.' : 'Suggested niche - click again for another.';
+						showNicheStatus( btn, okMsg );
+						btn.title = okMsg;
 					} )
 					.catch( function() {
 						btn.disabled = false;
 						btn.classList.remove( 'is-loading' );
+						showNicheStatus( btn, 'Failed - could not reach the server.' );
 						btn.title = 'Failed - could not reach the server.';
 					} );
 			} );

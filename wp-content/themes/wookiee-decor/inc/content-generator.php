@@ -54,6 +54,26 @@ function wookiee_render_content_generator_page() {
 	$already_done   = wookiee_any_policy_page_ai_generated();
 	$verb           = $already_done ? 'Regenerate' : 'Generate';
 	$missing_fields = wookiee_missing_critical_business_fields();
+
+	// Every policy page that's been AI-generated at least once, with
+	// whatever audit result is currently persisted for it (if any) - lets
+	// the compliance dashboard rehydrate instantly from the database on
+	// page load instead of starting blank until Generate is clicked again.
+	$persisted_pages = array();
+	foreach ( wookiee_content_generator_pieces() as $piece ) {
+		$page = get_page_by_path( $piece['slug'], OBJECT, 'page' );
+		if ( ! $page || ! get_post_meta( $page->ID, '_wookiee_ai_generated', true ) ) {
+			continue;
+		}
+		$report             = get_post_meta( $page->ID, '_wookiee_audit_report', true );
+		$persisted_pages[] = array(
+			'title'        => $piece['title'],
+			'post_id'      => $page->ID,
+			'preview_link' => get_permalink( $page->ID ),
+			'report'       => $report ? $report : null,
+			'persisted'    => true,
+		);
+	}
 	?>
 	<div class="wrap">
 		<h1>Wookiee Content Generator</h1>
@@ -148,6 +168,7 @@ function wookiee_render_content_generator_page() {
 	<script>
 	( function() {
 		var NONCE = <?php echo wp_json_encode( wp_create_nonce( 'wookiee_generate_content' ) ); ?>;
+		var PERSISTED_PAGES = <?php echo wp_json_encode( $persisted_pages ); ?>;
 
 		var generateScreen = document.getElementById( 'wookiee-cg-generate-screen' );
 		var auditScreen    = document.getElementById( 'wookiee-cg-audit-screen' );
@@ -176,11 +197,30 @@ function wookiee_render_content_generator_page() {
 			card.querySelector( '.wookiee-audit-card-content' ).hidden = ! open;
 		}
 
+		// Populates a card's badge/body/actions from a report string -
+		// shared by a fresh audit result (runAudit below) and a
+		// persisted one rehydrated from postmeta on page load, so both
+		// paths render identically.
+		function applyReportToCard( card, report ) {
+			var badge        = card.querySelector( '.wookiee-audit-card-badge' );
+			var body         = card.querySelector( '.wookiee-audit-card-body' );
+			var actions      = card.querySelector( '.wookiee-audit-card-actions' );
+			var fixBtn       = card.querySelector( '.wookiee-audit-fix-btn' );
+			var reanalyzeBtn = card.querySelector( '.wookiee-audit-reanalyze-btn' );
+			body.textContent = report;
+			card.setAttribute( 'data-report', report );
+			actions.hidden = false;
+			if ( fixBtn ) { fixBtn.hidden = false; }
+			if ( reanalyzeBtn ) { reanalyzeBtn.hidden = true; }
+			var b = badgeFromReport( report );
+			badge.textContent = b.text;
+			badge.className = 'wookiee-audit-card-badge' + ( b.level ? ' is-' + b.level : '' );
+		}
+
 		function runAudit( card, postId, keepOpenAfter ) {
 			var badge  = card.querySelector( '.wookiee-audit-card-badge' );
 			var body   = card.querySelector( '.wookiee-audit-card-body' );
 			var actions = card.querySelector( '.wookiee-audit-card-actions' );
-			var reanalyzeBtn = card.querySelector( '.wookiee-audit-reanalyze-btn' );
 			setCardOpen( card, true );
 			badge.textContent = 'Analysing…';
 			badge.className = 'wookiee-audit-card-badge';
@@ -196,20 +236,16 @@ function wookiee_render_content_generator_page() {
 					if ( ! res.success ) {
 						body.innerHTML = res.data && res.data.message ? res.data.message : 'Audit failed.';
 						badge.textContent = 'Failed';
+						actions.hidden = false;
 						return;
 					}
-					body.textContent = res.data.report;
-					card.setAttribute( 'data-report', res.data.report );
-					actions.hidden = false;
-					if ( reanalyzeBtn ) { reanalyzeBtn.hidden = true; }
-					var b = badgeFromReport( res.data.report );
-					badge.textContent = b.text;
-					badge.className = 'wookiee-audit-card-badge' + ( b.level ? ' is-' + b.level : '' );
+					applyReportToCard( card, res.data.report );
 					if ( ! keepOpenAfter ) { setCardOpen( card, false ); }
 				} )
 				.catch( function() {
 					body.textContent = 'Audit failed — could not reach the server.';
 					badge.textContent = 'Failed';
+					actions.hidden = false;
 				} );
 		}
 
@@ -217,17 +253,20 @@ function wookiee_render_content_generator_page() {
 			var card = document.createElement( 'div' );
 			card.className = 'wookiee-audit-card';
 			card.setAttribute( 'data-post-id', page.post_id );
+			var needsAudit    = ! page.report && page.persisted;
+			var initialBadge  = page.report ? '' : ( needsAudit ? 'Not yet analysed' : 'Waiting…' );
+			var initialBody   = page.report ? '' : ( needsAudit ? 'Not analysed yet - click "Run analysis" below, or reanalyse anytime.' : 'Waiting…' );
 			card.innerHTML =
 				'<div class="wookiee-audit-card-head">' +
 					'<span class="wookiee-audit-card-title"></span>' +
-					'<span class="wookiee-audit-card-badge">Waiting…</span>' +
+					'<span class="wookiee-audit-card-badge">' + initialBadge + '</span>' +
 					( page.preview_link ? '<a href="' + page.preview_link + '" target="_blank" rel="noopener" class="button wookiee-audit-preview-link">Preview &#8599;</a>' : '' ) +
 					'<span class="wookiee-audit-card-chevron">&#9662;</span>' +
 				'</div>' +
 				'<div class="wookiee-audit-card-content" hidden>' +
-					'<div class="wookiee-audit-card-body">Waiting…</div>' +
+					'<div class="wookiee-audit-card-body">' + initialBody + '</div>' +
 					'<div class="wookiee-audit-card-actions" hidden>' +
-						'<button type="button" class="button button-primary wookiee-audit-fix-btn">Regenerate (fix these issues)</button> ' +
+						'<button type="button" class="button button-primary wookiee-audit-fix-btn" hidden>Regenerate (fix these issues)</button> ' +
 						'<button type="button" class="button wookiee-audit-reanalyze-btn" hidden>Reanalyse</button> ' +
 						'<span class="wookiee-audit-card-status"></span>' +
 						'<textarea class="wookiee-audit-custom-instruction" rows="2" placeholder="Or give a custom instruction, e.g. \'make this shorter and friendlier\'"></textarea>' +
@@ -240,6 +279,16 @@ function wookiee_render_content_generator_page() {
 				if ( e.target.closest( 'a' ) ) { return; }
 				setCardOpen( card, ! card.classList.contains( 'is-open' ) );
 			} );
+
+			if ( page.report ) {
+				applyReportToCard( card, page.report );
+			} else if ( needsAudit ) {
+				var actions      = card.querySelector( '.wookiee-audit-card-actions' );
+				var reanalyzeBtn = card.querySelector( '.wookiee-audit-reanalyze-btn' );
+				actions.hidden = false;
+				reanalyzeBtn.hidden = false;
+				reanalyzeBtn.textContent = 'Run analysis';
+			}
 
 			return card;
 		}
@@ -313,6 +362,21 @@ function wookiee_render_content_generator_page() {
 			reanalyzeBtn.addEventListener( 'click', function() {
 				status.textContent = '';
 				runAudit( card, postId, true );
+			} );
+		}
+
+		// Rehydrate the compliance dashboard from whatever's persisted in
+		// the database, so a plain page reload shows the last known
+		// analysis instantly instead of an empty generate screen -
+		// nothing here calls the LLM; pages with no stored report yet
+		// just get a manual "Run analysis" trigger instead of auto-fetching.
+		if ( PERSISTED_PAGES.length ) {
+			generateScreen.hidden = true;
+			auditScreen.hidden = false;
+			PERSISTED_PAGES.forEach( function( p ) {
+				var card = buildCard( p );
+				cardsContainer.appendChild( card );
+				wireCardActions( card, p.post_id );
 			} );
 		}
 
@@ -640,11 +704,39 @@ function wookiee_build_content_prompt( $key, $brief ) {
 			. "- Output ONLY the finished policy text as plain paragraphs separated by a blank line, starting with a single plain-text heading line. No markdown, no HTML, no commentary, no A/B/C-style breakdown - just the finished, publishable page.";
 
 		if ( in_array( $key, array( 'privacy', 'cookies' ), true ) ) {
-			$prompt .= "\n\nThis policy must explicitly explain the data subject's rights under UK GDPR: the right to access, rectify, erase, restrict processing of, and port their personal data, the right to object, and the right to withdraw consent at any time - and state plainly that requests to exercise these rights can be sent to the contact email given above.";
+			$prompt .= "\n\nThis policy must explicitly explain the data subject's rights under UK GDPR: the right to access, rectify, erase, restrict processing of, and port their personal data, the right to object, and the right to withdraw consent at any time - and state plainly that requests to exercise these rights can be sent to the contact email given above, describing briefly what a customer should expect after making such a request.";
 		}
 
 		if ( 'cookies' === $key ) {
-			$prompt .= "\n\nThis store's actual cookie consent mechanism, describe it accurately using these facts (do not describe any other mechanism, and do not omit it): " . wookiee_cookie_consent_mechanism_description();
+			$prompt .= "\n\nThis store's actual cookie consent mechanism, describe it accurately using these facts (do not describe any other mechanism, and do not omit it): " . wookiee_cookie_consent_mechanism_description() . "\n"
+				. "Also state explicitly how long cookies are retained on the customer's device (state the actual duration if given above, otherwise state a typical, honest range such as \"up to 12 months\" rather than omitting it), commit to notifying customers of this page if the categories of cookies used change in future, and briefly explain how a customer can exercise their data rights specifically in relation to cookie data (not just personal data generally).";
+		}
+
+		if ( 'terms' === $key ) {
+			$prompt .= "\n\nWhere this page mentions the Payment Policy or Returns Policy, state the specific page slug so it reads as a real link once published (e.g. \"our Payment Policy at /payment/\" and \"our Returns Policy at /returns/\") rather than naming the policy with no way to find it.\n"
+				. "For the section on cancelling an order, explicitly list the accepted methods for a customer to inform the business of their decision to cancel (e.g. email using the contact address given above, or a clear written statement) - do not just say \"inform us\" without saying how.\n"
+				. "Where shipping is mentioned, note that delivery timeframes and methods are covered in full on the Shipping Policy (at /shipping/) rather than repeating or inventing shipping-method specifics here.";
+		}
+
+		if ( 'privacy' === $key ) {
+			$prompt .= "\n\nInclude a full postal address for privacy-related enquiries and complaints, not just the contact email - use the registered address given above.\n"
+				. "Describe HOW consent is obtained for anything that requires it (e.g. a checkbox at checkout or on a sign-up form) and explicitly how a customer can withdraw that consent at any time - do not just state that consent is a legal basis without explaining the mechanism.\n"
+				. "Include a brief, specific summary of what cookies are used for (not just a reference), and provide the actual page path to the full Cookie Policy (/cookie/) so it reads as a real link.\n"
+				. "Avoid generic filler phrases like \"we value your privacy\" with nothing concrete behind them - every sentence should state a specific, real practice.";
+		}
+
+		if ( 'shipping' === $key ) {
+			$prompt .= "\n\nName the delivery service/carrier used in general terms (e.g. \"a tracked UK courier service\") and confirm that tracking information is provided once an order is dispatched - do not invent a specific named carrier if none was given, but do not omit the topic either.\n"
+				. "If shipping costs are non-refundable in some circumstances, state clearly that this does not apply where the goods are faulty, not as described, or the order was cancelled under the customer's statutory rights - do not state a blanket non-refundable shipping rule without that carve-out.\n"
+				. "Do not restate return-period or refund-process details here beyond a one-line pointer to the Returns Policy (at /returns/) by name - that policy is the single source of truth for returns, to avoid the two pages describing it inconsistently.\n"
+				. "If the niche brief mentions sustainability/eco-friendly framing, do not make unsubstantiated environmental claims here - keep any such mention brief and factual, or omit it if it's not something concretely described in the business details above.";
+		}
+
+		if ( 'payment' === $key ) {
+			$prompt .= "\n\nState a specific refund timeframe (within 14 days of the return being received or the cancellation being accepted, matching the Consumer Contracts Regulations) and note that the refund may take a few additional days to appear depending on the customer's card issuer or bank.\n"
+				. "Rather than a vague reference to delivery being affected by \"factors beyond our control\", give 2-3 concrete examples (e.g. courier delays, extreme weather, high demand periods) so the statement reads as genuine rather than a hedge.\n"
+				. "State that payments are processed through a PCI-DSS compliant payment provider and that full card details are never stored on the store's own servers.\n"
+				. "Include a brief statement on accessibility - that the store aims to make checkout usable for customers using assistive technology, and invite customers to contact the business (using the contact email above) if they encounter an accessibility barrier.";
 		}
 
 		if ( 'returns' === $key ) {
@@ -798,7 +890,48 @@ function wookiee_audit_policy_page_handler() {
 		wp_send_json_error( array( 'message' => $report->get_error_message() ) );
 	}
 
+	wookiee_store_audit_result( $post_id, $report );
+
 	wp_send_json_success( array( 'report' => $report ) );
+}
+
+/**
+ * Persists an audit's report/score/risk as postmeta so reloading this
+ * admin page shows the last known analysis instantly instead of
+ * starting from a blank slate - audits only ever lived in the
+ * browser's JS state before, so a page refresh silently discarded
+ * every score, forcing a fresh (billable) LLM call just to see numbers
+ * that were already computed a moment earlier.
+ */
+function wookiee_store_audit_result( $post_id, $report ) {
+	update_post_meta( $post_id, '_wookiee_audit_report', $report );
+	update_post_meta( $post_id, '_wookiee_audit_date', current_time( 'mysql' ) );
+
+	if ( preg_match( '/OVERALL SCORE:\s*(\d+)/i', $report, $m ) ) {
+		update_post_meta( $post_id, '_wookiee_audit_score', intval( $m[1] ) );
+	} else {
+		delete_post_meta( $post_id, '_wookiee_audit_score' );
+	}
+
+	if ( preg_match( '/GMC RISK:\s*(Low|Medium|High)/i', $report, $m ) ) {
+		update_post_meta( $post_id, '_wookiee_audit_risk', $m[1] );
+	} else {
+		delete_post_meta( $post_id, '_wookiee_audit_risk' );
+	}
+}
+
+/**
+ * Clears a stale audit result once the page's content has actually
+ * changed (a fix, a custom-instruction rewrite, or a fresh generation)
+ * - the old score no longer describes what's live, so the dashboard
+ * should show "not yet analysed" rather than a number that might now
+ * be wrong in either direction.
+ */
+function wookiee_clear_audit_result( $post_id ) {
+	delete_post_meta( $post_id, '_wookiee_audit_report' );
+	delete_post_meta( $post_id, '_wookiee_audit_score' );
+	delete_post_meta( $post_id, '_wookiee_audit_risk' );
+	delete_post_meta( $post_id, '_wookiee_audit_date' );
 }
 
 function wookiee_build_policy_audit_prompt( $title, $policy_text ) {
@@ -869,6 +1002,7 @@ function wookiee_apply_audit_fixes_handler() {
 		'ID'           => $post->ID,
 		'post_content' => wpautop( esc_html( $text ) ),
 	) );
+	wookiee_clear_audit_result( $post->ID );
 
 	wp_send_json_success( array( 'edit_link' => get_edit_post_link( $post->ID, 'raw' ) ) );
 }
@@ -894,11 +1028,28 @@ function wookiee_build_policy_fix_prompt( $title, $current_text, $audit_report )
 	}
 
 	if ( false !== stripos( $title, 'cookie' ) ) {
-		$prompt .= "\n\nThis store's actual cookie consent mechanism, describe it accurately using these facts: " . wookiee_cookie_consent_mechanism_description();
+		$prompt .= "\n\nThis store's actual cookie consent mechanism, describe it accurately using these facts: " . wookiee_cookie_consent_mechanism_description() . "\n"
+			. "Also state explicitly how long cookies are retained on the customer's device, commit to notifying customers of this page if the categories of cookies used change in future, and explain how a customer can exercise their data rights specifically in relation to cookie data.";
 	}
 
 	if ( false !== stripos( $title, 'return' ) ) {
 		$prompt .= "\n\nThis policy covers TWO distinct return rights - keep them clearly separate: (1) the UK statutory 14-day cancellation right under the Consumer Contracts Regulations (a cooling-off period from delivery, applies regardless of store policy), and (2) this store's own voluntary returns period (from the business details above), which EXTENDS the statutory minimum rather than replacing it. State plainly that the voluntary period is in addition to, not instead of, the statutory right. Also state that refunds (including the original standard delivery charge, where the whole order is returned) are processed within 14 days of the business receiving the returned goods or evidence they've been sent back. Present the returns address as a clearly separated block, one line each for business/trading name, street address, city, postcode, country - not a flowing sentence.";
+	}
+
+	if ( false !== stripos( $title, 'terms' ) ) {
+		$prompt .= "\n\nWhere this page mentions the Payment Policy or Returns Policy, state the specific page slug (e.g. \"our Payment Policy at /payment/\", \"our Returns Policy at /returns/\") so it reads as a real link. For cancelling an order, explicitly list the accepted methods to inform the business of the decision (e.g. email using the contact address above, or a clear written statement) - do not just say \"inform us\" without saying how. Point to the Shipping Policy (at /shipping/) for delivery specifics rather than repeating or inventing them here.";
+	}
+
+	if ( false !== stripos( $title, 'privacy' ) ) {
+		$prompt .= "\n\nInclude a full postal address for privacy enquiries/complaints (the registered address above), not just an email. Describe HOW consent is obtained where relevant and how it can be withdrawn - do not just cite consent as a legal basis without the mechanism. Provide the actual page path to the full Cookie Policy (/cookie/). Avoid generic filler like \"we value your privacy\" with nothing concrete behind it.";
+	}
+
+	if ( false !== stripos( $title, 'shipping' ) ) {
+		$prompt .= "\n\nName the delivery service/carrier used in general terms and confirm tracking is provided once dispatched. If shipping costs are ever non-refundable, state clearly this doesn't apply where goods are faulty, not as described, or the order was cancelled under statutory rights. Point to the Returns Policy (at /returns/) for return specifics rather than restating them here, to avoid the two pages describing it inconsistently.";
+	}
+
+	if ( false !== stripos( $title, 'payment' ) ) {
+		$prompt .= "\n\nState a specific refund timeframe (within 14 days of the return/cancellation being accepted) and note it may take a few extra days depending on the customer's bank. Replace any vague \"factors beyond our control\" wording on delivery with 2-3 concrete examples (courier delays, extreme weather, high demand). State that payments are processed through a PCI-DSS compliant provider and full card details are never stored on the store's own servers. Include a brief accessibility statement inviting customers to report any barrier via the contact email above.";
 	}
 
 	return $prompt;
@@ -964,6 +1115,7 @@ function wookiee_apply_custom_policy_prompt_handler() {
 		'post_content' => wpautop( esc_html( $text ) ),
 	) );
 	update_post_meta( $post->ID, '_wookiee_ai_generated', 1 );
+	wookiee_clear_audit_result( $post->ID );
 
 	wp_send_json_success( array( 'edit_link' => get_edit_post_link( $post->ID, 'raw' ) ) );
 }
@@ -988,6 +1140,7 @@ function wookiee_update_real_static_page( $slug, $title, $raw_text ) {
 			'post_content' => $content,
 		) );
 		update_post_meta( $existing->ID, '_wookiee_ai_generated', 1 );
+		wookiee_clear_audit_result( $existing->ID );
 		return $existing->ID;
 	}
 

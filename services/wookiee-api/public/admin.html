@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Wookiee API - Settings</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 760px; margin: 40px auto; padding: 0 20px; color: #1d2327; }
+  h1 { margin-bottom: 4px; }
+  p.lead { color: #646970; margin-top: 0; }
+  h2 { margin-top: 36px; border-bottom: 1px solid #dcdcde; padding-bottom: 6px; font-size: 16px; }
+  label { display: block; font-weight: 600; margin: 14px 0 4px; font-size: 13px; }
+  input[type=text], input[type=password], input[type=email], input[type=url] {
+    width: 100%; box-sizing: border-box; padding: 8px; border: 1px solid #8c8f94; border-radius: 4px; font-size: 14px;
+  }
+  .description { color: #646970; font-size: 12px; margin: 4px 0 0; }
+  button { margin-top: 24px; background: #2271b1; color: #fff; border: none; padding: 10px 20px; border-radius: 4px; font-size: 14px; cursor: pointer; }
+  button:hover { background: #135e96; }
+  button.secondary { background: #f0f0f1; color: #1d2327; }
+  #status { margin-top: 14px; font-size: 14px; }
+  .ga-status { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 12px; margin-left: 8px; }
+  .ga-status.connected { background: #d4f4dd; color: #00622e; }
+  .ga-status.disconnected { background: #f0f0f1; color: #646970; }
+</style>
+</head>
+<body>
+  <h1>Wookiee API</h1>
+  <p class="lead">Centralized credentials for the Wookiee Decor theme. Changes here take effect immediately - no need to touch WordPress.</p>
+
+  <form id="settings-form"></form>
+
+  <button type="button" id="save-btn">Save changes</button>
+  <span id="status"></span>
+
+<script>
+(function () {
+  var SECTIONS = [
+    { title: 'Companies House', fields: [
+      ['companies_house_api_key', 'Companies House API key', 'password'],
+    ] },
+    { title: 'LLM (page/product AI generation)', fields: [
+      ['llm_api_key', 'LLM API key', 'password'],
+      ['llm_base_url', 'LLM base URL', 'text'],
+      ['llm_default_model', 'LLM default model', 'text'],
+    ] },
+    { title: 'CJ Dropshipping', fields: [
+      ['cj_email', 'CJ Dropshipping account email', 'email'],
+      ['cj_api_key', 'CJ Dropshipping API key', 'password'],
+    ] },
+    { title: 'Image background removal', fields: [
+      ['cloudinary_cloud_name', 'Cloudinary cloud name', 'text'],
+      ['cloudinary_api_key', 'Cloudinary API key', 'text'],
+      ['cloudinary_api_secret', 'Cloudinary API secret', 'password'],
+      ['rembg_endpoint_url', 'Self-hosted rembg URL', 'text'],
+    ] },
+    { title: 'Google Ads', fields: [
+      ['google_ads_developer_token', 'Google Ads developer token', 'password'],
+      ['google_ads_client_id', 'Google Ads OAuth client ID', 'text'],
+      ['google_ads_client_secret', 'Google Ads OAuth client secret', 'password'],
+      ['google_ads_customer_id', 'Google Ads customer ID', 'text'],
+      ['google_ads_login_customer_id', 'Google Ads manager (MCC) customer ID (if applicable)', 'text'],
+    ] },
+    { title: 'Domain search & registration (Spaceship)', fields: [
+      ['spaceship_api_key', 'Spaceship API key', 'password'],
+      ['spaceship_api_secret', 'Spaceship API secret', 'password'],
+    ] },
+  ];
+
+  var form = document.getElementById('settings-form');
+  var statusEl = document.getElementById('status');
+
+  function fieldId(key) { return 'field-' + key; }
+
+  function buildForm(values) {
+    form.innerHTML = '';
+    SECTIONS.forEach(function (section) {
+      var h2 = document.createElement('h2');
+      h2.textContent = section.title;
+      form.appendChild(h2);
+
+      if (section.title === 'Google Ads') {
+        var gaStatusWrap = document.createElement('p');
+        gaStatusWrap.innerHTML = 'Connection status: <span id="ga-status" class="ga-status disconnected">checking…</span> ';
+        var connectBtn = document.createElement('button');
+        connectBtn.type = 'button';
+        connectBtn.className = 'secondary';
+        connectBtn.textContent = 'Connect to Google Ads';
+        connectBtn.style.marginTop = '0';
+        connectBtn.addEventListener('click', function () {
+          window.open('/google-ads/oauth/start', '_blank');
+        });
+        gaStatusWrap.appendChild(connectBtn);
+        form.appendChild(gaStatusWrap);
+        var gaNote = document.createElement('p');
+        gaNote.className = 'description';
+        gaNote.textContent = 'Save the Client ID and Client Secret above first, then click Connect - it opens Google\'s consent screen and saves the refresh token here automatically.';
+        form.appendChild(gaNote);
+      }
+
+      section.fields.forEach(function (f) {
+        var key = f[0], label = f[1], type = f[2];
+        var labelEl = document.createElement('label');
+        labelEl.htmlFor = fieldId(key);
+        labelEl.textContent = label;
+        form.appendChild(labelEl);
+        var input = document.createElement('input');
+        input.type = type;
+        input.id = fieldId(key);
+        input.name = key;
+        input.value = values[key] || '';
+        input.autocomplete = 'off';
+        form.appendChild(input);
+      });
+    });
+    refreshGoogleAdsStatus();
+  }
+
+  function refreshGoogleAdsStatus() {
+    var badge = document.getElementById('ga-status');
+    if (!badge) return;
+    fetch('/google-ads/status').then(function (r) { return r.json(); }).then(function (res) {
+      if (res.configured) {
+        badge.textContent = 'Connected';
+        badge.className = 'ga-status connected';
+      } else if (res.has_refresh_token) {
+        badge.textContent = 'Refresh token saved, missing other fields';
+        badge.className = 'ga-status disconnected';
+      } else {
+        badge.textContent = 'Not connected';
+        badge.className = 'ga-status disconnected';
+      }
+    }).catch(function () {
+      badge.textContent = 'Unknown';
+    });
+  }
+
+  function load() {
+    fetch('/settings').then(function (r) { return r.json(); }).then(function (res) {
+      buildForm(res.values || {});
+    }).catch(function () {
+      statusEl.textContent = 'Failed to load settings.';
+    });
+  }
+
+  document.getElementById('save-btn').addEventListener('click', function () {
+    var values = {};
+    SECTIONS.forEach(function (section) {
+      section.fields.forEach(function (f) {
+        var el = document.getElementById(fieldId(f[0]));
+        if (el) { values[f[0]] = el.value; }
+      });
+    });
+    statusEl.textContent = 'Saving…';
+    fetch('/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ values: values }),
+    }).then(function (r) { return r.json(); }).then(function (res) {
+      statusEl.textContent = 'Saved.';
+      buildForm(res.values || {});
+    }).catch(function () {
+      statusEl.textContent = 'Save failed - could not reach the server.';
+    });
+  });
+
+  load();
+})();
+</script>
+</body>
+</html>

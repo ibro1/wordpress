@@ -1,0 +1,16 @@
+{
+  "name": "wookiee-api",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Centralized secrets store + third-party API proxy for the Wookiee Decor theme (Companies House, Spaceship, LLM, Google Ads, CJ Dropshipping, Cloudinary/rembg).",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}

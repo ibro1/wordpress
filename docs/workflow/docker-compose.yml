@@ -1,0 +1,209 @@
+services:
+  wordpress:
+    image: wordpress:latest
+    restart: unless-stopped
+    container_name: wordpress_multisite_app
+    volumes:
+      - wp_app:/var/www/html
+    networks:
+      - dokploy-network
+      - default
+    environment:
+      MAIN_DOMAIN: ${MAIN_DOMAIN}
+      WP_ALLOW_MULTISITE: ${WP_ALLOW_MULTISITE}
+      NETWORK_ACTIVE: ${NETWORK_ACTIVE}
+      WORDPRESS_DB_HOST: wp_db:3306
+      WORDPRESS_DB_USER: ${DB_USER}
+      WORDPRESS_DB_PASSWORD: ${DB_PASSWORD}
+      WORDPRESS_DB_NAME: ${DB_NAME}
+      WORDPRESS_DEBUG: ${WORDPRESS_DEBUG}
+      # Using $$ for PHP variables inside the Docker env string
+      # ${MAIN_DOMAIN} here is substituted at compose-parse time by Dokploy
+      WORDPRESS_CONFIG_EXTRA: |
+        define('WP_MEMORY_LIMIT', '512M');
+        define('WP_MAX_MEMORY_LIMIT', '512M');
+        define('DISALLOW_FILE_EDIT', true);
+
+        # --- STAGE 2: unlocks Tools -> Network Setup menu ---
+        if (getenv('WP_ALLOW_MULTISITE') === 'true') {
+            define('WP_ALLOW_MULTISITE', true);
+        }
+
+        # --- STAGE 3: activates the network after Network Setup has run ---
+        if (getenv('NETWORK_ACTIVE') === 'true') {
+            define('MULTISITE', true);
+            define('SUBDOMAIN_INSTALL', true);
+            define('DOMAIN_CURRENT_SITE', '${MAIN_DOMAIN}');
+            define('PATH_CURRENT_SITE', '/');
+            define('SITE_ID_CURRENT_SITE', 1);
+            define('BLOG_ID_CURRENT_SITE', 1);
+        }
+
+        # --- DYNAMIC COOKIE DOMAIN ---
+        # Essential for logging into mapped domains like odehexecutive.com
+        if (isset($$_SERVER['HTTP_HOST'])) {
+            define('COOKIE_DOMAIN', $$_SERVER['HTTP_HOST']);
+        }
+
+        # --- FORCE SSL ---
+        if (!empty($$_SERVER['HTTP_X_FORWARDED_PROTO']) && $$_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {
+            define('FORCE_SSL_ADMIN', true);
+            define('FORCE_SSL_LOGIN', true);
+            $$_SERVER['HTTPS'] = 'on';
+        }
+
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=dokploy-network"
+
+      # --- Service Port ---
+      - "traefik.http.services.wp-service.loadbalancer.server.port=80"
+
+      # --- Router 1: Main Domain (dynamic) ---
+      - "traefik.http.routers.wp-main.rule=Host(`${MAIN_DOMAIN}`)"
+      - "traefik.http.routers.wp-main.entrypoints=websecure"
+      - "traefik.http.routers.wp-main.tls=true"
+      - "traefik.http.routers.wp-main.service=wp-service"
+
+      # --- Router 2: Wildcard Subdomains (dynamic, based on MAIN_DOMAIN) ---
+      # Matches site1.<MAIN_DOMAIN>, etc.
+      - "traefik.http.routers.wp-wildcard.rule=HostRegexp(`^.+\\.${MAIN_DOMAIN}$$`)"
+      - "traefik.http.routers.wp-wildcard.entrypoints=websecure"
+      - "traefik.http.routers.wp-wildcard.tls=true"
+      - "traefik.http.routers.wp-wildcard.service=wp-service"
+
+      # --- Router 3: External Domains (single dynamic rule, holds full Traefik rule syntax) ---
+      - "traefik.http.routers.wp-ext.rule=${EXTERNAL_DOMAINS}"
+      - "traefik.http.routers.wp-ext.entrypoints=websecure"
+      - "traefik.http.routers.wp-ext.tls=true"
+      - "traefik.http.routers.wp-ext.service=wp-service"
+
+      # --- Router 4: Catch-All Fallback (Priority 1) ---
+      # Catches any other domain pointed here, but might have SSL delay
+      - "traefik.http.routers.wp-catchall.rule=HostRegexp(`{host:.+}`)"
+      - "traefik.http.routers.wp-catchall.entrypoints=websecure"
+      - "traefik.http.routers.wp-catchall.tls=true"
+      - "traefik.http.routers.wp-catchall.priority=1"
+
+    entrypoint: |
+      bash -c '
+      # 1. FIX: Increase Upload Sizes to 512MB
+      echo "file_uploads = On
+      memory_limit = 512M
+      upload_max_filesize = 512M
+      post_max_size = 512M
+      max_execution_time = 600" > /usr/local/etc/php/conf.d/uploads.ini
+
+      # 2. FIX: Install PDO_MYSQL for Prime Mover (if missing)
+      if ! php -m | grep -q "pdo_mysql"; then
+         echo "PDO Extension missing. Installing..."
+         docker-php-ext-install pdo pdo_mysql
+      fi
+
+      # 3. FIX: Repair File Permissions
+      echo "Fixing permissions..."
+      chown -R www-data:www-data /var/www/html/wp-content
+
+      # 4. Standard Setup (MAIN_DOMAIN as real shell env var, runtime, single $)
+      echo "ServerName $MAIN_DOMAIN" >> /etc/apache2/apache2.conf
+      a2enmod rewrite
+
+      sleep 5
+
+      cat > /var/www/html/.htaccess << "EOF"
+      RewriteEngine On
+      RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+      RewriteBase /
+      RewriteRule ^index\.php$$ - [L]
+      RewriteRule ^wp-admin$$ wp-admin/ [R=301,L]
+      RewriteCond %{REQUEST_FILENAME} -f [OR]
+      RewriteCond %{REQUEST_FILENAME} -d
+      RewriteRule ^ - [L]
+      RewriteRule ^(wp-(content|admin|includes).*) $$1 [L]
+      RewriteRule ^(.*\.php)$$ $$1 [L]
+      RewriteRule . index.php [L]
+      EOF
+      chown www-data:www-data /var/www/html/.htaccess
+
+      # Start Apache
+      docker-entrypoint.sh apache2-foreground
+      '
+    depends_on:
+      wp_db:
+        condition: service_healthy
+
+  wpcli:
+    image: wordpress:cli
+    container_name: wordpress_cli
+    user: "33:33"
+    volumes:
+      - wp_app:/var/www/html
+    networks:
+      - default
+    depends_on:
+      - wp_db
+    environment:
+      WORDPRESS_DB_HOST: wp_db:3306
+      WORDPRESS_DB_USER: ${DB_USER}
+      WORDPRESS_DB_PASSWORD: ${DB_PASSWORD}
+      WORDPRESS_DB_NAME: ${DB_NAME}
+
+  rembg:
+    image: danielgatis/rembg:latest
+    container_name: wookiee_rembg
+    restart: unless-stopped
+    command: ["s", "--host", "0.0.0.0", "--port", "7000"]
+    networks:
+      - default
+
+  wookiee_api:
+    build:
+      context: ./services/wookiee-api
+    container_name: wookiee_api
+    restart: unless-stopped
+    volumes:
+      - wookiee_api_data:/app/data
+    networks:
+      - dokploy-network
+      - default
+    environment:
+      MASTER_KEY: ${WOOKIEE_API_MASTER_KEY}
+      API_SHARED_SECRET: ${WOOKIEE_API_SHARED_SECRET}
+      ADMIN_PASSWORD: ${WOOKIEE_API_ADMIN_PASSWORD}
+      PORT: 3000
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=dokploy-network"
+      - "traefik.http.services.wookiee-api-service.loadbalancer.server.port=3000"
+      - "traefik.http.routers.wookiee-api.rule=Host(`api.${MAIN_DOMAIN}`)"
+      - "traefik.http.routers.wookiee-api.entrypoints=websecure"
+      - "traefik.http.routers.wookiee-api.tls=true"
+      - "traefik.http.routers.wookiee-api.service=wookiee-api-service"
+
+  wp_db:
+    image: mysql:8.0
+    restart: unless-stopped
+    command: --default-authentication-plugin=mysql_native_password
+    networks:
+      - default
+    volumes:
+      - wp_data:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  wp_app:
+  wp_data:
+  wookiee_api_data:
+
+networks:
+  dokploy-network:
+    external: true

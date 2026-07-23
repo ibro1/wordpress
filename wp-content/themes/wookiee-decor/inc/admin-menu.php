@@ -60,6 +60,8 @@ function wookiee_enqueue_niche_suggest_assets( $hook ) {
 		.wookiee-niche-suggest-btn:hover { background: #c1704a; border-color: #c1704a; color: #fff; }
 		.wookiee-niche-suggest-btn.is-loading svg { animation: wookiee-suggest-spin 0.9s linear infinite; }
 		@keyframes wookiee-suggest-spin { to { transform: rotate(360deg); } }
+		.wookiee-niche-suggest-inline-status.is-error { color: #b32d2e; }
+		.wookiee-niche-suggest-inline-status.is-success { color: #00a32a; }
 	';
 	wp_register_style( 'wookiee-niche-suggest', false );
 	wp_enqueue_style( 'wookiee-niche-suggest' );
@@ -74,7 +76,7 @@ function wookiee_enqueue_niche_suggest_assets( $hook ) {
 		// it (e.g. no LLM key configured yet) - show a real, visible
 		// message under the field instead, created on demand so it works
 		// regardless of which page/step the button is on.
-		function showNicheStatus( btn, message ) {
+		function showNicheStatus( btn, message, type ) {
 			var wrap = btn.closest( '.wookiee-niche-input-wrap' );
 			if ( ! wrap ) { return; }
 			var status = wrap.parentNode.querySelector( '.wookiee-niche-suggest-inline-status' );
@@ -84,6 +86,9 @@ function wookiee_enqueue_niche_suggest_assets( $hook ) {
 				wrap.insertAdjacentElement( 'afterend', status );
 			}
 			status.textContent = message;
+			status.classList.remove( 'is-error', 'is-success' );
+			if ( 'error' === type ) { status.classList.add( 'is-error' ); }
+			if ( 'success' === type ) { status.classList.add( 'is-success' ); }
 		}
 
 		document.querySelectorAll( '.wookiee-niche-suggest-btn' ).forEach( function( btn ) {
@@ -92,7 +97,7 @@ function wookiee_enqueue_niche_suggest_assets( $hook ) {
 				if ( ! field ) { return; }
 				btn.disabled = true;
 				btn.classList.add( 'is-loading' );
-				showNicheStatus( btn, 'Thinking of a niche…' );
+				showNicheStatus( btn, 'Thinking of a niche…', 'loading' );
 				var data = new FormData();
 				data.append( 'action', 'wookiee_suggest_niche' );
 				data.append( 'nonce', NONCE );
@@ -103,20 +108,20 @@ function wookiee_enqueue_niche_suggest_assets( $hook ) {
 						btn.classList.remove( 'is-loading' );
 						if ( ! res.success ) {
 							var msg = res.data && res.data.message ? res.data.message : 'Failed to suggest a niche.';
-							showNicheStatus( btn, msg );
+							showNicheStatus( btn, msg, 'error' );
 							btn.title = msg;
 							return;
 						}
 						field.value = res.data.brief;
 						field.dispatchEvent( new Event( 'input', { bubbles: true } ) );
 						var okMsg = res.data.grounded ? 'Suggested from real UK search-demand data - click again for another.' : 'Suggested niche - click again for another.';
-						showNicheStatus( btn, okMsg );
+						showNicheStatus( btn, okMsg, 'success' );
 						btn.title = okMsg;
 					} )
 					.catch( function() {
 						btn.disabled = false;
 						btn.classList.remove( 'is-loading' );
-						showNicheStatus( btn, 'Failed - could not reach the server.' );
+						showNicheStatus( btn, 'Failed - could not reach the server.', 'error' );
 						btn.title = 'Failed - could not reach the server.';
 					} );
 			} );

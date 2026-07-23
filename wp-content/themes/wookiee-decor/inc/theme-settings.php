@@ -302,7 +302,7 @@ function wookiee_render_settings_field_row( $key, $field ) {
  * once in wookiee_enqueue_niche_suggest_assets() (inc/admin-menu.php),
  * shared across every screen this can appear on.
  */
-function wookiee_render_ai_copy_generator_notice( $tab_key ) {
+function wookiee_render_ai_copy_generator_notice( $tab_key, $id_suffix = '' ) {
 	$config = array(
 		'homepage'      => array(
 			'brief_id'  => 'wookiee-homepage-ai-brief',
@@ -320,7 +320,16 @@ function wookiee_render_ai_copy_generator_notice( $tab_key ) {
 	if ( ! isset( $config[ $tab_key ] ) ) {
 		return;
 	}
-	$c           = $config[ $tab_key ];
+	$c = $config[ $tab_key ];
+	if ( '' !== $id_suffix ) {
+		// A second independent copy of this same control (e.g. the Setup
+		// wizard's Contact tab triggering the same about_contact
+		// generation as the About tab) needs its own unique element IDs
+		// to avoid colliding with the first one on the same page.
+		$c['brief_id']  .= $id_suffix;
+		$c['btn_id']    .= $id_suffix;
+		$c['status_id'] .= $id_suffix;
+	}
 	$has_llm_key = '' !== trim( (string) wookiee_get_setting( 'llm_api_key' ) );
 	?>
 	<div style="background:#f6f7f7;border:1px solid #dcdcde;border-radius:4px;padding:12px 16px;margin-bottom:20px;max-width:900px;">
@@ -334,7 +343,7 @@ function wookiee_render_ai_copy_generator_notice( $tab_key ) {
 			<span id="<?php echo esc_attr( $c['status_id'] ); ?>" style="margin-left:8px;"></span>
 		</p>
 		<?php if ( ! $has_llm_key ) : ?>
-			<p class="description">Needs an LLM API key on the <a href="#integrations">AI &amp; Integrations</a> tab first.</p>
+			<p class="description">Needs an LLM API key on the <a href="<?php echo esc_url( admin_url( 'admin.php?page=wookiee-settings#integrations' ) ); ?>">AI &amp; Integrations tab</a> first.</p>
 		<?php endif; ?>
 	</div>
 	<?php

@@ -174,6 +174,7 @@ function wookiee_enqueue_niche_suggest_assets( $hook ) {
 
 		wireInlineGenerator( 'wookiee-homepage-ai-btn', 'wookiee-homepage-ai-brief', 'wookiee-homepage-ai-status', 'wookiee_inline_generate_homepage_copy', " . wp_json_encode( wp_create_nonce( 'wookiee_inline_homepage_copy' ) ) . " );
 		wireInlineGenerator( 'wookiee-about-ai-btn', 'wookiee-about-ai-brief', 'wookiee-about-ai-status', 'wookiee_inline_generate_about_contact_copy', " . wp_json_encode( wp_create_nonce( 'wookiee_inline_about_contact_copy' ) ) . " );
+		wireInlineGenerator( 'wookiee-about-ai-btn-contact', 'wookiee-about-ai-brief-contact', 'wookiee-about-ai-status-contact', 'wookiee_inline_generate_about_contact_copy', " . wp_json_encode( wp_create_nonce( 'wookiee_inline_about_contact_copy' ) ) . " );
 
 		// Companies House lookup button - fills business_name/registered_address
 		// from the company number, wherever that field row is rendered

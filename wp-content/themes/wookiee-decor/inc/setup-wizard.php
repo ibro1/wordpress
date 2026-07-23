@@ -227,7 +227,8 @@ function wookiee_render_setup_wizard_page() {
 				<?php if ( ! $has_ai_key ) : ?>
 					<p class="description">Needs an LLM API key on <a href="<?php echo esc_url( $settings_url . '#integrations' ); ?>">Wookiee Settings</a> first.</p>
 				<?php else : ?>
-					<p class="description">Contact copy is generated together with About copy - use "Generate with AI" on the <strong>About</strong> tab, it fills in both.</p>
+					<p class="description">Generated together with the About tab's copy (same AI call fills both) - generating here updates both too.</p>
+					<?php wookiee_render_ai_copy_generator_notice( 'about_contact', '-contact' ); ?>
 					<?php wookiee_render_settings_fields_table( $contact_fields ); ?>
 				<?php endif; ?>
 			</div>
@@ -552,7 +553,7 @@ function wookiee_render_setup_wizard_page() {
 						// Steps 3/4 embed the Content/Product Generator's own
 						// niche-brief fields, rendered once at page load - keep
 						// them in sync without needing a full page reload.
-						[ 'wookiee-niche-brief', 'wookiee-niche-brief-2', 'wookiee-homepage-ai-brief', 'wookiee-about-ai-brief' ].forEach( function( id ) {
+						[ 'wookiee-niche-brief', 'wookiee-niche-brief-2', 'wookiee-homepage-ai-brief', 'wookiee-about-ai-brief', 'wookiee-about-ai-brief-contact' ].forEach( function( id ) {
 							var el = document.getElementById( id );
 							if ( el ) { el.value = brief; }
 						} );

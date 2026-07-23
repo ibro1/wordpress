@@ -171,6 +171,28 @@ services:
       API_SHARED_SECRET: ${WOOKIEE_API_SHARED_SECRET}
       ADMIN_PASSWORD: ${WOOKIEE_API_ADMIN_PASSWORD}
       PORT: 3000
+      # Optional - provider keys can be set here instead of through the
+      # settings UI after deploy. Leave any of these unset/blank in your
+      # Dokploy env config if you don't have that provider yet; the
+      # settings UI can always fill it in (or override it) later.
+      COMPANIES_HOUSE_API_KEY: ${COMPANIES_HOUSE_API_KEY}
+      LLM_API_KEY: ${LLM_API_KEY}
+      LLM_BASE_URL: ${LLM_BASE_URL}
+      LLM_DEFAULT_MODEL: ${LLM_DEFAULT_MODEL}
+      CJ_EMAIL: ${CJ_EMAIL}
+      CJ_API_KEY: ${CJ_API_KEY}
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET}
+      REMBG_ENDPOINT_URL: ${REMBG_ENDPOINT_URL}
+      GOOGLE_ADS_DEVELOPER_TOKEN: ${GOOGLE_ADS_DEVELOPER_TOKEN}
+      GOOGLE_ADS_CLIENT_ID: ${GOOGLE_ADS_CLIENT_ID}
+      GOOGLE_ADS_CLIENT_SECRET: ${GOOGLE_ADS_CLIENT_SECRET}
+      GOOGLE_ADS_REFRESH_TOKEN: ${GOOGLE_ADS_REFRESH_TOKEN}
+      GOOGLE_ADS_CUSTOMER_ID: ${GOOGLE_ADS_CUSTOMER_ID}
+      GOOGLE_ADS_LOGIN_CUSTOMER_ID: ${GOOGLE_ADS_LOGIN_CUSTOMER_ID}
+      SPACESHIP_API_KEY: ${SPACESHIP_API_KEY}
+      SPACESHIP_API_SECRET: ${SPACESHIP_API_SECRET}
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=dokploy-network"

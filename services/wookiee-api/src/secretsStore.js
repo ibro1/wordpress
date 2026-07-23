@@ -46,6 +46,17 @@ const DEFAULTS = {
   rembg_endpoint_url: 'http://rembg:7000',
 };
 
+// Every provider key can also be set as a plain environment variable
+// (its name uppercased, e.g. companies_house_api_key -> COMPANIES_HOUSE_API_KEY)
+// - convenient for setting them all at deploy time in Dokploy instead of
+// logging into the settings UI afterward. Precedence: encrypted store (if a
+// value has been saved there) > env var > hardcoded default above. Saving a
+// value through the settings UI always wins from then on, even if the env
+// var is still set, since the store is what setMany() actually writes to.
+function envVarName(key) {
+  return key.toUpperCase();
+}
+
 function deriveKey() {
   const passphrase = process.env.MASTER_KEY;
   if (!passphrase) {
@@ -87,14 +98,14 @@ function getAll() {
   const stored = readAll();
   const result = {};
   SECRET_KEYS.forEach((k) => {
-    result[k] = stored[k] || DEFAULTS[k] || '';
+    result[k] = stored[k] || process.env[envVarName(k)] || DEFAULTS[k] || '';
   });
   return result;
 }
 
 function get(key) {
   const stored = readAll();
-  return stored[key] || DEFAULTS[key] || '';
+  return stored[key] || process.env[envVarName(key)] || DEFAULTS[key] || '';
 }
 
 function setMany(updates) {

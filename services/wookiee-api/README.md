@@ -26,6 +26,8 @@ See `.env.example`. Three required:
 
 Generate strong random values for all three, e.g. `openssl rand -hex 32`.
 
+Every provider key (Companies House, LLM, CJ Dropshipping, Cloudinary/rembg, Google Ads, Spaceship - the full list is in `.env.example`) can **also** be set this way instead of through the settings UI - each one is just that field's name uppercased, e.g. `companies_house_api_key` -> `COMPANIES_HOUSE_API_KEY`. Precedence: whatever's saved in the settings UI wins once you've saved it there; an env var only fills in a value that hasn't been saved yet. Leave any you don't have blank - that provider's features just stay unavailable until it's filled in (either way).
+
 ## Local development
 
 ```

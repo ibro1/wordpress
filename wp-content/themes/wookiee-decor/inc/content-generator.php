@@ -49,10 +49,11 @@ function wookiee_render_content_generator_page() {
 	if ( ! current_user_can( 'manage_options' ) ) {
 		return;
 	}
-	$has_key      = '' !== trim( (string) wookiee_get_setting( 'llm_api_key' ) );
-	$saved_brief  = get_option( 'wookiee_niche_brief', '' );
-	$already_done = wookiee_any_policy_page_ai_generated();
-	$verb         = $already_done ? 'Regenerate' : 'Generate';
+	$has_key        = '' !== trim( (string) wookiee_get_setting( 'llm_api_key' ) );
+	$saved_brief    = get_option( 'wookiee_niche_brief', '' );
+	$already_done   = wookiee_any_policy_page_ai_generated();
+	$verb           = $already_done ? 'Regenerate' : 'Generate';
+	$missing_fields = wookiee_missing_critical_business_fields();
 	?>
 	<div class="wrap">
 		<h1>Wookiee Content Generator</h1>
@@ -61,6 +62,10 @@ function wookiee_render_content_generator_page() {
 
 		<?php if ( ! $has_key ) : ?>
 			<div class="notice notice-warning"><p>No LLM API key set. Add one on the <a href="<?php echo esc_url( admin_url( 'admin.php?page=wookiee-settings' ) ); ?>">Wookiee Settings</a> page first.</p></div>
+		<?php endif; ?>
+
+		<?php if ( ! empty( $missing_fields ) ) : ?>
+			<div class="notice notice-error"><p style="color:#b32d2e;font-weight:600;">Fill in these real business details before generating - otherwise every policy page will use this theme's placeholder demo business instead of yours: <?php echo esc_html( implode( ', ', $missing_fields ) ); ?>. <a href="<?php echo esc_url( admin_url( 'admin.php?page=wookiee-settings#business' ) ); ?>">Edit on the Business Identity tab</a>.</p></div>
 		<?php endif; ?>
 
 		<div id="wookiee-cg-generate-screen">
@@ -104,7 +109,7 @@ function wookiee_render_content_generator_page() {
 			</table>
 
 			<p>
-				<button type="button" class="button button-primary" id="wookiee-content-generate-btn" <?php disabled( ! $has_key ); ?>><?php echo esc_html( $verb ); ?> selected pages</button>
+				<button type="button" class="button button-primary" id="wookiee-content-generate-btn" <?php disabled( ! $has_key || ! empty( $missing_fields ) ); ?>><?php echo esc_html( $verb ); ?> selected pages</button>
 				<span id="wookiee-content-generate-status" style="margin-left:8px;"></span>
 			</p>
 		</div>
@@ -135,6 +140,7 @@ function wookiee_render_content_generator_page() {
 		.wookiee-audit-card-content { padding: 0 20px 20px; }
 		.wookiee-audit-card-body { white-space: pre-wrap; margin: 0 0 14px; max-height: 320px; overflow-y: auto; background: #f6f7f7; border-radius: 6px; padding: 12px 14px; font-size: 13px; }
 		.wookiee-audit-custom-instruction { width: 100%; max-width: 600px; margin-top: 10px; display: block; }
+		.wookiee-cg-status-error { color: #b32d2e; font-weight: 600; }
 	</style>
 	<script>
 	( function() {
@@ -256,8 +262,10 @@ function wookiee_render_content_generator_page() {
 						fixBtn.disabled = false;
 						if ( ! res.success ) {
 							status.innerHTML = res.data && res.data.message ? res.data.message : 'Failed to apply fixes.';
+							status.classList.add( 'wookiee-cg-status-error' );
 							return;
 						}
+						status.classList.remove( 'wookiee-cg-status-error' );
 						status.textContent = 'Updated.';
 						reanalyzeBtn.hidden = false;
 					} )
@@ -286,8 +294,10 @@ function wookiee_render_content_generator_page() {
 						customBtn.disabled = false;
 						if ( ! res.success ) {
 							status.innerHTML = res.data && res.data.message ? res.data.message : 'Failed to apply.';
+							status.classList.add( 'wookiee-cg-status-error' );
 							return;
 						}
+						status.classList.remove( 'wookiee-cg-status-error' );
 						status.textContent = 'Updated.';
 						reanalyzeBtn.hidden = false;
 					} )
@@ -349,9 +359,11 @@ function wookiee_render_content_generator_page() {
 				.then( function( res ) {
 					genBtn.disabled = false;
 					if ( ! res.success ) {
-						status.textContent = res.data && res.data.message ? res.data.message : 'Generation failed.';
+						status.innerHTML = res.data && res.data.message ? res.data.message : 'Generation failed.';
+						status.classList.add( 'wookiee-cg-status-error' );
 						return;
 					}
+					status.classList.remove( 'wookiee-cg-status-error' );
 					status.textContent = '';
 
 					// The button/checkbox labels reflect server-render-time
@@ -432,6 +444,11 @@ function wookiee_generate_content_handler() {
 	}
 	if ( '' === trim( (string) wookiee_get_setting( 'llm_api_key' ) ) ) {
 		wp_send_json_error( array( 'message' => 'Add an LLM API key on the Wookiee Settings page first.' ) );
+	}
+
+	$missing_fields = wookiee_missing_critical_business_fields();
+	if ( ! empty( $missing_fields ) ) {
+		wp_send_json_error( array( 'message' => 'Fill in these real business details first: ' . implode( ', ', $missing_fields ) . ' - on the <a href="' . esc_url( admin_url( 'admin.php?page=wookiee-settings#business' ) ) . '" target="_blank" rel="noopener">Business Identity tab</a>.' ) );
 	}
 
 	update_option( 'wookiee_niche_brief', $brief );
@@ -533,6 +550,34 @@ function wookiee_parse_homepage_copy( $text ) {
  * A single block of real business details, shared by every prompt below
  * so the model has the same facts to draw from and nothing to invent.
  */
+/**
+ * Which core business facts are genuinely missing right now - checked
+ * against the REAL saved option, not wookiee_get_setting()'s fallback
+ * default, since every one of these fields ships with a plausible-
+ * looking demo value ("Wookiee Decor Ltd", a fake company number, a
+ * Cowdenbeath address). An admin who never touched Settings would
+ * otherwise silently generate legal pages full of someone else's
+ * placeholder business details and have no way of knowing. Only the
+ * facts a policy page cannot be coherent without are checked here -
+ * things like the phone number or support hours degrade gracefully
+ * with an honest placeholder instead, so they don't block generation.
+ */
+function wookiee_missing_critical_business_fields() {
+	$required = array(
+		'business_name'      => 'Registered company name',
+		'registered_address' => 'Registered office address',
+		'company_number'     => 'Company number',
+		'contact_email'      => 'Contact email',
+	);
+	$missing = array();
+	foreach ( $required as $key => $label ) {
+		if ( '' === trim( (string) get_option( 'wookiee_setting_' . $key, '' ) ) ) {
+			$missing[] = $label;
+		}
+	}
+	return $missing;
+}
+
 function wookiee_business_details_block() {
 	$lines = array(
 		'Business/trading name: ' . wookiee_get_setting( 'business_name' ),
@@ -540,6 +585,7 @@ function wookiee_business_details_block() {
 		'Company number: ' . wookiee_get_setting( 'company_number' ),
 		'Contact email: ' . wookiee_get_setting( 'contact_email' ),
 		'Contact phone: ' . wookiee_get_setting( 'contact_phone' ),
+		'Support hours: ' . wookiee_get_setting( 'support_hours' ),
 		'Countries served: ' . wookiee_get_setting( 'countries_served' ),
 		'Typical delivery time: ' . wookiee_get_setting( 'shipping_dispatch' ),
 		'Flat shipping rate: £' . wookiee_get_setting( 'shipping_rate' ),
@@ -783,6 +829,11 @@ function wookiee_apply_audit_fixes_handler() {
 		wp_send_json_error( array( 'message' => 'Add an LLM API key on the <a href="' . esc_url( admin_url( 'admin.php?page=wookiee-settings#integrations' ) ) . '" target="_blank" rel="noopener">AI &amp; Integrations tab</a> first.' ) );
 	}
 
+	$missing_fields = wookiee_missing_critical_business_fields();
+	if ( ! empty( $missing_fields ) ) {
+		wp_send_json_error( array( 'message' => 'Fill in these real business details first: ' . implode( ', ', $missing_fields ) . ' - on the <a href="' . esc_url( admin_url( 'admin.php?page=wookiee-settings#business' ) ) . '" target="_blank" rel="noopener">Business Identity tab</a>.' ) );
+	}
+
 	$post_id = isset( $_POST['post_id'] ) ? intval( $_POST['post_id'] ) : 0;
 	$post    = $post_id ? get_post( $post_id ) : null;
 	if ( ! $post || 'page' !== $post->post_type ) {
@@ -850,6 +901,11 @@ function wookiee_apply_custom_policy_prompt_handler() {
 
 	if ( '' === trim( (string) wookiee_get_setting( 'llm_api_key' ) ) ) {
 		wp_send_json_error( array( 'message' => 'Add an LLM API key on the <a href="' . esc_url( admin_url( 'admin.php?page=wookiee-settings#integrations' ) ) . '" target="_blank" rel="noopener">AI &amp; Integrations tab</a> first.' ) );
+	}
+
+	$missing_fields = wookiee_missing_critical_business_fields();
+	if ( ! empty( $missing_fields ) ) {
+		wp_send_json_error( array( 'message' => 'Fill in these real business details first: ' . implode( ', ', $missing_fields ) . ' - on the <a href="' . esc_url( admin_url( 'admin.php?page=wookiee-settings#business' ) ) . '" target="_blank" rel="noopener">Business Identity tab</a>.' ) );
 	}
 
 	$post_id = isset( $_POST['post_id'] ) ? intval( $_POST['post_id'] ) : 0;

@@ -20,6 +20,7 @@ function wookiee_settings_fields() {
 	return array(
 		'contact_email'      => array( 'label' => 'Contact email', 'default' => 'info@wookied.com', 'type' => 'email' ),
 		'contact_phone'      => array( 'label' => 'Contact phone', 'default' => '+44 20 8472 6126', 'type' => 'text' ),
+		'support_hours'      => array( 'label' => 'Support hours', 'default' => 'Monday to Friday, 9am - 5pm', 'type' => 'text' ),
 		'business_name'      => array( 'label' => 'Registered company name', 'default' => 'Wookiee Decor Ltd', 'type' => 'text' ),
 		'registered_address'  => array( 'label' => 'Registered office address', 'default' => "Wookiee Decor Ltd\n28 Johnston Park, Cowdenbeath\nKY4 9AZ, United Kingdom", 'type' => 'textarea' ),
 		'company_number'     => array( 'label' => 'Company number', 'default' => 'SC769264', 'type' => 'text' ),
@@ -121,7 +122,7 @@ function wookiee_settings_tabs() {
 		),
 		'contact' => array(
 			'label'  => 'Contact & Support',
-			'fields' => array( 'contact_email', 'contact_phone' ),
+			'fields' => array( 'contact_email', 'contact_phone', 'support_hours' ),
 		),
 		'shipping' => array(
 			'label'  => 'Shipping & Returns',

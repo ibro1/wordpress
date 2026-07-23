@@ -85,7 +85,7 @@ function wookiee_enqueue_niche_suggest_assets( $hook ) {
 				status.className = 'wookiee-niche-suggest-inline-status description';
 				wrap.insertAdjacentElement( 'afterend', status );
 			}
-			status.textContent = message;
+			status.innerHTML = message;
 			status.classList.remove( 'is-error', 'is-success' );
 			if ( 'error' === type ) { status.classList.add( 'is-error' ); }
 			if ( 'success' === type ) { status.classList.add( 'is-success' ); }
@@ -154,7 +154,7 @@ function wookiee_enqueue_niche_suggest_assets( $hook ) {
 					.then( function( res ) {
 						btn.disabled = false;
 						if ( ! res.success ) {
-							status.textContent = res.data && res.data.message ? res.data.message : 'Generation failed.';
+							status.innerHTML = res.data && res.data.message ? res.data.message : 'Generation failed.';
 							return;
 						}
 						Object.keys( res.data.fields ).forEach( function( key ) {

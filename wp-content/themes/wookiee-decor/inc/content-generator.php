@@ -705,7 +705,7 @@ function wookiee_suggest_niche_handler() {
 	check_ajax_referer( 'wookiee_suggest_niche', 'nonce' );
 
 	if ( '' === trim( (string) wookiee_get_setting( 'llm_api_key' ) ) ) {
-		wp_send_json_error( array( 'message' => 'Add an LLM API key on the AI & Integrations tab first.' ) );
+		wp_send_json_error( array( 'message' => 'Add an LLM API key on the <a href="' . esc_url( admin_url( 'admin.php?page=wookiee-settings#integrations' ) ) . '" target="_blank" rel="noopener">AI &amp; Integrations tab</a> first.' ) );
 	}
 
 	$recent_suggestions = wookiee_get_recent_niche_suggestions();

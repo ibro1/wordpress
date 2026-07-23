@@ -217,10 +217,45 @@ function wookiee_enqueue_niche_suggest_assets( $hook ) {
 					if ( nameField ) { nameField.value = res.data.company_name; }
 					if ( addrField ) { addrField.value = res.data.address; }
 					status.textContent = 'Found: ' + res.data.company_name + ' (status: ' + res.data.company_status + '). Review the fields, then click Save Changes.';
+					runSiteNameSuggest( res.data.company_name );
 				} )
 				.catch( function() {
 					chBtn.disabled = false;
 					status.textContent = 'Lookup failed — could not reach the server.';
+				} );
+		}
+
+		// Only present on the Setup wizard's Business Identity step, not
+		// the Settings page - suggests a short site title from whatever
+		// company was just looked up/picked, with a live .com/.co.uk
+		// availability check via Spaceship if that's configured.
+		function runSiteNameSuggest( companyName ) {
+			var blognameField = document.getElementById( 'blogname' );
+			var nameStatus    = document.getElementById( 'wookiee-site-name-status' );
+			if ( ! blognameField || ! nameStatus || ! companyName ) { return; }
+			nameStatus.textContent = 'Suggesting a site title…';
+			var data = new FormData();
+			data.append( 'action', 'wookiee_suggest_site_name' );
+			data.append( 'nonce', " . wp_json_encode( wp_create_nonce( 'wookiee_suggest_site_name' ) ) . " );
+			data.append( 'company_name', companyName );
+			fetch( ajaxurl, { method: 'POST', credentials: 'same-origin', body: data } )
+				.then( function( r ) { return r.json(); } )
+				.then( function( res ) {
+					if ( ! res.success || ! res.data ) {
+						nameStatus.textContent = '';
+						return;
+					}
+					blognameField.value = res.data.site_name;
+					if ( res.data.domain ) {
+						nameStatus.textContent = 'Suggested \"' + res.data.site_name + '\" — ' + res.data.domain + ' is available.';
+					} else if ( res.data.checked ) {
+						nameStatus.textContent = 'Suggested \"' + res.data.site_name + '\" — no matching .com/.co.uk found available, check manually.';
+					} else {
+						nameStatus.textContent = 'Suggested \"' + res.data.site_name + '\" — add a Spaceship API key/secret on Settings to also check domain availability.';
+					}
+				} )
+				.catch( function() {
+					nameStatus.textContent = '';
 				} );
 		}
 

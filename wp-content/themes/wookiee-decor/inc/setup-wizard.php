@@ -144,7 +144,8 @@ function wookiee_render_setup_wizard_page() {
 				<tr>
 					<th scope="row"><label for="blogname">Site title</label></th>
 					<td><input type="text" name="blogname" id="blogname" value="<?php echo esc_attr( get_bloginfo( 'name' ) ); ?>" class="regular-text">
-					<p class="description">Shown in the header, footer, and browser tab.</p></td>
+					<p class="description">Shown in the header, footer, and browser tab. Auto-suggested (with a domain check, if configured) whenever a company is looked up or picked above.</p>
+					<p><span id="wookiee-site-name-status" style="color:#646970;"></span></p></td>
 				</tr>
 			</table>
 			<table class="widefat" style="max-width:700px;">

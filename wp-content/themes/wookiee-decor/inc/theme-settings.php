@@ -25,6 +25,8 @@ function wookiee_settings_fields() {
 		'registered_address'  => array( 'label' => 'Registered office address', 'default' => "Wookiee Decor Ltd\n28 Johnston Park, Cowdenbeath\nKY4 9AZ, United Kingdom", 'type' => 'textarea' ),
 		'company_number'     => array( 'label' => 'Company number or name', 'default' => 'SC769264 or Netlinko Ltd', 'type' => 'text' ),
 		'companies_house_api_key' => array( 'label' => 'Companies House API key', 'default' => '', 'type' => 'password' ),
+		'spaceship_api_key'    => array( 'label' => 'Spaceship API key', 'default' => '', 'type' => 'password' ),
+		'spaceship_api_secret' => array( 'label' => 'Spaceship API secret', 'default' => '', 'type' => 'password' ),
 		'llm_api_key'        => array( 'label' => 'LLM API key', 'default' => '', 'type' => 'password' ),
 		'llm_base_url'       => array( 'label' => 'LLM base URL', 'default' => 'https://api.openai.com/v1', 'type' => 'text' ),
 		'llm_default_model'  => array( 'label' => 'LLM default model', 'default' => 'gpt-4o-mini', 'type' => 'text' ),
@@ -159,7 +161,7 @@ function wookiee_settings_tabs() {
 		),
 		'integrations' => array(
 			'label'  => 'AI & Integrations',
-			'fields' => array( 'llm_api_key', 'llm_base_url', 'llm_default_model', 'cj_email', 'cj_api_key', 'product_markup_percent', 'bg_removal_provider', 'cloudinary_cloud_name', 'cloudinary_api_key', 'cloudinary_api_secret', 'rembg_endpoint_url', 'google_ads_developer_token', 'google_ads_client_id', 'google_ads_client_secret', 'google_ads_refresh_token', 'google_ads_customer_id', 'google_ads_login_customer_id' ),
+			'fields' => array( 'llm_api_key', 'llm_base_url', 'llm_default_model', 'cj_email', 'cj_api_key', 'product_markup_percent', 'bg_removal_provider', 'cloudinary_cloud_name', 'cloudinary_api_key', 'cloudinary_api_secret', 'rembg_endpoint_url', 'google_ads_developer_token', 'google_ads_client_id', 'google_ads_client_secret', 'google_ads_refresh_token', 'google_ads_customer_id', 'google_ads_login_customer_id', 'spaceship_api_key', 'spaceship_api_secret' ),
 		),
 	);
 }
@@ -264,6 +266,9 @@ function wookiee_render_settings_field_row( $key, $field ) {
 			<?php endif; ?>
 			<?php if ( 'rembg_endpoint_url' === $key ) : ?>
 				<p class="description">The internal address of the self-hosted rembg container on your Docker network - see the compose service added alongside this feature. Default assumes a service named <code>rembg</code> on the same network as WordPress.</p>
+			<?php endif; ?>
+			<?php if ( 'spaceship_api_key' === $key ) : ?>
+				<p class="description">Powers the domain-availability check that runs automatically on the Setup wizard's Business Identity step, when a company is looked up or picked from search - suggests a short, brandable site title and checks whether the matching <code>.com</code>/<code>.co.uk</code> is free. Create a key + secret pair in the <a href="https://www.spaceship.com/application/manage-api-keys/" target="_blank" rel="noopener">Spaceship API Manager</a> with the <code>domains:read</code> scope. Leave blank to skip the domain check (the site title is still suggested).</p>
 			<?php endif; ?>
 			<?php if ( 'google_ads_developer_token' === $key ) : ?>
 				<p class="description">Powers real keyword search-volume and CPC data for the Product Generator, grounding its AI concept picks in actual demand instead of guessing. From your Google Ads Manager account - "Basic access" is needed for real (non-test) data; Google reviews that application separately from creating the token itself.</p>
@@ -701,6 +706,133 @@ function wookiee_ch_search_handler() {
 	}
 
 	wp_send_json_success( array( 'results' => array_slice( $active, 0, 10 ) ) );
+}
+
+/**
+ * Turns a registered company name into short, brandable site-title
+ * candidates - strips only true legal/corporate-structure suffixes
+ * (Ltd, Group, Holdings, etc.), keeps every other word (a descriptive
+ * word like "Enterprise" is part of the brand, not boilerplate),
+ * concatenates what's left, and offers a few truncation lengths from
+ * most-descriptive to shortest so a domain check has fallbacks to try
+ * if the longest one is taken. E.g. "Netlinko Ltd" -> "netlinko";
+ * "Netlinko Enterprise Group" -> "netlinkoenterp" (14-char cap).
+ */
+function wookiee_generate_site_name_candidates( $company_name ) {
+	$suffixes = array( 'ltd', 'limited', 'llp', 'llc', 'plc', 'inc', 'incorporated', 'corp', 'corporation', 'group', 'holdings', 'holding', 'co', 'company' );
+
+	$name  = strtolower( trim( (string) $company_name ) );
+	$name  = str_replace( '&', ' and ', $name );
+	$words = preg_split( '/[^a-z0-9]+/', $name, -1, PREG_SPLIT_NO_EMPTY );
+
+	$kept = array_values( array_diff( $words, $suffixes ) );
+	if ( empty( $kept ) ) {
+		$kept = ! empty( $words ) ? $words : array( 'mystore' );
+	}
+
+	$base = preg_replace( '/[^a-z0-9]/', '', implode( '', $kept ) );
+	if ( '' === $base ) {
+		$base = 'mystore';
+	}
+
+	$candidates = array();
+	foreach ( array( 14, 10, 8 ) as $len ) {
+		$slug = substr( $base, 0, $len );
+		if ( strlen( $slug ) >= 3 && ! in_array( $slug, $candidates, true ) ) {
+			$candidates[] = $slug;
+		}
+	}
+	return ! empty( $candidates ) ? $candidates : array( $base );
+}
+
+/**
+ * Server-side proxy for Spaceship's domain-availability check (one
+ * domain per call - docs.spaceship.dev, 5 req/domain per 300s and
+ * 30 req/user per 30s). Returns true/false, or a WP_Error if the keys
+ * aren't configured or the API call itself fails - callers treat that
+ * as "couldn't check" rather than "taken".
+ */
+function wookiee_check_domain_availability( $domain ) {
+	$api_key    = wookiee_get_setting( 'spaceship_api_key' );
+	$api_secret = wookiee_get_setting( 'spaceship_api_secret' );
+
+	if ( '' === trim( (string) $api_key ) || '' === trim( (string) $api_secret ) ) {
+		return new WP_Error( 'wookiee_no_spaceship_key', 'Spaceship API key/secret not configured.' );
+	}
+
+	$response = wp_remote_get(
+		'https://spaceship.dev/api/v1/domains/' . rawurlencode( $domain ) . '/available',
+		array(
+			'headers' => array(
+				'X-Api-Key'    => $api_key,
+				'X-Api-Secret' => $api_secret,
+			),
+			'timeout' => 15,
+		)
+	);
+
+	if ( is_wp_error( $response ) ) {
+		return $response;
+	}
+
+	if ( 200 !== wp_remote_retrieve_response_code( $response ) ) {
+		return new WP_Error( 'wookiee_spaceship_http_error', 'Spaceship API returned HTTP ' . intval( wp_remote_retrieve_response_code( $response ) ) . '.' );
+	}
+
+	$data = json_decode( wp_remote_retrieve_body( $response ), true );
+	if ( ! is_array( $data ) || ! isset( $data['result'] ) ) {
+		return new WP_Error( 'wookiee_spaceship_bad_response', 'Could not read the Spaceship response.' );
+	}
+
+	return 'available' === $data['result'];
+}
+
+/**
+ * Suggests a short site title from a just-selected/looked-up company
+ * name, and (if Spaceship keys are configured) finds the first
+ * candidate whose .com or .co.uk is actually free - so the suggested
+ * title isn't just short, it's one this business could realistically
+ * register. Without Spaceship keys configured, still returns the
+ * generated name with checked=false rather than blocking the feature
+ * entirely on a third integration.
+ */
+add_action( 'wp_ajax_wookiee_suggest_site_name', 'wookiee_suggest_site_name_handler' );
+function wookiee_suggest_site_name_handler() {
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_send_json_error( array( 'message' => 'Not allowed.' ), 403 );
+	}
+	check_ajax_referer( 'wookiee_suggest_site_name', 'nonce' );
+
+	$company_name = isset( $_POST['company_name'] ) ? sanitize_text_field( wp_unslash( $_POST['company_name'] ) ) : '';
+	if ( '' === trim( $company_name ) ) {
+		wp_send_json_error( array( 'message' => 'No company name to work from.' ) );
+	}
+
+	$candidates    = wookiee_generate_site_name_candidates( $company_name );
+	$has_spaceship = '' !== trim( (string) wookiee_get_setting( 'spaceship_api_key' ) ) && '' !== trim( (string) wookiee_get_setting( 'spaceship_api_secret' ) );
+
+	if ( ! $has_spaceship ) {
+		wp_send_json_success( array( 'site_name' => ucfirst( $candidates[0] ), 'domain' => null, 'checked' => false ) );
+	}
+
+	foreach ( $candidates as $slug ) {
+		foreach ( array( 'com', 'co.uk' ) as $tld ) {
+			$available = wookiee_check_domain_availability( $slug . '.' . $tld );
+			if ( is_wp_error( $available ) ) {
+				wp_send_json_success( array(
+					'site_name' => ucfirst( $candidates[0] ),
+					'domain'    => null,
+					'checked'   => false,
+					'message'   => $available->get_error_message(),
+				) );
+			}
+			if ( $available ) {
+				wp_send_json_success( array( 'site_name' => ucfirst( $slug ), 'domain' => $slug . '.' . $tld, 'checked' => true ) );
+			}
+		}
+	}
+
+	wp_send_json_success( array( 'site_name' => ucfirst( $candidates[0] ), 'domain' => null, 'checked' => true ) );
 }
 
 /**

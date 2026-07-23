@@ -23,7 +23,7 @@ function wookiee_settings_fields() {
 		'support_hours'      => array( 'label' => 'Support hours', 'default' => 'Monday to Friday, 9am - 5pm', 'type' => 'text' ),
 		'business_name'      => array( 'label' => 'Registered company name', 'default' => 'Wookiee Decor Ltd', 'type' => 'text' ),
 		'registered_address'  => array( 'label' => 'Registered office address', 'default' => "Wookiee Decor Ltd\n28 Johnston Park, Cowdenbeath\nKY4 9AZ, United Kingdom", 'type' => 'textarea' ),
-		'company_number'     => array( 'label' => 'Company number', 'default' => 'SC769264', 'type' => 'text' ),
+		'company_number'     => array( 'label' => 'Company number or name', 'default' => 'SC769264 or Netlinko Ltd', 'type' => 'text' ),
 		'companies_house_api_key' => array( 'label' => 'Companies House API key', 'default' => '', 'type' => 'password' ),
 		'llm_api_key'        => array( 'label' => 'LLM API key', 'default' => '', 'type' => 'password' ),
 		'llm_base_url'       => array( 'label' => 'LLM base URL', 'default' => 'https://api.openai.com/v1', 'type' => 'text' ),
@@ -238,12 +238,7 @@ function wookiee_render_settings_field_row( $key, $field ) {
 					<button type="button" class="button" id="wookiee-ch-lookup-btn">Look up on Companies House</button>
 					<span id="wookiee-ch-lookup-status" style="margin-left:8px;"></span>
 				</p>
-				<p class="description">Fills in the registered company name and address below from the official Companies House register. Requires an API key (below) — get one free at <a href="https://developer.company-information.service.gov.uk/" target="_blank" rel="noopener">developer.company-information.service.gov.uk</a>. Review the filled-in fields before saving.</p>
-				<p class="description">
-					Don't know the number? Search by name instead:
-					<input type="text" id="wookiee-ch-search-name" class="regular-text" placeholder="e.g. Netlinko Ltd">
-					<button type="button" class="button" id="wookiee-ch-search-btn">Search</button>
-				</p>
+				<p class="description">Fills in the registered company name and address below from the official Companies House register — enter the exact company number, or just the company name to search a list of matches. Requires an API key (below) — get one free at <a href="https://developer.company-information.service.gov.uk/" target="_blank" rel="noopener">developer.company-information.service.gov.uk</a>. Review the filled-in fields before saving.</p>
 				<div id="wookiee-ch-search-results" class="wookiee-ch-search-results" hidden></div>
 			<?php endif; ?>
 			<?php if ( 'companies_house_api_key' === $key ) : ?>

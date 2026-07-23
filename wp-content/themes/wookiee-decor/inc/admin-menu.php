@@ -188,56 +188,45 @@ function wookiee_enqueue_niche_suggest_assets( $hook ) {
 		wireInlineGenerator( 'wookiee-about-ai-btn', 'wookiee-about-ai-brief', 'wookiee-about-ai-status', 'wookiee_inline_generate_about_contact_copy', " . wp_json_encode( wp_create_nonce( 'wookiee_inline_about_contact_copy' ) ) . " );
 		wireInlineGenerator( 'wookiee-about-ai-btn-contact', 'wookiee-about-ai-brief-contact', 'wookiee-about-ai-status-contact', 'wookiee_inline_generate_about_contact_copy', " . wp_json_encode( wp_create_nonce( 'wookiee_inline_about_contact_copy' ) ) . " );
 
-		// Companies House lookup button - fills business_name/registered_address
-		// from the company number, wherever that field row is rendered
-		// (Settings' Business Identity tab, or the Setup wizard's step 1).
-		var chBtn = document.getElementById( 'wookiee-ch-lookup-btn' );
-		if ( chBtn ) {
-			chBtn.addEventListener( 'click', function() {
-				var status      = document.getElementById( 'wookiee-ch-lookup-status' );
-				var numberField = document.getElementById( 'wookiee_setting_company_number' );
-				var number      = numberField ? numberField.value.trim() : '';
-				if ( ! number ) {
-					status.textContent = 'Enter a company number first.';
-					return;
-				}
-				chBtn.disabled = true;
-				status.textContent = 'Looking up…';
-				var chData = new FormData();
-				chData.append( 'action', 'wookiee_ch_lookup' );
-				chData.append( 'nonce', " . wp_json_encode( wp_create_nonce( 'wookiee_ch_lookup' ) ) . " );
-				chData.append( 'company_number', number );
-				fetch( ajaxurl, { method: 'POST', credentials: 'same-origin', body: chData } )
-					.then( function( r ) { return r.json(); } )
-					.then( function( res ) {
-						chBtn.disabled = false;
-						if ( ! res.success ) {
-							status.textContent = res.data && res.data.message ? res.data.message : 'Lookup failed.';
-							return;
-						}
-						var nameField = document.getElementById( 'wookiee_setting_business_name' );
-						var addrField = document.getElementById( 'wookiee_setting_registered_address' );
-						if ( nameField ) { nameField.value = res.data.company_name; }
-						if ( addrField ) { addrField.value = res.data.address; }
-						status.textContent = 'Found: ' + res.data.company_name + ' (status: ' + res.data.company_status + '). Review the fields, then click Save Changes.';
-					} )
-					.catch( function() {
-						chBtn.disabled = false;
-						status.textContent = 'Lookup failed — could not reach the server.';
-					} );
-			} );
+		// Companies House lookup button - one field accepts either the exact
+		// company number (fills business_name/registered_address directly)
+		// or a company name (shows a scrollable list of active matches to
+		// pick from, wherever this field row is rendered: Settings' Business
+		// Identity tab, or the Setup wizard's step 1).
+		var chBtn           = document.getElementById( 'wookiee-ch-lookup-btn' );
+		var chNumberField   = document.getElementById( 'wookiee_setting_company_number' );
+		var chSearchResults = document.getElementById( 'wookiee-ch-search-results' );
+
+		function runChNumberLookup( number, status ) {
+			chBtn.disabled = true;
+			status.textContent = 'Looking up…';
+			var chData = new FormData();
+			chData.append( 'action', 'wookiee_ch_lookup' );
+			chData.append( 'nonce', " . wp_json_encode( wp_create_nonce( 'wookiee_ch_lookup' ) ) . " );
+			chData.append( 'company_number', number );
+			fetch( ajaxurl, { method: 'POST', credentials: 'same-origin', body: chData } )
+				.then( function( r ) { return r.json(); } )
+				.then( function( res ) {
+					chBtn.disabled = false;
+					if ( ! res.success ) {
+						status.textContent = res.data && res.data.message ? res.data.message : 'Lookup failed.';
+						return;
+					}
+					var nameField = document.getElementById( 'wookiee_setting_business_name' );
+					var addrField = document.getElementById( 'wookiee_setting_registered_address' );
+					if ( nameField ) { nameField.value = res.data.company_name; }
+					if ( addrField ) { addrField.value = res.data.address; }
+					status.textContent = 'Found: ' + res.data.company_name + ' (status: ' + res.data.company_status + '). Review the fields, then click Save Changes.';
+				} )
+				.catch( function() {
+					chBtn.disabled = false;
+					status.textContent = 'Lookup failed — could not reach the server.';
+				} );
 		}
 
-		// Search by company name - returns active companies matching, in a
-		// scrollable list. Picking one just fills the number field and
-		// re-uses the lookup above rather than duplicating the fill logic.
-		var chSearchBtn     = document.getElementById( 'wookiee-ch-search-btn' );
-		var chSearchInput   = document.getElementById( 'wookiee-ch-search-name' );
-		var chSearchResults = document.getElementById( 'wookiee-ch-search-results' );
-		function runChSearch() {
-			var name = chSearchInput ? chSearchInput.value.trim() : '';
-			if ( ! name ) { return; }
-			chSearchBtn.disabled = true;
+		function runChNameSearch( name, status ) {
+			chBtn.disabled = true;
+			status.textContent = 'Searching…';
 			chSearchResults.hidden = false;
 			chSearchResults.innerHTML = '<p class=\"wookiee-ch-search-msg\">Searching…</p>';
 			var searchData = new FormData();
@@ -247,7 +236,8 @@ function wookiee_enqueue_niche_suggest_assets( $hook ) {
 			fetch( ajaxurl, { method: 'POST', credentials: 'same-origin', body: searchData } )
 				.then( function( r ) { return r.json(); } )
 				.then( function( res ) {
-					chSearchBtn.disabled = false;
+					chBtn.disabled = false;
+					status.textContent = '';
 					if ( ! res.success ) {
 						chSearchResults.innerHTML = '<p class=\"wookiee-ch-search-msg\">' + ( res.data && res.data.message ? res.data.message : 'Search failed.' ) + '</p>';
 						return;
@@ -259,29 +249,39 @@ function wookiee_enqueue_niche_suggest_assets( $hook ) {
 						row.className = 'wookiee-ch-search-result';
 						row.innerHTML = '<strong>' + item.title + '</strong><br><span>' + item.company_number + ( item.address ? ' — ' + item.address : '' ) + '</span>';
 						row.addEventListener( 'click', function() {
-							var numberField = document.getElementById( 'wookiee_setting_company_number' );
-							if ( numberField ) { numberField.value = item.company_number; }
 							chSearchResults.hidden = true;
 							chSearchResults.innerHTML = '';
-							chSearchInput.value = '';
-							if ( chBtn ) { chBtn.click(); }
+							chNumberField.value = item.company_number;
+							runChNumberLookup( item.company_number, status );
 						} );
 						chSearchResults.appendChild( row );
 					} );
 				} )
 				.catch( function() {
-					chSearchBtn.disabled = false;
+					chBtn.disabled = false;
 					chSearchResults.innerHTML = '<p class=\"wookiee-ch-search-msg\">Search failed — could not reach the server.</p>';
 				} );
 		}
-		if ( chSearchBtn ) {
-			chSearchBtn.addEventListener( 'click', runChSearch );
-		}
-		if ( chSearchInput ) {
-			chSearchInput.addEventListener( 'keydown', function( e ) {
-				if ( 'Enter' === e.key ) {
-					e.preventDefault();
-					runChSearch();
+
+		if ( chBtn && chNumberField ) {
+			chBtn.addEventListener( 'click', function() {
+				var status = document.getElementById( 'wookiee-ch-lookup-status' );
+				var value  = chNumberField.value.trim();
+				if ( ! value ) {
+					status.textContent = 'Enter a company number or name first.';
+					return;
+				}
+				chSearchResults.hidden = true;
+				chSearchResults.innerHTML = '';
+				// Real Companies House numbers are 6-8 characters ending in
+				// digits (e.g. 12345678, SC769264, NI045678) - names almost
+				// never match that shape, so this is enough to route
+				// correctly without asking the admin to pick a mode.
+				var looksLikeNumber = /^[A-Za-z]{0,2}[0-9]{6,8}$/.test( value.replace( /\s+/g, '' ) );
+				if ( looksLikeNumber ) {
+					runChNumberLookup( value, status );
+				} else {
+					runChNameSearch( value, status );
 				}
 			} );
 		}

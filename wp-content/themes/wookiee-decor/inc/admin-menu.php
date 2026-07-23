@@ -344,14 +344,15 @@ function wookiee_enqueue_niche_suggest_assets( $hook ) {
 			return row;
 		}
 
-		function makeRegField( labelText, inputType, id, value ) {
+		function makeRegField( labelText, inputType, id, value, placeholder, optional ) {
 			var tr = document.createElement( 'tr' );
 			var th = document.createElement( 'th' );
-			th.textContent = labelText;
+			th.textContent = optional ? ( labelText + ' (optional)' ) : labelText;
 			var td = document.createElement( 'td' );
 			var input = document.createElement( 'input' );
 			input.type = inputType;
 			input.id = id;
+			if ( placeholder ) { input.placeholder = placeholder; }
 			if ( value ) { input.value = value; }
 			td.appendChild( input );
 			tr.appendChild( th );
@@ -386,17 +387,17 @@ function wookiee_enqueue_niche_suggest_assets( $hook ) {
 			table.className = 'form-table';
 			var orgField = document.getElementById( 'wookiee_setting_business_name' );
 
-			table.appendChild( makeRegField( 'First name', 'text', 'wookiee-reg-first-name' ) );
-			table.appendChild( makeRegField( 'Last name', 'text', 'wookiee-reg-last-name' ) );
-			table.appendChild( makeRegField( 'Organization', 'text', 'wookiee-reg-org', orgField ? orgField.value : '' ) );
-			table.appendChild( makeRegField( 'Email', 'email', 'wookiee-reg-email' ) );
-			table.appendChild( makeRegField( 'Phone', 'tel', 'wookiee-reg-phone' ) );
-			table.appendChild( makeRegField( 'Address line 1', 'text', 'wookiee-reg-address1' ) );
-			table.appendChild( makeRegField( 'Address line 2', 'text', 'wookiee-reg-address2' ) );
-			table.appendChild( makeRegField( 'City', 'text', 'wookiee-reg-city' ) );
-			table.appendChild( makeRegField( 'County/State', 'text', 'wookiee-reg-state' ) );
-			table.appendChild( makeRegField( 'Postal code', 'text', 'wookiee-reg-postal' ) );
-			table.appendChild( makeRegField( 'Country (2-letter code)', 'text', 'wookiee-reg-country', 'GB' ) );
+			table.appendChild( makeRegField( 'First name', 'text', 'wookiee-reg-first-name', '', 'John' ) );
+			table.appendChild( makeRegField( 'Last name', 'text', 'wookiee-reg-last-name', '', 'Smith' ) );
+			table.appendChild( makeRegField( 'Organization', 'text', 'wookiee-reg-org', orgField ? orgField.value : '', 'Company or organisation name', true ) );
+			table.appendChild( makeRegField( 'Email', 'email', 'wookiee-reg-email', '', 'you@example.com' ) );
+			table.appendChild( makeRegField( 'Phone', 'tel', 'wookiee-reg-phone', '', '+44.7911123456' ) );
+			table.appendChild( makeRegField( 'Address line 1', 'text', 'wookiee-reg-address1', '', 'House number and street' ) );
+			table.appendChild( makeRegField( 'Address line 2', 'text', 'wookiee-reg-address2', '', 'Apartment, suite, etc.', true ) );
+			table.appendChild( makeRegField( 'City', 'text', 'wookiee-reg-city', '', 'Town or city' ) );
+			table.appendChild( makeRegField( 'County/State', 'text', 'wookiee-reg-state', '', 'County or state', true ) );
+			table.appendChild( makeRegField( 'Postal code', 'text', 'wookiee-reg-postal', '', 'Postcode', true ) );
+			table.appendChild( makeRegField( 'Country (2-letter code)', 'text', 'wookiee-reg-country', 'GB', 'e.g. GB' ) );
 
 			var yearsRow = document.createElement( 'tr' );
 			var yearsTh  = document.createElement( 'th' );
@@ -457,7 +458,7 @@ function wookiee_enqueue_niche_suggest_assets( $hook ) {
 			var nsHosts = document.createElement( 'textarea' );
 			nsHosts.id = 'wookiee-reg-ns-hosts';
 			nsHosts.rows = 3;
-			nsHosts.placeholder = 'ns1.example.com\nns2.example.com';
+			nsHosts.placeholder = 'ns1.example.com\\nns2.example.com';
 			var nsHostsNote = document.createElement( 'p' );
 			nsHostsNote.className = 'description';
 			nsHostsNote.textContent = 'One per line, 2 to 12 total.';
@@ -538,7 +539,7 @@ function wookiee_enqueue_niche_suggest_assets( $hook ) {
 
 				var nsHostsList = null;
 				if ( nsCustomRadio.checked ) {
-					nsHostsList = nsHosts.value.split( /[\r\n,]+/ ).map( function( h ) { return h.trim(); } ).filter( function( h ) { return h; } );
+					nsHostsList = nsHosts.value.split( /[\\r\\n,]+/ ).map( function( h ) { return h.trim(); } ).filter( function( h ) { return h; } );
 					if ( nsHostsList.length < 2 || nsHostsList.length > 12 ) {
 						status.textContent = 'Custom nameservers need between 2 and 12 hosts.';
 						return;
@@ -712,7 +713,7 @@ function wookiee_enqueue_niche_suggest_assets( $hook ) {
 					data.append( 'action', 'wookiee_set_domain_nameservers' );
 					data.append( 'nonce', " . wp_json_encode( wp_create_nonce( 'wookiee_register_domain' ) ) . " );
 					data.append( 'domain', domain );
-					data.append( 'hosts', nsHostsList.join( '\n' ) );
+					data.append( 'hosts', nsHostsList.join( '\\n' ) );
 					return fetch( ajaxurl, { method: 'POST', credentials: 'same-origin', body: data } )
 						.then( function( r ) { return r.json(); } )
 						.then( function( res ) { return res.success ? 'Nameservers updated.' : ( 'Nameserver update failed: ' + ( res.data && res.data.message ? res.data.message : 'unknown error.' ) ); } )

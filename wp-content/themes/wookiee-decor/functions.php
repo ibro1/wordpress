@@ -5,7 +5,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'WOOKIEE_VERSION', '1.0.36' );
+define( 'WOOKIEE_VERSION', '1.0.37' );
 define( 'WOOKIEE_DIR', trailingslashit( get_template_directory() ) );
 define( 'WOOKIEE_URI', trailingslashit( get_template_directory_uri() ) );
 define( 'WOOKIEE_CONTACT_EMAIL', 'info@wookied.com' );

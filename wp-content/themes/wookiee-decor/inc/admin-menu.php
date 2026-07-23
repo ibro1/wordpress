@@ -74,6 +74,34 @@ function wookiee_enqueue_niche_suggest_assets( $hook ) {
 		.wookiee-ch-search-result:hover { background: #f6f0e8; }
 		.wookiee-ch-search-result span { color: #646970; }
 		.wookiee-ch-search-msg { padding: 8px 10px; margin: 0; color: #646970; }
+		.wookiee-spinner {
+			display: inline-block; width: 14px; height: 14px; vertical-align: middle; margin-right: 6px;
+			border: 2px solid #dcdcde; border-top-color: #2271b1; border-radius: 50%;
+			animation: wookiee-suggest-spin 0.8s linear infinite;
+		}
+		.wookiee-domain-suggestions { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 10px; }
+		.wookiee-domain-suggestions-group { min-width: 220px; }
+		.wookiee-domain-suggestions-group h4 { margin: 0 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: #646970; }
+		.wookiee-domain-suggestion-row {
+			display: flex; align-items: center; justify-content: space-between; gap: 10px;
+			padding: 6px 10px; border: 1px solid #dcdcde; border-radius: 4px; margin-bottom: 6px; background: #fff;
+		}
+		.wookiee-domain-suggestion-row .button { flex-shrink: 0; }
+		.wookiee-register-domain-modal {
+			position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 100000;
+			display: flex; align-items: center; justify-content: center;
+		}
+		.wookiee-register-domain-card {
+			background: #fff; border-radius: 6px; padding: 24px; width: 480px; max-width: 92vw;
+			max-height: 86vh; overflow-y: auto;
+		}
+		.wookiee-register-domain-card h2 { margin-top: 0; }
+		.wookiee-register-domain-card .form-table th { width: 130px; }
+		.wookiee-register-domain-card input[type=text],
+		.wookiee-register-domain-card input[type=email],
+		.wookiee-register-domain-card input[type=tel],
+		.wookiee-register-domain-card select { width: 100%; }
+		.wookiee-register-domain-actions { display: flex; gap: 8px; margin-top: 16px; }
 	';
 	wp_register_style( 'wookiee-niche-suggest', false );
 	wp_enqueue_style( 'wookiee-niche-suggest' );
@@ -228,11 +256,16 @@ function wookiee_enqueue_niche_suggest_assets( $hook ) {
 		// Only present on the Setup wizard's Business Identity step, not
 		// the Settings page - suggests a short site title from whatever
 		// company was just looked up/picked, with a live .com/.co.uk
-		// availability check via Spaceship if that's configured.
+		// availability check (and Register button, if Spaceship is fully
+		// configured) for up to 3 candidates per extension.
 		function runSiteNameSuggest( companyName ) {
 			var blognameField = document.getElementById( 'blogname' );
-			var nameStatus    = document.getElementById( 'wookiee-site-name-status' );
+			var nameStatus     = document.getElementById( 'wookiee-site-name-status' );
+			var spinner        = document.getElementById( 'wookiee-site-name-spinner' );
+			var suggestWrap    = document.getElementById( 'wookiee-domain-suggestions' );
 			if ( ! blognameField || ! nameStatus || ! companyName ) { return; }
+			if ( spinner ) { spinner.hidden = false; }
+			if ( suggestWrap ) { suggestWrap.hidden = true; }
 			nameStatus.textContent = 'Suggesting a site title…';
 			var data = new FormData();
 			data.append( 'action', 'wookiee_suggest_site_name' );
@@ -241,22 +274,267 @@ function wookiee_enqueue_niche_suggest_assets( $hook ) {
 			fetch( ajaxurl, { method: 'POST', credentials: 'same-origin', body: data } )
 				.then( function( r ) { return r.json(); } )
 				.then( function( res ) {
+					if ( spinner ) { spinner.hidden = true; }
 					if ( ! res.success || ! res.data ) {
 						nameStatus.textContent = '';
 						return;
 					}
 					blognameField.value = res.data.site_name;
-					if ( res.data.domain ) {
-						nameStatus.textContent = 'Suggested \"' + res.data.site_name + '\" — ' + res.data.domain + ' is available.';
-					} else if ( res.data.checked ) {
-						nameStatus.textContent = 'Suggested \"' + res.data.site_name + '\" — no matching .com/.co.uk found available, check manually.';
-					} else {
-						nameStatus.textContent = 'Suggested \"' + res.data.site_name + '\" — add a Spaceship API key/secret on Settings to also check domain availability.';
-					}
+					renderDomainSuggestions( res.data );
 				} )
 				.catch( function() {
+					if ( spinner ) { spinner.hidden = true; }
 					nameStatus.textContent = '';
 				} );
+		}
+
+		function renderDomainSuggestions( result ) {
+			var nameStatus  = document.getElementById( 'wookiee-site-name-status' );
+			var suggestWrap = document.getElementById( 'wookiee-domain-suggestions' );
+			var comWrap     = document.getElementById( 'wookiee-domain-suggestions-com' );
+			var coukWrap    = document.getElementById( 'wookiee-domain-suggestions-couk' );
+
+			if ( ! result.checked || ! result.suggestions ) {
+				nameStatus.textContent = result.message
+					? ( 'Suggested ‘' + result.site_name + '’ — ' + result.message )
+					: ( 'Suggested ‘' + result.site_name + '’ — add a Spaceship API key/secret on Settings to also check domain availability.' );
+				return;
+			}
+
+			var total = result.suggestions.com.length + result.suggestions.co_uk.length;
+			if ( ! total ) {
+				nameStatus.textContent = 'Suggested ‘' + result.site_name + '’ — no matching .com/.co.uk found available nearby, check manually.';
+				return;
+			}
+
+			nameStatus.textContent = 'Suggested ‘' + result.site_name + '’ — pick a domain below to register, or keep the site title as-is.';
+			comWrap.innerHTML = '';
+			coukWrap.innerHTML = '';
+			result.suggestions.com.forEach( function( item ) { comWrap.appendChild( buildDomainSuggestionRow( item ) ); } );
+			result.suggestions.co_uk.forEach( function( item ) { coukWrap.appendChild( buildDomainSuggestionRow( item ) ); } );
+			if ( ! result.suggestions.com.length ) {
+				var noneCom = document.createElement( 'p' );
+				noneCom.className = 'description';
+				noneCom.textContent = 'None found available nearby.';
+				comWrap.appendChild( noneCom );
+			}
+			if ( ! result.suggestions.co_uk.length ) {
+				var noneCouk = document.createElement( 'p' );
+				noneCouk.className = 'description';
+				noneCouk.textContent = 'None found available nearby.';
+				coukWrap.appendChild( noneCouk );
+			}
+			suggestWrap.hidden = false;
+		}
+
+		function buildDomainSuggestionRow( item ) {
+			var row = document.createElement( 'div' );
+			row.className = 'wookiee-domain-suggestion-row';
+			var label = document.createElement( 'span' );
+			label.textContent = item.domain;
+			var btn = document.createElement( 'button' );
+			btn.type = 'button';
+			btn.className = 'button button-small';
+			btn.textContent = 'Register';
+			btn.addEventListener( 'click', function() { openRegisterDomainModal( item.domain ); } );
+			row.appendChild( label );
+			row.appendChild( btn );
+			return row;
+		}
+
+		function makeRegField( labelText, inputType, id, value ) {
+			var tr = document.createElement( 'tr' );
+			var th = document.createElement( 'th' );
+			th.textContent = labelText;
+			var td = document.createElement( 'td' );
+			var input = document.createElement( 'input' );
+			input.type = inputType;
+			input.id = id;
+			if ( value ) { input.value = value; }
+			td.appendChild( input );
+			tr.appendChild( th );
+			tr.appendChild( td );
+			return tr;
+		}
+
+		// Builds a real registration form as a page overlay - not wired
+		// into the Setup wizard's own step markup since it's a one-off
+		// modal, not something that needs to persist/reload with the rest
+		// of the page. Registering is a genuine purchase against whatever
+		// payment method is on the Spaceship account, so this asks for
+		// registrant details explicitly (nothing here is guessed/reused
+		// from elsewhere except the organization name) and requires an
+		// extra native confirm() on top of the modal's own Confirm button.
+		function openRegisterDomainModal( domain ) {
+			var overlay = document.createElement( 'div' );
+			overlay.className = 'wookiee-register-domain-modal';
+			var card = document.createElement( 'div' );
+			card.className = 'wookiee-register-domain-card';
+
+			var heading = document.createElement( 'h2' );
+			heading.textContent = 'Register ' + domain;
+			card.appendChild( heading );
+
+			var notice = document.createElement( 'p' );
+			notice.className = 'description';
+			notice.textContent = 'This is a real purchase, charged to whatever payment method is on file for your Spaceship account — not a preview. Review everything below before confirming.';
+			card.appendChild( notice );
+
+			var table = document.createElement( 'table' );
+			table.className = 'form-table';
+			var orgField = document.getElementById( 'wookiee_setting_business_name' );
+
+			table.appendChild( makeRegField( 'First name', 'text', 'wookiee-reg-first-name' ) );
+			table.appendChild( makeRegField( 'Last name', 'text', 'wookiee-reg-last-name' ) );
+			table.appendChild( makeRegField( 'Organization', 'text', 'wookiee-reg-org', orgField ? orgField.value : '' ) );
+			table.appendChild( makeRegField( 'Email', 'email', 'wookiee-reg-email' ) );
+			table.appendChild( makeRegField( 'Phone', 'tel', 'wookiee-reg-phone' ) );
+			table.appendChild( makeRegField( 'Address line 1', 'text', 'wookiee-reg-address1' ) );
+			table.appendChild( makeRegField( 'Address line 2', 'text', 'wookiee-reg-address2' ) );
+			table.appendChild( makeRegField( 'City', 'text', 'wookiee-reg-city' ) );
+			table.appendChild( makeRegField( 'County/State', 'text', 'wookiee-reg-state' ) );
+			table.appendChild( makeRegField( 'Postal code', 'text', 'wookiee-reg-postal' ) );
+			table.appendChild( makeRegField( 'Country (2-letter code)', 'text', 'wookiee-reg-country', 'GB' ) );
+
+			var yearsRow = document.createElement( 'tr' );
+			var yearsTh  = document.createElement( 'th' );
+			yearsTh.textContent = 'Years';
+			var yearsTd  = document.createElement( 'td' );
+			var yearsSelect = document.createElement( 'select' );
+			yearsSelect.id = 'wookiee-reg-years';
+			for ( var y = 1; y <= 10; y++ ) {
+				var opt = document.createElement( 'option' );
+				opt.value = String( y );
+				opt.textContent = y > 1 ? ( y + ' years' ) : '1 year';
+				yearsSelect.appendChild( opt );
+			}
+			yearsTd.appendChild( yearsSelect );
+			yearsRow.appendChild( yearsTh );
+			yearsRow.appendChild( yearsTd );
+			table.appendChild( yearsRow );
+
+			var renewRow = document.createElement( 'tr' );
+			var renewTh  = document.createElement( 'th' );
+			renewTh.textContent = 'Auto-renew';
+			var renewTd  = document.createElement( 'td' );
+			var renewLabel = document.createElement( 'label' );
+			var renewCheck = document.createElement( 'input' );
+			renewCheck.type = 'checkbox';
+			renewCheck.id = 'wookiee-reg-autorenew';
+			renewLabel.appendChild( renewCheck );
+			renewLabel.appendChild( document.createTextNode( ' Renew automatically each term (off by default)' ) );
+			renewTd.appendChild( renewLabel );
+			renewRow.appendChild( renewTh );
+			renewRow.appendChild( renewTd );
+			table.appendChild( renewRow );
+
+			card.appendChild( table );
+
+			var status = document.createElement( 'p' );
+			status.id = 'wookiee-reg-status';
+			status.style.color = '#646970';
+			card.appendChild( status );
+
+			var actions = document.createElement( 'div' );
+			actions.className = 'wookiee-register-domain-actions';
+			var confirmBtn = document.createElement( 'button' );
+			confirmBtn.type = 'button';
+			confirmBtn.className = 'button button-primary';
+			confirmBtn.textContent = 'Confirm & register';
+			var cancelBtn = document.createElement( 'button' );
+			cancelBtn.type = 'button';
+			cancelBtn.className = 'button';
+			cancelBtn.textContent = 'Cancel';
+			actions.appendChild( confirmBtn );
+			actions.appendChild( cancelBtn );
+			card.appendChild( actions );
+
+			overlay.appendChild( card );
+			document.body.appendChild( overlay );
+
+			cancelBtn.addEventListener( 'click', function() { overlay.remove(); } );
+
+			confirmBtn.addEventListener( 'click', function() {
+				var fields = {
+					first_name: document.getElementById( 'wookiee-reg-first-name' ).value.trim(),
+					last_name: document.getElementById( 'wookiee-reg-last-name' ).value.trim(),
+					organization: document.getElementById( 'wookiee-reg-org' ).value.trim(),
+					email: document.getElementById( 'wookiee-reg-email' ).value.trim(),
+					phone: document.getElementById( 'wookiee-reg-phone' ).value.trim(),
+					address1: document.getElementById( 'wookiee-reg-address1' ).value.trim(),
+					address2: document.getElementById( 'wookiee-reg-address2' ).value.trim(),
+					city: document.getElementById( 'wookiee-reg-city' ).value.trim(),
+					state: document.getElementById( 'wookiee-reg-state' ).value.trim(),
+					postal_code: document.getElementById( 'wookiee-reg-postal' ).value.trim(),
+					country: document.getElementById( 'wookiee-reg-country' ).value.trim(),
+					years: yearsSelect.value,
+					auto_renew: renewCheck.checked,
+				};
+				if ( ! fields.first_name || ! fields.last_name || ! fields.email || ! fields.phone || ! fields.address1 || ! fields.city || ! fields.country ) {
+					status.textContent = 'Fill in every required field first.';
+					return;
+				}
+				var confirmMsg = 'Register ' + domain + ' for ' + fields.years + ( fields.years > 1 ? ' years' : ' year' ) +
+					( fields.auto_renew ? ' with auto-renew ON' : ' with auto-renew OFF' ) +
+					'. This charges your Spaceship account now. Continue?';
+				if ( ! window.confirm( confirmMsg ) ) { return; }
+
+				confirmBtn.disabled = true;
+				status.textContent = 'Submitting registration…';
+
+				var regData = new FormData();
+				regData.append( 'action', 'wookiee_register_domain' );
+				regData.append( 'nonce', " . wp_json_encode( wp_create_nonce( 'wookiee_register_domain' ) ) . " );
+				regData.append( 'domain', domain );
+				Object.keys( fields ).forEach( function( key ) { regData.append( key, fields[ key ] ); } );
+
+				fetch( ajaxurl, { method: 'POST', credentials: 'same-origin', body: regData } )
+					.then( function( r ) { return r.json(); } )
+					.then( function( res ) {
+						if ( ! res.success ) {
+							confirmBtn.disabled = false;
+							status.textContent = res.data && res.data.message ? res.data.message : 'Registration failed.';
+							return;
+						}
+						status.textContent = 'Registering… this can take up to a minute.';
+						pollDomainRegistration( res.data.operation_id, status, 0 );
+					} )
+					.catch( function() {
+						confirmBtn.disabled = false;
+						status.textContent = 'Registration failed — could not reach the server.';
+					} );
+			} );
+		}
+
+		function pollDomainRegistration( operationId, status, attempt ) {
+			if ( attempt >= 15 ) {
+				status.textContent = 'Still processing after a while — check your Spaceship dashboard for the final result.';
+				return;
+			}
+			setTimeout( function() {
+				var data = new FormData();
+				data.append( 'action', 'wookiee_poll_domain_registration' );
+				data.append( 'nonce', " . wp_json_encode( wp_create_nonce( 'wookiee_register_domain' ) ) . " );
+				data.append( 'operation_id', operationId );
+				fetch( ajaxurl, { method: 'POST', credentials: 'same-origin', body: data } )
+					.then( function( r ) { return r.json(); } )
+					.then( function( res ) {
+						if ( ! res.success ) {
+							status.textContent = res.data && res.data.message ? res.data.message : 'Could not check status.';
+							return;
+						}
+						if ( 'success' === res.data.status ) {
+							status.textContent = 'Registered! Point it at your site from your Spaceship dashboard, then update Site Address (URL) under Settings > General.';
+						} else if ( 'failed' === res.data.status ) {
+							status.textContent = 'Registration failed: ' + ( res.data.details || 'no further detail from Spaceship.' );
+						} else {
+							pollDomainRegistration( operationId, status, attempt + 1 );
+						}
+					} )
+					.catch( function() {
+						pollDomainRegistration( operationId, status, attempt + 1 );
+					} );
+			}, 3000 );
 		}
 
 		function runChNameSearch( name, status ) {

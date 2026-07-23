@@ -268,7 +268,7 @@ function wookiee_render_settings_field_row( $key, $field ) {
 				<p class="description">The internal address of the self-hosted rembg container on your Docker network - see the compose service added alongside this feature. Default assumes a service named <code>rembg</code> on the same network as WordPress.</p>
 			<?php endif; ?>
 			<?php if ( 'spaceship_api_key' === $key ) : ?>
-				<p class="description">Powers the domain-availability check that runs automatically on the Setup wizard's Business Identity step, when a company is looked up or picked from search - suggests a short, brandable site title and checks whether the matching <code>.com</code>/<code>.co.uk</code> is free. Create a key + secret pair in the <a href="https://www.spaceship.com/application/manage-api-keys/" target="_blank" rel="noopener">Spaceship API Manager</a> with the <code>domains:read</code> scope. Leave blank to skip the domain check (the site title is still suggested).</p>
+				<p class="description">Powers the domain-availability check and registration on the Setup wizard's Business Identity step, when a company is looked up or picked from search - suggests a short, brandable site title, lists available <code>.com</code>/<code>.co.uk</code> options, and can register one directly. Create a key + secret pair in the <a href="https://www.spaceship.com/application/api-manager/" target="_blank" rel="noopener">Spaceship API Manager</a> with the <code>domains:read</code> scope for the check, plus <code>contacts:write</code> and <code>domains:billing</code> if you also want the Register button to work (that charges the payment method on your Spaceship account - it's a real purchase, not a preview). Leave blank to skip the domain check entirely (the site title is still suggested).</p>
 			<?php endif; ?>
 			<?php if ( 'google_ads_developer_token' === $key ) : ?>
 				<p class="description">Powers real keyword search-volume and CPC data for the Product Generator, grounding its AI concept picks in actual demand instead of guessing. From your Google Ads Manager account - "Basic access" is needed for real (non-test) data; Google reviews that application separately from creating the token itself.</p>
@@ -788,13 +788,33 @@ function wookiee_check_domain_availability( $domain ) {
 }
 
 /**
+ * Expands the 3 base name candidates (14/10/8-char truncations) into a
+ * larger ordered pool to search through - the plain forms first (most
+ * on-brand), then generic suffix variants - so there's enough runway to
+ * find several genuinely available domains without the admin having to
+ * manually keep retrying different names.
+ */
+function wookiee_expand_site_name_candidates( array $base_candidates ) {
+	$expanded = $base_candidates;
+	foreach ( $base_candidates as $base ) {
+		foreach ( array( 'hq', 'shop', 'store', 'co', 'online' ) as $suffix ) {
+			$slug = $base . $suffix;
+			if ( ! in_array( $slug, $expanded, true ) ) {
+				$expanded[] = $slug;
+			}
+		}
+	}
+	return array_slice( $expanded, 0, 12 );
+}
+
+/**
  * Suggests a short site title from a just-selected/looked-up company
- * name, and (if Spaceship keys are configured) finds the first
- * candidate whose .com or .co.uk is actually free - so the suggested
- * title isn't just short, it's one this business could realistically
- * register. Without Spaceship keys configured, still returns the
- * generated name with checked=false rather than blocking the feature
- * entirely on a third integration.
+ * name, and (if Spaceship keys are configured) searches until it finds
+ * up to 3 available .com domains and 3 available .co.uk domains -
+ * .com checked first per candidate since that's the stated preference.
+ * Without Spaceship keys configured, still returns the generated name
+ * with checked=false rather than blocking the feature entirely on a
+ * third integration.
  */
 add_action( 'wp_ajax_wookiee_suggest_site_name', 'wookiee_suggest_site_name_handler' );
 function wookiee_suggest_site_name_handler() {
@@ -808,31 +828,223 @@ function wookiee_suggest_site_name_handler() {
 		wp_send_json_error( array( 'message' => 'No company name to work from.' ) );
 	}
 
-	$candidates    = wookiee_generate_site_name_candidates( $company_name );
-	$has_spaceship = '' !== trim( (string) wookiee_get_setting( 'spaceship_api_key' ) ) && '' !== trim( (string) wookiee_get_setting( 'spaceship_api_secret' ) );
+	$base_candidates = wookiee_generate_site_name_candidates( $company_name );
+	$has_spaceship   = '' !== trim( (string) wookiee_get_setting( 'spaceship_api_key' ) ) && '' !== trim( (string) wookiee_get_setting( 'spaceship_api_secret' ) );
 
 	if ( ! $has_spaceship ) {
-		wp_send_json_success( array( 'site_name' => ucfirst( $candidates[0] ), 'domain' => null, 'checked' => false ) );
+		wp_send_json_success( array( 'site_name' => ucfirst( $base_candidates[0] ), 'checked' => false, 'suggestions' => null ) );
 	}
 
+	$candidates = wookiee_expand_site_name_candidates( $base_candidates );
+	$found      = array( 'com' => array(), 'co.uk' => array() );
+
 	foreach ( $candidates as $slug ) {
+		if ( count( $found['com'] ) >= 3 && count( $found['co.uk'] ) >= 3 ) {
+			break;
+		}
 		foreach ( array( 'com', 'co.uk' ) as $tld ) {
+			if ( count( $found[ $tld ] ) >= 3 ) {
+				continue;
+			}
 			$available = wookiee_check_domain_availability( $slug . '.' . $tld );
 			if ( is_wp_error( $available ) ) {
 				wp_send_json_success( array(
-					'site_name' => ucfirst( $candidates[0] ),
-					'domain'    => null,
-					'checked'   => false,
-					'message'   => $available->get_error_message(),
+					'site_name'   => ucfirst( $base_candidates[0] ),
+					'checked'     => false,
+					'suggestions' => null,
+					'message'     => $available->get_error_message(),
 				) );
 			}
 			if ( $available ) {
-				wp_send_json_success( array( 'site_name' => ucfirst( $slug ), 'domain' => $slug . '.' . $tld, 'checked' => true ) );
+				$found[ $tld ][] = array( 'domain' => $slug . '.' . $tld, 'slug' => $slug, 'site_name' => ucfirst( $slug ) );
 			}
 		}
 	}
 
-	wp_send_json_success( array( 'site_name' => ucfirst( $candidates[0] ), 'domain' => null, 'checked' => true ) );
+	$site_name = ! empty( $found['com'] ) ? $found['com'][0]['site_name'] : ( ! empty( $found['co.uk'] ) ? $found['co.uk'][0]['site_name'] : ucfirst( $base_candidates[0] ) );
+
+	wp_send_json_success( array(
+		'site_name'   => $site_name,
+		'checked'     => true,
+		'suggestions' => array( 'com' => $found['com'], 'co_uk' => $found['co.uk'] ),
+	) );
+}
+
+/**
+ * Creates a Spaceship registrant/admin/tech/billing contact record -
+ * required before a domain can actually be registered (as opposed to
+ * just checked for availability). Returns the new contactId, which is
+ * single-use input to the registration call right after - nothing here
+ * is stored long-term on the Spaceship side beyond what registration
+ * itself requires.
+ */
+function wookiee_ch_create_spaceship_contact( array $contact ) {
+	$api_key    = wookiee_get_setting( 'spaceship_api_key' );
+	$api_secret = wookiee_get_setting( 'spaceship_api_secret' );
+
+	$response = wp_remote_request(
+		'https://spaceship.dev/api/v1/contacts',
+		array(
+			'method'  => 'PUT',
+			'headers' => array(
+				'X-Api-Key'    => $api_key,
+				'X-Api-Secret' => $api_secret,
+				'Content-Type' => 'application/json',
+			),
+			'body'    => wp_json_encode( $contact ),
+			'timeout' => 15,
+		)
+	);
+
+	if ( is_wp_error( $response ) ) {
+		return $response;
+	}
+	$code = wp_remote_retrieve_response_code( $response );
+	$data = json_decode( wp_remote_retrieve_body( $response ), true );
+	if ( 200 !== $code && 201 !== $code ) {
+		$detail = is_array( $data ) && isset( $data['detail'] ) ? $data['detail'] : ( 'HTTP ' . intval( $code ) );
+		return new WP_Error( 'wookiee_spaceship_contact_error', 'Spaceship rejected the contact details: ' . $detail );
+	}
+	if ( ! is_array( $data ) || empty( $data['contactId'] ) ) {
+		return new WP_Error( 'wookiee_spaceship_contact_error', 'Spaceship did not return a contact ID.' );
+	}
+	return $data['contactId'];
+}
+
+/**
+ * Registers a domain through Spaceship - a real, billed purchase
+ * against whatever payment method is on file for that Spaceship
+ * account, not a preview or a WordPress-side simulation. Requires the
+ * API key to also carry contacts:write and domains:billing scopes
+ * (domains:read alone, used for the availability check, isn't enough).
+ * Auto-renew defaults to off client-side so a click here can't quietly
+ * turn into a recurring charge unless the admin explicitly opts in.
+ */
+add_action( 'wp_ajax_wookiee_register_domain', 'wookiee_register_domain_handler' );
+function wookiee_register_domain_handler() {
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_send_json_error( array( 'message' => 'Not allowed.' ), 403 );
+	}
+	check_ajax_referer( 'wookiee_register_domain', 'nonce' );
+
+	$api_key    = wookiee_get_setting( 'spaceship_api_key' );
+	$api_secret = wookiee_get_setting( 'spaceship_api_secret' );
+	if ( '' === trim( (string) $api_key ) || '' === trim( (string) $api_secret ) ) {
+		wp_send_json_error( array( 'message' => 'Add your Spaceship API key/secret on Settings first.' ) );
+	}
+
+	$domain = isset( $_POST['domain'] ) ? sanitize_text_field( wp_unslash( $_POST['domain'] ) ) : '';
+	$years  = isset( $_POST['years'] ) ? max( 1, min( 10, intval( $_POST['years'] ) ) ) : 1;
+	$auto_renew = ! empty( $_POST['auto_renew'] );
+
+	$contact = array(
+		'firstName'     => isset( $_POST['first_name'] ) ? sanitize_text_field( wp_unslash( $_POST['first_name'] ) ) : '',
+		'lastName'      => isset( $_POST['last_name'] ) ? sanitize_text_field( wp_unslash( $_POST['last_name'] ) ) : '',
+		'organization'  => isset( $_POST['organization'] ) ? sanitize_text_field( wp_unslash( $_POST['organization'] ) ) : '',
+		'email'         => isset( $_POST['email'] ) ? sanitize_email( wp_unslash( $_POST['email'] ) ) : '',
+		'address1'      => isset( $_POST['address1'] ) ? sanitize_text_field( wp_unslash( $_POST['address1'] ) ) : '',
+		'address2'      => isset( $_POST['address2'] ) ? sanitize_text_field( wp_unslash( $_POST['address2'] ) ) : '',
+		'city'          => isset( $_POST['city'] ) ? sanitize_text_field( wp_unslash( $_POST['city'] ) ) : '',
+		'stateProvince' => isset( $_POST['state'] ) ? sanitize_text_field( wp_unslash( $_POST['state'] ) ) : '',
+		'postalCode'    => isset( $_POST['postal_code'] ) ? sanitize_text_field( wp_unslash( $_POST['postal_code'] ) ) : '',
+		'country'       => isset( $_POST['country'] ) ? strtoupper( sanitize_text_field( wp_unslash( $_POST['country'] ) ) ) : '',
+		'phone'         => isset( $_POST['phone'] ) ? sanitize_text_field( wp_unslash( $_POST['phone'] ) ) : '',
+	);
+
+	if ( '' === $domain ) {
+		wp_send_json_error( array( 'message' => 'No domain specified.' ) );
+	}
+	foreach ( array( 'firstName', 'lastName', 'email', 'address1', 'city', 'country', 'phone' ) as $required ) {
+		if ( '' === trim( (string) $contact[ $required ] ) ) {
+			wp_send_json_error( array( 'message' => 'Fill in every required registrant field (first/last name, email, address, city, country, phone).' ) );
+		}
+	}
+
+	$contact_id = wookiee_ch_create_spaceship_contact( array_filter( $contact, function( $v ) { return '' !== $v; } ) );
+	if ( is_wp_error( $contact_id ) ) {
+		wp_send_json_error( array( 'message' => $contact_id->get_error_message() ) );
+	}
+
+	$response = wp_remote_request(
+		'https://spaceship.dev/api/v1/domains/' . rawurlencode( $domain ),
+		array(
+			'method'  => 'POST',
+			'headers' => array(
+				'X-Api-Key'    => $api_key,
+				'X-Api-Secret' => $api_secret,
+				'Content-Type' => 'application/json',
+			),
+			'body'    => wp_json_encode( array(
+				'autoRenew' => $auto_renew,
+				'years'     => $years,
+				'privacyProtection' => array( 'level' => 'high', 'userConsent' => true ),
+				'contacts'  => array(
+					'registrant' => $contact_id,
+					'admin'      => $contact_id,
+					'tech'       => $contact_id,
+					'billing'    => $contact_id,
+				),
+			) ),
+			'timeout' => 20,
+		)
+	);
+
+	if ( is_wp_error( $response ) ) {
+		wp_send_json_error( array( 'message' => $response->get_error_message() ) );
+	}
+	$code = wp_remote_retrieve_response_code( $response );
+	if ( 202 !== $code ) {
+		$data   = json_decode( wp_remote_retrieve_body( $response ), true );
+		$detail = is_array( $data ) && isset( $data['detail'] ) ? $data['detail'] : ( 'HTTP ' . intval( $code ) );
+		wp_send_json_error( array( 'message' => 'Spaceship declined the registration: ' . $detail ) );
+	}
+
+	$operation_id = wp_remote_retrieve_header( $response, 'spaceship-async-operationid' );
+	if ( ! $operation_id ) {
+		wp_send_json_error( array( 'message' => 'Spaceship accepted the request but returned no operation ID to track it.' ) );
+	}
+
+	wp_send_json_success( array( 'operation_id' => $operation_id ) );
+}
+
+/**
+ * Polls a domain-registration operation. Registration itself is async
+ * on Spaceship's side, so the register handler above returns as soon as
+ * the request is accepted - this is called repeatedly from the browser
+ * (not looped/slept on the server) until it reports success or failed.
+ */
+add_action( 'wp_ajax_wookiee_poll_domain_registration', 'wookiee_poll_domain_registration_handler' );
+function wookiee_poll_domain_registration_handler() {
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_send_json_error( array( 'message' => 'Not allowed.' ), 403 );
+	}
+	check_ajax_referer( 'wookiee_register_domain', 'nonce' );
+
+	$operation_id = isset( $_POST['operation_id'] ) ? sanitize_text_field( wp_unslash( $_POST['operation_id'] ) ) : '';
+	if ( '' === $operation_id ) {
+		wp_send_json_error( array( 'message' => 'No operation ID given.' ) );
+	}
+
+	$response = wp_remote_get(
+		'https://spaceship.dev/api/v1/async-operations/' . rawurlencode( $operation_id ),
+		array(
+			'headers' => array(
+				'X-Api-Key'    => wookiee_get_setting( 'spaceship_api_key' ),
+				'X-Api-Secret' => wookiee_get_setting( 'spaceship_api_secret' ),
+			),
+			'timeout' => 15,
+		)
+	);
+
+	if ( is_wp_error( $response ) ) {
+		wp_send_json_error( array( 'message' => $response->get_error_message() ) );
+	}
+	$data = json_decode( wp_remote_retrieve_body( $response ), true );
+	if ( ! is_array( $data ) || empty( $data['status'] ) ) {
+		wp_send_json_error( array( 'message' => 'Could not read the operation status.' ) );
+	}
+
+	wp_send_json_success( array( 'status' => $data['status'], 'details' => isset( $data['details'] ) ? $data['details'] : '' ) );
 }
 
 /**

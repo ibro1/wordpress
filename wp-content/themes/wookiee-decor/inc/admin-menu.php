@@ -299,7 +299,7 @@ function wookiee_enqueue_niche_suggest_assets( $hook ) {
 			if ( ! result.checked || ! result.suggestions ) {
 				nameStatus.textContent = result.message
 					? ( 'Suggested ‘' + result.site_name + '’ — ' + result.message )
-					: ( 'Suggested ‘' + result.site_name + '’ — add a Spaceship API key/secret on Settings to also check domain availability.' );
+					: ( 'Suggested ‘' + result.site_name + '’ — enable domain search on Settings to also check availability.' );
 				return;
 			}
 
@@ -379,7 +379,7 @@ function wookiee_enqueue_niche_suggest_assets( $hook ) {
 
 			var notice = document.createElement( 'p' );
 			notice.className = 'description';
-			notice.textContent = 'This is a real purchase, charged to whatever payment method is on file for your Spaceship account — not a preview. Review everything below before confirming.';
+			notice.textContent = 'Registering this domain is a real, billable purchase - it cannot be undone once submitted. Please review the details below before confirming.';
 			card.appendChild( notice );
 
 			var table = document.createElement( 'table' );
@@ -430,7 +430,66 @@ function wookiee_enqueue_niche_suggest_assets( $hook ) {
 			renewRow.appendChild( renewTd );
 			table.appendChild( renewRow );
 
+			var nsRow  = document.createElement( 'tr' );
+			var nsTh   = document.createElement( 'th' );
+			nsTh.textContent = 'Nameservers';
+			var nsTd   = document.createElement( 'td' );
+			var nsDefaultLabel = document.createElement( 'label' );
+			var nsDefaultRadio = document.createElement( 'input' );
+			nsDefaultRadio.type = 'radio';
+			nsDefaultRadio.name = 'wookiee-reg-ns-mode';
+			nsDefaultRadio.value = 'default';
+			nsDefaultRadio.checked = true;
+			nsDefaultLabel.appendChild( nsDefaultRadio );
+			nsDefaultLabel.appendChild( document.createTextNode( ' Use the default nameservers' ) );
+			var nsCustomLabel = document.createElement( 'label' );
+			nsCustomLabel.style.display = 'block';
+			nsCustomLabel.style.marginTop = '6px';
+			var nsCustomRadio = document.createElement( 'input' );
+			nsCustomRadio.type = 'radio';
+			nsCustomRadio.name = 'wookiee-reg-ns-mode';
+			nsCustomRadio.value = 'custom';
+			nsCustomLabel.appendChild( nsCustomRadio );
+			nsCustomLabel.appendChild( document.createTextNode( ' Use custom nameservers' ) );
+			var nsCustomWrap = document.createElement( 'div' );
+			nsCustomWrap.hidden = true;
+			nsCustomWrap.style.marginTop = '6px';
+			var nsHosts = document.createElement( 'textarea' );
+			nsHosts.id = 'wookiee-reg-ns-hosts';
+			nsHosts.rows = 3;
+			nsHosts.placeholder = 'ns1.example.com\nns2.example.com';
+			var nsHostsNote = document.createElement( 'p' );
+			nsHostsNote.className = 'description';
+			nsHostsNote.textContent = 'One per line, 2 to 12 total.';
+			nsCustomWrap.appendChild( nsHosts );
+			nsCustomWrap.appendChild( nsHostsNote );
+			nsDefaultRadio.addEventListener( 'change', function() { nsCustomWrap.hidden = true; } );
+			nsCustomRadio.addEventListener( 'change', function() { nsCustomWrap.hidden = false; } );
+			nsTd.appendChild( nsDefaultLabel );
+			nsTd.appendChild( nsCustomLabel );
+			nsTd.appendChild( nsCustomWrap );
+			nsRow.appendChild( nsTh );
+			nsRow.appendChild( nsTd );
+			table.appendChild( nsRow );
+
 			card.appendChild( table );
+
+			var dnsHeading = document.createElement( 'h3' );
+			dnsHeading.textContent = 'DNS records (optional)';
+			card.appendChild( dnsHeading );
+			var dnsNote = document.createElement( 'p' );
+			dnsNote.className = 'description';
+			dnsNote.textContent = 'Only applies when using the default nameservers above - custom nameservers manage their own records elsewhere.';
+			card.appendChild( dnsNote );
+			var dnsRows = document.createElement( 'div' );
+			dnsRows.id = 'wookiee-reg-dns-rows';
+			card.appendChild( dnsRows );
+			var dnsAddBtn = document.createElement( 'button' );
+			dnsAddBtn.type = 'button';
+			dnsAddBtn.className = 'button';
+			dnsAddBtn.textContent = 'Add DNS record';
+			dnsAddBtn.addEventListener( 'click', function() { addDnsRecordRow( dnsRows ); } );
+			card.appendChild( dnsAddBtn );
 
 			var status = document.createElement( 'p' );
 			status.id = 'wookiee-reg-status';
@@ -476,9 +535,46 @@ function wookiee_enqueue_niche_suggest_assets( $hook ) {
 					status.textContent = 'Fill in every required field first.';
 					return;
 				}
-				var confirmMsg = 'Register ' + domain + ' for ' + fields.years + ( fields.years > 1 ? ' years' : ' year' ) +
-					( fields.auto_renew ? ' with auto-renew ON' : ' with auto-renew OFF' ) +
-					'. This charges your Spaceship account now. Continue?';
+
+				var nsHostsList = null;
+				if ( nsCustomRadio.checked ) {
+					nsHostsList = nsHosts.value.split( /[\r\n,]+/ ).map( function( h ) { return h.trim(); } ).filter( function( h ) { return h; } );
+					if ( nsHostsList.length < 2 || nsHostsList.length > 12 ) {
+						status.textContent = 'Custom nameservers need between 2 and 12 hosts.';
+						return;
+					}
+				}
+
+				var dnsRecordsList = [];
+				var rowsInvalid = false;
+				dnsRows.querySelectorAll( '.wookiee-dns-row' ).forEach( function( row ) {
+					var type = row.querySelector( '.wookiee-dns-type' ).value;
+					var name = row.querySelector( '.wookiee-dns-name' ).value.trim();
+					var address = row.querySelector( '.wookiee-dns-address' ).value.trim();
+					var ttl = row.querySelector( '.wookiee-dns-ttl' ).value.trim();
+					var priorityField = row.querySelector( '.wookiee-dns-priority' );
+					if ( ! address ) { return; }
+					var record = { type: type, name: name || '@', address: address, ttl: ttl ? parseInt( ttl, 10 ) : 3600 };
+					if ( 'MX' === type ) {
+						var priority = priorityField ? priorityField.value.trim() : '';
+						if ( ! priority ) { rowsInvalid = true; return; }
+						record.priority = parseInt( priority, 10 );
+					}
+					dnsRecordsList.push( record );
+				} );
+				if ( rowsInvalid ) {
+					status.textContent = 'Give every MX record a priority.';
+					return;
+				}
+				if ( dnsRecordsList.length && nsHostsList ) {
+					status.textContent = 'DNS records only apply with the default nameservers - remove them or switch back to default nameservers.';
+					return;
+				}
+
+				var confirmParts = [ 'You are about to register ' + domain + ' for ' + fields.years + ( fields.years > 1 ? ' years' : ' year' ) + ( fields.auto_renew ? ', with auto-renew on' : ', with auto-renew off' ) ];
+				if ( nsHostsList ) { confirmParts.push( 'using ' + nsHostsList.length + ' custom nameserver(s)' ); }
+				if ( dnsRecordsList.length ) { confirmParts.push( 'and adding ' + dnsRecordsList.length + ' DNS record(s)' ); }
+				var confirmMsg = confirmParts.join( ', ' ) + '. This will be billed immediately. Continue?';
 				if ( ! window.confirm( confirmMsg ) ) { return; }
 
 				confirmBtn.disabled = true;
@@ -499,7 +595,7 @@ function wookiee_enqueue_niche_suggest_assets( $hook ) {
 							return;
 						}
 						status.textContent = 'Registering… this can take up to a minute.';
-						pollDomainRegistration( res.data.operation_id, status, 0 );
+						pollDomainRegistration( res.data.operation_id, status, 0, domain, nsHostsList, dnsRecordsList );
 					} )
 					.catch( function() {
 						confirmBtn.disabled = false;
@@ -508,9 +604,74 @@ function wookiee_enqueue_niche_suggest_assets( $hook ) {
 			} );
 		}
 
-		function pollDomainRegistration( operationId, status, attempt ) {
+		// Builds one DNS record input row - type/name/value/TTL, plus a
+		// priority field that only makes sense (and is only required) for
+		// MX records, and a remove button. Kept as plain inputs rather than
+		// a table so rows can be added/removed freely without reflowing a
+		// fixed column layout.
+		function addDnsRecordRow( container ) {
+			var row = document.createElement( 'div' );
+			row.className = 'wookiee-dns-row';
+			row.style.display = 'flex';
+			row.style.gap = '6px';
+			row.style.marginBottom = '6px';
+			row.style.flexWrap = 'wrap';
+
+			var typeSelect = document.createElement( 'select' );
+			typeSelect.className = 'wookiee-dns-type';
+			[ 'A', 'AAAA', 'CNAME', 'MX', 'TXT', 'NS', 'SRV' ].forEach( function( t ) {
+				var opt = document.createElement( 'option' );
+				opt.value = t;
+				opt.textContent = t;
+				typeSelect.appendChild( opt );
+			} );
+
+			var nameInput = document.createElement( 'input' );
+			nameInput.type = 'text';
+			nameInput.className = 'wookiee-dns-name';
+			nameInput.placeholder = '@ or subdomain';
+			nameInput.style.width = '110px';
+
+			var addressInput = document.createElement( 'input' );
+			addressInput.type = 'text';
+			addressInput.className = 'wookiee-dns-address';
+			addressInput.placeholder = 'Value';
+			addressInput.style.width = '160px';
+
+			var ttlInput = document.createElement( 'input' );
+			ttlInput.type = 'number';
+			ttlInput.className = 'wookiee-dns-ttl';
+			ttlInput.value = '3600';
+			ttlInput.style.width = '80px';
+			ttlInput.title = 'TTL (seconds)';
+
+			var priorityInput = document.createElement( 'input' );
+			priorityInput.type = 'number';
+			priorityInput.className = 'wookiee-dns-priority';
+			priorityInput.placeholder = 'Priority';
+			priorityInput.style.width = '70px';
+			priorityInput.hidden = 'MX' !== typeSelect.value;
+
+			typeSelect.addEventListener( 'change', function() { priorityInput.hidden = 'MX' !== typeSelect.value; } );
+
+			var removeBtn = document.createElement( 'button' );
+			removeBtn.type = 'button';
+			removeBtn.className = 'button';
+			removeBtn.textContent = 'Remove';
+			removeBtn.addEventListener( 'click', function() { row.remove(); } );
+
+			row.appendChild( typeSelect );
+			row.appendChild( nameInput );
+			row.appendChild( addressInput );
+			row.appendChild( ttlInput );
+			row.appendChild( priorityInput );
+			row.appendChild( removeBtn );
+			container.appendChild( row );
+		}
+
+		function pollDomainRegistration( operationId, status, attempt, domain, nsHostsList, dnsRecordsList ) {
 			if ( attempt >= 15 ) {
-				status.textContent = 'Still processing after a while — check your Spaceship dashboard for the final result.';
+				status.textContent = 'Still processing after a while - it may still complete in the background; check back shortly.';
 				return;
 			}
 			setTimeout( function() {
@@ -526,17 +687,66 @@ function wookiee_enqueue_niche_suggest_assets( $hook ) {
 							return;
 						}
 						if ( 'success' === res.data.status ) {
-							status.textContent = 'Registered! Point it at your site from your Spaceship dashboard, then update Site Address (URL) under Settings > General.';
+							applyPostRegistrationDns( domain, nsHostsList, dnsRecordsList, status );
 						} else if ( 'failed' === res.data.status ) {
-							status.textContent = 'Registration failed: ' + ( res.data.details || 'no further detail from Spaceship.' );
+							status.textContent = 'Registration failed: ' + ( res.data.details || 'no further detail available.' );
 						} else {
-							pollDomainRegistration( operationId, status, attempt + 1 );
+							pollDomainRegistration( operationId, status, attempt + 1, domain, nsHostsList, dnsRecordsList );
 						}
 					} )
 					.catch( function() {
-						pollDomainRegistration( operationId, status, attempt + 1 );
+						pollDomainRegistration( operationId, status, attempt + 1, domain, nsHostsList, dnsRecordsList );
 					} );
 			}, 3000 );
+		}
+
+		// Nameservers/DNS can only be set once registration has actually
+		// completed (the domain doesn't exist in the account until then),
+		// so these run as a follow-up chain after pollDomainRegistration
+		// reports success, not as part of the registration call itself.
+		function applyPostRegistrationDns( domain, nsHostsList, dnsRecordsList, status ) {
+			var steps = [];
+			if ( nsHostsList ) {
+				steps.push( function() {
+					var data = new FormData();
+					data.append( 'action', 'wookiee_set_domain_nameservers' );
+					data.append( 'nonce', " . wp_json_encode( wp_create_nonce( 'wookiee_register_domain' ) ) . " );
+					data.append( 'domain', domain );
+					data.append( 'hosts', nsHostsList.join( '\n' ) );
+					return fetch( ajaxurl, { method: 'POST', credentials: 'same-origin', body: data } )
+						.then( function( r ) { return r.json(); } )
+						.then( function( res ) { return res.success ? 'Nameservers updated.' : ( 'Nameserver update failed: ' + ( res.data && res.data.message ? res.data.message : 'unknown error.' ) ); } )
+						.catch( function() { return 'Nameserver update failed — could not reach the server.'; } );
+				} );
+			}
+			if ( dnsRecordsList && dnsRecordsList.length ) {
+				steps.push( function() {
+					var data = new FormData();
+					data.append( 'action', 'wookiee_set_domain_dns_records' );
+					data.append( 'nonce', " . wp_json_encode( wp_create_nonce( 'wookiee_register_domain' ) ) . " );
+					data.append( 'domain', domain );
+					data.append( 'records', JSON.stringify( dnsRecordsList ) );
+					return fetch( ajaxurl, { method: 'POST', credentials: 'same-origin', body: data } )
+						.then( function( r ) { return r.json(); } )
+						.then( function( res ) { return res.success ? 'DNS records added.' : ( 'DNS records failed: ' + ( res.data && res.data.message ? res.data.message : 'unknown error.' ) ); } )
+						.catch( function() { return 'DNS records failed — could not reach the server.'; } );
+				} );
+			}
+			if ( ! steps.length ) {
+				status.textContent = 'Registered. Update Site Address (URL) under Settings > General once you point this domain at your site.';
+				return;
+			}
+			status.textContent = 'Registered — applying nameserver/DNS settings…';
+			var chain = Promise.resolve();
+			var messages = [];
+			steps.forEach( function( step ) {
+				chain = chain.then( function() {
+					return step().then( function( message ) { messages.push( message ); } );
+				} );
+			} );
+			chain.then( function() {
+				status.textContent = 'Registered. ' + messages.join( ' ' );
+			} );
 		}
 
 		function runChNameSearch( name, status ) {

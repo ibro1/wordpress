@@ -268,7 +268,7 @@ function wookiee_render_settings_field_row( $key, $field ) {
 				<p class="description">The internal address of the self-hosted rembg container on your Docker network - see the compose service added alongside this feature. Default assumes a service named <code>rembg</code> on the same network as WordPress.</p>
 			<?php endif; ?>
 			<?php if ( 'spaceship_api_key' === $key ) : ?>
-				<p class="description">Powers the domain-availability check and registration on the Setup wizard's Business Identity step, when a company is looked up or picked from search - suggests a short, brandable site title, lists available <code>.com</code>/<code>.uk</code> options, and can register one directly. Create a key + secret pair in the <a href="https://www.spaceship.com/application/api-manager/" target="_blank" rel="noopener">Spaceship API Manager</a> with the <code>domains:read</code> scope for the check, plus <code>contacts:write</code> and <code>domains:billing</code> if you also want the Register button to work (that charges the payment method on your Spaceship account - it's a real purchase, not a preview). Leave blank to skip the domain check entirely (the site title is still suggested).</p>
+				<p class="description">Powers the domain-availability check and registration on the Setup wizard's Business Identity step, when a company is looked up or picked from search - suggests a short, brandable site title, lists available <code>.com</code>/<code>.uk</code> options, and can register one directly. Create a key + secret pair in the <a href="https://www.spaceship.com/application/api-manager/" target="_blank" rel="noopener">Spaceship API Manager</a> with the <code>domains:read</code> scope for the check, plus <code>contacts:write</code> and <code>domains:billing</code> for the Register button to work (that's a real, billable purchase, not a preview), and <code>domains:write</code> / <code>dnsrecords:write</code> if you also want to set custom nameservers or DNS records at registration time. Leave blank to skip the domain check entirely (the site title is still suggested).</p>
 			<?php endif; ?>
 			<?php if ( 'google_ads_developer_token' === $key ) : ?>
 				<p class="description">Powers real keyword search-volume and CPC data for the Product Generator, grounding its AI concept picks in actual demand instead of guessing. From your Google Ads Manager account - "Basic access" is needed for real (non-test) data; Google reviews that application separately from creating the token itself.</p>
@@ -1045,6 +1045,129 @@ function wookiee_poll_domain_registration_handler() {
 	}
 
 	wp_send_json_success( array( 'status' => $data['status'], 'details' => isset( $data['details'] ) ? $data['details'] : '' ) );
+}
+
+/**
+ * Points a just-registered domain at custom nameservers, replacing
+ * Spaceship's default ones. Only fires after registration has actually
+ * completed (the domain doesn't exist in the account before then), and
+ * needs the API key to also carry domains:write on top of the scopes
+ * registration itself needs.
+ */
+add_action( 'wp_ajax_wookiee_set_domain_nameservers', 'wookiee_set_domain_nameservers_handler' );
+function wookiee_set_domain_nameservers_handler() {
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_send_json_error( array( 'message' => 'Not allowed.' ), 403 );
+	}
+	check_ajax_referer( 'wookiee_register_domain', 'nonce' );
+
+	$domain    = isset( $_POST['domain'] ) ? sanitize_text_field( wp_unslash( $_POST['domain'] ) ) : '';
+	$hosts_raw = isset( $_POST['hosts'] ) ? sanitize_textarea_field( wp_unslash( $_POST['hosts'] ) ) : '';
+	if ( '' === $domain ) {
+		wp_send_json_error( array( 'message' => 'No domain specified.' ) );
+	}
+
+	$hosts = array_values( array_filter( array_map( 'trim', preg_split( '/[\r\n,]+/', $hosts_raw ) ) ) );
+	if ( count( $hosts ) < 2 || count( $hosts ) > 12 ) {
+		wp_send_json_error( array( 'message' => 'Provide between 2 and 12 nameservers.' ) );
+	}
+
+	$response = wp_remote_request(
+		'https://spaceship.dev/api/v1/domains/' . rawurlencode( $domain ) . '/nameservers',
+		array(
+			'method'  => 'PUT',
+			'headers' => array(
+				'X-Api-Key'    => wookiee_get_setting( 'spaceship_api_key' ),
+				'X-Api-Secret' => wookiee_get_setting( 'spaceship_api_secret' ),
+				'Content-Type' => 'application/json',
+			),
+			'body'    => wp_json_encode( array( 'provider' => 'custom', 'hosts' => $hosts ) ),
+			'timeout' => 15,
+		)
+	);
+
+	if ( is_wp_error( $response ) ) {
+		wp_send_json_error( array( 'message' => $response->get_error_message() ) );
+	}
+	$code = wp_remote_retrieve_response_code( $response );
+	if ( ! in_array( $code, array( 200, 202 ), true ) ) {
+		$data   = json_decode( wp_remote_retrieve_body( $response ), true );
+		$detail = is_array( $data ) && isset( $data['detail'] ) ? $data['detail'] : ( 'HTTP ' . intval( $code ) );
+		wp_send_json_error( array( 'message' => 'Nameserver update was rejected: ' . $detail ) );
+	}
+
+	wp_send_json_success();
+}
+
+/**
+ * Adds DNS records to a just-registered domain still on the default
+ * nameservers (custom nameservers manage their own zone elsewhere, so
+ * this is skipped client-side when custom nameservers were chosen).
+ * Needs the API key to also carry dnsrecords:write.
+ */
+add_action( 'wp_ajax_wookiee_set_domain_dns_records', 'wookiee_set_domain_dns_records_handler' );
+function wookiee_set_domain_dns_records_handler() {
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_send_json_error( array( 'message' => 'Not allowed.' ), 403 );
+	}
+	check_ajax_referer( 'wookiee_register_domain', 'nonce' );
+
+	$domain       = isset( $_POST['domain'] ) ? sanitize_text_field( wp_unslash( $_POST['domain'] ) ) : '';
+	$records_json = isset( $_POST['records'] ) ? wp_unslash( $_POST['records'] ) : '';
+	if ( '' === $domain ) {
+		wp_send_json_error( array( 'message' => 'No domain specified.' ) );
+	}
+
+	$records = json_decode( $records_json, true );
+	if ( ! is_array( $records ) || empty( $records ) ) {
+		wp_send_json_error( array( 'message' => 'No DNS records to add.' ) );
+	}
+
+	$valid_types = array( 'A', 'AAAA', 'ALIAS', 'CNAME', 'HTTPS', 'MX', 'NS', 'PTR', 'SRV', 'SVCB', 'TXT' );
+	$items       = array();
+	foreach ( $records as $r ) {
+		$type    = isset( $r['type'] ) ? strtoupper( sanitize_text_field( $r['type'] ) ) : '';
+		$name    = isset( $r['name'] ) ? sanitize_text_field( $r['name'] ) : '@';
+		$address = isset( $r['address'] ) ? sanitize_text_field( $r['address'] ) : '';
+		$ttl     = isset( $r['ttl'] ) ? max( 60, intval( $r['ttl'] ) ) : 3600;
+		if ( ! in_array( $type, $valid_types, true ) || '' === $address ) {
+			continue;
+		}
+		$item = array( 'type' => $type, 'name' => '' !== $name ? $name : '@', 'address' => $address, 'ttl' => $ttl );
+		if ( 'MX' === $type && isset( $r['priority'] ) ) {
+			$item['priority'] = intval( $r['priority'] );
+		}
+		$items[] = $item;
+	}
+	if ( empty( $items ) ) {
+		wp_send_json_error( array( 'message' => 'No valid DNS records to add.' ) );
+	}
+
+	$response = wp_remote_request(
+		'https://spaceship.dev/api/v1/dns/records/' . rawurlencode( $domain ),
+		array(
+			'method'  => 'PUT',
+			'headers' => array(
+				'X-Api-Key'    => wookiee_get_setting( 'spaceship_api_key' ),
+				'X-Api-Secret' => wookiee_get_setting( 'spaceship_api_secret' ),
+				'Content-Type' => 'application/json',
+			),
+			'body'    => wp_json_encode( array( 'force' => false, 'items' => $items ) ),
+			'timeout' => 15,
+		)
+	);
+
+	if ( is_wp_error( $response ) ) {
+		wp_send_json_error( array( 'message' => $response->get_error_message() ) );
+	}
+	$code = wp_remote_retrieve_response_code( $response );
+	if ( ! in_array( $code, array( 200, 202 ), true ) ) {
+		$data   = json_decode( wp_remote_retrieve_body( $response ), true );
+		$detail = is_array( $data ) && isset( $data['detail'] ) ? $data['detail'] : ( 'HTTP ' . intval( $code ) );
+		wp_send_json_error( array( 'message' => 'DNS records were rejected: ' . $detail ) );
+	}
+
+	wp_send_json_success();
 }
 
 /**

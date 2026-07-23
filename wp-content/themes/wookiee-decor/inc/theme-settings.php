@@ -18,6 +18,8 @@ defined( 'ABSPATH' ) || exit;
 
 function wookiee_settings_fields() {
 	return array(
+		'wookiee_api_base_url'      => array( 'label' => 'Central backend URL', 'default' => '', 'type' => 'text' ),
+		'wookiee_api_shared_secret' => array( 'label' => 'Central backend shared secret', 'default' => '', 'type' => 'password' ),
 		'contact_email'      => array( 'label' => 'Contact email', 'default' => 'info@wookied.com', 'type' => 'email' ),
 		'contact_phone'      => array( 'label' => 'Contact phone', 'default' => '+44 20 8472 6126', 'type' => 'text' ),
 		'support_hours'      => array( 'label' => 'Support hours', 'default' => 'Monday to Friday, 9am - 5pm', 'type' => 'text' ),
@@ -161,7 +163,7 @@ function wookiee_settings_tabs() {
 		),
 		'integrations' => array(
 			'label'  => 'AI & Integrations',
-			'fields' => array( 'llm_api_key', 'llm_base_url', 'llm_default_model', 'cj_email', 'cj_api_key', 'product_markup_percent', 'bg_removal_provider', 'cloudinary_cloud_name', 'cloudinary_api_key', 'cloudinary_api_secret', 'rembg_endpoint_url', 'google_ads_developer_token', 'google_ads_client_id', 'google_ads_client_secret', 'google_ads_refresh_token', 'google_ads_customer_id', 'google_ads_login_customer_id', 'spaceship_api_key', 'spaceship_api_secret' ),
+			'fields' => array( 'wookiee_api_base_url', 'wookiee_api_shared_secret', 'llm_api_key', 'llm_base_url', 'llm_default_model', 'cj_email', 'cj_api_key', 'product_markup_percent', 'bg_removal_provider', 'cloudinary_cloud_name', 'cloudinary_api_key', 'cloudinary_api_secret', 'rembg_endpoint_url', 'google_ads_developer_token', 'google_ads_client_id', 'google_ads_client_secret', 'google_ads_refresh_token', 'google_ads_customer_id', 'google_ads_login_customer_id', 'spaceship_api_key', 'spaceship_api_secret' ),
 		),
 	);
 }
@@ -232,8 +234,11 @@ function wookiee_render_settings_field_row( $key, $field ) {
 						<option value="<?php echo esc_attr( $option_value ); ?>" <?php selected( $current, $option_value ); ?>><?php echo esc_html( $option_label ); ?></option>
 					<?php endforeach; ?>
 				</select>
+			<?php elseif ( 'password' === $field['type'] ) : ?>
+				<input type="password" name="wookiee_setting_<?php echo esc_attr( $key ); ?>" id="wookiee_setting_<?php echo esc_attr( $key ); ?>" value="<?php echo esc_attr( get_option( 'wookiee_setting_' . $key, '' ) ); ?>" placeholder="<?php echo esc_attr( $field['default'] ); ?>" class="regular-text wookiee-reveal-input" autocomplete="off">
+				<button type="button" class="button wookiee-reveal-btn" data-target="wookiee_setting_<?php echo esc_attr( $key ); ?>">Show</button>
 			<?php else : ?>
-				<input type="<?php echo 'url' === $field['type'] ? 'url' : ( 'email' === $field['type'] ? 'email' : ( 'password' === $field['type'] ? 'password' : 'text' ) ); ?>" name="wookiee_setting_<?php echo esc_attr( $key ); ?>" id="wookiee_setting_<?php echo esc_attr( $key ); ?>" value="<?php echo esc_attr( get_option( 'wookiee_setting_' . $key, '' ) ); ?>" placeholder="<?php echo esc_attr( $field['default'] ); ?>" class="regular-text" autocomplete="off">
+				<input type="<?php echo 'url' === $field['type'] ? 'url' : ( 'email' === $field['type'] ? 'email' : 'text' ); ?>" name="wookiee_setting_<?php echo esc_attr( $key ); ?>" id="wookiee_setting_<?php echo esc_attr( $key ); ?>" value="<?php echo esc_attr( get_option( 'wookiee_setting_' . $key, '' ) ); ?>" placeholder="<?php echo esc_attr( $field['default'] ); ?>" class="regular-text" autocomplete="off">
 			<?php endif; ?>
 			<?php if ( 'company_number' === $key ) : ?>
 				<p>
@@ -409,7 +414,22 @@ function wookiee_render_settings_page() {
 			<?php foreach ( $tabs as $tab_key => $tab ) : ?>
 				<div class="wookiee-tab-panel" id="wookiee-panel-<?php echo esc_attr( $tab_key ); ?>" data-tab-panel="<?php echo esc_attr( $tab_key ); ?>" role="tabpanel" aria-labelledby="wookiee-tab-<?php echo esc_attr( $tab_key ); ?>" <?php echo $is_first ? '' : 'hidden'; ?>>
 					<?php wookiee_render_ai_copy_generator_notice( $tab_key ); ?>
-					<?php wookiee_render_settings_fields_table( $tab['fields'] ); ?>
+					<?php if ( 'integrations' === $tab_key ) : ?>
+						<?php wookiee_render_backend_connection_section(); ?>
+						<?php
+						$fields_to_show = $tab['fields'];
+						if ( wookiee_secrets_migrated_to_backend() ) {
+							$operator_only  = wookiee_operator_only_settings_keys();
+							$fields_to_show = array_values( array_diff( $fields_to_show, $operator_only ) );
+						}
+						?>
+						<?php wookiee_render_settings_fields_table( $fields_to_show ); ?>
+						<?php if ( wookiee_secrets_migrated_to_backend() ) : ?>
+							<p class="description">Companies House, LLM, CJ Dropshipping, Cloudinary/rembg, Google Ads, and Spaceship keys are managed centrally at the backend now - <code>bg_removal_provider</code>/markup above still apply per-site, but the actual provider credentials aren't stored here anymore.</p>
+						<?php endif; ?>
+					<?php else : ?>
+						<?php wookiee_render_settings_fields_table( $tab['fields'] ); ?>
+					<?php endif; ?>
 				</div>
 				<?php $is_first = false; ?>
 			<?php endforeach; ?>
@@ -583,11 +603,20 @@ function wookiee_ch_lookup_handler() {
 	check_ajax_referer( 'wookiee_ch_lookup', 'nonce' );
 
 	$company_number = isset( $_POST['company_number'] ) ? sanitize_text_field( wp_unslash( $_POST['company_number'] ) ) : '';
-	$api_key        = wookiee_get_setting( 'companies_house_api_key' );
 
 	if ( '' === $company_number ) {
 		wp_send_json_error( array( 'message' => 'Enter a company number first.' ) );
 	}
+
+	if ( wookiee_central_api_configured() ) {
+		$result = wookiee_central_api_request( 'GET', '/companies-house/lookup?company_number=' . rawurlencode( $company_number ) );
+		if ( is_wp_error( $result ) ) {
+			wp_send_json_error( array( 'message' => $result->get_error_message() ) );
+		}
+		wp_send_json_success( $result );
+	}
+
+	$api_key = wookiee_get_setting( 'companies_house_api_key' );
 	if ( '' === trim( (string) $api_key ) ) {
 		wp_send_json_error( array( 'message' => 'Add your Companies House API key below, click Save Changes, then try the lookup again.' ) );
 	}
@@ -655,12 +684,21 @@ function wookiee_ch_search_handler() {
 	}
 	check_ajax_referer( 'wookiee_ch_search', 'nonce' );
 
-	$query   = isset( $_POST['query'] ) ? sanitize_text_field( wp_unslash( $_POST['query'] ) ) : '';
-	$api_key = wookiee_get_setting( 'companies_house_api_key' );
+	$query = isset( $_POST['query'] ) ? sanitize_text_field( wp_unslash( $_POST['query'] ) ) : '';
 
 	if ( '' === trim( $query ) ) {
 		wp_send_json_error( array( 'message' => 'Enter a company name first.' ) );
 	}
+
+	if ( wookiee_central_api_configured() ) {
+		$result = wookiee_central_api_request( 'GET', '/companies-house/search?query=' . rawurlencode( $query ) );
+		if ( is_wp_error( $result ) ) {
+			wp_send_json_error( array( 'message' => $result->get_error_message() ) );
+		}
+		wp_send_json_success( $result );
+	}
+
+	$api_key = wookiee_get_setting( 'companies_house_api_key' );
 	if ( '' === trim( (string) $api_key ) ) {
 		wp_send_json_error( array( 'message' => 'Add your Companies House API key below, click Save Changes, then try the search again.' ) );
 	}
@@ -849,6 +887,14 @@ function wookiee_suggest_site_name_handler() {
 		wp_send_json_error( array( 'message' => 'No company name to work from.' ) );
 	}
 
+	if ( wookiee_central_api_configured() ) {
+		$result = wookiee_central_api_request( 'POST', '/domains/suggest-site-name', array( 'company_name' => $company_name ) );
+		if ( is_wp_error( $result ) ) {
+			wp_send_json_error( array( 'message' => $result->get_error_message() ) );
+		}
+		wp_send_json_success( $result );
+	}
+
 	$generated       = wookiee_generate_site_name_candidates( $company_name );
 	$base_candidates = $generated['candidates'];
 	$first_word_len  = $generated['first_word_len'];
@@ -950,38 +996,64 @@ function wookiee_register_domain_handler() {
 	}
 	check_ajax_referer( 'wookiee_register_domain', 'nonce' );
 
+	$domain     = isset( $_POST['domain'] ) ? sanitize_text_field( wp_unslash( $_POST['domain'] ) ) : '';
+	$years      = isset( $_POST['years'] ) ? max( 1, min( 10, intval( $_POST['years'] ) ) ) : 1;
+	$auto_renew = ! empty( $_POST['auto_renew'] );
+
+	$raw_contact = array(
+		'first_name'  => isset( $_POST['first_name'] ) ? sanitize_text_field( wp_unslash( $_POST['first_name'] ) ) : '',
+		'last_name'   => isset( $_POST['last_name'] ) ? sanitize_text_field( wp_unslash( $_POST['last_name'] ) ) : '',
+		'organization' => isset( $_POST['organization'] ) ? sanitize_text_field( wp_unslash( $_POST['organization'] ) ) : '',
+		'email'       => isset( $_POST['email'] ) ? sanitize_email( wp_unslash( $_POST['email'] ) ) : '',
+		'address1'    => isset( $_POST['address1'] ) ? sanitize_text_field( wp_unslash( $_POST['address1'] ) ) : '',
+		'address2'    => isset( $_POST['address2'] ) ? sanitize_text_field( wp_unslash( $_POST['address2'] ) ) : '',
+		'city'        => isset( $_POST['city'] ) ? sanitize_text_field( wp_unslash( $_POST['city'] ) ) : '',
+		'state'       => isset( $_POST['state'] ) ? sanitize_text_field( wp_unslash( $_POST['state'] ) ) : '',
+		'postal_code' => isset( $_POST['postal_code'] ) ? sanitize_text_field( wp_unslash( $_POST['postal_code'] ) ) : '',
+		'country'     => isset( $_POST['country'] ) ? strtoupper( sanitize_text_field( wp_unslash( $_POST['country'] ) ) ) : '',
+		'phone'       => isset( $_POST['phone'] ) ? sanitize_text_field( wp_unslash( $_POST['phone'] ) ) : '',
+	);
+
+	if ( '' === $domain ) {
+		wp_send_json_error( array( 'message' => 'No domain specified.' ) );
+	}
+	foreach ( array( 'first_name', 'last_name', 'email', 'address1', 'city', 'country', 'phone' ) as $required ) {
+		if ( '' === trim( (string) $raw_contact[ $required ] ) ) {
+			wp_send_json_error( array( 'message' => 'Fill in every required registrant field (first/last name, email, address, city, country, phone).' ) );
+		}
+	}
+
+	if ( wookiee_central_api_configured() ) {
+		$result = wookiee_central_api_request( 'POST', '/domains/register', array_merge( $raw_contact, array(
+			'domain'     => $domain,
+			'years'      => $years,
+			'auto_renew' => $auto_renew,
+		) ) );
+		if ( is_wp_error( $result ) ) {
+			wp_send_json_error( array( 'message' => $result->get_error_message() ) );
+		}
+		wp_send_json_success( $result );
+	}
+
 	$api_key    = wookiee_get_setting( 'spaceship_api_key' );
 	$api_secret = wookiee_get_setting( 'spaceship_api_secret' );
 	if ( '' === trim( (string) $api_key ) || '' === trim( (string) $api_secret ) ) {
 		wp_send_json_error( array( 'message' => 'Add your Spaceship API key/secret on Settings first.' ) );
 	}
 
-	$domain = isset( $_POST['domain'] ) ? sanitize_text_field( wp_unslash( $_POST['domain'] ) ) : '';
-	$years  = isset( $_POST['years'] ) ? max( 1, min( 10, intval( $_POST['years'] ) ) ) : 1;
-	$auto_renew = ! empty( $_POST['auto_renew'] );
-
 	$contact = array(
-		'firstName'     => isset( $_POST['first_name'] ) ? sanitize_text_field( wp_unslash( $_POST['first_name'] ) ) : '',
-		'lastName'      => isset( $_POST['last_name'] ) ? sanitize_text_field( wp_unslash( $_POST['last_name'] ) ) : '',
-		'organization'  => isset( $_POST['organization'] ) ? sanitize_text_field( wp_unslash( $_POST['organization'] ) ) : '',
-		'email'         => isset( $_POST['email'] ) ? sanitize_email( wp_unslash( $_POST['email'] ) ) : '',
-		'address1'      => isset( $_POST['address1'] ) ? sanitize_text_field( wp_unslash( $_POST['address1'] ) ) : '',
-		'address2'      => isset( $_POST['address2'] ) ? sanitize_text_field( wp_unslash( $_POST['address2'] ) ) : '',
-		'city'          => isset( $_POST['city'] ) ? sanitize_text_field( wp_unslash( $_POST['city'] ) ) : '',
-		'stateProvince' => isset( $_POST['state'] ) ? sanitize_text_field( wp_unslash( $_POST['state'] ) ) : '',
-		'postalCode'    => isset( $_POST['postal_code'] ) ? sanitize_text_field( wp_unslash( $_POST['postal_code'] ) ) : '',
-		'country'       => isset( $_POST['country'] ) ? strtoupper( sanitize_text_field( wp_unslash( $_POST['country'] ) ) ) : '',
-		'phone'         => isset( $_POST['phone'] ) ? sanitize_text_field( wp_unslash( $_POST['phone'] ) ) : '',
+		'firstName'     => $raw_contact['first_name'],
+		'lastName'      => $raw_contact['last_name'],
+		'organization'  => $raw_contact['organization'],
+		'email'         => $raw_contact['email'],
+		'address1'      => $raw_contact['address1'],
+		'address2'      => $raw_contact['address2'],
+		'city'          => $raw_contact['city'],
+		'stateProvince' => $raw_contact['state'],
+		'postalCode'    => $raw_contact['postal_code'],
+		'country'       => $raw_contact['country'],
+		'phone'         => $raw_contact['phone'],
 	);
-
-	if ( '' === $domain ) {
-		wp_send_json_error( array( 'message' => 'No domain specified.' ) );
-	}
-	foreach ( array( 'firstName', 'lastName', 'email', 'address1', 'city', 'country', 'phone' ) as $required ) {
-		if ( '' === trim( (string) $contact[ $required ] ) ) {
-			wp_send_json_error( array( 'message' => 'Fill in every required registrant field (first/last name, email, address, city, country, phone).' ) );
-		}
-	}
 
 	$contact_id = wookiee_ch_create_spaceship_contact( array_filter( $contact, function( $v ) { return '' !== $v; } ) );
 	if ( is_wp_error( $contact_id ) ) {
@@ -1048,6 +1120,14 @@ function wookiee_poll_domain_registration_handler() {
 		wp_send_json_error( array( 'message' => 'No operation ID given.' ) );
 	}
 
+	if ( wookiee_central_api_configured() ) {
+		$result = wookiee_central_api_request( 'GET', '/domains/operations/' . rawurlencode( $operation_id ) );
+		if ( is_wp_error( $result ) ) {
+			wp_send_json_error( array( 'message' => $result->get_error_message() ) );
+		}
+		wp_send_json_success( $result );
+	}
+
 	$response = wp_remote_get(
 		'https://spaceship.dev/api/v1/async-operations/' . rawurlencode( $operation_id ),
 		array(
@@ -1093,6 +1173,14 @@ function wookiee_set_domain_nameservers_handler() {
 	$hosts = array_values( array_filter( array_map( 'trim', preg_split( '/[\r\n,]+/', $hosts_raw ) ) ) );
 	if ( count( $hosts ) < 2 || count( $hosts ) > 12 ) {
 		wp_send_json_error( array( 'message' => 'Provide between 2 and 12 nameservers.' ) );
+	}
+
+	if ( wookiee_central_api_configured() ) {
+		$result = wookiee_central_api_request( 'PUT', '/domains/' . rawurlencode( $domain ) . '/nameservers', array( 'hosts' => implode( "\n", $hosts ) ) );
+		if ( is_wp_error( $result ) ) {
+			wp_send_json_error( array( 'message' => $result->get_error_message() ) );
+		}
+		wp_send_json_success();
 	}
 
 	$response = wp_remote_request(
@@ -1166,6 +1254,14 @@ function wookiee_set_domain_dns_records_handler() {
 		wp_send_json_error( array( 'message' => 'No valid DNS records to add.' ) );
 	}
 
+	if ( wookiee_central_api_configured() ) {
+		$result = wookiee_central_api_request( 'PUT', '/domains/' . rawurlencode( $domain ) . '/dns-records', array( 'records' => $items ) );
+		if ( is_wp_error( $result ) ) {
+			wp_send_json_error( array( 'message' => $result->get_error_message() ) );
+		}
+		wp_send_json_success();
+	}
+
 	$response = wp_remote_request(
 		'https://spaceship.dev/api/v1/dns/records/' . rawurlencode( $domain ),
 		array(
@@ -1191,6 +1287,63 @@ function wookiee_set_domain_dns_records_handler() {
 	}
 
 	wp_send_json_success();
+}
+
+/**
+ * Renders the one-time "push my current keys up to the backend" button -
+ * only shown once a backend URL + shared secret are actually saved (the
+ * migration call needs somewhere to send the values), and only until the
+ * migration has succeeded once (re-running it from a site with stale
+ * local values would overwrite anything changed directly on the backend
+ * since - hidden afterward for exactly that reason, not because it's a
+ * one-shot API limitation).
+ */
+function wookiee_render_backend_connection_section() {
+	if ( wookiee_secrets_migrated_to_backend() ) {
+		echo '<p class="description" style="color:#00622e;">&#10003; Existing keys were already migrated to the backend.</p>';
+		return;
+	}
+	if ( ! wookiee_central_api_configured() ) {
+		echo '<p class="description">Save the backend URL and shared secret below, then a button will appear here to push every key currently stored below up to the backend in one click.</p>';
+		return;
+	}
+	?>
+	<p>
+		<button type="button" class="button button-primary" id="wookiee-migrate-secrets-btn">Migrate existing keys to backend</button>
+		<span id="wookiee-migrate-secrets-status" style="margin-left:8px;"></span>
+	</p>
+	<p class="description">Pushes every key currently filled in below (Companies House, LLM, CJ Dropshipping, Cloudinary/rembg, Google Ads, Spaceship) to the backend, then clears them from this site - the backend becomes the only place holding them, and this section disappears once that's done.</p>
+	<script>
+	( function() {
+		var btn = document.getElementById( 'wookiee-migrate-secrets-btn' );
+		if ( ! btn ) { return; }
+		btn.addEventListener( 'click', function() {
+			if ( ! window.confirm( 'This sends every key currently saved on this page to the backend, then removes them from this WordPress site. Continue?' ) ) { return; }
+			var status = document.getElementById( 'wookiee-migrate-secrets-status' );
+			btn.disabled = true;
+			status.textContent = 'Migrating…';
+			var data = new FormData();
+			data.append( 'action', 'wookiee_migrate_secrets_to_backend' );
+			data.append( 'nonce', <?php echo wp_json_encode( wp_create_nonce( 'wookiee_migrate_secrets_to_backend' ) ); ?> );
+			fetch( ajaxurl, { method: 'POST', credentials: 'same-origin', body: data } )
+				.then( function( r ) { return r.json(); } )
+				.then( function( res ) {
+					if ( ! res.success ) {
+						btn.disabled = false;
+						status.textContent = res.data && res.data.message ? res.data.message : 'Migration failed.';
+						return;
+					}
+					status.textContent = 'Done - reloading…';
+					window.location.reload();
+				} )
+				.catch( function() {
+					btn.disabled = false;
+					status.textContent = 'Migration failed — could not reach the server.';
+				} );
+		} );
+	} )();
+	</script>
+	<?php
 }
 
 /**

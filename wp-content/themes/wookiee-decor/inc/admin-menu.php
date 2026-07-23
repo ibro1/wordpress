@@ -811,6 +811,20 @@ function wookiee_enqueue_niche_suggest_assets( $hook ) {
 				}
 			} );
 		}
+
+		// Show/Hide toggle for password-type settings fields - lets an
+		// admin copy a stored key's real value out (e.g. to paste into the
+		// central backend's own settings) without needing a separate
+		// export screen.
+		document.querySelectorAll( '.wookiee-reveal-btn' ).forEach( function( btn ) {
+			btn.addEventListener( 'click', function() {
+				var input = document.getElementById( btn.getAttribute( 'data-target' ) );
+				if ( ! input ) { return; }
+				var revealed = 'text' === input.type;
+				input.type = revealed ? 'password' : 'text';
+				btn.textContent = revealed ? 'Show' : 'Hide';
+			} );
+		} );
 	} )();
 	";
 	wp_register_script( 'wookiee-niche-suggest', false, array(), false, true );

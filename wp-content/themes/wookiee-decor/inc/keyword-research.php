@@ -27,6 +27,10 @@ defined( 'ABSPATH' ) || exit;
 define( 'WOOKIEE_GOOGLE_ADS_API_VERSION', 'v17' );
 
 function wookiee_google_ads_configured() {
+	if ( wookiee_central_api_configured() ) {
+		$status = wookiee_central_api_request( 'GET', '/google-ads/status' );
+		return ! is_wp_error( $status ) && ! empty( $status['configured'] );
+	}
 	return '' !== trim( (string) wookiee_get_setting( 'google_ads_developer_token' ) )
 		&& '' !== trim( (string) wookiee_get_setting( 'google_ads_client_id' ) )
 		&& '' !== trim( (string) wookiee_get_setting( 'google_ads_client_secret' ) )
@@ -84,6 +88,14 @@ function wookiee_google_ads_get_access_token() {
 function wookiee_google_ads_keyword_ideas( $seed_keywords ) {
 	if ( ! wookiee_google_ads_configured() ) {
 		return new WP_Error( 'wookiee_google_ads_not_configured', 'Add your Google Ads API credentials on the Wookiee Settings page first.' );
+	}
+
+	if ( wookiee_central_api_configured() ) {
+		$result = wookiee_central_api_request( 'POST', '/google-ads/keyword-ideas', array( 'seed_keywords' => array_values( array_filter( (array) $seed_keywords ) ) ) );
+		if ( is_wp_error( $result ) ) {
+			return $result;
+		}
+		return isset( $result['ideas'] ) ? $result['ideas'] : array();
 	}
 
 	$access_token = wookiee_google_ads_get_access_token();
@@ -168,6 +180,13 @@ function wookiee_google_ads_oauth_redirect_uri() {
 }
 
 function wookiee_google_ads_oauth_start_url() {
+	if ( wookiee_central_api_configured() ) {
+		// The whole OAuth round-trip (consent screen + callback + token
+		// exchange) happens entirely on the backend when it's connected -
+		// nothing comes back through WordPress at all, unlike the local
+		// admin-post.php-based flow below.
+		return wookiee_central_api_base_url() . '/google-ads/oauth/start';
+	}
 	$params = array(
 		'client_id'     => wookiee_get_setting( 'google_ads_client_id' ),
 		'redirect_uri'  => wookiee_google_ads_oauth_redirect_uri(),

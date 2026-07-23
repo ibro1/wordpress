@@ -21,6 +21,14 @@ defined( 'ABSPATH' ) || exit;
  * prose, JSON, etc.) since that varies by use case.
  */
 function wookiee_call_llm( $prompt, $max_tokens = 2048 ) {
+	if ( wookiee_central_api_configured() ) {
+		$result = wookiee_central_api_request( 'POST', '/llm/generate', array( 'prompt' => $prompt, 'max_tokens' => $max_tokens ) );
+		if ( is_wp_error( $result ) ) {
+			return $result;
+		}
+		return isset( $result['text'] ) ? trim( (string) $result['text'] ) : '';
+	}
+
 	$api_key = wookiee_get_setting( 'llm_api_key' );
 	if ( '' === trim( (string) $api_key ) ) {
 		return new WP_Error( 'wookiee_ai_no_key', 'Add an LLM API key on the Wookiee Settings page first.' );

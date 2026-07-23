@@ -632,6 +632,7 @@ function wookiee_build_content_prompt( $key, $brief ) {
 			. "- Do not copy another company's policy text.\n"
 			. "- Write in plain, professional, customer-friendly English - not robotic or generic-sounding boilerplate.\n"
 			. "- Include a clearly labelled section near the end on how customers can contact the business about this policy, using the contact email given above.\n"
+			. "- In that same section, also explain how a customer can escalate a complaint if they're unhappy with how it was handled directly - mention that UK customers can contact Citizens Advice or their local Trading Standards if the issue can't be resolved with the business directly. Do not just give the contact email and stop.\n"
 			. "- Include a brief note that this policy may be updated from time to time and customers should check this page periodically.\n"
 			. "- Where genuinely relevant, refer to the store's other policies by name (e.g. mention the Privacy Policy when discussing personal data, the Returns Policy when discussing refunds) rather than repeating their content.\n"
 			. "- State the business's full legal/trading name and company registration number explicitly within the body text itself (not only implied) - UK company law expects this on formal business documents, and it must appear even if it feels repetitive with other sections.\n"
@@ -644,6 +645,15 @@ function wookiee_build_content_prompt( $key, $brief ) {
 
 		if ( 'cookies' === $key ) {
 			$prompt .= "\n\nThis store's actual cookie consent mechanism, describe it accurately using these facts (do not describe any other mechanism, and do not omit it): " . wookiee_cookie_consent_mechanism_description();
+		}
+
+		if ( 'returns' === $key ) {
+			$prompt .= "\n\nThis policy covers TWO distinct return rights, and a compliance audit has repeatedly flagged when these get conflated - keep them clearly separate:\n"
+				. "1. The UK statutory 14-day cancellation right under the Consumer Contracts Regulations (a cooling-off period counted from the day the customer receives the goods), which applies regardless of the store's own policy.\n"
+				. "2. This store's own voluntary returns period (the number of days given in the business details above), which EXTENDS the statutory minimum rather than replacing or shortening it.\n"
+				. "State plainly that the voluntary period is in addition to, not instead of, the statutory 14-day right, and explain in plain terms how the two interact (e.g. the statutory right always applies even if it were shorter than the store's own policy).\n"
+				. "Also state that refunds (including the original standard delivery charge, where the entire order is returned) will be processed within 14 days of the business receiving the returned goods or evidence that they've been sent back, matching the Consumer Contracts Regulations - do not leave the refund timeframe unstated.\n"
+				. "Present the returns address as a clearly separated block, one line each for: business/trading name, street address, city, postcode, country - not as a single flowing sentence.";
 		}
 
 		return $prompt;
@@ -875,6 +885,7 @@ function wookiee_build_policy_fix_prompt( $title, $current_text, $audit_report )
 		. "- Do not claim any feature, mechanism, or business practice exists unless it's in the business details above or already accurately stated in the current text - if the audit flagged something missing that isn't something this business actually has, use a placeholder rather than inventing it.\n"
 		. "- Write in plain, professional, customer-friendly English - not robotic or generic-sounding boilerplate.\n"
 		. "- State the business's full legal/trading name and company registration number explicitly within the body text itself - UK company law expects this on formal business documents.\n"
+		. "- Whatever section covers contacting the business must also explain how to escalate a complaint if it's not resolved directly - mention Citizens Advice or local Trading Standards as the UK escalation route - not just repeat the contact email.\n"
 		. "- End with a short note that this policy should be reviewed by a qualified UK solicitor before being relied on, since it is not legal advice.\n"
 		. "- Output ONLY the finished, complete policy text as plain paragraphs separated by a blank line, starting with a single plain-text heading line. No markdown, no HTML, no commentary, no changelog of what you fixed - just the finished, publishable page.";
 
@@ -884,6 +895,10 @@ function wookiee_build_policy_fix_prompt( $title, $current_text, $audit_report )
 
 	if ( false !== stripos( $title, 'cookie' ) ) {
 		$prompt .= "\n\nThis store's actual cookie consent mechanism, describe it accurately using these facts: " . wookiee_cookie_consent_mechanism_description();
+	}
+
+	if ( false !== stripos( $title, 'return' ) ) {
+		$prompt .= "\n\nThis policy covers TWO distinct return rights - keep them clearly separate: (1) the UK statutory 14-day cancellation right under the Consumer Contracts Regulations (a cooling-off period from delivery, applies regardless of store policy), and (2) this store's own voluntary returns period (from the business details above), which EXTENDS the statutory minimum rather than replacing it. State plainly that the voluntary period is in addition to, not instead of, the statutory right. Also state that refunds (including the original standard delivery charge, where the whole order is returned) are processed within 14 days of the business receiving the returned goods or evidence they've been sent back. Present the returns address as a clearly separated block, one line each for business/trading name, street address, city, postcode, country - not a flowing sentence.";
 	}
 
 	return $prompt;

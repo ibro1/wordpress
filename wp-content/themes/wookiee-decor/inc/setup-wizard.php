@@ -152,8 +152,8 @@ function wookiee_render_setup_wizard_page() {
 							<div id="wookiee-domain-suggestions-com"></div>
 						</div>
 						<div class="wookiee-domain-suggestions-group">
-							<h4>.co.uk</h4>
-							<div id="wookiee-domain-suggestions-couk"></div>
+							<h4>.uk</h4>
+							<div id="wookiee-domain-suggestions-uk"></div>
 						</div>
 					</div></td>
 				</tr>

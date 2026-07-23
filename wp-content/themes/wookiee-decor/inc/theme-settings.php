@@ -268,7 +268,7 @@ function wookiee_render_settings_field_row( $key, $field ) {
 				<p class="description">The internal address of the self-hosted rembg container on your Docker network - see the compose service added alongside this feature. Default assumes a service named <code>rembg</code> on the same network as WordPress.</p>
 			<?php endif; ?>
 			<?php if ( 'spaceship_api_key' === $key ) : ?>
-				<p class="description">Powers the domain-availability check and registration on the Setup wizard's Business Identity step, when a company is looked up or picked from search - suggests a short, brandable site title, lists available <code>.com</code>/<code>.co.uk</code> options, and can register one directly. Create a key + secret pair in the <a href="https://www.spaceship.com/application/api-manager/" target="_blank" rel="noopener">Spaceship API Manager</a> with the <code>domains:read</code> scope for the check, plus <code>contacts:write</code> and <code>domains:billing</code> if you also want the Register button to work (that charges the payment method on your Spaceship account - it's a real purchase, not a preview). Leave blank to skip the domain check entirely (the site title is still suggested).</p>
+				<p class="description">Powers the domain-availability check and registration on the Setup wizard's Business Identity step, when a company is looked up or picked from search - suggests a short, brandable site title, lists available <code>.com</code>/<code>.uk</code> options, and can register one directly. Create a key + secret pair in the <a href="https://www.spaceship.com/application/api-manager/" target="_blank" rel="noopener">Spaceship API Manager</a> with the <code>domains:read</code> scope for the check, plus <code>contacts:write</code> and <code>domains:billing</code> if you also want the Register button to work (that charges the payment method on your Spaceship account - it's a real purchase, not a preview). Leave blank to skip the domain check entirely (the site title is still suggested).</p>
 			<?php endif; ?>
 			<?php if ( 'google_ads_developer_token' === $key ) : ?>
 				<p class="description">Powers real keyword search-volume and CPC data for the Product Generator, grounding its AI concept picks in actual demand instead of guessing. From your Google Ads Manager account - "Basic access" is needed for real (non-test) data; Google reviews that application separately from creating the token itself.</p>
@@ -810,7 +810,7 @@ function wookiee_expand_site_name_candidates( array $base_candidates ) {
 /**
  * Suggests a short site title from a just-selected/looked-up company
  * name, and (if Spaceship keys are configured) searches until it finds
- * up to 3 available .com domains and 3 available .co.uk domains -
+ * up to 3 available .com domains and 3 available .uk domains -
  * .com checked first per candidate since that's the stated preference.
  * Without Spaceship keys configured, still returns the generated name
  * with checked=false rather than blocking the feature entirely on a
@@ -836,13 +836,13 @@ function wookiee_suggest_site_name_handler() {
 	}
 
 	$candidates = wookiee_expand_site_name_candidates( $base_candidates );
-	$found      = array( 'com' => array(), 'co.uk' => array() );
+	$found      = array( 'com' => array(), 'uk' => array() );
 
 	foreach ( $candidates as $slug ) {
-		if ( count( $found['com'] ) >= 3 && count( $found['co.uk'] ) >= 3 ) {
+		if ( count( $found['com'] ) >= 3 && count( $found['uk'] ) >= 3 ) {
 			break;
 		}
-		foreach ( array( 'com', 'co.uk' ) as $tld ) {
+		foreach ( array( 'com', 'uk' ) as $tld ) {
 			if ( count( $found[ $tld ] ) >= 3 ) {
 				continue;
 			}
@@ -861,12 +861,12 @@ function wookiee_suggest_site_name_handler() {
 		}
 	}
 
-	$site_name = ! empty( $found['com'] ) ? $found['com'][0]['site_name'] : ( ! empty( $found['co.uk'] ) ? $found['co.uk'][0]['site_name'] : ucfirst( $base_candidates[0] ) );
+	$site_name = ! empty( $found['com'] ) ? $found['com'][0]['site_name'] : ( ! empty( $found['uk'] ) ? $found['uk'][0]['site_name'] : ucfirst( $base_candidates[0] ) );
 
 	wp_send_json_success( array(
 		'site_name'   => $site_name,
 		'checked'     => true,
-		'suggestions' => array( 'com' => $found['com'], 'co_uk' => $found['co.uk'] ),
+		'suggestions' => array( 'com' => $found['com'], 'uk' => $found['uk'] ),
 	) );
 }
 

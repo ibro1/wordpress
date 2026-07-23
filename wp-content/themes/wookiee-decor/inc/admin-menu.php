@@ -255,7 +255,7 @@ function wookiee_enqueue_niche_suggest_assets( $hook ) {
 
 		// Only present on the Setup wizard's Business Identity step, not
 		// the Settings page - suggests a short site title from whatever
-		// company was just looked up/picked, with a live .com/.co.uk
+		// company was just looked up/picked, with a live .com/.uk
 		// availability check (and Register button, if Spaceship is fully
 		// configured) for up to 3 candidates per extension.
 		function runSiteNameSuggest( companyName ) {
@@ -292,7 +292,7 @@ function wookiee_enqueue_niche_suggest_assets( $hook ) {
 			var nameStatus  = document.getElementById( 'wookiee-site-name-status' );
 			var suggestWrap = document.getElementById( 'wookiee-domain-suggestions' );
 			var comWrap     = document.getElementById( 'wookiee-domain-suggestions-com' );
-			var coukWrap    = document.getElementById( 'wookiee-domain-suggestions-couk' );
+			var ukWrap    = document.getElementById( 'wookiee-domain-suggestions-uk' );
 
 			if ( ! result.checked || ! result.suggestions ) {
 				nameStatus.textContent = result.message
@@ -301,28 +301,28 @@ function wookiee_enqueue_niche_suggest_assets( $hook ) {
 				return;
 			}
 
-			var total = result.suggestions.com.length + result.suggestions.co_uk.length;
+			var total = result.suggestions.com.length + result.suggestions.uk.length;
 			if ( ! total ) {
-				nameStatus.textContent = 'Suggested ‘' + result.site_name + '’ — no matching .com/.co.uk found available nearby, check manually.';
+				nameStatus.textContent = 'Suggested ‘' + result.site_name + '’ — no matching .com/.uk found available nearby, check manually.';
 				return;
 			}
 
 			nameStatus.textContent = 'Suggested ‘' + result.site_name + '’ — pick a domain below to register, or keep the site title as-is.';
 			comWrap.innerHTML = '';
-			coukWrap.innerHTML = '';
+			ukWrap.innerHTML = '';
 			result.suggestions.com.forEach( function( item ) { comWrap.appendChild( buildDomainSuggestionRow( item ) ); } );
-			result.suggestions.co_uk.forEach( function( item ) { coukWrap.appendChild( buildDomainSuggestionRow( item ) ); } );
+			result.suggestions.uk.forEach( function( item ) { ukWrap.appendChild( buildDomainSuggestionRow( item ) ); } );
 			if ( ! result.suggestions.com.length ) {
 				var noneCom = document.createElement( 'p' );
 				noneCom.className = 'description';
 				noneCom.textContent = 'None found available nearby.';
 				comWrap.appendChild( noneCom );
 			}
-			if ( ! result.suggestions.co_uk.length ) {
+			if ( ! result.suggestions.uk.length ) {
 				var noneCouk = document.createElement( 'p' );
 				noneCouk.className = 'description';
 				noneCouk.textContent = 'None found available nearby.';
-				coukWrap.appendChild( noneCouk );
+				ukWrap.appendChild( noneCouk );
 			}
 			suggestWrap.hidden = false;
 		}

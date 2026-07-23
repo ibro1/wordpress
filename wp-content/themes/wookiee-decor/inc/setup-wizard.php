@@ -181,23 +181,57 @@ function wookiee_render_setup_wizard_page() {
 			</p>
 		</div>
 
+		<?php
+		$about_fields   = array_values( array_filter( $tabs['about_contact']['fields'], function ( $k ) { return 0 === strpos( $k, 'about_' ); } ) );
+		$contact_fields = array_values( array_filter( $tabs['about_contact']['fields'], function ( $k ) { return 0 === strpos( $k, 'contact_' ); } ) );
+		?>
 		<?php // ---------------- Step 3: Generate page content ---------------- ?>
 		<div class="wookiee-setup-step" data-step-panel="content" hidden>
 			<h2>Page content</h2>
-			<p><?php echo intval( $policy_live_count ); ?> of 7 policy pages currently exist (Terms, Privacy, Shipping, Returns, Payment, Cookie Policy, Cookie Preferences).</p>
-			<?php if ( ! $has_ai_key ) : ?>
-				<p class="description">Needs an LLM API key on <a href="<?php echo esc_url( $settings_url . '#integrations' ); ?>">Wookiee Settings</a> first.</p>
-			<?php else : ?>
-				<?php wookiee_render_content_generator_page(); ?>
 
-				<h3>Homepage copy</h3>
-				<?php wookiee_render_ai_copy_generator_notice( 'homepage' ); ?>
-				<?php wookiee_render_settings_fields_table( $tabs['homepage']['fields'] ); ?>
+			<div class="wookiee-setup-subtabs" role="tablist">
+				<a href="#" class="wookiee-setup-subtab is-active" data-subtab="policy">Policy Pages</a>
+				<a href="#" class="wookiee-setup-subtab" data-subtab="home">Home</a>
+				<a href="#" class="wookiee-setup-subtab" data-subtab="about">About</a>
+				<a href="#" class="wookiee-setup-subtab" data-subtab="contact">Contact</a>
+			</div>
 
-				<h3>About &amp; Contact copy</h3>
-				<?php wookiee_render_ai_copy_generator_notice( 'about_contact' ); ?>
-				<?php wookiee_render_settings_fields_table( $tabs['about_contact']['fields'] ); ?>
-			<?php endif; ?>
+			<div class="wookiee-setup-subtab-panel" data-subtab-panel="policy">
+				<p><?php echo intval( $policy_live_count ); ?> of 7 policy pages currently exist (Terms, Privacy, Shipping, Returns, Payment, Cookie Policy, Cookie Preferences).</p>
+				<?php if ( ! $has_ai_key ) : ?>
+					<p class="description">Needs an LLM API key on <a href="<?php echo esc_url( $settings_url . '#integrations' ); ?>">Wookiee Settings</a> first.</p>
+				<?php else : ?>
+					<?php wookiee_render_content_generator_page(); ?>
+				<?php endif; ?>
+			</div>
+
+			<div class="wookiee-setup-subtab-panel" data-subtab-panel="home" hidden>
+				<?php if ( ! $has_ai_key ) : ?>
+					<p class="description">Needs an LLM API key on <a href="<?php echo esc_url( $settings_url . '#integrations' ); ?>">Wookiee Settings</a> first.</p>
+				<?php else : ?>
+					<?php wookiee_render_ai_copy_generator_notice( 'homepage' ); ?>
+					<?php wookiee_render_settings_fields_table( $tabs['homepage']['fields'] ); ?>
+				<?php endif; ?>
+			</div>
+
+			<div class="wookiee-setup-subtab-panel" data-subtab-panel="about" hidden>
+				<?php if ( ! $has_ai_key ) : ?>
+					<p class="description">Needs an LLM API key on <a href="<?php echo esc_url( $settings_url . '#integrations' ); ?>">Wookiee Settings</a> first.</p>
+				<?php else : ?>
+					<?php wookiee_render_ai_copy_generator_notice( 'about_contact' ); ?>
+					<?php wookiee_render_settings_fields_table( $about_fields ); ?>
+				<?php endif; ?>
+			</div>
+
+			<div class="wookiee-setup-subtab-panel" data-subtab-panel="contact" hidden>
+				<?php if ( ! $has_ai_key ) : ?>
+					<p class="description">Needs an LLM API key on <a href="<?php echo esc_url( $settings_url . '#integrations' ); ?>">Wookiee Settings</a> first.</p>
+				<?php else : ?>
+					<p class="description">Contact copy is generated together with About copy - use "Generate with AI" on the <strong>About</strong> tab, it fills in both.</p>
+					<?php wookiee_render_settings_fields_table( $contact_fields ); ?>
+				<?php endif; ?>
+			</div>
+
 			<p class="wookiee-setup-nav">
 				<button type="button" class="button wookiee-setup-nav-prev" data-prev="niche">&larr; Back</button>
 				<?php if ( $has_ai_key ) : ?>
@@ -380,6 +414,13 @@ function wookiee_render_setup_wizard_page() {
 			border-top: 1px solid #f0f0f1;
 		}
 		.wookiee-setup-nav { margin-top: 24px; padding-top: 16px; border-top: 1px solid #dcdcde; }
+		.wookiee-setup-subtabs { display: flex; gap: 4px; border-bottom: 1px solid #dcdcde; margin-bottom: 20px; }
+		.wookiee-setup-subtab {
+			padding: 8px 14px; text-decoration: none; color: #646970; font-weight: 600;
+			border-bottom: 2px solid transparent; margin-bottom: -1px;
+		}
+		.wookiee-setup-subtab.is-active { color: #1d2327; border-bottom-color: #2271b1; }
+		.wookiee-setup-subtab:hover { color: #2271b1; }
 	</style>
 	<script>
 	( function() {
@@ -465,6 +506,22 @@ function wookiee_render_setup_wizard_page() {
 		if ( targetKey ) {
 			activateStep( targetKey );
 		}
+
+		// Step 3's inner tabs (Policy Pages / Home / About / Contact) -
+		// independent of the main 6-step nav above, just a plain
+		// show/hide toggle scoped to whichever panel is currently active.
+		document.querySelectorAll( '.wookiee-setup-subtab' ).forEach( function( tab ) {
+			tab.addEventListener( 'click', function( e ) {
+				e.preventDefault();
+				var key = tab.getAttribute( 'data-subtab' );
+				document.querySelectorAll( '.wookiee-setup-subtab' ).forEach( function( t ) {
+					t.classList.toggle( 'is-active', t === tab );
+				} );
+				document.querySelectorAll( '.wookiee-setup-subtab-panel' ).forEach( function( p ) {
+					p.hidden = ( p.getAttribute( 'data-subtab-panel' ) !== key );
+				} );
+			} );
+		} );
 
 		// Step 2: save the niche brief via AJAX (no page reload needed,
 		// unlike the Settings-API forms elsewhere in this wizard).

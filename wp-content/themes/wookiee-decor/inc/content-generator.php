@@ -49,83 +49,208 @@ function wookiee_render_content_generator_page() {
 	if ( ! current_user_can( 'manage_options' ) ) {
 		return;
 	}
-	$has_key     = '' !== trim( (string) wookiee_get_setting( 'llm_api_key' ) );
-	$saved_brief = get_option( 'wookiee_niche_brief', '' );
+	$has_key      = '' !== trim( (string) wookiee_get_setting( 'llm_api_key' ) );
+	$saved_brief  = get_option( 'wookiee_niche_brief', '' );
+	$already_done = wookiee_any_policy_page_ai_generated();
+	$verb         = $already_done ? 'Regenerate' : 'Generate';
 	?>
 	<div class="wrap">
 		<h1>Wookiee Content Generator</h1>
-		<p>Generates UK policy pages from the store's niche and the business details already saved in Wookiee Settings. Generating edits the <strong>real, live page directly</strong> (creating it if it's somehow missing) — there's no separate draft copy to review and copy across manually. Run the compliance audit below before/after generating to check the result.</p>
+		<p>Generates UK policy pages from the store's niche and the business details already saved in Wookiee Settings. Generating edits the <strong>real, live page directly</strong> — there's no separate draft copy to review and copy across manually. Every generated page is analysed for compliance automatically, with a chance to fix or tweak each one before you move on.</p>
 		<p class="description">Looking to update the <strong>Homepage</strong> or <strong>About/Contact</strong> pages instead? Those have real visual designs to preserve, so they're regenerated from the <a href="<?php echo esc_url( admin_url( 'admin.php?page=wookiee-settings#homepage' ) ); ?>">Homepage Copy</a> and <a href="<?php echo esc_url( admin_url( 'admin.php?page=wookiee-settings#about_contact' ) ); ?>">About &amp; Contact Copy</a> tabs on Wookiee Settings instead, where you can review the new text right in place before saving.</p>
 
 		<?php if ( ! $has_key ) : ?>
 			<div class="notice notice-warning"><p>No LLM API key set. Add one on the <a href="<?php echo esc_url( admin_url( 'admin.php?page=wookiee-settings' ) ); ?>">Wookiee Settings</a> page first.</p></div>
 		<?php endif; ?>
 
-		<table class="form-table" role="presentation">
-			<tr>
-				<th scope="row"><label for="wookiee-niche-brief-2">Niche brief</label></th>
-				<td>
-					<div class="wookiee-niche-input-wrap is-textarea">
-						<textarea id="wookiee-niche-brief-2" rows="3" class="large-text" placeholder="e.g. UK home-storage and organisation products - baskets, shelving, drawer organisers, aimed at small flats"><?php echo esc_textarea( $saved_brief ); ?></textarea>
-						<?php wookiee_niche_suggest_button( 'wookiee-niche-brief-2' ); ?>
-					</div>
-					<p class="description">Shared with the Product Generator's niche brief. Click the sparkle to have AI suggest one.</p>
-				</td>
-			</tr>
-			<tr>
-				<th scope="row">Policy pages to generate</th>
-				<td>
-					<?php foreach ( wookiee_content_generator_pieces() as $key => $piece ) : ?>
-						<label style="display:block;margin-bottom:6px;">
-							<input type="checkbox" class="wookiee-content-piece" value="<?php echo esc_attr( $key ); ?>" checked>
-							<?php echo esc_html( $piece['label'] ); ?>
-						</label>
-					<?php endforeach; ?>
-				</td>
-			</tr>
-		</table>
+		<div id="wookiee-cg-generate-screen">
+			<table class="form-table" role="presentation">
+				<tr>
+					<th scope="row"><label for="wookiee-niche-brief-2">Niche brief</label></th>
+					<td>
+						<div class="wookiee-niche-input-wrap is-textarea">
+							<textarea id="wookiee-niche-brief-2" rows="3" class="large-text" placeholder="e.g. UK home-storage and organisation products - baskets, shelving, drawer organisers, aimed at small flats"><?php echo esc_textarea( $saved_brief ); ?></textarea>
+							<?php wookiee_niche_suggest_button( 'wookiee-niche-brief-2' ); ?>
+						</div>
+						<p class="description">Shared with the Product Generator's niche brief. Click the sparkle to have AI suggest one.</p>
+					</td>
+				</tr>
+				<tr>
+					<th scope="row">Policy pages to <?php echo strtolower( $verb ); ?></th>
+					<td>
+						<?php foreach ( wookiee_content_generator_pieces() as $key => $piece ) :
+							$page       = get_page_by_path( $piece['slug'], OBJECT, 'page' );
+							$page_done  = $page && get_post_meta( $page->ID, '_wookiee_ai_generated', true );
+						?>
+							<label style="display:block;margin-bottom:6px;">
+								<input type="checkbox" class="wookiee-content-piece" value="<?php echo esc_attr( $key ); ?>" checked>
+								<?php echo esc_html( $piece['label'] ); ?>
+								<?php if ( $page_done ) : ?><span class="description">— already generated</span><?php endif; ?>
+							</label>
+						<?php endforeach; ?>
+						<p class="description">Untick anything you don't want touched this time.</p>
+					</td>
+				</tr>
+			</table>
 
-		<p>
-			<button type="button" class="button button-primary" id="wookiee-content-generate-btn" <?php disabled( ! $has_key ); ?>>Generate selected pages</button>
-			<span id="wookiee-content-generate-status" style="margin-left:8px;"></span>
-		</p>
+			<p>
+				<button type="button" class="button button-primary" id="wookiee-content-generate-btn" <?php disabled( ! $has_key ); ?>><?php echo esc_html( $verb ); ?> selected pages</button>
+				<span id="wookiee-content-generate-status" style="margin-left:8px;"></span>
+			</p>
+		</div>
 
-		<div id="wookiee-content-generate-results"></div>
-
-		<hr>
-		<h2>Policy compliance audit</h2>
-		<p>Runs a UK compliance QA pass (Google Merchant Center risk, UK consumer/privacy law, quality) over one of the live policy pages above — adapted from <code>docs/policy audit new.txt</code>'s US/GMC audit format for a UK-only store. This only produces a report for you to act on; "Apply these fixes" is a separate explicit step below.</p>
-		<p>
-			<select id="wookiee-audit-page-select">
-				<option value="">Select a policy page to audit…</option>
-				<?php
-				foreach ( wookiee_content_generator_pieces() as $piece ) {
-					$page = get_page_by_path( $piece['slug'], OBJECT, 'page' );
-					if ( $page ) {
-						echo '<option value="' . esc_attr( $page->ID ) . '">' . esc_html( $piece['title'] ) . '</option>';
-					}
-				}
-				?>
-			</select>
-			<button type="button" class="button button-primary" id="wookiee-audit-btn">Run compliance audit</button>
-			<span id="wookiee-audit-status" style="margin-left:8px;"></span>
-		</p>
-		<div id="wookiee-audit-results" style="white-space:pre-wrap;max-width:900px;"></div>
-		<p id="wookiee-audit-fix-row" style="display:none;">
-			<button type="button" class="button button-primary" id="wookiee-audit-fix-btn">Apply these fixes to the live page</button>
-			<span id="wookiee-audit-fix-status" style="margin-left:8px;"></span>
-		</p>
-		<p class="description">Rewrites the live page to resolve everything the report above lists, using the same real business details as generation - you can re-run the audit afterwards to check.</p>
+		<div id="wookiee-cg-audit-screen" hidden>
+			<p><button type="button" class="button" id="wookiee-cg-back-btn">&larr; Back to generate</button></p>
+			<h2>Compliance review</h2>
+			<p class="description">Each page below was analysed automatically (Google Merchant Center risk, UK consumer/privacy law, quality) — adapted from <code>docs/policy audit new.txt</code>'s US/GMC audit format for a UK-only store. Fix the issues in one click, or give a custom instruction for anything else you want changed, then reanalyse to confirm.</p>
+			<div id="wookiee-cg-audit-cards"></div>
+		</div>
 	</div>
+	<style>
+		.wookiee-audit-card { background: #fff; border: 1px solid #dcdcde; border-radius: 8px; padding: 20px 24px; margin-bottom: 20px; }
+		.wookiee-audit-card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+		.wookiee-audit-card-head h3 { margin: 0; }
+		.wookiee-audit-card-body { white-space: pre-wrap; margin: 14px 0; max-height: 320px; overflow-y: auto; background: #f6f7f7; border-radius: 6px; padding: 12px 14px; font-size: 13px; }
+		.wookiee-audit-custom-instruction { width: 100%; max-width: 600px; margin-top: 10px; display: block; }
+	</style>
 	<script>
 	( function() {
-		var btn = document.getElementById( 'wookiee-content-generate-btn' );
-		if ( ! btn ) {
+		var NONCE = <?php echo wp_json_encode( wp_create_nonce( 'wookiee_generate_content' ) ); ?>;
+
+		var generateScreen = document.getElementById( 'wookiee-cg-generate-screen' );
+		var auditScreen    = document.getElementById( 'wookiee-cg-audit-screen' );
+		var cardsContainer = document.getElementById( 'wookiee-cg-audit-cards' );
+		var backBtn        = document.getElementById( 'wookiee-cg-back-btn' );
+
+		if ( backBtn ) {
+			backBtn.addEventListener( 'click', function() {
+				auditScreen.hidden = true;
+				generateScreen.hidden = false;
+			} );
+		}
+
+		function runAudit( card, postId ) {
+			var body   = card.querySelector( '.wookiee-audit-card-body' );
+			var actions = card.querySelector( '.wookiee-audit-card-actions' );
+			var reanalyzeBtn = card.querySelector( '.wookiee-audit-reanalyze-btn' );
+			body.textContent = 'Analysing…';
+			actions.hidden = true;
+			var data = new FormData();
+			data.append( 'action', 'wookiee_audit_policy_page' );
+			data.append( 'nonce', NONCE );
+			data.append( 'post_id', postId );
+			return fetch( ajaxurl, { method: 'POST', credentials: 'same-origin', body: data } )
+				.then( function( r ) { return r.json(); } )
+				.then( function( res ) {
+					if ( ! res.success ) {
+						body.innerHTML = res.data && res.data.message ? res.data.message : 'Audit failed.';
+						return;
+					}
+					body.textContent = res.data.report;
+					card.setAttribute( 'data-report', res.data.report );
+					actions.hidden = false;
+					if ( reanalyzeBtn ) { reanalyzeBtn.hidden = true; }
+				} )
+				.catch( function() {
+					body.textContent = 'Audit failed — could not reach the server.';
+				} );
+		}
+
+		function buildCard( page ) {
+			var card = document.createElement( 'div' );
+			card.className = 'wookiee-audit-card';
+			card.setAttribute( 'data-post-id', page.post_id );
+			card.innerHTML =
+				'<div class="wookiee-audit-card-head">' +
+					'<h3></h3>' +
+					( page.preview_link ? '<a href="' + page.preview_link + '" target="_blank" rel="noopener" class="button">Preview &#8599;</a>' : '' ) +
+				'</div>' +
+				'<div class="wookiee-audit-card-body">Waiting…</div>' +
+				'<div class="wookiee-audit-card-actions" hidden>' +
+					'<button type="button" class="button button-primary wookiee-audit-fix-btn">Regenerate (fix these issues)</button> ' +
+					'<button type="button" class="button wookiee-audit-reanalyze-btn" hidden>Reanalyse</button> ' +
+					'<span class="wookiee-audit-card-status"></span>' +
+					'<textarea class="wookiee-audit-custom-instruction" rows="2" placeholder="Or give a custom instruction, e.g. \'make this shorter and friendlier\'"></textarea>' +
+					'<button type="button" class="button wookiee-audit-custom-btn">Regenerate with this instruction</button>' +
+				'</div>';
+			card.querySelector( 'h3' ).textContent = page.title;
+			return card;
+		}
+
+		function wireCardActions( card, postId ) {
+			var fixBtn       = card.querySelector( '.wookiee-audit-fix-btn' );
+			var customBtn    = card.querySelector( '.wookiee-audit-custom-btn' );
+			var reanalyzeBtn = card.querySelector( '.wookiee-audit-reanalyze-btn' );
+			var status       = card.querySelector( '.wookiee-audit-card-status' );
+
+			fixBtn.addEventListener( 'click', function() {
+				var report = card.getAttribute( 'data-report' ) || '';
+				fixBtn.disabled = true;
+				status.textContent = 'Rewriting…';
+				var data = new FormData();
+				data.append( 'action', 'wookiee_apply_audit_fixes' );
+				data.append( 'nonce', NONCE );
+				data.append( 'post_id', postId );
+				data.append( 'audit_report', report );
+				fetch( ajaxurl, { method: 'POST', credentials: 'same-origin', body: data } )
+					.then( function( r ) { return r.json(); } )
+					.then( function( res ) {
+						fixBtn.disabled = false;
+						if ( ! res.success ) {
+							status.innerHTML = res.data && res.data.message ? res.data.message : 'Failed to apply fixes.';
+							return;
+						}
+						status.textContent = 'Updated.';
+						reanalyzeBtn.hidden = false;
+					} )
+					.catch( function() {
+						fixBtn.disabled = false;
+						status.textContent = 'Failed — could not reach the server.';
+					} );
+			} );
+
+			customBtn.addEventListener( 'click', function() {
+				var instruction = card.querySelector( '.wookiee-audit-custom-instruction' ).value.trim();
+				if ( ! instruction ) {
+					status.textContent = 'Describe what you want changed first.';
+					return;
+				}
+				customBtn.disabled = true;
+				status.textContent = 'Rewriting…';
+				var data = new FormData();
+				data.append( 'action', 'wookiee_apply_custom_policy_prompt' );
+				data.append( 'nonce', NONCE );
+				data.append( 'post_id', postId );
+				data.append( 'instruction', instruction );
+				fetch( ajaxurl, { method: 'POST', credentials: 'same-origin', body: data } )
+					.then( function( r ) { return r.json(); } )
+					.then( function( res ) {
+						customBtn.disabled = false;
+						if ( ! res.success ) {
+							status.innerHTML = res.data && res.data.message ? res.data.message : 'Failed to apply.';
+							return;
+						}
+						status.textContent = 'Updated.';
+						reanalyzeBtn.hidden = false;
+					} )
+					.catch( function() {
+						customBtn.disabled = false;
+						status.textContent = 'Failed — could not reach the server.';
+					} );
+			} );
+
+			reanalyzeBtn.addEventListener( 'click', function() {
+				status.textContent = '';
+				runAudit( card, postId );
+			} );
+		}
+
+		var genBtn = document.getElementById( 'wookiee-content-generate-btn' );
+		if ( ! genBtn ) {
 			return;
 		}
-		btn.addEventListener( 'click', function() {
+		genBtn.addEventListener( 'click', function() {
 			var status  = document.getElementById( 'wookiee-content-generate-status' );
-			var results = document.getElementById( 'wookiee-content-generate-results' );
 			var brief   = document.getElementById( 'wookiee-niche-brief-2' ).value.trim();
 			var checked = Array.prototype.slice.call( document.querySelectorAll( '.wookiee-content-piece:checked' ) ).map( function( el ) { return el.value; } );
 
@@ -138,104 +263,54 @@ function wookiee_render_content_generator_page() {
 				return;
 			}
 
-			btn.disabled = true;
-			results.innerHTML = '';
+			genBtn.disabled = true;
 			status.textContent = 'Generating ' + checked.length + ' item(s) with the LLM… this can take a minute or two.';
 
 			var data = new FormData();
 			data.append( 'action', 'wookiee_generate_content' );
-			data.append( 'nonce', '<?php echo esc_js( wp_create_nonce( 'wookiee_generate_content' ) ); ?>' );
+			data.append( 'nonce', NONCE );
 			data.append( 'brief', brief );
 			checked.forEach( function( key ) { data.append( 'pieces[]', key ); } );
 
 			fetch( ajaxurl, { method: 'POST', credentials: 'same-origin', body: data } )
 				.then( function( r ) { return r.json(); } )
 				.then( function( res ) {
-					btn.disabled = false;
+					genBtn.disabled = false;
 					if ( ! res.success ) {
 						status.textContent = res.data && res.data.message ? res.data.message : 'Generation failed.';
 						return;
 					}
-					status.textContent = 'Done. ' + res.data.pages.length + ' live page(s) updated.';
-					var html = '<table class="widefat"><thead><tr><th>Page</th><th>Status</th><th></th></tr></thead><tbody>';
-					res.data.pages.forEach( function( p ) {
-						html += '<tr><td>' + p.title + '</td><td>' + ( p.error ? p.error : 'Updated' ) + '</td><td>' + ( p.edit_link ? '<a href="' + p.edit_link + '" class="button" target="_blank" rel="noopener">View / edit page</a>' : '' ) + '</td></tr>';
+					status.textContent = '';
+					generateScreen.hidden = true;
+					auditScreen.hidden = false;
+					cardsContainer.innerHTML = '';
+
+					var validPages = res.data.pages.filter( function( p ) { return p.post_id && ! p.error; } );
+					var errorPages = res.data.pages.filter( function( p ) { return p.error; } );
+
+					errorPages.forEach( function( p ) {
+						var card = document.createElement( 'div' );
+						card.className = 'wookiee-audit-card';
+						card.innerHTML = '<div class="wookiee-audit-card-head"><h3></h3></div><div class="wookiee-audit-card-body"></div>';
+						card.querySelector( 'h3' ).textContent = p.title;
+						card.querySelector( '.wookiee-audit-card-body' ).textContent = p.error;
+						cardsContainer.appendChild( card );
 					} );
-					html += '</tbody></table>';
-					results.innerHTML = html;
+
+					// Sequential, not parallel - avoids firing a dozen
+					// concurrent LLM calls at once when several pages are
+					// generated together.
+					var chain = Promise.resolve();
+					validPages.forEach( function( p ) {
+						var card = buildCard( p );
+						cardsContainer.appendChild( card );
+						wireCardActions( card, p.post_id );
+						chain = chain.then( function() { return runAudit( card, p.post_id ); } );
+					} );
 				} )
 				.catch( function() {
-					btn.disabled = false;
+					genBtn.disabled = false;
 					status.textContent = 'Generation failed — could not reach the server.';
-				} );
-		} );
-
-		var auditBtn = document.getElementById( 'wookiee-audit-btn' );
-		var fixRow   = document.getElementById( 'wookiee-audit-fix-row' );
-		var fixBtn   = document.getElementById( 'wookiee-audit-fix-btn' );
-
-		auditBtn.addEventListener( 'click', function() {
-			var auditStatus  = document.getElementById( 'wookiee-audit-status' );
-			var auditResults = document.getElementById( 'wookiee-audit-results' );
-			var postId       = document.getElementById( 'wookiee-audit-page-select' ).value;
-			if ( ! postId ) {
-				auditStatus.textContent = 'Select a policy page first.';
-				return;
-			}
-			auditBtn.disabled = true;
-			auditResults.textContent = '';
-			fixRow.style.display = 'none';
-			auditStatus.textContent = 'Auditing… this can take a minute.';
-			var data = new FormData();
-			data.append( 'action', 'wookiee_audit_policy_page' );
-			data.append( 'nonce', '<?php echo esc_js( wp_create_nonce( 'wookiee_generate_content' ) ); ?>' );
-			data.append( 'post_id', postId );
-			fetch( ajaxurl, { method: 'POST', credentials: 'same-origin', body: data } )
-				.then( function( r ) { return r.json(); } )
-				.then( function( res ) {
-					auditBtn.disabled = false;
-					if ( ! res.success ) {
-						auditStatus.textContent = res.data && res.data.message ? res.data.message : 'Audit failed.';
-						return;
-					}
-					auditStatus.textContent = 'Done.';
-					auditResults.textContent = res.data.report;
-					fixRow.style.display = '';
-				} )
-				.catch( function() {
-					auditBtn.disabled = false;
-					auditStatus.textContent = 'Audit failed — could not reach the server.';
-				} );
-		} );
-
-		fixBtn.addEventListener( 'click', function() {
-			var fixStatus    = document.getElementById( 'wookiee-audit-fix-status' );
-			var auditResults = document.getElementById( 'wookiee-audit-results' );
-			var postId       = document.getElementById( 'wookiee-audit-page-select' ).value;
-			if ( ! postId || ! auditResults.textContent ) {
-				fixStatus.textContent = 'Run the audit first.';
-				return;
-			}
-			fixBtn.disabled = true;
-			fixStatus.textContent = 'Rewriting the draft… this can take a minute.';
-			var data = new FormData();
-			data.append( 'action', 'wookiee_apply_audit_fixes' );
-			data.append( 'nonce', '<?php echo esc_js( wp_create_nonce( 'wookiee_generate_content' ) ); ?>' );
-			data.append( 'post_id', postId );
-			data.append( 'audit_report', auditResults.textContent );
-			fetch( ajaxurl, { method: 'POST', credentials: 'same-origin', body: data } )
-				.then( function( r ) { return r.json(); } )
-				.then( function( res ) {
-					fixBtn.disabled = false;
-					if ( ! res.success ) {
-						fixStatus.textContent = res.data && res.data.message ? res.data.message : 'Failed to apply fixes.';
-						return;
-					}
-					fixStatus.innerHTML = 'Live page updated. <a href="' + res.data.edit_link + '" target="_blank" rel="noopener">Review it</a>, then re-run the audit to check.';
-				} )
-				.catch( function() {
-					fixBtn.disabled = false;
-					fixStatus.textContent = 'Failed — could not reach the server.';
 				} );
 		} );
 	} )();
@@ -278,18 +353,22 @@ function wookiee_generate_content_handler() {
 
 		if ( is_wp_error( $text ) ) {
 			$results[] = array(
-				'title'     => esc_html( $piece['title'] ),
-				'error'     => esc_html( $text->get_error_message() ),
-				'edit_link' => '',
+				'title'        => esc_html( $piece['title'] ),
+				'error'        => esc_html( $text->get_error_message() ),
+				'post_id'      => 0,
+				'edit_link'    => '',
+				'preview_link' => '',
 			);
 			continue;
 		}
 
 		$post_id = wookiee_update_real_static_page( $piece['slug'], $piece['title'], $text );
 		$results[] = array(
-			'title'     => esc_html( $piece['title'] ),
-			'error'     => '',
-			'edit_link' => $post_id ? get_edit_post_link( $post_id, 'raw' ) : '',
+			'title'        => esc_html( $piece['title'] ),
+			'error'        => '',
+			'post_id'      => $post_id,
+			'edit_link'    => $post_id ? get_edit_post_link( $post_id, 'raw' ) : '',
+			'preview_link' => $post_id ? get_permalink( $post_id ) : '',
 		);
 	}
 
@@ -527,7 +606,7 @@ function wookiee_audit_policy_page_handler() {
 	check_ajax_referer( 'wookiee_generate_content', 'nonce' );
 
 	if ( '' === trim( (string) wookiee_get_setting( 'llm_api_key' ) ) ) {
-		wp_send_json_error( array( 'message' => 'Add an LLM API key on the Wookiee Settings page first.' ) );
+		wp_send_json_error( array( 'message' => 'Add an LLM API key on the <a href="' . esc_url( admin_url( 'admin.php?page=wookiee-settings#integrations' ) ) . '" target="_blank" rel="noopener">AI &amp; Integrations tab</a> first.' ) );
 	}
 
 	$post_id = isset( $_POST['post_id'] ) ? intval( $_POST['post_id'] ) : 0;
@@ -579,7 +658,7 @@ function wookiee_apply_audit_fixes_handler() {
 	check_ajax_referer( 'wookiee_generate_content', 'nonce' );
 
 	if ( '' === trim( (string) wookiee_get_setting( 'llm_api_key' ) ) ) {
-		wp_send_json_error( array( 'message' => 'Add an LLM API key on the Wookiee Settings page first.' ) );
+		wp_send_json_error( array( 'message' => 'Add an LLM API key on the <a href="' . esc_url( admin_url( 'admin.php?page=wookiee-settings#integrations' ) ) . '" target="_blank" rel="noopener">AI &amp; Integrations tab</a> first.' ) );
 	}
 
 	$post_id = isset( $_POST['post_id'] ) ? intval( $_POST['post_id'] ) : 0;
@@ -635,6 +714,65 @@ function wookiee_build_policy_fix_prompt( $title, $current_text, $audit_report )
 }
 
 /**
+ * Rewrites a live policy page per a free-form instruction from the
+ * admin (e.g. "make this shorter", "mention we ship internationally
+ * too") - same real-business-details guardrails as every other policy
+ * prompt, just driven by open intent instead of an audit report.
+ */
+add_action( 'wp_ajax_wookiee_apply_custom_policy_prompt', 'wookiee_apply_custom_policy_prompt_handler' );
+function wookiee_apply_custom_policy_prompt_handler() {
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_send_json_error( array( 'message' => 'Not allowed.' ), 403 );
+	}
+	check_ajax_referer( 'wookiee_generate_content', 'nonce' );
+
+	if ( '' === trim( (string) wookiee_get_setting( 'llm_api_key' ) ) ) {
+		wp_send_json_error( array( 'message' => 'Add an LLM API key on the <a href="' . esc_url( admin_url( 'admin.php?page=wookiee-settings#integrations' ) ) . '" target="_blank" rel="noopener">AI &amp; Integrations tab</a> first.' ) );
+	}
+
+	$post_id = isset( $_POST['post_id'] ) ? intval( $_POST['post_id'] ) : 0;
+	$post    = $post_id ? get_post( $post_id ) : null;
+	if ( ! $post || 'page' !== $post->post_type ) {
+		wp_send_json_error( array( 'message' => 'Select a valid policy page first.' ) );
+	}
+
+	$instruction = isset( $_POST['instruction'] ) ? sanitize_textarea_field( wp_unslash( $_POST['instruction'] ) ) : '';
+	if ( '' === trim( $instruction ) ) {
+		wp_send_json_error( array( 'message' => 'Describe what you want changed first.' ) );
+	}
+
+	$prompt = "You previously drafted a UK ecommerce policy page. Below is its CURRENT text, followed by an instruction from the store owner on what to change. Apply that instruction while keeping everything else accurate and intact.\n\n"
+		. "Policy page: {$post->post_title}\n\n"
+		. "--- CURRENT POLICY TEXT ---\n" . wp_strip_all_tags( $post->post_content ) . "\n--- END CURRENT POLICY TEXT ---\n\n"
+		. "--- OWNER'S INSTRUCTION ---\n{$instruction}\n--- END INSTRUCTION ---\n\n"
+		. "Real business details (do not invent anything beyond this list):\n" . wookiee_business_details_block() . "\n\n"
+		. "Rules:\n"
+		. "- Apply the owner's instruction as directly as possible, without contradicting UK consumer/privacy law or the real business details above.\n"
+		. "- Do not invent any business fact, feature, or practice not in the details above or already accurately stated in the current text.\n"
+		. "- Write in plain, professional, customer-friendly English - not robotic or generic-sounding boilerplate.\n"
+		. "- State the business's full legal/trading name and company registration number explicitly within the body text itself.\n"
+		. "- End with a short note that this policy should be reviewed by a qualified UK solicitor before being relied on, since it is not legal advice.\n"
+		. "- Output ONLY the finished, complete policy text as plain paragraphs separated by a blank line, starting with a single plain-text heading line. No markdown, no HTML, no commentary.";
+
+	if ( false !== stripos( $post->post_title, 'privacy' ) || false !== stripos( $post->post_title, 'cookie' ) ) {
+		$prompt .= "\n\nThis policy must explicitly explain the data subject's rights under UK GDPR: the right to access, rectify, erase, restrict processing of, and port their personal data, the right to object, and the right to withdraw consent at any time.";
+	}
+
+	$text = wookiee_call_llm( $prompt, 4096 );
+	if ( is_wp_error( $text ) ) {
+		wp_send_json_error( array( 'message' => $text->get_error_message() ) );
+	}
+
+	wp_update_post( array(
+		'ID'           => $post->ID,
+		'post_content' => wpautop( esc_html( $text ) ),
+	) );
+	update_post_meta( $post->ID, '_wookiee_ai_generated', 1 );
+
+	wp_send_json_success( array( 'edit_link' => get_edit_post_link( $post->ID, 'raw' ) ) );
+}
+
+/**
  * Writes generated policy text straight into the REAL page for that
  * slug - creating it (published, matching wookiee_starter_pages()'s
  * own convention) if it's somehow missing, or updating its content in
@@ -653,6 +791,7 @@ function wookiee_update_real_static_page( $slug, $title, $raw_text ) {
 			'ID'           => $existing->ID,
 			'post_content' => $content,
 		) );
+		update_post_meta( $existing->ID, '_wookiee_ai_generated', 1 );
 		return $existing->ID;
 	}
 
@@ -664,7 +803,28 @@ function wookiee_update_real_static_page( $slug, $title, $raw_text ) {
 		'post_type'    => 'page',
 	) );
 
-	return ( $post_id && ! is_wp_error( $post_id ) ) ? $post_id : 0;
+	if ( $post_id && ! is_wp_error( $post_id ) ) {
+		update_post_meta( $post_id, '_wookiee_ai_generated', 1 );
+		return $post_id;
+	}
+
+	return 0;
+}
+
+/**
+ * Whether any of the 7 policy pages have already been through at least
+ * one AI generation - purely cosmetic (labels the button "Generate" vs
+ * "Regenerate"), tracked via a postmeta flag set every time
+ * wookiee_update_real_static_page() writes to one of these pages.
+ */
+function wookiee_any_policy_page_ai_generated() {
+	foreach ( wookiee_content_generator_pieces() as $piece ) {
+		$page = get_page_by_path( $piece['slug'], OBJECT, 'page' );
+		if ( $page && get_post_meta( $page->ID, '_wookiee_ai_generated', true ) ) {
+			return true;
+		}
+	}
+	return false;
 }
 
 /**

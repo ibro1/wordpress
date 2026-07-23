@@ -76,7 +76,7 @@ function wookiee_render_content_generator_page() {
 					</td>
 				</tr>
 				<tr>
-					<th scope="row">Policy pages to <?php echo strtolower( $verb ); ?></th>
+					<th scope="row" id="wookiee-cg-policy-th">Policy pages to <?php echo strtolower( $verb ); ?></th>
 					<td>
 						<?php foreach ( wookiee_content_generator_pieces() as $key => $piece ) :
 							$page       = get_page_by_path( $piece['slug'], OBJECT, 'page' );
@@ -107,10 +107,23 @@ function wookiee_render_content_generator_page() {
 		</div>
 	</div>
 	<style>
-		.wookiee-audit-card { background: #fff; border: 1px solid #dcdcde; border-radius: 8px; padding: 20px 24px; margin-bottom: 20px; }
-		.wookiee-audit-card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-		.wookiee-audit-card-head h3 { margin: 0; }
-		.wookiee-audit-card-body { white-space: pre-wrap; margin: 14px 0; max-height: 320px; overflow-y: auto; background: #f6f7f7; border-radius: 6px; padding: 12px 14px; font-size: 13px; }
+		.wookiee-audit-card { background: #fff; border: 1px solid #dcdcde; border-radius: 8px; margin-bottom: 14px; overflow: hidden; }
+		.wookiee-audit-card-head {
+			display: flex; align-items: center; gap: 12px; padding: 14px 20px; cursor: pointer;
+		}
+		.wookiee-audit-card-head:hover { background: #f6f7f7; }
+		.wookiee-audit-card-title { font-weight: 600; flex: 1 1 auto; }
+		.wookiee-audit-card-badge {
+			font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 20px;
+			background: #f0f0f1; color: #50575e; white-space: nowrap;
+		}
+		.wookiee-audit-card-badge.is-low { background: #edfaef; color: #00a32a; }
+		.wookiee-audit-card-badge.is-medium { background: #fcf9e8; color: #996800; }
+		.wookiee-audit-card-badge.is-high { background: #fcf0f1; color: #b32d2e; }
+		.wookiee-audit-card-chevron { transition: transform 0.15s; color: #8a7d6d; }
+		.wookiee-audit-card.is-open .wookiee-audit-card-chevron { transform: rotate(180deg); }
+		.wookiee-audit-card-content { padding: 0 20px 20px; }
+		.wookiee-audit-card-body { white-space: pre-wrap; margin: 0 0 14px; max-height: 320px; overflow-y: auto; background: #f6f7f7; border-radius: 6px; padding: 12px 14px; font-size: 13px; }
 		.wookiee-audit-custom-instruction { width: 100%; max-width: 600px; margin-top: 10px; display: block; }
 	</style>
 	<script>
@@ -129,10 +142,29 @@ function wookiee_render_content_generator_page() {
 			} );
 		}
 
-		function runAudit( card, postId ) {
+		function badgeFromReport( report ) {
+			var scoreMatch = report.match( /OVERALL SCORE:\s*(\d+)/i );
+			var riskMatch  = report.match( /GMC RISK:\s*(Low|Medium|High)/i );
+			if ( ! scoreMatch && ! riskMatch ) { return { text: '', level: '' }; }
+			var parts = [];
+			if ( scoreMatch ) { parts.push( 'Score ' + scoreMatch[ 1 ] + '/10' ); }
+			if ( riskMatch ) { parts.push( riskMatch[ 1 ] + ' risk' ); }
+			return { text: parts.join( ' · ' ), level: riskMatch ? riskMatch[ 1 ].toLowerCase() : '' };
+		}
+
+		function setCardOpen( card, open ) {
+			card.classList.toggle( 'is-open', open );
+			card.querySelector( '.wookiee-audit-card-content' ).hidden = ! open;
+		}
+
+		function runAudit( card, postId, keepOpenAfter ) {
+			var badge  = card.querySelector( '.wookiee-audit-card-badge' );
 			var body   = card.querySelector( '.wookiee-audit-card-body' );
 			var actions = card.querySelector( '.wookiee-audit-card-actions' );
 			var reanalyzeBtn = card.querySelector( '.wookiee-audit-reanalyze-btn' );
+			setCardOpen( card, true );
+			badge.textContent = 'Analysing…';
+			badge.className = 'wookiee-audit-card-badge';
 			body.textContent = 'Analysing…';
 			actions.hidden = true;
 			var data = new FormData();
@@ -144,15 +176,21 @@ function wookiee_render_content_generator_page() {
 				.then( function( res ) {
 					if ( ! res.success ) {
 						body.innerHTML = res.data && res.data.message ? res.data.message : 'Audit failed.';
+						badge.textContent = 'Failed';
 						return;
 					}
 					body.textContent = res.data.report;
 					card.setAttribute( 'data-report', res.data.report );
 					actions.hidden = false;
 					if ( reanalyzeBtn ) { reanalyzeBtn.hidden = true; }
+					var b = badgeFromReport( res.data.report );
+					badge.textContent = b.text;
+					badge.className = 'wookiee-audit-card-badge' + ( b.level ? ' is-' + b.level : '' );
+					if ( ! keepOpenAfter ) { setCardOpen( card, false ); }
 				} )
 				.catch( function() {
 					body.textContent = 'Audit failed — could not reach the server.';
+					badge.textContent = 'Failed';
 				} );
 		}
 
@@ -162,18 +200,28 @@ function wookiee_render_content_generator_page() {
 			card.setAttribute( 'data-post-id', page.post_id );
 			card.innerHTML =
 				'<div class="wookiee-audit-card-head">' +
-					'<h3></h3>' +
-					( page.preview_link ? '<a href="' + page.preview_link + '" target="_blank" rel="noopener" class="button">Preview &#8599;</a>' : '' ) +
+					'<span class="wookiee-audit-card-title"></span>' +
+					'<span class="wookiee-audit-card-badge">Waiting…</span>' +
+					( page.preview_link ? '<a href="' + page.preview_link + '" target="_blank" rel="noopener" class="button wookiee-audit-preview-link">Preview &#8599;</a>' : '' ) +
+					'<span class="wookiee-audit-card-chevron">&#9662;</span>' +
 				'</div>' +
-				'<div class="wookiee-audit-card-body">Waiting…</div>' +
-				'<div class="wookiee-audit-card-actions" hidden>' +
-					'<button type="button" class="button button-primary wookiee-audit-fix-btn">Regenerate (fix these issues)</button> ' +
-					'<button type="button" class="button wookiee-audit-reanalyze-btn" hidden>Reanalyse</button> ' +
-					'<span class="wookiee-audit-card-status"></span>' +
-					'<textarea class="wookiee-audit-custom-instruction" rows="2" placeholder="Or give a custom instruction, e.g. \'make this shorter and friendlier\'"></textarea>' +
-					'<button type="button" class="button wookiee-audit-custom-btn">Regenerate with this instruction</button>' +
+				'<div class="wookiee-audit-card-content" hidden>' +
+					'<div class="wookiee-audit-card-body">Waiting…</div>' +
+					'<div class="wookiee-audit-card-actions" hidden>' +
+						'<button type="button" class="button button-primary wookiee-audit-fix-btn">Regenerate (fix these issues)</button> ' +
+						'<button type="button" class="button wookiee-audit-reanalyze-btn" hidden>Reanalyse</button> ' +
+						'<span class="wookiee-audit-card-status"></span>' +
+						'<textarea class="wookiee-audit-custom-instruction" rows="2" placeholder="Or give a custom instruction, e.g. \'make this shorter and friendlier\'"></textarea>' +
+						'<button type="button" class="button wookiee-audit-custom-btn">Regenerate with this instruction</button>' +
+					'</div>' +
 				'</div>';
-			card.querySelector( 'h3' ).textContent = page.title;
+			card.querySelector( '.wookiee-audit-card-title' ).textContent = page.title;
+
+			card.querySelector( '.wookiee-audit-card-head' ).addEventListener( 'click', function( e ) {
+				if ( e.target.closest( 'a' ) ) { return; }
+				setCardOpen( card, ! card.classList.contains( 'is-open' ) );
+			} );
+
 			return card;
 		}
 
@@ -241,7 +289,7 @@ function wookiee_render_content_generator_page() {
 
 			reanalyzeBtn.addEventListener( 'click', function() {
 				status.textContent = '';
-				runAudit( card, postId );
+				runAudit( card, postId, true );
 			} );
 		}
 
@@ -281,6 +329,29 @@ function wookiee_render_content_generator_page() {
 						return;
 					}
 					status.textContent = '';
+
+					// The button/checkbox labels reflect server-render-time
+					// state and won't know a generation just happened without
+					// this - otherwise "Back to generate" would still show
+					// "Generate" for pages that were just written.
+					checked.forEach( function( key, i ) {
+						var result = res.data.pages[ i ];
+						if ( ! result || result.error ) { return; }
+						var checkbox = document.querySelector( '.wookiee-content-piece[value="' + key + '"]' );
+						var label    = checkbox ? checkbox.closest( 'label' ) : null;
+						if ( label && ! label.querySelector( '.wookiee-cg-already-generated' ) ) {
+							var span = document.createElement( 'span' );
+							span.className = 'description wookiee-cg-already-generated';
+							span.textContent = ' — already generated';
+							label.appendChild( span );
+						}
+					} );
+					if ( res.data.pages.some( function( p ) { return ! p.error; } ) ) {
+						genBtn.textContent = 'Regenerate selected pages';
+						var policyTh = document.getElementById( 'wookiee-cg-policy-th' );
+						if ( policyTh ) { policyTh.textContent = 'Policy pages to regenerate'; }
+					}
+
 					generateScreen.hidden = true;
 					auditScreen.hidden = false;
 					cardsContainer.innerHTML = '';
@@ -818,13 +889,23 @@ function wookiee_update_real_static_page( $slug, $title, $raw_text ) {
  * wookiee_update_real_static_page() writes to one of these pages.
  */
 function wookiee_any_policy_page_ai_generated() {
+	return wookiee_count_policy_pages_ai_generated() > 0;
+}
+
+/**
+ * How many of the 7 policy pages have been through at least one AI
+ * generation - used for the Setup wizard's accordion header status
+ * ("4 of 7 generated") alongside the Generate/Regenerate button label.
+ */
+function wookiee_count_policy_pages_ai_generated() {
+	$count = 0;
 	foreach ( wookiee_content_generator_pieces() as $piece ) {
 		$page = get_page_by_path( $piece['slug'], OBJECT, 'page' );
 		if ( $page && get_post_meta( $page->ID, '_wookiee_ai_generated', true ) ) {
-			return true;
+			$count++;
 		}
 	}
-	return false;
+	return $count;
 }
 
 /**

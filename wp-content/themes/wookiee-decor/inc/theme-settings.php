@@ -520,6 +520,8 @@ function wookiee_inline_generate_homepage_copy_handler() {
 		wp_send_json_error( array( 'message' => $text->get_error_message() ) );
 	}
 
+	update_option( 'wookiee_homepage_ai_generated', 1 );
+
 	wp_send_json_success( array( 'fields' => wookiee_parse_homepage_copy( $text ) ) );
 }
 
@@ -552,6 +554,8 @@ function wookiee_inline_generate_about_contact_copy_handler() {
 	if ( is_wp_error( $text ) ) {
 		wp_send_json_error( array( 'message' => $text->get_error_message() ) );
 	}
+
+	update_option( 'wookiee_about_contact_ai_generated', 1 );
 
 	wp_send_json_success( array( 'fields' => wookiee_parse_copy_fields( $text, wookiee_about_contact_copy_fields() ) ) );
 }

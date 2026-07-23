@@ -182,55 +182,64 @@ function wookiee_render_setup_wizard_page() {
 		</div>
 
 		<?php
-		$about_fields   = array_values( array_filter( $tabs['about_contact']['fields'], function ( $k ) { return 0 === strpos( $k, 'about_' ); } ) );
-		$contact_fields = array_values( array_filter( $tabs['about_contact']['fields'], function ( $k ) { return 0 === strpos( $k, 'contact_' ); } ) );
+		$about_fields          = array_values( array_filter( $tabs['about_contact']['fields'], function ( $k ) { return 0 === strpos( $k, 'about_' ); } ) );
+		$contact_fields        = array_values( array_filter( $tabs['about_contact']['fields'], function ( $k ) { return 0 === strpos( $k, 'contact_' ); } ) );
+		$policy_ai_count       = wookiee_count_policy_pages_ai_generated();
+		$homepage_ai_generated = (bool) get_option( 'wookiee_homepage_ai_generated', false );
+		$about_ai_generated    = (bool) get_option( 'wookiee_about_contact_ai_generated', false );
+		$accordion_sections    = array(
+			'policy'  => array( 'label' => 'Policy Pages', 'status' => $policy_ai_count . ' of 7 generated' ),
+			'home'    => array( 'label' => 'Home', 'status' => $homepage_ai_generated ? 'AI-generated' : 'Using defaults' ),
+			'about'   => array( 'label' => 'About', 'status' => $about_ai_generated ? 'AI-generated' : 'Using defaults' ),
+			'contact' => array( 'label' => 'Contact', 'status' => $about_ai_generated ? 'AI-generated' : 'Using defaults' ),
+		);
 		?>
 		<?php // ---------------- Step 3: Generate page content ---------------- ?>
 		<div class="wookiee-setup-step" data-step-panel="content" hidden>
 			<h2>Page content</h2>
 
-			<div class="wookiee-setup-subtabs" role="tablist">
-				<a href="#" class="wookiee-setup-subtab is-active" data-subtab="policy">Policy Pages</a>
-				<a href="#" class="wookiee-setup-subtab" data-subtab="home">Home</a>
-				<a href="#" class="wookiee-setup-subtab" data-subtab="about">About</a>
-				<a href="#" class="wookiee-setup-subtab" data-subtab="contact">Contact</a>
-			</div>
-
-			<div class="wookiee-setup-subtab-panel" data-subtab-panel="policy">
-				<p><?php echo intval( $policy_live_count ); ?> of 7 policy pages currently exist (Terms, Privacy, Shipping, Returns, Payment, Cookie Policy, Cookie Preferences).</p>
-				<?php if ( ! $has_ai_key ) : ?>
-					<p class="description">Needs an LLM API key on <a href="<?php echo esc_url( $settings_url . '#integrations' ); ?>">Wookiee Settings</a> first.</p>
-				<?php else : ?>
-					<?php wookiee_render_content_generator_page(); ?>
-				<?php endif; ?>
-			</div>
-
-			<div class="wookiee-setup-subtab-panel" data-subtab-panel="home" hidden>
-				<?php if ( ! $has_ai_key ) : ?>
-					<p class="description">Needs an LLM API key on <a href="<?php echo esc_url( $settings_url . '#integrations' ); ?>">Wookiee Settings</a> first.</p>
-				<?php else : ?>
-					<?php wookiee_render_ai_copy_generator_notice( 'homepage' ); ?>
-					<?php wookiee_render_settings_fields_table( $tabs['homepage']['fields'] ); ?>
-				<?php endif; ?>
-			</div>
-
-			<div class="wookiee-setup-subtab-panel" data-subtab-panel="about" hidden>
-				<?php if ( ! $has_ai_key ) : ?>
-					<p class="description">Needs an LLM API key on <a href="<?php echo esc_url( $settings_url . '#integrations' ); ?>">Wookiee Settings</a> first.</p>
-				<?php else : ?>
-					<?php wookiee_render_ai_copy_generator_notice( 'about_contact' ); ?>
-					<?php wookiee_render_settings_fields_table( $about_fields ); ?>
-				<?php endif; ?>
-			</div>
-
-			<div class="wookiee-setup-subtab-panel" data-subtab-panel="contact" hidden>
-				<?php if ( ! $has_ai_key ) : ?>
-					<p class="description">Needs an LLM API key on <a href="<?php echo esc_url( $settings_url . '#integrations' ); ?>">Wookiee Settings</a> first.</p>
-				<?php else : ?>
-					<p class="description">Generated together with the About tab's copy (same AI call fills both) - generating here updates both too.</p>
-					<?php wookiee_render_ai_copy_generator_notice( 'about_contact', '-contact' ); ?>
-					<?php wookiee_render_settings_fields_table( $contact_fields ); ?>
-				<?php endif; ?>
+			<div class="wookiee-setup-accordion">
+				<?php $first = true; foreach ( $accordion_sections as $section_key => $section ) : ?>
+					<div class="wookiee-accordion-item<?php echo $first ? ' is-open' : ''; ?>" data-accordion="<?php echo esc_attr( $section_key ); ?>">
+						<div class="wookiee-accordion-header">
+							<span class="wookiee-accordion-title"><?php echo esc_html( $section['label'] ); ?></span>
+							<span class="wookiee-accordion-status"><?php echo esc_html( $section['status'] ); ?></span>
+							<span class="wookiee-accordion-chevron">&#9662;</span>
+						</div>
+						<div class="wookiee-accordion-body"<?php echo $first ? '' : ' hidden'; ?>>
+							<?php if ( 'policy' === $section_key ) : ?>
+								<?php if ( ! $has_ai_key ) : ?>
+									<p class="description">Needs an LLM API key on <a href="<?php echo esc_url( $settings_url . '#integrations' ); ?>">Wookiee Settings</a> first.</p>
+								<?php else : ?>
+									<?php wookiee_render_content_generator_page(); ?>
+								<?php endif; ?>
+							<?php elseif ( 'home' === $section_key ) : ?>
+								<?php if ( ! $has_ai_key ) : ?>
+									<p class="description">Needs an LLM API key on <a href="<?php echo esc_url( $settings_url . '#integrations' ); ?>">Wookiee Settings</a> first.</p>
+								<?php else : ?>
+									<?php wookiee_render_ai_copy_generator_notice( 'homepage' ); ?>
+									<?php wookiee_render_settings_fields_table( $tabs['homepage']['fields'] ); ?>
+								<?php endif; ?>
+							<?php elseif ( 'about' === $section_key ) : ?>
+								<?php if ( ! $has_ai_key ) : ?>
+									<p class="description">Needs an LLM API key on <a href="<?php echo esc_url( $settings_url . '#integrations' ); ?>">Wookiee Settings</a> first.</p>
+								<?php else : ?>
+									<?php wookiee_render_ai_copy_generator_notice( 'about_contact' ); ?>
+									<?php wookiee_render_settings_fields_table( $about_fields ); ?>
+								<?php endif; ?>
+							<?php else : ?>
+								<?php if ( ! $has_ai_key ) : ?>
+									<p class="description">Needs an LLM API key on <a href="<?php echo esc_url( $settings_url . '#integrations' ); ?>">Wookiee Settings</a> first.</p>
+								<?php else : ?>
+									<p class="description">Generated together with the About section's copy (same AI call fills both) - generating here updates both too.</p>
+									<?php wookiee_render_ai_copy_generator_notice( 'about_contact', '-contact' ); ?>
+									<?php wookiee_render_settings_fields_table( $contact_fields ); ?>
+								<?php endif; ?>
+							<?php endif; ?>
+						</div>
+					</div>
+					<?php $first = false; ?>
+				<?php endforeach; ?>
 			</div>
 
 			<p class="wookiee-setup-nav">
@@ -415,13 +424,19 @@ function wookiee_render_setup_wizard_page() {
 			border-top: 1px solid #f0f0f1;
 		}
 		.wookiee-setup-nav { margin-top: 24px; padding-top: 16px; border-top: 1px solid #dcdcde; }
-		.wookiee-setup-subtabs { display: flex; gap: 4px; border-bottom: 1px solid #dcdcde; margin-bottom: 20px; }
-		.wookiee-setup-subtab {
-			padding: 8px 14px; text-decoration: none; color: #646970; font-weight: 600;
-			border-bottom: 2px solid transparent; margin-bottom: -1px;
+		.wookiee-setup-accordion { border: 1px solid #dcdcde; border-radius: 8px; overflow: hidden; }
+		.wookiee-accordion-item { border-bottom: 1px solid #dcdcde; }
+		.wookiee-accordion-item:last-child { border-bottom: none; }
+		.wookiee-accordion-header {
+			display: flex; align-items: center; gap: 12px; padding: 16px 20px; cursor: pointer; background: #fafafa;
 		}
-		.wookiee-setup-subtab.is-active { color: #1d2327; border-bottom-color: #2271b1; }
-		.wookiee-setup-subtab:hover { color: #2271b1; }
+		.wookiee-accordion-item.is-open .wookiee-accordion-header { background: #fff; border-bottom: 1px solid #f0f0f1; }
+		.wookiee-accordion-header:hover { background: #f0f0f1; }
+		.wookiee-accordion-title { font-weight: 600; font-size: 15px; flex: 1 1 auto; }
+		.wookiee-accordion-status { font-size: 13px; color: #646970; }
+		.wookiee-accordion-chevron { transition: transform 0.15s; color: #8a7d6d; }
+		.wookiee-accordion-item.is-open .wookiee-accordion-chevron { transform: rotate(180deg); }
+		.wookiee-accordion-body { padding: 20px; }
 	</style>
 	<script>
 	( function() {
@@ -508,19 +523,22 @@ function wookiee_render_setup_wizard_page() {
 			activateStep( targetKey );
 		}
 
-		// Step 3's inner tabs (Policy Pages / Home / About / Contact) -
-		// independent of the main 6-step nav above, just a plain
-		// show/hide toggle scoped to whichever panel is currently active.
-		document.querySelectorAll( '.wookiee-setup-subtab' ).forEach( function( tab ) {
-			tab.addEventListener( 'click', function( e ) {
-				e.preventDefault();
-				var key = tab.getAttribute( 'data-subtab' );
-				document.querySelectorAll( '.wookiee-setup-subtab' ).forEach( function( t ) {
-					t.classList.toggle( 'is-active', t === tab );
+		// Step 3's accordion (Policy Pages / Home / About / Contact) -
+		// independent of the main 6-step nav above. Opening one section
+		// closes the others, same as the main wizard steps only allow
+		// one visible at a time.
+		document.querySelectorAll( '.wookiee-accordion-header' ).forEach( function( header ) {
+			header.addEventListener( 'click', function() {
+				var item     = header.closest( '.wookiee-accordion-item' );
+				var wasOpen  = item.classList.contains( 'is-open' );
+				document.querySelectorAll( '.wookiee-accordion-item' ).forEach( function( i ) {
+					i.classList.remove( 'is-open' );
+					i.querySelector( '.wookiee-accordion-body' ).hidden = true;
 				} );
-				document.querySelectorAll( '.wookiee-setup-subtab-panel' ).forEach( function( p ) {
-					p.hidden = ( p.getAttribute( 'data-subtab-panel' ) !== key );
-				} );
+				if ( ! wasOpen ) {
+					item.classList.add( 'is-open' );
+					item.querySelector( '.wookiee-accordion-body' ).hidden = false;
+				}
 			} );
 		} );
 

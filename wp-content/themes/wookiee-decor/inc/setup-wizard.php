@@ -42,41 +42,35 @@ function wookiee_maybe_redirect_to_setup() {
 }
 
 /**
- * Draft products created by the AI or supplier tools, so the dashboard
- * can show "N items waiting for review" instead of the admin having to
- * remember to check separately. Page content generation used to have
- * an equivalent "(AI Draft) pages waiting for review" count here, but
- * that concept no longer exists - policy pages are edited live in
- * place, and Home/About/Contact copy is generated straight into
- * Settings fields for review there, so there's no draft-page backlog
- * to count anymore.
+ * Draft products created by the Product Generator or the Supplier
+ * Catalog - both go through the same real CJ import and get
+ * _wookiee_cj_pid, so there's no meaningful way (or reason) to
+ * distinguish "AI-sourced" from "CJ-sourced" here; a product this theme
+ * creates is always both (AI picks the concept, CJ supplies the real,
+ * fulfillable item). This used to split the two out because an earlier
+ * version had a genuinely separate fictional AI generator with no real
+ * supplier behind it - that was scrapped since a product generator that
+ * can't produce real, orderable items isn't automation, and every
+ * product path has gone through CJ ever since. Page content generation
+ * used to have an equivalent "(AI Draft) pages waiting for review"
+ * count here too, but that no longer exists either - policy pages are
+ * edited live in place, and Home/About/Contact copy is generated
+ * straight into Settings fields for review there.
  */
-function wookiee_count_pending_ai_drafts() {
-	$ai_products = 0;
-	$cj_products = 0;
-	$draft_ids   = array();
+function wookiee_get_pending_draft_products() {
+	$draft_ids = array();
 	if ( class_exists( 'WooCommerce' ) ) {
-		$draft_products = get_posts( array(
+		$draft_ids = get_posts( array(
 			'post_type'      => 'product',
 			'post_status'    => 'draft',
 			'posts_per_page' => -1,
+			'meta_key'       => '_wookiee_cj_pid',
 			'fields'         => 'ids',
 		) );
-		foreach ( $draft_products as $product_id ) {
-			if ( get_post_meta( $product_id, '_wookiee_ai_generated', true ) ) {
-				$ai_products++;
-				$draft_ids[] = $product_id;
-			} elseif ( get_post_meta( $product_id, '_wookiee_cj_pid', true ) ) {
-				$cj_products++;
-				$draft_ids[] = $product_id;
-			}
-		}
 	}
 
 	return array(
-		'ai_products' => $ai_products,
-		'cj_products' => $cj_products,
-		'draft_ids'   => $draft_ids,
+		'draft_ids' => $draft_ids,
 	);
 }
 
@@ -108,7 +102,7 @@ function wookiee_render_setup_wizard_page() {
 	$has_cj_creds  = '' !== trim( (string) wookiee_get_setting( 'cj_email' ) ) && '' !== trim( (string) wookiee_get_setting( 'cj_api_key' ) );
 	$has_woo       = class_exists( 'WooCommerce' );
 	$shipping_zone = $has_woo ? wookiee_find_uk_shipping_zone() : null;
-	$pending       = wookiee_count_pending_ai_drafts();
+	$pending       = wookiee_get_pending_draft_products();
 	$tabs          = wookiee_settings_tabs();
 	$policy_pieces = wookiee_content_generator_pieces();
 	$steps         = wookiee_setup_steps();
@@ -308,7 +302,7 @@ function wookiee_render_setup_wizard_page() {
 				<tr><td>Business identity</td><td><?php echo wookiee_get_setting( 'business_name' ) ? '&#10003; Set' : 'Not set'; ?></td></tr>
 				<tr><td>Niche brief</td><td><?php echo $brief ? '&#10003; Set' : 'Not set'; ?></td></tr>
 				<tr><td>Policy pages</td><td><?php echo intval( $policy_live_count ); ?> of 7 live</td></tr>
-				<tr><td>Draft products awaiting review</td><td><?php echo intval( $pending['ai_products'] ); ?> AI-sourced, <?php echo intval( $pending['cj_products'] ); ?> CJ-sourced</td></tr>
+				<tr><td>Draft products awaiting review</td><td><?php echo intval( count( $pending['draft_ids'] ) ); ?></td></tr>
 				<tr><td>Product categories with products</td><td><?php echo intval( $display_cat_count ); ?></td></tr>
 				<tr><td>Shipping</td><td><?php echo $shipping_zone ? '&#10003; Active' : 'Not active yet'; ?></td></tr>
 			</table>

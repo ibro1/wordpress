@@ -36,6 +36,37 @@ function wookiee_render_product_generator_page() {
 	$has_woo      = class_exists( 'WooCommerce' );
 	$has_ads      = wookiee_google_ads_configured();
 	$saved_brief  = get_option( 'wookiee_niche_brief', '' );
+
+	// Draft products this tool has sourced before, with whatever
+	// compliance analysis is currently persisted for each - lets the
+	// results table rehydrate on page load instead of going blank the
+	// moment you navigate away, even though the products/scores
+	// themselves were never actually lost.
+	$persisted_products = array();
+	if ( $has_woo ) {
+		$existing_ids = get_posts( array(
+			'post_type'      => 'product',
+			'post_status'    => 'draft',
+			'posts_per_page' => 50,
+			'orderby'        => 'date',
+			'order'          => 'DESC',
+			'meta_key'       => '_wookiee_cj_pid',
+			'fields'         => 'ids',
+		) );
+		foreach ( $existing_ids as $product_id ) {
+			$report               = get_post_meta( $product_id, '_wookiee_audit_report', true );
+			$persisted_products[] = array(
+				'post_id'      => $product_id,
+				'title'        => get_the_title( $product_id ),
+				'demand'       => '',
+				'status'       => 'Sourced from CJ Dropshipping',
+				'edit_link'    => get_edit_post_link( $product_id, 'raw' ),
+				'preview_link' => get_preview_post_link( $product_id ),
+				'report'       => $report ? $report : null,
+				'persisted'    => true,
+			);
+		}
+	}
 	?>
 	<div class="wrap">
 		<h1>Wookiee Product Generator</h1>
@@ -96,17 +127,21 @@ function wookiee_render_product_generator_page() {
 		.wookiee-audit-card-badge.is-high { background: #fcf0f1; color: #b32d2e; }
 		.wookiee-compliance-detail td { background: #f6f7f7; padding: 14px 20px; }
 		.wookiee-compliance-body { white-space: pre-wrap; margin: 0 0 10px; max-height: 300px; overflow-y: auto; font-size: 13px; }
+		.wookiee-compliance-chevron { cursor: pointer; display: inline-block; margin-left: 6px; color: #8a7d6d; transition: transform 0.15s; user-select: none; }
+		.wookiee-compliance-chevron.is-open { transform: rotate(180deg); }
 	</style>
 	<script>
 	( function() {
 		var btn          = document.getElementById( 'wookiee-generate-btn' );
 		var bulkBtn       = document.getElementById( 'wookiee-bulk-publish-btn' );
 		var bulkStatus    = document.getElementById( 'wookiee-bulk-publish-status' );
+		var results       = document.getElementById( 'wookiee-generate-results' );
 		if ( ! btn ) {
 			return;
 		}
 		var nonce = '<?php echo esc_js( wp_create_nonce( 'wookiee_generate_products' ) ); ?>';
 		var auditNonce = '<?php echo esc_js( wp_create_nonce( 'wookiee_audit_product' ) ); ?>';
+		var PERSISTED_PRODUCTS = <?php echo wp_json_encode( $persisted_products ); ?>;
 
 		function badgeFromReport( report ) {
 			var scoreMatch = report.match( /OVERALL SCORE:\s*(\d+)/i );
@@ -167,9 +202,104 @@ function wookiee_render_product_generator_page() {
 			return fetch( ajaxurl, { method: 'POST', credentials: 'same-origin', body: data } ).then( function( r ) { return r.json(); } );
 		}
 
+		// Builds the two <tr> rows (product + its collapsible compliance
+		// detail) for one product - shared by a freshly-generated result
+		// and a persisted one rehydrated from postmeta on page load, so
+		// both render identically.
+		function buildRowHtml( p ) {
+			var needsAudit    = ! p.report && p.persisted;
+			var hideReanalyze = ! p.report && ! needsAudit;
+			var badgeText     = p.report ? '' : ( needsAudit ? 'Not yet analysed' : 'Analysing…' );
+			var bodyText      = p.report ? p.report : ( needsAudit ? 'Not analysed yet - click "Run analysis" below, or reanalyse anytime.' : 'Waiting…' );
+			var reanalyzeLabel = p.report ? 'Reanalyse' : 'Run analysis';
+			return '<tr data-post-id="' + p.post_id + '">' +
+					'<td><input type="checkbox" class="wookiee-product-select" value="' + p.post_id + '"></td>' +
+					'<td>' + p.title + '</td>' +
+					'<td>' + ( p.demand || '—' ) + '</td>' +
+					'<td class="wookiee-row-status">' + p.status + '</td>' +
+					'<td><span class="wookiee-audit-card-badge wookiee-compliance-badge">' + badgeText + '</span><span class="wookiee-compliance-chevron">&#9662;</span></td>' +
+					'<td>' + ( p.preview_link ? '<a href="' + p.preview_link + '" class="button" target="_blank" rel="noopener">Preview</a>' : '' ) + '</td>' +
+					'<td><a href="' + p.edit_link + '" class="button" target="_blank" rel="noopener">Edit draft</a></td>' +
+					'<td><button type="button" class="button wookiee-publish-one-btn">Publish</button></td>' +
+				'</tr>' +
+				'<tr class="wookiee-compliance-detail" hidden><td colspan="8">' +
+					'<div class="wookiee-compliance-body">' + bodyText + '</div>' +
+					'<button type="button" class="button wookiee-compliance-reanalyze-btn"' + ( hideReanalyze ? ' hidden' : '' ) + '>' + reanalyzeLabel + '</button>' +
+				'</td></tr>';
+		}
+
+		// Wires one product row's toggle/reanalyse behaviour and decides
+		// what happens on load: a fresh (just-generated) row auto-runs
+		// its first analysis immediately; a persisted row with a stored
+		// report just displays it (no LLM call); a persisted row with no
+		// report yet waits for the admin to click "Run analysis".
+		function wireRow( row, p ) {
+			var postId       = row.getAttribute( 'data-post-id' );
+			var badge        = row.querySelector( '.wookiee-compliance-badge' );
+			var chevron      = row.querySelector( '.wookiee-compliance-chevron' );
+			var detailRow    = row.nextElementSibling;
+			var detailBody   = detailRow.querySelector( '.wookiee-compliance-body' );
+			var reanalyzeBtn = detailRow.querySelector( '.wookiee-compliance-reanalyze-btn' );
+
+			function toggleDetail() {
+				detailRow.hidden = ! detailRow.hidden;
+				chevron.classList.toggle( 'is-open', ! detailRow.hidden );
+			}
+			badge.addEventListener( 'click', toggleDetail );
+			chevron.addEventListener( 'click', toggleDetail );
+
+			reanalyzeBtn.addEventListener( 'click', function() {
+				runProductAudit( postId, badge, detailBody, reanalyzeBtn );
+			} );
+
+			if ( p.report ) {
+				var b = badgeFromReport( p.report );
+				badge.textContent = b.text;
+				badge.className = 'wookiee-audit-card-badge' + ( b.level ? ' is-' + b.level : '' );
+			} else if ( ! p.persisted ) {
+				runProductAudit( postId, badge, detailBody, reanalyzeBtn );
+			}
+		}
+
+		// Renders a full results table from a plain array of product-like
+		// objects - used both for a freshly-generated batch and for
+		// rehydrating already-sourced products on page load.
+		function renderProductsTable( products ) {
+			var html = '<table class="widefat"><thead><tr><th></th><th>Concept</th><th>Est. demand</th><th>Status</th><th>GMC compliance</th><th></th><th colspan="2"></th></tr></thead><tbody>';
+			products.forEach( function( p ) { html += buildRowHtml( p ); } );
+			html += '</tbody></table>';
+			results.innerHTML = html;
+
+			results.querySelectorAll( '.wookiee-product-select' ).forEach( function( cb ) {
+				cb.addEventListener( 'change', updateBulkButton );
+			} );
+			results.querySelectorAll( '.wookiee-publish-one-btn' ).forEach( function( pubBtn ) {
+				pubBtn.addEventListener( 'click', function() {
+					var row    = pubBtn.closest( 'tr' );
+					var postId = row.getAttribute( 'data-post-id' );
+					pubBtn.disabled = true;
+					pubBtn.textContent = 'Publishing…';
+					publishOne( postId, row ).then( function( res ) {
+						if ( res.success && res.data.results[0] ) {
+							row.querySelector( '.wookiee-row-status' ).textContent = res.data.results[0].status;
+							pubBtn.outerHTML = '<span>&#10003;</span>';
+						} else {
+							pubBtn.disabled = false;
+							pubBtn.textContent = 'Publish failed — retry';
+						}
+					} ).catch( function() {
+						pubBtn.disabled = false;
+						pubBtn.textContent = 'Publish failed — retry';
+					} );
+				} );
+			} );
+
+			var rows = results.querySelectorAll( 'tr[data-post-id]' );
+			products.forEach( function( p, i ) { wireRow( rows[ i ], p ); } );
+		}
+
 		btn.addEventListener( 'click', function() {
 			var status  = document.getElementById( 'wookiee-generate-status' );
-			var results = document.getElementById( 'wookiee-generate-results' );
 			var brief   = document.getElementById( 'wookiee-niche-brief' ).value.trim();
 			var count   = document.getElementById( 'wookiee-product-count' ).value;
 
@@ -206,69 +336,7 @@ function wookiee_render_product_generator_page() {
 						return;
 					}
 
-					var html = '<table class="widefat"><thead><tr><th></th><th>Concept</th><th>Est. demand</th><th>Status</th><th>GMC compliance</th><th></th><th colspan="2"></th></tr></thead><tbody>';
-					products.forEach( function( p ) {
-						html += '<tr data-post-id="' + p.post_id + '">' +
-							'<td><input type="checkbox" class="wookiee-product-select" value="' + p.post_id + '"></td>' +
-							'<td>' + p.title + '</td>' +
-							'<td>' + ( p.demand || '—' ) + '</td>' +
-							'<td class="wookiee-row-status">' + p.status + '</td>' +
-							'<td><span class="wookiee-audit-card-badge wookiee-compliance-badge">Analysing…</span></td>' +
-							'<td>' + ( p.preview_link ? '<a href="' + p.preview_link + '" class="button" target="_blank" rel="noopener">Preview</a>' : '' ) + '</td>' +
-							'<td><a href="' + p.edit_link + '" class="button" target="_blank" rel="noopener">Edit draft</a></td>' +
-							'<td><button type="button" class="button wookiee-publish-one-btn">Publish</button></td>' +
-						'</tr>' +
-						'<tr class="wookiee-compliance-detail" hidden><td colspan="8">' +
-							'<div class="wookiee-compliance-body">Waiting…</div>' +
-							'<button type="button" class="button wookiee-compliance-reanalyze-btn">Reanalyse</button>' +
-						'</td></tr>';
-					} );
-					html += '</tbody></table>';
-					results.innerHTML = html;
-
-					results.querySelectorAll( '.wookiee-product-select' ).forEach( function( cb ) {
-						cb.addEventListener( 'change', updateBulkButton );
-					} );
-					results.querySelectorAll( '.wookiee-publish-one-btn' ).forEach( function( pubBtn ) {
-						pubBtn.addEventListener( 'click', function() {
-							var row    = pubBtn.closest( 'tr' );
-							var postId = row.getAttribute( 'data-post-id' );
-							pubBtn.disabled = true;
-							pubBtn.textContent = 'Publishing…';
-							publishOne( postId, row ).then( function( res ) {
-								if ( res.success && res.data.results[0] ) {
-									row.querySelector( '.wookiee-row-status' ).textContent = res.data.results[0].status;
-									pubBtn.outerHTML = '<span>&#10003;</span>';
-								} else {
-									pubBtn.disabled = false;
-									pubBtn.textContent = 'Publish failed — retry';
-								}
-							} ).catch( function() {
-								pubBtn.disabled = false;
-								pubBtn.textContent = 'Publish failed — retry';
-							} );
-						} );
-					} );
-
-					// Each row's compliance analysis fires independently
-					// the moment it's rendered - none wait on each other,
-					// and none block publishing/editing while running.
-					results.querySelectorAll( 'tr[data-post-id]' ).forEach( function( row ) {
-						var postId       = row.getAttribute( 'data-post-id' );
-						var badge        = row.querySelector( '.wookiee-compliance-badge' );
-						var detailRow    = row.nextElementSibling;
-						var detailBody   = detailRow.querySelector( '.wookiee-compliance-body' );
-						var reanalyzeBtn = detailRow.querySelector( '.wookiee-compliance-reanalyze-btn' );
-
-						badge.addEventListener( 'click', function() {
-							detailRow.hidden = ! detailRow.hidden;
-						} );
-						reanalyzeBtn.addEventListener( 'click', function() {
-							runProductAudit( postId, badge, detailBody, reanalyzeBtn );
-						} );
-
-						runProductAudit( postId, badge, detailBody, reanalyzeBtn );
-					} );
+					renderProductsTable( products );
 				} )
 				.catch( function() {
 					btn.disabled = false;
@@ -313,6 +381,15 @@ function wookiee_render_product_generator_page() {
 					updateBulkButton();
 				} );
 		} );
+
+		// Rehydrate previously-sourced products (and whatever compliance
+		// analysis is stored for each) on page load, so navigating away
+		// and back doesn't lose sight of a batch that's still sitting
+		// there in Draft - nothing here calls the LLM for rows that
+		// already have a stored report.
+		if ( PERSISTED_PRODUCTS.length ) {
+			renderProductsTable( PERSISTED_PRODUCTS );
+		}
 	} )();
 	</script>
 	<?php

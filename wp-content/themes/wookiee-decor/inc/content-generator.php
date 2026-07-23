@@ -112,6 +112,9 @@ function wookiee_render_content_generator_page() {
 				<button type="button" class="button button-primary" id="wookiee-content-generate-btn" <?php disabled( ! $has_key || ! empty( $missing_fields ) ); ?>><?php echo esc_html( $verb ); ?> selected pages</button>
 				<span id="wookiee-content-generate-status" style="margin-left:8px;"></span>
 			</p>
+			<?php if ( ! empty( $missing_fields ) ) : ?>
+				<p class="wookiee-cg-status-error">Fill in these first: <?php echo esc_html( implode( ', ', $missing_fields ) ); ?> - <a href="<?php echo esc_url( admin_url( 'admin.php?page=wookiee-settings#business' ) ); ?>">Edit on the Business Identity tab</a>.</p>
+			<?php endif; ?>
 		</div>
 
 		<div id="wookiee-cg-audit-screen" hidden>

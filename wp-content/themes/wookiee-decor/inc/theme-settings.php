@@ -287,7 +287,9 @@ function wookiee_render_settings_field_row( $key, $field ) {
 			<?php if ( 'google_ads_login_customer_id' === $key ) : ?>
 				<p class="description">Only needed if the customer ID above is a client account under a Manager (MCC) account - set this to the Manager's own customer ID. Leave blank otherwise.</p>
 			<?php endif; ?>
-			<?php if ( '' !== $field['default'] ) : ?>
+			<?php if ( in_array( $key, array( 'business_name', 'registered_address', 'company_number', 'contact_email' ), true ) ) : ?>
+				<p class="description">Shown elsewhere on the site as a placeholder until you set this - but policy page generation on the <a href="<?php echo esc_url( admin_url( 'admin.php?page=wookiee-content-generator' ) ); ?>">Content Generator</a> requires a real value here first.</p>
+			<?php elseif ( '' !== $field['default'] ) : ?>
 				<p class="description">Default if left blank: <?php echo esc_html( is_string( $field['default'] ) ? str_replace( "\n", ' / ', $field['default'] ) : '' ); ?></p>
 			<?php endif; ?>
 		</td>

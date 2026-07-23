@@ -332,6 +332,7 @@ function wookiee_render_setup_wizard_page() {
 
 			<p class="wookiee-setup-nav">
 				<button type="button" class="button wookiee-setup-nav-prev" data-prev="shipping">&larr; Back</button>
+				<a href="<?php echo esc_url( home_url( '/' ) ); ?>" class="button button-primary" target="_blank" rel="noopener">View your store &rarr;</a>
 			</p>
 		</div>
 	</div>
@@ -610,7 +611,22 @@ function wookiee_render_setup_wizard_page() {
 				fetch( ajaxurl, { method: 'POST', credentials: 'same-origin', body: data } )
 					.then( function( r ) { return r.json(); } )
 					.then( function( res ) {
-						status.textContent = res.success ? 'Done — reload this page to refresh the list.' : ( res.data && res.data.message ? res.data.message : 'Failed to publish.' );
+						if ( res.success ) {
+							status.textContent = 'Published ' + ids.length + ' product' + ( ids.length === 1 ? '' : 's' ) + '.';
+							ids.forEach( function( id ) {
+								var row = document.querySelector( '.wookiee-review-product-check[value="' + id + '"]' );
+								if ( row ) { row.closest( 'tr' ).remove(); }
+							} );
+							checks = document.querySelectorAll( '.wookiee-review-product-check' );
+							if ( ! checks.length ) {
+								var table = document.querySelector( '#wookiee-review-publish-btn' ).closest( '.wookiee-setup-step' ).querySelector( 'table.widefat:not([style])' );
+								if ( table ) { table.outerHTML = '<p class="description">No draft products waiting right now.</p>'; }
+							}
+							refreshPublishBtn();
+						} else {
+							status.textContent = res.data && res.data.message ? res.data.message : 'Failed to publish.';
+							publishBtn.disabled = false;
+						}
 					} )
 					.catch( function() {
 						publishBtn.disabled = false;

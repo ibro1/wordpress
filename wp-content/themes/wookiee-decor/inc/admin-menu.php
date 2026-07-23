@@ -79,7 +79,9 @@ function wookiee_enqueue_niche_suggest_assets( $hook ) {
 			border: 2px solid #dcdcde; border-top-color: #2271b1; border-radius: 50%;
 			animation: wookiee-suggest-spin 0.8s linear infinite;
 		}
+		.wookiee-spinner[hidden] { display: none; }
 		.wookiee-domain-suggestions { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 10px; }
+		.wookiee-domain-suggestions[hidden] { display: none; }
 		.wookiee-domain-suggestions-group { min-width: 220px; }
 		.wookiee-domain-suggestions-group h4 { margin: 0 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: #646970; }
 		.wookiee-domain-suggestion-row {

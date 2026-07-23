@@ -239,6 +239,12 @@ function wookiee_render_settings_field_row( $key, $field ) {
 					<span id="wookiee-ch-lookup-status" style="margin-left:8px;"></span>
 				</p>
 				<p class="description">Fills in the registered company name and address below from the official Companies House register. Requires an API key (below) — get one free at <a href="https://developer.company-information.service.gov.uk/" target="_blank" rel="noopener">developer.company-information.service.gov.uk</a>. Review the filled-in fields before saving.</p>
+				<p class="description">
+					Don't know the number? Search by name instead:
+					<input type="text" id="wookiee-ch-search-name" class="regular-text" placeholder="e.g. Netlinko Ltd">
+					<button type="button" class="button" id="wookiee-ch-search-btn">Search</button>
+				</p>
+				<div id="wookiee-ch-search-results" class="wookiee-ch-search-results" hidden></div>
 			<?php endif; ?>
 			<?php if ( 'companies_house_api_key' === $key ) : ?>
 				<p class="description">Only needed to use the lookup button above. Free to obtain, one per WordPress install.</p>
@@ -632,6 +638,74 @@ function wookiee_ch_lookup_handler() {
 		'company_status' => isset( $data['company_status'] ) ? $data['company_status'] : '',
 		'address'        => implode( "\n", $lines ),
 	) );
+}
+
+/**
+ * Server-side proxy for Companies House's name search, for admins who
+ * don't have the company number to hand. Filters to active companies
+ * only (a name search on a defunct/dissolved company isn't useful here)
+ * and caps the list at 10 - picking one just fills the company_number
+ * field and re-uses the existing number lookup above rather than
+ * duplicating the name/address-filling logic.
+ */
+add_action( 'wp_ajax_wookiee_ch_search', 'wookiee_ch_search_handler' );
+function wookiee_ch_search_handler() {
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_send_json_error( array( 'message' => 'Not allowed.' ), 403 );
+	}
+	check_ajax_referer( 'wookiee_ch_search', 'nonce' );
+
+	$query   = isset( $_POST['query'] ) ? sanitize_text_field( wp_unslash( $_POST['query'] ) ) : '';
+	$api_key = wookiee_get_setting( 'companies_house_api_key' );
+
+	if ( '' === trim( $query ) ) {
+		wp_send_json_error( array( 'message' => 'Enter a company name first.' ) );
+	}
+	if ( '' === trim( (string) $api_key ) ) {
+		wp_send_json_error( array( 'message' => 'Add your Companies House API key below, click Save Changes, then try the search again.' ) );
+	}
+
+	$response = wp_remote_get(
+		'https://api.company-information.service.gov.uk/search/companies?q=' . rawurlencode( $query ) . '&items_per_page=20',
+		array(
+			'headers' => array(
+				'Authorization' => 'Basic ' . base64_encode( $api_key . ':' ),
+			),
+			'timeout' => 15,
+		)
+	);
+
+	if ( is_wp_error( $response ) ) {
+		wp_send_json_error( array( 'message' => $response->get_error_message() ) );
+	}
+
+	$code = wp_remote_retrieve_response_code( $response );
+	if ( 401 === $code ) {
+		wp_send_json_error( array( 'message' => 'Companies House rejected the API key - check it and try again.' ) );
+	}
+	if ( 200 !== $code ) {
+		wp_send_json_error( array( 'message' => 'Companies House returned an unexpected error (HTTP ' . intval( $code ) . ').' ) );
+	}
+
+	$data  = json_decode( wp_remote_retrieve_body( $response ), true );
+	$items = isset( $data['items'] ) && is_array( $data['items'] ) ? $data['items'] : array();
+
+	$active = array();
+	foreach ( $items as $item ) {
+		if ( isset( $item['company_status'] ) && 'active' === $item['company_status'] ) {
+			$active[] = array(
+				'company_number' => isset( $item['company_number'] ) ? $item['company_number'] : '',
+				'title'          => isset( $item['title'] ) ? $item['title'] : '',
+				'address'        => isset( $item['address_snippet'] ) ? $item['address_snippet'] : '',
+			);
+		}
+	}
+
+	if ( empty( $active ) ) {
+		wp_send_json_error( array( 'message' => 'No active companies found matching "' . esc_html( $query ) . '".' ) );
+	}
+
+	wp_send_json_success( array( 'results' => array_slice( $active, 0, 10 ) ) );
 }
 
 /**

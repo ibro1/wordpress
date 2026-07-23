@@ -62,6 +62,18 @@ function wookiee_enqueue_niche_suggest_assets( $hook ) {
 		@keyframes wookiee-suggest-spin { to { transform: rotate(360deg); } }
 		.wookiee-niche-suggest-inline-status.is-error { color: #b32d2e; }
 		.wookiee-niche-suggest-inline-status.is-success { color: #00a32a; }
+		.wookiee-ch-search-results {
+			max-width: 480px; max-height: 260px; overflow-y: auto;
+			border: 1px solid #dcdcde; border-radius: 4px; margin-top: 8px; background: #fff;
+		}
+		.wookiee-ch-search-result {
+			display: block; width: 100%; text-align: left; background: none; border: none;
+			border-bottom: 1px solid #f0f0f1; padding: 8px 10px; cursor: pointer; font-size: 13px;
+		}
+		.wookiee-ch-search-result:last-child { border-bottom: none; }
+		.wookiee-ch-search-result:hover { background: #f6f0e8; }
+		.wookiee-ch-search-result span { color: #646970; }
+		.wookiee-ch-search-msg { padding: 8px 10px; margin: 0; color: #646970; }
 	';
 	wp_register_style( 'wookiee-niche-suggest', false );
 	wp_enqueue_style( 'wookiee-niche-suggest' );
@@ -213,6 +225,64 @@ function wookiee_enqueue_niche_suggest_assets( $hook ) {
 						chBtn.disabled = false;
 						status.textContent = 'Lookup failed — could not reach the server.';
 					} );
+			} );
+		}
+
+		// Search by company name - returns active companies matching, in a
+		// scrollable list. Picking one just fills the number field and
+		// re-uses the lookup above rather than duplicating the fill logic.
+		var chSearchBtn     = document.getElementById( 'wookiee-ch-search-btn' );
+		var chSearchInput   = document.getElementById( 'wookiee-ch-search-name' );
+		var chSearchResults = document.getElementById( 'wookiee-ch-search-results' );
+		function runChSearch() {
+			var name = chSearchInput ? chSearchInput.value.trim() : '';
+			if ( ! name ) { return; }
+			chSearchBtn.disabled = true;
+			chSearchResults.hidden = false;
+			chSearchResults.innerHTML = '<p class=\"wookiee-ch-search-msg\">Searching…</p>';
+			var searchData = new FormData();
+			searchData.append( 'action', 'wookiee_ch_search' );
+			searchData.append( 'nonce', " . wp_json_encode( wp_create_nonce( 'wookiee_ch_search' ) ) . " );
+			searchData.append( 'query', name );
+			fetch( ajaxurl, { method: 'POST', credentials: 'same-origin', body: searchData } )
+				.then( function( r ) { return r.json(); } )
+				.then( function( res ) {
+					chSearchBtn.disabled = false;
+					if ( ! res.success ) {
+						chSearchResults.innerHTML = '<p class=\"wookiee-ch-search-msg\">' + ( res.data && res.data.message ? res.data.message : 'Search failed.' ) + '</p>';
+						return;
+					}
+					chSearchResults.innerHTML = '';
+					res.data.results.forEach( function( item ) {
+						var row = document.createElement( 'button' );
+						row.type = 'button';
+						row.className = 'wookiee-ch-search-result';
+						row.innerHTML = '<strong>' + item.title + '</strong><br><span>' + item.company_number + ( item.address ? ' — ' + item.address : '' ) + '</span>';
+						row.addEventListener( 'click', function() {
+							var numberField = document.getElementById( 'wookiee_setting_company_number' );
+							if ( numberField ) { numberField.value = item.company_number; }
+							chSearchResults.hidden = true;
+							chSearchResults.innerHTML = '';
+							chSearchInput.value = '';
+							if ( chBtn ) { chBtn.click(); }
+						} );
+						chSearchResults.appendChild( row );
+					} );
+				} )
+				.catch( function() {
+					chSearchBtn.disabled = false;
+					chSearchResults.innerHTML = '<p class=\"wookiee-ch-search-msg\">Search failed — could not reach the server.</p>';
+				} );
+		}
+		if ( chSearchBtn ) {
+			chSearchBtn.addEventListener( 'click', runChSearch );
+		}
+		if ( chSearchInput ) {
+			chSearchInput.addEventListener( 'keydown', function( e ) {
+				if ( 'Enter' === e.key ) {
+					e.preventDefault();
+					runChSearch();
+				}
 			} );
 		}
 	} )();

@@ -91,6 +91,16 @@ function wookiee_render_content_generator_page() {
 						<p class="description">Untick anything you don't want touched this time.</p>
 					</td>
 				</tr>
+				<tr>
+					<th scope="row">Custom prompt</th>
+					<td>
+						<label><input type="checkbox" id="wookiee-cg-custom-toggle"> Write my own instructions instead of the built-in prompt</label>
+						<div id="wookiee-cg-custom-wrap" hidden style="margin-top:8px;">
+							<textarea id="wookiee-cg-custom-prompt" rows="4" class="large-text" placeholder="e.g. Keep it under 400 words, use a very casual tone, and mention we only ship within the UK"></textarea>
+							<p class="description">Applies to every checked page above. Real business details are still included automatically and nothing is ever invented beyond them, regardless of these instructions.</p>
+						</div>
+					</td>
+				</tr>
 			</table>
 
 			<p>
@@ -293,6 +303,14 @@ function wookiee_render_content_generator_page() {
 			} );
 		}
 
+		var customToggleEl = document.getElementById( 'wookiee-cg-custom-toggle' );
+		var customWrapEl   = document.getElementById( 'wookiee-cg-custom-wrap' );
+		if ( customToggleEl && customWrapEl ) {
+			customToggleEl.addEventListener( 'change', function() {
+				customWrapEl.hidden = ! customToggleEl.checked;
+			} );
+		}
+
 		var genBtn = document.getElementById( 'wookiee-content-generate-btn' );
 		if ( ! genBtn ) {
 			return;
@@ -319,6 +337,12 @@ function wookiee_render_content_generator_page() {
 			data.append( 'nonce', NONCE );
 			data.append( 'brief', brief );
 			checked.forEach( function( key ) { data.append( 'pieces[]', key ); } );
+
+			var customToggle = document.getElementById( 'wookiee-cg-custom-toggle' );
+			if ( customToggle && customToggle.checked ) {
+				var customPrompt = document.getElementById( 'wookiee-cg-custom-prompt' ).value.trim();
+				if ( customPrompt ) { data.append( 'custom_prompt', customPrompt ); }
+			}
 
 			fetch( ajaxurl, { method: 'POST', credentials: 'same-origin', body: data } )
 				.then( function( r ) { return r.json(); } )
@@ -396,8 +420,9 @@ function wookiee_generate_content_handler() {
 	}
 	check_ajax_referer( 'wookiee_generate_content', 'nonce' );
 
-	$brief  = isset( $_POST['brief'] ) ? sanitize_textarea_field( wp_unslash( $_POST['brief'] ) ) : '';
-	$pieces = isset( $_POST['pieces'] ) && is_array( $_POST['pieces'] ) ? array_map( 'sanitize_key', wp_unslash( $_POST['pieces'] ) ) : array();
+	$brief         = isset( $_POST['brief'] ) ? sanitize_textarea_field( wp_unslash( $_POST['brief'] ) ) : '';
+	$pieces        = isset( $_POST['pieces'] ) && is_array( $_POST['pieces'] ) ? array_map( 'sanitize_key', wp_unslash( $_POST['pieces'] ) ) : array();
+	$custom_prompt = isset( $_POST['custom_prompt'] ) ? sanitize_textarea_field( wp_unslash( $_POST['custom_prompt'] ) ) : '';
 
 	if ( '' === trim( $brief ) ) {
 		wp_send_json_error( array( 'message' => 'Describe the niche first.' ) );
@@ -419,7 +444,9 @@ function wookiee_generate_content_handler() {
 			continue;
 		}
 		$piece  = $available[ $key ];
-		$prompt = wookiee_build_content_prompt( $key, $brief );
+		$prompt = '' !== trim( $custom_prompt )
+			? wookiee_build_custom_policy_prompt( $piece['title'], $custom_prompt )
+			: wookiee_build_content_prompt( $key, $brief );
 		$text   = wookiee_call_llm( $prompt, wookiee_content_piece_max_tokens( $key ) );
 
 		if ( is_wp_error( $text ) ) {
@@ -512,10 +539,11 @@ function wookiee_business_details_block() {
 		'Registered address: ' . str_replace( "\n", ', ', wookiee_get_setting( 'registered_address' ) ),
 		'Company number: ' . wookiee_get_setting( 'company_number' ),
 		'Contact email: ' . wookiee_get_setting( 'contact_email' ),
+		'Contact phone: ' . wookiee_get_setting( 'contact_phone' ),
 		'Countries served: ' . wookiee_get_setting( 'countries_served' ),
 		'Typical delivery time: ' . wookiee_get_setting( 'shipping_dispatch' ),
 		'Flat shipping rate: £' . wookiee_get_setting( 'shipping_rate' ),
-		'Returns period: ' . wookiee_get_setting( 'returns_period_days' ) . ' days',
+		'Returns period offered: ' . wookiee_get_setting( 'returns_period_days' ) . ' days (this is the business\'s own voluntary returns window - it sits ALONGSIDE, not instead of, the customer\'s 14-day statutory right to cancel under the Consumer Contracts Regulations; state both clearly rather than treating them as conflicting)',
 		'Returns address: ' . str_replace( "\n", ', ', wookiee_get_returns_address() ),
 		'Website: ' . home_url( '/' ),
 	);
@@ -661,6 +689,24 @@ function wookiee_build_content_prompt( $key, $brief ) {
 }
 
 /**
+ * Generates a policy page from the admin's own custom instructions
+ * instead of the built-in per-policy prompt above - real business
+ * details are still appended and "don't invent facts" still applies
+ * regardless, since that guarantee shouldn't depend on which prompt
+ * path was used to get here.
+ */
+function wookiee_build_custom_policy_prompt( $title, $custom_instruction ) {
+	return "Write a complete, ready-to-publish {$title} page for a UK online store, following these instructions from the store owner:\n\n"
+		. "--- OWNER'S INSTRUCTIONS ---\n{$custom_instruction}\n--- END INSTRUCTIONS ---\n\n"
+		. "Real business details to use (do not invent anything beyond this list):\n" . wookiee_business_details_block() . "\n\n"
+		. "Rules:\n"
+		. "- Follow the owner's instructions as closely as possible without contradicting UK consumer/privacy law or inventing a business fact not given above - if something relevant is missing, use a clear \"[Business input required: X]\" placeholder instead of guessing.\n"
+		. "- State the business's full legal/trading name and company registration number explicitly within the body text itself.\n"
+		. "- End with a short note that this policy should be reviewed by a qualified UK solicitor before being relied on, since it is not legal advice.\n"
+		. "- Output ONLY the finished page text as plain paragraphs separated by a blank line, starting with a single plain-text heading line. No markdown, no HTML, no commentary.";
+}
+
+/**
  * Runs an already-generated policy draft through a compliance audit and
  * returns a plain-text report - it never edits the page. Adapted from
  * docs/policy audit new.txt: that prompt is written for US law (FTC,
@@ -704,7 +750,7 @@ function wookiee_build_policy_audit_prompt( $title, $policy_text ) {
 		. "- Google Merchant Center requirements: misrepresentation, missing business information, unclear refund/shipping disclosures, trustworthiness, account suspension risk.\n"
 		. "- UK law: the Consumer Rights Act 2015, the Consumer Contracts Regulations, the Electronic Commerce Regulations, UK GDPR, the Data Protection Act 2018, and PECR, wherever relevant.\n"
 		. "- Quality: weak, confusing, or contradictory wording; generic boilerplate; AI-sounding text; missing sections; poor formatting.\n\n"
-		. "Do not invent legal obligations that don't apply, and do not assume any business fact that isn't present in the text above - flag missing information instead of guessing.\n\n"
+		. "Do not invent legal obligations that don't apply, and do not assume any business fact that isn't present in the text above - flag missing information instead of guessing. Note: a business-offered returns window longer than 14 days (e.g. 30 days) is normal and legal - it sits alongside, not instead of, the customer's 14-day statutory cancellation right under the Consumer Contracts Regulations. Only flag this as an issue if the text is genuinely unclear about the two coexisting, not merely because two different day-counts appear.\n\n"
 		. "Output in plain text, no markdown, using exactly this structure:\n"
 		. "OVERALL SCORE: a number from 1 to 10, calibrated strictly against the ISSUES FOUND list you produce below - do not default to a middle score out of habit:\n"
 		. "  9-10 = zero or near-zero issues found, fully compliant\n"

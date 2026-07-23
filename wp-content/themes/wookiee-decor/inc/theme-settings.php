@@ -734,6 +734,7 @@ function wookiee_generate_site_name_candidates( $company_name ) {
 	if ( '' === $base ) {
 		$base = 'mystore';
 	}
+	$first_word_len = strlen( preg_replace( '/[^a-z0-9]/', '', $kept[0] ) );
 
 	$candidates = array();
 	foreach ( array( 14, 10, 8 ) as $len ) {
@@ -742,7 +743,27 @@ function wookiee_generate_site_name_candidates( $company_name ) {
 			$candidates[] = $slug;
 		}
 	}
-	return ! empty( $candidates ) ? $candidates : array( $base );
+	return array(
+		'candidates'     => ! empty( $candidates ) ? $candidates : array( $base ),
+		'first_word_len' => $first_word_len,
+	);
+}
+
+/**
+ * Turns a slug like "netlinkeuropel" back into a readable display name
+ * like "Netlink Europel" - splits after the first kept word (tracked
+ * from wookiee_generate_site_name_candidates()) so the site title
+ * doesn't read as one squashed-together blob, without trying to guess
+ * word boundaries any deeper than that (a truncated trailing word, e.g.
+ * "l" from "Logistics", stays attached to the second part rather than
+ * becoming its own stray one-letter "word").
+ */
+function wookiee_prettify_slug( $slug, $first_word_len ) {
+	$slug = (string) $slug;
+	if ( $first_word_len > 0 && $first_word_len < strlen( $slug ) ) {
+		return ucfirst( substr( $slug, 0, $first_word_len ) ) . ' ' . ucfirst( substr( $slug, $first_word_len ) );
+	}
+	return ucfirst( $slug );
 }
 
 /**
@@ -828,11 +849,13 @@ function wookiee_suggest_site_name_handler() {
 		wp_send_json_error( array( 'message' => 'No company name to work from.' ) );
 	}
 
-	$base_candidates = wookiee_generate_site_name_candidates( $company_name );
+	$generated       = wookiee_generate_site_name_candidates( $company_name );
+	$base_candidates = $generated['candidates'];
+	$first_word_len  = $generated['first_word_len'];
 	$has_spaceship   = '' !== trim( (string) wookiee_get_setting( 'spaceship_api_key' ) ) && '' !== trim( (string) wookiee_get_setting( 'spaceship_api_secret' ) );
 
 	if ( ! $has_spaceship ) {
-		wp_send_json_success( array( 'site_name' => ucfirst( $base_candidates[0] ), 'checked' => false, 'suggestions' => null ) );
+		wp_send_json_success( array( 'site_name' => wookiee_prettify_slug( $base_candidates[0], $first_word_len ), 'checked' => false, 'suggestions' => null ) );
 	}
 
 	$candidates = wookiee_expand_site_name_candidates( $base_candidates );
@@ -849,19 +872,19 @@ function wookiee_suggest_site_name_handler() {
 			$available = wookiee_check_domain_availability( $slug . '.' . $tld );
 			if ( is_wp_error( $available ) ) {
 				wp_send_json_success( array(
-					'site_name'   => ucfirst( $base_candidates[0] ),
+					'site_name'   => wookiee_prettify_slug( $base_candidates[0], $first_word_len ),
 					'checked'     => false,
 					'suggestions' => null,
 					'message'     => $available->get_error_message(),
 				) );
 			}
 			if ( $available ) {
-				$found[ $tld ][] = array( 'domain' => $slug . '.' . $tld, 'slug' => $slug, 'site_name' => ucfirst( $slug ) );
+				$found[ $tld ][] = array( 'domain' => $slug . '.' . $tld, 'slug' => $slug, 'site_name' => wookiee_prettify_slug( $slug, $first_word_len ) );
 			}
 		}
 	}
 
-	$site_name = ! empty( $found['com'] ) ? $found['com'][0]['site_name'] : ( ! empty( $found['uk'] ) ? $found['uk'][0]['site_name'] : ucfirst( $base_candidates[0] ) );
+	$site_name = ! empty( $found['com'] ) ? $found['com'][0]['site_name'] : ( ! empty( $found['uk'] ) ? $found['uk'][0]['site_name'] : wookiee_prettify_slug( $base_candidates[0], $first_word_len ) );
 
 	wp_send_json_success( array(
 		'site_name'   => $site_name,

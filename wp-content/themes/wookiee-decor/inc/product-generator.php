@@ -86,6 +86,17 @@ function wookiee_render_product_generator_page() {
 
 		<div id="wookiee-generate-results"></div>
 	</div>
+	<style>
+		.wookiee-audit-card-badge {
+			font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 20px;
+			background: #f0f0f1; color: #50575e; white-space: nowrap; cursor: pointer; display: inline-block;
+		}
+		.wookiee-audit-card-badge.is-low { background: #edfaef; color: #00a32a; }
+		.wookiee-audit-card-badge.is-medium { background: #fcf9e8; color: #996800; }
+		.wookiee-audit-card-badge.is-high { background: #fcf0f1; color: #b32d2e; }
+		.wookiee-compliance-detail td { background: #f6f7f7; padding: 14px 20px; }
+		.wookiee-compliance-body { white-space: pre-wrap; margin: 0 0 10px; max-height: 300px; overflow-y: auto; font-size: 13px; }
+	</style>
 	<script>
 	( function() {
 		var btn          = document.getElementById( 'wookiee-generate-btn' );
@@ -95,6 +106,52 @@ function wookiee_render_product_generator_page() {
 			return;
 		}
 		var nonce = '<?php echo esc_js( wp_create_nonce( 'wookiee_generate_products' ) ); ?>';
+		var auditNonce = '<?php echo esc_js( wp_create_nonce( 'wookiee_audit_product' ) ); ?>';
+
+		function badgeFromReport( report ) {
+			var scoreMatch = report.match( /OVERALL SCORE:\s*(\d+)/i );
+			var riskMatch  = report.match( /GMC RISK:\s*(Low|Medium|High)/i );
+			if ( ! scoreMatch && ! riskMatch ) { return { text: '', level: '' }; }
+			var parts = [];
+			if ( scoreMatch ) { parts.push( 'Score ' + scoreMatch[ 1 ] + '/10' ); }
+			if ( riskMatch ) { parts.push( riskMatch[ 1 ] + ' risk' ); }
+			return { text: parts.join( ' · ' ), level: riskMatch ? riskMatch[ 1 ].toLowerCase() : '' };
+		}
+
+		// Runs independently per product row - not chained/queued behind
+		// any other row's analysis, so a batch of several sourced
+		// products all start analysing in parallel the moment each one
+		// lands, instead of waiting in a queue.
+		function runProductAudit( postId, badge, detailBody, reanalyzeBtn ) {
+			badge.textContent = 'Analysing…';
+			badge.className = 'wookiee-audit-card-badge';
+			if ( reanalyzeBtn ) { reanalyzeBtn.disabled = true; }
+			var data = new FormData();
+			data.append( 'action', 'wookiee_audit_product' );
+			data.append( 'nonce', auditNonce );
+			data.append( 'post_id', postId );
+			fetch( ajaxurl, { method: 'POST', credentials: 'same-origin', body: data } )
+				.then( function( r ) { return r.json(); } )
+				.then( function( res ) {
+					if ( reanalyzeBtn ) { reanalyzeBtn.disabled = false; }
+					if ( ! res.success ) {
+						badge.textContent = 'Failed';
+						badge.className = 'wookiee-audit-card-badge is-high';
+						detailBody.textContent = res.data && res.data.message ? res.data.message : 'Analysis failed.';
+						return;
+					}
+					var b = badgeFromReport( res.data.report );
+					badge.textContent = b.text;
+					badge.className = 'wookiee-audit-card-badge' + ( b.level ? ' is-' + b.level : '' );
+					detailBody.textContent = res.data.report;
+				} )
+				.catch( function() {
+					if ( reanalyzeBtn ) { reanalyzeBtn.disabled = false; }
+					badge.textContent = 'Failed';
+					badge.className = 'wookiee-audit-card-badge is-high';
+					detailBody.textContent = 'Could not reach the server.';
+				} );
+		}
 
 		function updateBulkButton() {
 			var checked = document.querySelectorAll( '.wookiee-product-select:checked' ).length;
@@ -149,9 +206,22 @@ function wookiee_render_product_generator_page() {
 						return;
 					}
 
-					var html = '<table class="widefat"><thead><tr><th></th><th>Concept</th><th>Est. demand</th><th>Status</th><th colspan="2"></th></tr></thead><tbody>';
+					var html = '<table class="widefat"><thead><tr><th></th><th>Concept</th><th>Est. demand</th><th>Status</th><th>GMC compliance</th><th></th><th colspan="2"></th></tr></thead><tbody>';
 					products.forEach( function( p ) {
-						html += '<tr data-post-id="' + p.post_id + '"><td><input type="checkbox" class="wookiee-product-select" value="' + p.post_id + '"></td><td>' + p.title + '</td><td>' + ( p.demand || '—' ) + '</td><td class="wookiee-row-status">' + p.status + '</td><td><a href="' + p.edit_link + '" class="button" target="_blank" rel="noopener">Edit draft</a></td><td><button type="button" class="button wookiee-publish-one-btn">Publish</button></td></tr>';
+						html += '<tr data-post-id="' + p.post_id + '">' +
+							'<td><input type="checkbox" class="wookiee-product-select" value="' + p.post_id + '"></td>' +
+							'<td>' + p.title + '</td>' +
+							'<td>' + ( p.demand || '—' ) + '</td>' +
+							'<td class="wookiee-row-status">' + p.status + '</td>' +
+							'<td><span class="wookiee-audit-card-badge wookiee-compliance-badge">Analysing…</span></td>' +
+							'<td>' + ( p.preview_link ? '<a href="' + p.preview_link + '" class="button" target="_blank" rel="noopener">Preview</a>' : '' ) + '</td>' +
+							'<td><a href="' + p.edit_link + '" class="button" target="_blank" rel="noopener">Edit draft</a></td>' +
+							'<td><button type="button" class="button wookiee-publish-one-btn">Publish</button></td>' +
+						'</tr>' +
+						'<tr class="wookiee-compliance-detail" hidden><td colspan="8">' +
+							'<div class="wookiee-compliance-body">Waiting…</div>' +
+							'<button type="button" class="button wookiee-compliance-reanalyze-btn">Reanalyse</button>' +
+						'</td></tr>';
 					} );
 					html += '</tbody></table>';
 					results.innerHTML = html;
@@ -178,6 +248,26 @@ function wookiee_render_product_generator_page() {
 								pubBtn.textContent = 'Publish failed — retry';
 							} );
 						} );
+					} );
+
+					// Each row's compliance analysis fires independently
+					// the moment it's rendered - none wait on each other,
+					// and none block publishing/editing while running.
+					results.querySelectorAll( 'tr[data-post-id]' ).forEach( function( row ) {
+						var postId       = row.getAttribute( 'data-post-id' );
+						var badge        = row.querySelector( '.wookiee-compliance-badge' );
+						var detailRow    = row.nextElementSibling;
+						var detailBody   = detailRow.querySelector( '.wookiee-compliance-body' );
+						var reanalyzeBtn = detailRow.querySelector( '.wookiee-compliance-reanalyze-btn' );
+
+						badge.addEventListener( 'click', function() {
+							detailRow.hidden = ! detailRow.hidden;
+						} );
+						reanalyzeBtn.addEventListener( 'click', function() {
+							runProductAudit( postId, badge, detailBody, reanalyzeBtn );
+						} );
+
+						runProductAudit( postId, badge, detailBody, reanalyzeBtn );
 					} );
 				} )
 				.catch( function() {
@@ -293,15 +383,96 @@ function wookiee_generate_products_handler() {
 		}
 
 		$created[] = array(
-			'post_id'   => $sourced['post_id'],
-			'title'     => esc_html( $idea['title'] ),
-			'demand'    => esc_html( $demand ),
-			'status'    => esc_html( $sourced['note'] ? $sourced['note'] : 'Sourced from CJ Dropshipping' ),
-			'edit_link' => get_edit_post_link( $sourced['post_id'], 'raw' ),
+			'post_id'      => $sourced['post_id'],
+			'title'        => esc_html( $idea['title'] ),
+			'demand'       => esc_html( $demand ),
+			'status'       => esc_html( $sourced['note'] ? $sourced['note'] : 'Sourced from CJ Dropshipping' ),
+			'edit_link'    => get_edit_post_link( $sourced['post_id'], 'raw' ),
+			'preview_link' => get_preview_post_link( $sourced['post_id'] ),
 		);
 	}
 
 	wp_send_json_success( array( 'products' => $created, 'total' => count( $ideas ) ) );
+}
+
+/**
+ * Compliance audit for a single sourced product listing - a Google
+ * Merchant Center (GMC) product-data policy review, distinct from the
+ * UK legal-policy audit in inc/content-generator.php (that one reviews
+ * Terms/Privacy/etc pages against consumer law; this one reviews an
+ * individual product's title/description/price/category against GMC's
+ * product-listing requirements - misrepresentation, prohibited/
+ * restricted content, missing required data). Reuses the same
+ * wookiee_store_audit_result()/wookiee_clear_audit_result() postmeta
+ * persistence and the same OVERALL SCORE/GMC RISK report structure, so
+ * both audits share one badge-parsing/UI pattern.
+ */
+function wookiee_build_product_audit_prompt( $product_id ) {
+	$title              = get_the_title( $product_id );
+	$description        = wp_strip_all_tags( get_post_field( 'post_content', $product_id ) );
+	$short_description  = wp_strip_all_tags( get_post_field( 'post_excerpt', $product_id ) );
+	$price              = get_post_meta( $product_id, '_price', true );
+	$categories         = wp_get_post_terms( $product_id, 'product_cat', array( 'fields' => 'names' ) );
+	$has_image          = has_post_thumbnail( $product_id );
+	$niche              = get_option( 'wookiee_niche_brief', '' );
+
+	return "Act as a Google Merchant Center (GMC) product-data policy reviewer, checking one UK ecommerce product listing before it goes live - do not just proofread it.\n\n"
+		. "Store niche: \"{$niche}\"\n"
+		. "Product title: {$title}\n"
+		. "Short description: " . ( $short_description ? $short_description : '(none)' ) . "\n"
+		. "Full description: " . ( $description ? $description : '(none)' ) . "\n"
+		. "Price: £" . ( $price ? $price : '(not set)' ) . "\n"
+		. "Category: " . ( ! empty( $categories ) && ! is_wp_error( $categories ) ? implode( ', ', $categories ) : '(none assigned)' ) . "\n"
+		. "Featured image set: " . ( $has_image ? 'Yes' : 'No - no product photo currently attached' ) . "\n\n"
+		. "Review against Google Merchant Center's product data policies:\n"
+		. "- Title accuracy: no keyword stuffing, no ALL CAPS, no promotional text (e.g. \"free shipping\", \"% off\", \"best price\") baked into the title itself, and the title genuinely matches what's described/offered.\n"
+		. "- Description accuracy: no misleading or unsubstantiated claims (especially health, safety, or environmental claims), no fake urgency/scarcity language, consistent with the title and category, no supplier/trade jargon left over from a cross-border listing.\n"
+		. "- Pricing: stated clearly; flag if the description text mentions a different price/discount than the listed price above, or omits the price entirely where it should be repeated.\n"
+		. "- Prohibited/restricted content: flag anything that could fall under GMC's restricted categories (e.g. supplements/medical devices implying treatment claims, weapons, counterfeit-sounding branding) or misrepresentation policy.\n"
+		. "- Category fit: does this product genuinely belong in the assigned category given the niche and title.\n"
+		. "- Image: flag clearly if no featured image is set at all (a hard GMC requirement) - note that the actual image content/quality cannot be visually assessed by this text-only review, so treat that as a separate manual-check reminder rather than an assumption either way.\n\n"
+		. "Do not invent facts about the product beyond what's given above - flag missing information instead of guessing.\n\n"
+		. "Output in plain text, no markdown, using exactly this structure:\n"
+		. "OVERALL SCORE: a number from 1 to 10, calibrated strictly against the ISSUES FOUND list you produce below - do not default to a middle score out of habit:\n"
+		. "  9-10 = zero or near-zero issues, fully GMC-compliant\n"
+		. "  7-8 = only Minor issues, nothing Serious\n"
+		. "  5-6 = one or two Serious issues, or several Minor ones\n"
+		. "  3-4 = three or more Serious issues, or an actively misleading claim\n"
+		. "  1-2 = missing required data entirely, or this listing would likely be disapproved/suspended by GMC\n"
+		. "GMC RISK: Low, Medium, or High, with a one-sentence reason\n"
+		. "ISSUES FOUND: a numbered list - what's wrong, how serious, how to fix it\n"
+		. "MISSING INFORMATION: anything needed that isn't in the data above\n"
+		. "RECOMMENDATION: a short closing paragraph\n\n"
+		. "Be critical and specific. This is a QA report for a human to act on - do not rewrite the listing, only assess it.";
+}
+
+add_action( 'wp_ajax_wookiee_audit_product', 'wookiee_audit_product_handler' );
+function wookiee_audit_product_handler() {
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_send_json_error( array( 'message' => 'Not allowed.' ), 403 );
+	}
+	check_ajax_referer( 'wookiee_audit_product', 'nonce' );
+
+	if ( '' === trim( (string) wookiee_get_setting( 'llm_api_key' ) ) ) {
+		wp_send_json_error( array( 'message' => 'Add an LLM API key on the Wookiee Settings page first.' ) );
+	}
+
+	$post_id = isset( $_POST['post_id'] ) ? intval( $_POST['post_id'] ) : 0;
+	$post    = $post_id ? get_post( $post_id ) : null;
+	if ( ! $post || 'product' !== $post->post_type ) {
+		wp_send_json_error( array( 'message' => 'Select a valid product first.' ) );
+	}
+
+	$prompt = wookiee_build_product_audit_prompt( $post_id );
+	$report = wookiee_call_llm( $prompt, 2000 );
+
+	if ( is_wp_error( $report ) ) {
+		wp_send_json_error( array( 'message' => $report->get_error_message() ) );
+	}
+
+	wookiee_store_audit_result( $post_id, $report );
+
+	wp_send_json_success( array( 'report' => $report ) );
 }
 
 /**

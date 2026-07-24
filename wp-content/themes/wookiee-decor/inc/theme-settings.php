@@ -18,7 +18,6 @@ defined( 'ABSPATH' ) || exit;
 
 function wookiee_settings_fields() {
 	return array(
-		'wookiee_api_base_url'      => array( 'label' => 'Central backend URL', 'default' => '', 'type' => 'text' ),
 		'wookiee_api_shared_secret' => array( 'label' => 'Central backend shared secret', 'default' => '', 'type' => 'password' ),
 		'contact_email'      => array( 'label' => 'Contact email', 'default' => 'info@wookied.com', 'type' => 'email' ),
 		'contact_phone'      => array( 'label' => 'Contact phone', 'default' => '+44 20 8472 6126', 'type' => 'text' ),
@@ -163,7 +162,7 @@ function wookiee_settings_tabs() {
 		),
 		'integrations' => array(
 			'label'  => 'AI & Integrations',
-			'fields' => array( 'wookiee_api_base_url', 'wookiee_api_shared_secret', 'llm_api_key', 'llm_base_url', 'llm_default_model', 'cj_email', 'cj_api_key', 'product_markup_percent', 'bg_removal_provider', 'cloudinary_cloud_name', 'cloudinary_api_key', 'cloudinary_api_secret', 'rembg_endpoint_url', 'google_ads_developer_token', 'google_ads_client_id', 'google_ads_client_secret', 'google_ads_refresh_token', 'google_ads_customer_id', 'google_ads_login_customer_id', 'spaceship_api_key', 'spaceship_api_secret' ),
+			'fields' => array( 'wookiee_api_shared_secret', 'llm_api_key', 'llm_base_url', 'llm_default_model', 'cj_email', 'cj_api_key', 'product_markup_percent', 'bg_removal_provider', 'cloudinary_cloud_name', 'cloudinary_api_key', 'cloudinary_api_secret', 'rembg_endpoint_url', 'google_ads_developer_token', 'google_ads_client_id', 'google_ads_client_secret', 'google_ads_refresh_token', 'google_ads_customer_id', 'google_ads_login_customer_id', 'spaceship_api_key', 'spaceship_api_secret' ),
 		),
 	);
 }
@@ -245,7 +244,7 @@ function wookiee_render_settings_field_row( $key, $field ) {
 					<button type="button" class="button" id="wookiee-ch-lookup-btn">Look up on Companies House</button>
 					<span id="wookiee-ch-lookup-status" style="margin-left:8px;"></span>
 				</p>
-				<p class="description">Fills in the registered company name and address below from the official Companies House register — enter the exact company number, or just the company name to search a list of matches. Requires an API key (below) — get one free at <a href="https://developer.company-information.service.gov.uk/" target="_blank" rel="noopener">developer.company-information.service.gov.uk</a>. Review the filled-in fields before saving.</p>
+				<p class="description">Fills in the registered company name and address below from the official Companies House register — enter the exact company number, or just the company name to search a list of matches. <?php echo wookiee_secrets_migrated_to_backend() ? '' : 'Requires an API key (below) — get one free at <a href="https://developer.company-information.service.gov.uk/" target="_blank" rel="noopener">developer.company-information.service.gov.uk</a>. '; ?>Review the filled-in fields before saving.</p>
 				<div id="wookiee-ch-search-results" class="wookiee-ch-search-results" hidden></div>
 			<?php endif; ?>
 			<?php if ( 'companies_house_api_key' === $key ) : ?>
@@ -416,19 +415,17 @@ function wookiee_render_settings_page() {
 					<?php wookiee_render_ai_copy_generator_notice( $tab_key ); ?>
 					<?php if ( 'integrations' === $tab_key ) : ?>
 						<?php wookiee_render_backend_connection_section(); ?>
-						<?php
-						$fields_to_show = $tab['fields'];
-						if ( wookiee_secrets_migrated_to_backend() ) {
-							$operator_only  = wookiee_operator_only_settings_keys();
-							$fields_to_show = array_values( array_diff( $fields_to_show, $operator_only ) );
-						}
-						?>
-						<?php wookiee_render_settings_fields_table( $fields_to_show ); ?>
-						<?php if ( wookiee_secrets_migrated_to_backend() ) : ?>
-							<p class="description">Companies House, LLM, CJ Dropshipping, Cloudinary/rembg, Google Ads, and Spaceship keys are managed centrally at the backend now - <code>bg_removal_provider</code>/markup above still apply per-site, but the actual provider credentials aren't stored here anymore.</p>
-						<?php endif; ?>
-					<?php else : ?>
-						<?php wookiee_render_settings_fields_table( $tab['fields'] ); ?>
+					<?php endif; ?>
+					<?php
+					$fields_to_show = $tab['fields'];
+					if ( wookiee_secrets_migrated_to_backend() ) {
+						$operator_only  = wookiee_operator_only_settings_keys();
+						$fields_to_show = array_values( array_diff( $fields_to_show, $operator_only ) );
+					}
+					?>
+					<?php wookiee_render_settings_fields_table( $fields_to_show ); ?>
+					<?php if ( 'integrations' === $tab_key && wookiee_secrets_migrated_to_backend() ) : ?>
+						<p class="description">Companies House, LLM, CJ Dropshipping, Cloudinary/rembg, Google Ads, and Spaceship keys are managed centrally at the backend now - <code>bg_removal_provider</code>/markup above still apply per-site, but the actual provider credentials aren't stored here anymore.</p>
 					<?php endif; ?>
 				</div>
 				<?php $is_first = false; ?>
@@ -1312,7 +1309,7 @@ function wookiee_render_backend_connection_section() {
 		</p>
 		<p class="description">Pushes every key currently filled in below (Companies House, LLM, CJ Dropshipping, Cloudinary/rembg, Google Ads, Spaceship) to the backend, then clears them from this site.</p>
 	<?php else : ?>
-		<p class="description">Save the backend URL and shared secret below to unlock a one-click migration button.</p>
+		<p class="description">Save the shared secret below to unlock a one-click migration button.</p>
 	<?php endif; ?>
 
 	<p>

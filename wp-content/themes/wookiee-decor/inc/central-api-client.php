@@ -8,22 +8,27 @@
  * never sees a key field for them - only the operator (whoever deploys the
  * backend) manages those, in the backend's own settings UI.
  *
- * What DOES stay per-site in wp_options: the backend's base URL + shared
- * secret (how this site reaches the backend at all - not a third-party
- * credential, just a connection detail), and genuinely per-site data like
- * company_number/business_name/registered_address.
+ * The backend URL is the same for every WordPress install running this
+ * theme (one backend, many stores), so it's baked in below rather than a
+ * per-site field - a store owner has no reason to ever see or change it.
+ * The shared secret DOES stay a per-site wp_options field (not baked in):
+ * how this site authenticates to that backend.
  *
  * Every call site that used to hit a provider directly with a local
  * wp_options key now checks wookiee_central_api_configured() first and
  * prefers the backend; the direct-call code path still exists as a
- * fallback for sites that haven't connected a backend yet, so nothing
+ * fallback for sites that haven't set a shared secret yet, so nothing
  * breaks mid-rollout.
  */
 
 defined( 'ABSPATH' ) || exit;
 
+/**
+ * Fixed for every install of this theme - not a setting. Change this one
+ * line if the backend ever moves to a different domain.
+ */
 function wookiee_central_api_base_url() {
-	return rtrim( (string) get_option( 'wookiee_setting_wookiee_api_base_url', '' ), '/' );
+	return 'https://api.davebukartechnologies.com';
 }
 
 function wookiee_central_api_shared_secret() {

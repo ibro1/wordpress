@@ -18,7 +18,7 @@ defined( 'ABSPATH' ) || exit;
 
 function wookiee_settings_fields() {
 	return array(
-		'wookiee_api_shared_secret' => array( 'label' => 'Central backend shared secret', 'default' => '', 'type' => 'password' ),
+		'wookiee_api_shared_secret' => array( 'label' => 'Activation code', 'default' => '', 'type' => 'password' ),
 		'contact_email'      => array( 'label' => 'Contact email', 'default' => 'info@wookied.com', 'type' => 'email' ),
 		'contact_phone'      => array( 'label' => 'Contact phone', 'default' => '+44 20 8472 6126', 'type' => 'text' ),
 		'support_hours'      => array( 'label' => 'Support hours', 'default' => 'Monday to Friday, 9am - 5pm', 'type' => 'text' ),
@@ -1309,7 +1309,7 @@ function wookiee_render_backend_connection_section() {
 		</p>
 		<p class="description">Pushes every key currently filled in below (Companies House, LLM, CJ Dropshipping, Cloudinary/rembg, Google Ads, Spaceship) to the backend, then clears them from this site.</p>
 	<?php else : ?>
-		<p class="description">Save the shared secret below to unlock a one-click migration button.</p>
+		<p class="description">Save the activation code below to unlock a one-click migration button.</p>
 	<?php endif; ?>
 
 	<p>

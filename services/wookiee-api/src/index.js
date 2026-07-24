@@ -37,6 +37,7 @@ app.use('/companies-house', requireApiAuth, require('./routes/companiesHouse'));
 app.use('/domains', requireApiAuth, require('./routes/spaceship'));
 app.use('/google-ads', requireApiAuth, require('./routes/googleAds'));
 app.use('/images', requireApiAuth, require('./routes/images'));
+app.use('/cj', requireApiAuth, require('./routes/cj'));
 
 app.use((err, req, res, next) => {
   // eslint-disable-next-line no-console

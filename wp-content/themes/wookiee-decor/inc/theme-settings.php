@@ -342,7 +342,7 @@ function wookiee_render_ai_copy_generator_notice( $tab_key, $id_suffix = '' ) {
 		$c['btn_id']    .= $id_suffix;
 		$c['status_id'] .= $id_suffix;
 	}
-	$has_llm_key = '' !== trim( (string) wookiee_get_setting( 'llm_api_key' ) );
+	$has_llm_key = wookiee_central_api_configured() || '' !== trim( (string) wookiee_get_setting( 'llm_api_key' ) );
 	?>
 	<div style="background:#f6f7f7;border:1px solid #dcdcde;border-radius:4px;padding:12px 16px;margin-bottom:20px;max-width:900px;">
 		<p style="margin-top:0;"><strong>Generate with AI</strong> — <?php echo $c['desc']; ?> Review and edit before clicking Save Changes at the bottom; nothing changes on the live site until then.</p>
@@ -529,9 +529,6 @@ function wookiee_inline_generate_homepage_copy_handler() {
 	if ( '' === trim( $brief ) ) {
 		wp_send_json_error( array( 'message' => 'Describe the niche first.' ) );
 	}
-	if ( '' === trim( (string) wookiee_get_setting( 'llm_api_key' ) ) ) {
-		wp_send_json_error( array( 'message' => 'Add an LLM API key on the <a href="' . esc_url( admin_url( 'admin.php?page=wookiee-settings#integrations' ) ) . '" target="_blank" rel="noopener">Activation tab</a> first.' ) );
-	}
 
 	update_option( 'wookiee_niche_brief', $brief );
 
@@ -563,9 +560,6 @@ function wookiee_inline_generate_about_contact_copy_handler() {
 	$brief = isset( $_POST['brief'] ) ? sanitize_textarea_field( wp_unslash( $_POST['brief'] ) ) : '';
 	if ( '' === trim( $brief ) ) {
 		wp_send_json_error( array( 'message' => 'Describe the niche first.' ) );
-	}
-	if ( '' === trim( (string) wookiee_get_setting( 'llm_api_key' ) ) ) {
-		wp_send_json_error( array( 'message' => 'Add an LLM API key on the <a href="' . esc_url( admin_url( 'admin.php?page=wookiee-settings#integrations' ) ) . '" target="_blank" rel="noopener">Activation tab</a> first.' ) );
 	}
 
 	update_option( 'wookiee_niche_brief', $brief );

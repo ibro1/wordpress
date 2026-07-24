@@ -31,8 +31,8 @@ function wookiee_render_product_generator_page() {
 	if ( ! current_user_can( 'manage_options' ) ) {
 		return;
 	}
-	$has_key      = '' !== trim( (string) wookiee_get_setting( 'llm_api_key' ) );
-	$has_cj_creds = '' !== trim( (string) wookiee_get_setting( 'cj_email' ) ) && '' !== trim( (string) wookiee_get_setting( 'cj_api_key' ) );
+	$has_key      = wookiee_central_api_configured() || '' !== trim( (string) wookiee_get_setting( 'llm_api_key' ) );
+	$has_cj_creds = wookiee_central_api_configured() || ( '' !== trim( (string) wookiee_get_setting( 'cj_email' ) ) && '' !== trim( (string) wookiee_get_setting( 'cj_api_key' ) ) );
 	$has_woo      = class_exists( 'WooCommerce' );
 	$has_ads      = wookiee_google_ads_configured();
 	$saved_brief  = get_option( 'wookiee_niche_brief', '' );
@@ -416,10 +416,7 @@ function wookiee_generate_products_handler() {
 
 	update_option( 'wookiee_niche_brief', $brief );
 
-	if ( '' === trim( (string) wookiee_get_setting( 'llm_api_key' ) ) ) {
-		wp_send_json_error( array( 'message' => 'Add an LLM API key on the Wookiee Settings page first.' ) );
-	}
-	if ( '' === trim( (string) wookiee_get_setting( 'cj_email' ) ) || '' === trim( (string) wookiee_get_setting( 'cj_api_key' ) ) ) {
+	if ( ! wookiee_central_api_configured() && ( '' === trim( (string) wookiee_get_setting( 'cj_email' ) ) || '' === trim( (string) wookiee_get_setting( 'cj_api_key' ) ) ) ) {
 		wp_send_json_error( array( 'message' => 'Add your CJ Dropshipping email and API key on the Wookiee Settings page first - this tool sources real products from that catalog.' ) );
 	}
 
@@ -529,10 +526,6 @@ function wookiee_audit_product_handler() {
 		wp_send_json_error( array( 'message' => 'Not allowed.' ), 403 );
 	}
 	check_ajax_referer( 'wookiee_audit_product', 'nonce' );
-
-	if ( '' === trim( (string) wookiee_get_setting( 'llm_api_key' ) ) ) {
-		wp_send_json_error( array( 'message' => 'Add an LLM API key on the Wookiee Settings page first.' ) );
-	}
 
 	$post_id = isset( $_POST['post_id'] ) ? intval( $_POST['post_id'] ) : 0;
 	$post    = $post_id ? get_post( $post_id ) : null;

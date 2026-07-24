@@ -97,9 +97,9 @@ function wookiee_render_setup_wizard_page() {
 	}
 
 	$brief         = get_option( 'wookiee_niche_brief', '' );
-	$has_ch_key    = '' !== trim( (string) wookiee_get_setting( 'companies_house_api_key' ) );
-	$has_ai_key    = '' !== trim( (string) wookiee_get_setting( 'llm_api_key' ) );
-	$has_cj_creds  = '' !== trim( (string) wookiee_get_setting( 'cj_email' ) ) && '' !== trim( (string) wookiee_get_setting( 'cj_api_key' ) );
+	$has_ch_key    = wookiee_central_api_configured() || '' !== trim( (string) wookiee_get_setting( 'companies_house_api_key' ) );
+	$has_ai_key    = wookiee_central_api_configured() || '' !== trim( (string) wookiee_get_setting( 'llm_api_key' ) );
+	$has_cj_creds  = wookiee_central_api_configured() || ( '' !== trim( (string) wookiee_get_setting( 'cj_email' ) ) && '' !== trim( (string) wookiee_get_setting( 'cj_api_key' ) ) );
 	$has_woo       = class_exists( 'WooCommerce' );
 	$shipping_zone = $has_woo ? wookiee_find_uk_shipping_zone() : null;
 	$pending       = wookiee_get_pending_draft_products();

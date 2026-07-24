@@ -98,6 +98,10 @@ function wookiee_cj_auth_request( $path, $body ) {
  * so the next call re-authenticates rather than looping on a dead token.
  */
 function wookiee_cj_request( $method, $path, $body = null ) {
+	if ( wookiee_central_api_configured() ) {
+		return wookiee_central_api_request( 'POST', '/cj/request', array( 'method' => $method, 'path' => $path, 'body' => $body ) );
+	}
+
 	$token = wookiee_cj_get_access_token();
 	if ( is_wp_error( $token ) ) {
 		return $token;
@@ -544,7 +548,7 @@ function wookiee_render_supplier_catalog_page() {
 	if ( ! current_user_can( 'manage_options' ) ) {
 		return;
 	}
-	$has_creds = '' !== trim( (string) wookiee_get_setting( 'cj_email' ) ) && '' !== trim( (string) wookiee_get_setting( 'cj_api_key' ) );
+	$has_creds = wookiee_central_api_configured() || ( '' !== trim( (string) wookiee_get_setting( 'cj_email' ) ) && '' !== trim( (string) wookiee_get_setting( 'cj_api_key' ) ) );
 	$has_woo   = class_exists( 'WooCommerce' );
 	$brief     = get_option( 'wookiee_niche_brief', '' );
 	?>

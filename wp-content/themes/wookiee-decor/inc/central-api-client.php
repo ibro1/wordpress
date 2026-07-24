@@ -69,10 +69,6 @@ function wookiee_operator_only_settings_keys() {
 	);
 }
 
-function wookiee_secrets_migrated_to_backend() {
-	return (bool) get_option( 'wookiee_secrets_migrated_to_backend', false );
-}
-
 /**
  * Site-wide reminder that nothing depending on the backend works yet -
  * shown across wp-admin, not just on the Settings page, since an admin
@@ -105,7 +101,7 @@ function wookiee_maybe_show_activation_notice() {
  */
 function wookiee_central_api_request( $method, $path, $body = null ) {
 	if ( ! wookiee_central_api_configured() ) {
-		return new WP_Error( 'wookiee_central_api_not_configured', 'The central backend is not connected yet (Settings > AI & Integrations).' );
+		return new WP_Error( 'wookiee_central_api_not_configured', 'The central backend is not connected yet (Settings > Activation).' );
 	}
 
 	$args = array(
@@ -179,66 +175,6 @@ function wookiee_activate_backend_handler() {
 	}
 
 	update_option( 'wookiee_setting_wookiee_api_shared_secret', $code );
-
-	wp_send_json_success();
-}
-
-/**
- * One-time push of every provider key currently sitting in this site's
- * wp_options up to the backend, then clears them locally - after this,
- * this WordPress install holds none of those credentials itself, only the
- * backend does. Safe to click more than once (the backend just overwrites
- * with whatever's sent - if you've since edited a key directly on the
- * backend, DON'T re-run this from an install with stale local values, since
- * it would overwrite the backend's newer value with the stale local one;
- * the button is hidden after the first successful migration for exactly
- * this reason).
- */
-add_action( 'wp_ajax_wookiee_migrate_secrets_to_backend', 'wookiee_migrate_secrets_to_backend_handler' );
-function wookiee_migrate_secrets_to_backend_handler() {
-	if ( ! current_user_can( 'manage_options' ) ) {
-		wp_send_json_error( array( 'message' => 'Not allowed.' ), 403 );
-	}
-	check_ajax_referer( 'wookiee_migrate_secrets_to_backend', 'nonce' );
-
-	$keys = wookiee_operator_only_settings_keys();
-
-	$values = array();
-	foreach ( $keys as $key ) {
-		$values[ $key ] = wookiee_get_setting( $key );
-	}
-
-	$result = wookiee_central_api_request( 'POST', '/settings', array( 'values' => $values ) );
-	if ( is_wp_error( $result ) ) {
-		wp_send_json_error( array( 'message' => $result->get_error_message() ) );
-	}
-
-	foreach ( $keys as $key ) {
-		delete_option( 'wookiee_setting_' . $key );
-	}
-	update_option( 'wookiee_secrets_migrated_to_backend', 1 );
-
-	wp_send_json_success();
-}
-
-/**
- * Same end state as the migration above (local fields cleared, hidden from
- * Settings from then on), but skips the backend call entirely - for when
- * the values were already copied over to the backend by hand (e.g. read via
- * the Show/Hide toggle and pasted into env vars) rather than through the
- * migrate button. Doesn't require the backend to even be reachable.
- */
-add_action( 'wp_ajax_wookiee_clear_local_secrets', 'wookiee_clear_local_secrets_handler' );
-function wookiee_clear_local_secrets_handler() {
-	if ( ! current_user_can( 'manage_options' ) ) {
-		wp_send_json_error( array( 'message' => 'Not allowed.' ), 403 );
-	}
-	check_ajax_referer( 'wookiee_clear_local_secrets', 'nonce' );
-
-	foreach ( wookiee_operator_only_settings_keys() as $key ) {
-		delete_option( 'wookiee_setting_' . $key );
-	}
-	update_option( 'wookiee_secrets_migrated_to_backend', 1 );
 
 	wp_send_json_success();
 }

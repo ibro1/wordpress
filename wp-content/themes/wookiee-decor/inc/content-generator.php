@@ -874,7 +874,7 @@ function wookiee_audit_policy_page_handler() {
 	check_ajax_referer( 'wookiee_generate_content', 'nonce' );
 
 	if ( '' === trim( (string) wookiee_get_setting( 'llm_api_key' ) ) ) {
-		wp_send_json_error( array( 'message' => 'Add an LLM API key on the <a href="' . esc_url( admin_url( 'admin.php?page=wookiee-settings#integrations' ) ) . '" target="_blank" rel="noopener">AI &amp; Integrations tab</a> first.' ) );
+		wp_send_json_error( array( 'message' => 'Add an LLM API key on the <a href="' . esc_url( admin_url( 'admin.php?page=wookiee-settings#integrations' ) ) . '" target="_blank" rel="noopener">Activation tab</a> first.' ) );
 	}
 
 	$post_id = isset( $_POST['post_id'] ) ? intval( $_POST['post_id'] ) : 0;
@@ -972,7 +972,7 @@ function wookiee_apply_audit_fixes_handler() {
 	check_ajax_referer( 'wookiee_generate_content', 'nonce' );
 
 	if ( '' === trim( (string) wookiee_get_setting( 'llm_api_key' ) ) ) {
-		wp_send_json_error( array( 'message' => 'Add an LLM API key on the <a href="' . esc_url( admin_url( 'admin.php?page=wookiee-settings#integrations' ) ) . '" target="_blank" rel="noopener">AI &amp; Integrations tab</a> first.' ) );
+		wp_send_json_error( array( 'message' => 'Add an LLM API key on the <a href="' . esc_url( admin_url( 'admin.php?page=wookiee-settings#integrations' ) ) . '" target="_blank" rel="noopener">Activation tab</a> first.' ) );
 	}
 
 	$missing_fields = wookiee_missing_critical_business_fields();
@@ -1069,7 +1069,7 @@ function wookiee_apply_custom_policy_prompt_handler() {
 	check_ajax_referer( 'wookiee_generate_content', 'nonce' );
 
 	if ( '' === trim( (string) wookiee_get_setting( 'llm_api_key' ) ) ) {
-		wp_send_json_error( array( 'message' => 'Add an LLM API key on the <a href="' . esc_url( admin_url( 'admin.php?page=wookiee-settings#integrations' ) ) . '" target="_blank" rel="noopener">AI &amp; Integrations tab</a> first.' ) );
+		wp_send_json_error( array( 'message' => 'Add an LLM API key on the <a href="' . esc_url( admin_url( 'admin.php?page=wookiee-settings#integrations' ) ) . '" target="_blank" rel="noopener">Activation tab</a> first.' ) );
 	}
 
 	$missing_fields = wookiee_missing_critical_business_fields();
@@ -1224,7 +1224,7 @@ function wookiee_suggest_niche_handler() {
 	check_ajax_referer( 'wookiee_suggest_niche', 'nonce' );
 
 	if ( '' === trim( (string) wookiee_get_setting( 'llm_api_key' ) ) ) {
-		wp_send_json_error( array( 'message' => 'Add an LLM API key on the <a href="' . esc_url( admin_url( 'admin.php?page=wookiee-settings#integrations' ) ) . '" target="_blank" rel="noopener">AI &amp; Integrations tab</a> first.' ) );
+		wp_send_json_error( array( 'message' => 'Add an LLM API key on the <a href="' . esc_url( admin_url( 'admin.php?page=wookiee-settings#integrations' ) ) . '" target="_blank" rel="noopener">Activation tab</a> first.' ) );
 	}
 
 	$recent_suggestions = wookiee_get_recent_niche_suggestions();

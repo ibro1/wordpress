@@ -32,7 +32,7 @@ function wookiee_settings_fields() {
 		'llm_default_model'  => array( 'label' => 'LLM default model', 'default' => 'gpt-4o-mini', 'type' => 'text' ),
 		'cj_email'           => array( 'label' => 'CJ Dropshipping account email', 'default' => '', 'type' => 'email' ),
 		'cj_api_key'         => array( 'label' => 'CJ Dropshipping API key', 'default' => '', 'type' => 'password' ),
-		'product_markup_percent' => array( 'label' => 'CJ product markup (%)', 'default' => '0', 'type' => 'text' ),
+		'product_markup_percent' => array( 'label' => 'Product markup (%)', 'default' => '0', 'type' => 'text' ),
 		'bg_removal_provider' => array( 'label' => 'Featured image white-background provider', 'default' => 'none', 'type' => 'select', 'options' => array( 'none' => 'Disabled', 'cloudinary' => 'Cloudinary', 'rembg' => 'Self-hosted rembg' ) ),
 		'cloudinary_cloud_name' => array( 'label' => 'Cloudinary cloud name', 'default' => '', 'type' => 'text' ),
 		'cloudinary_api_key' => array( 'label' => 'Cloudinary API key', 'default' => '', 'type' => 'text' ),
@@ -120,7 +120,7 @@ function wookiee_settings_tabs() {
 	return array(
 		'business' => array(
 			'label'  => 'Business Identity',
-			'fields' => array( 'company_number', 'companies_house_api_key', 'business_name', 'registered_address', 'countries_served' ),
+			'fields' => array( 'company_number', 'companies_house_api_key', 'business_name', 'registered_address', 'countries_served', 'product_markup_percent' ),
 		),
 		'contact' => array(
 			'label'  => 'Contact & Support',
@@ -160,8 +160,8 @@ function wookiee_settings_tabs() {
 			'fields' => array( 'facebook_url', 'instagram_url', 'linkedin_url', 'pinterest_url' ),
 		),
 		'integrations' => array(
-			'label'  => 'AI & Integrations',
-			'fields' => array( 'llm_api_key', 'llm_base_url', 'llm_default_model', 'cj_email', 'cj_api_key', 'product_markup_percent', 'bg_removal_provider', 'cloudinary_cloud_name', 'cloudinary_api_key', 'cloudinary_api_secret', 'rembg_endpoint_url', 'google_ads_developer_token', 'google_ads_client_id', 'google_ads_client_secret', 'google_ads_refresh_token', 'google_ads_customer_id', 'google_ads_login_customer_id', 'spaceship_api_key', 'spaceship_api_secret' ),
+			'label'  => 'Activation',
+			'fields' => array( 'llm_api_key', 'llm_base_url', 'llm_default_model', 'cj_email', 'cj_api_key', 'bg_removal_provider', 'cloudinary_cloud_name', 'cloudinary_api_key', 'cloudinary_api_secret', 'rembg_endpoint_url', 'google_ads_developer_token', 'google_ads_client_id', 'google_ads_client_secret', 'google_ads_refresh_token', 'google_ads_customer_id', 'google_ads_login_customer_id', 'spaceship_api_key', 'spaceship_api_secret' ),
 		),
 	);
 }
@@ -243,7 +243,7 @@ function wookiee_render_settings_field_row( $key, $field ) {
 					<button type="button" class="button" id="wookiee-ch-lookup-btn">Look up on Companies House</button>
 					<span id="wookiee-ch-lookup-status" style="margin-left:8px;"></span>
 				</p>
-				<p class="description">Fills in the registered company name and address below from the official Companies House register — enter the exact company number, or just the company name to search a list of matches. <?php echo wookiee_secrets_migrated_to_backend() ? '' : 'Requires an API key (below) — get one free at <a href="https://developer.company-information.service.gov.uk/" target="_blank" rel="noopener">developer.company-information.service.gov.uk</a>. '; ?>Review the filled-in fields before saving.</p>
+				<p class="description">Fills in the registered company name and address below from the official Companies House register — enter the exact company number, or just the company name to search a list of matches. <?php echo wookiee_central_api_configured() ? '' : 'Requires an API key (below) — get one free at <a href="https://developer.company-information.service.gov.uk/" target="_blank" rel="noopener">developer.company-information.service.gov.uk</a>. '; ?>Review the filled-in fields before saving.</p>
 				<div id="wookiee-ch-search-results" class="wookiee-ch-search-results" hidden></div>
 			<?php endif; ?>
 			<?php if ( 'companies_house_api_key' === $key ) : ?>
@@ -355,7 +355,7 @@ function wookiee_render_ai_copy_generator_notice( $tab_key, $id_suffix = '' ) {
 			<span id="<?php echo esc_attr( $c['status_id'] ); ?>" style="margin-left:8px;"></span>
 		</p>
 		<?php if ( ! $has_llm_key ) : ?>
-			<p class="description">Needs an LLM API key on the <a href="<?php echo esc_url( admin_url( 'admin.php?page=wookiee-settings#integrations' ) ); ?>">AI &amp; Integrations tab</a> first.</p>
+			<p class="description">Needs an LLM API key on the <a href="<?php echo esc_url( admin_url( 'admin.php?page=wookiee-settings#integrations' ) ); ?>">Activation tab</a> first.</p>
 		<?php endif; ?>
 	</div>
 	<?php
@@ -398,8 +398,6 @@ function wookiee_render_settings_page() {
 			<div class="notice notice-error"><p>Google Ads connection failed: <?php echo esc_html( sanitize_text_field( wp_unslash( $_GET['wookiee_google_ads_error'] ) ) ); ?></p></div>
 		<?php endif; ?>
 
-		<?php wookiee_render_activation_section(); ?>
-
 		<h2 class="nav-tab-wrapper" id="wookiee-settings-tabs" role="tablist">
 			<?php $is_first = true; ?>
 			<?php foreach ( $tabs as $tab_key => $tab ) : ?>
@@ -414,17 +412,17 @@ function wookiee_render_settings_page() {
 			<?php foreach ( $tabs as $tab_key => $tab ) : ?>
 				<div class="wookiee-tab-panel" id="wookiee-panel-<?php echo esc_attr( $tab_key ); ?>" data-tab-panel="<?php echo esc_attr( $tab_key ); ?>" role="tabpanel" aria-labelledby="wookiee-tab-<?php echo esc_attr( $tab_key ); ?>" <?php echo $is_first ? '' : 'hidden'; ?>>
 					<?php wookiee_render_ai_copy_generator_notice( $tab_key ); ?>
+					<?php if ( 'integrations' === $tab_key ) : ?>
+						<?php wookiee_render_activation_section(); ?>
+					<?php endif; ?>
 					<?php
 					$fields_to_show = $tab['fields'];
-					if ( wookiee_secrets_migrated_to_backend() ) {
+					if ( wookiee_central_api_configured() ) {
 						$operator_only  = wookiee_operator_only_settings_keys();
 						$fields_to_show = array_values( array_diff( $fields_to_show, $operator_only ) );
 					}
 					?>
 					<?php wookiee_render_settings_fields_table( $fields_to_show ); ?>
-					<?php if ( 'integrations' === $tab_key && wookiee_secrets_migrated_to_backend() ) : ?>
-						<p class="description">Companies House, LLM, CJ Dropshipping, Cloudinary/rembg, Google Ads, and Spaceship keys are managed centrally at the backend now - <code>bg_removal_provider</code>/markup above still apply per-site, but the actual provider credentials aren't stored here anymore.</p>
-					<?php endif; ?>
 				</div>
 				<?php $is_first = false; ?>
 			<?php endforeach; ?>
@@ -532,7 +530,7 @@ function wookiee_inline_generate_homepage_copy_handler() {
 		wp_send_json_error( array( 'message' => 'Describe the niche first.' ) );
 	}
 	if ( '' === trim( (string) wookiee_get_setting( 'llm_api_key' ) ) ) {
-		wp_send_json_error( array( 'message' => 'Add an LLM API key on the <a href="' . esc_url( admin_url( 'admin.php?page=wookiee-settings#integrations' ) ) . '" target="_blank" rel="noopener">AI &amp; Integrations tab</a> first.' ) );
+		wp_send_json_error( array( 'message' => 'Add an LLM API key on the <a href="' . esc_url( admin_url( 'admin.php?page=wookiee-settings#integrations' ) ) . '" target="_blank" rel="noopener">Activation tab</a> first.' ) );
 	}
 
 	update_option( 'wookiee_niche_brief', $brief );
@@ -567,7 +565,7 @@ function wookiee_inline_generate_about_contact_copy_handler() {
 		wp_send_json_error( array( 'message' => 'Describe the niche first.' ) );
 	}
 	if ( '' === trim( (string) wookiee_get_setting( 'llm_api_key' ) ) ) {
-		wp_send_json_error( array( 'message' => 'Add an LLM API key on the <a href="' . esc_url( admin_url( 'admin.php?page=wookiee-settings#integrations' ) ) . '" target="_blank" rel="noopener">AI &amp; Integrations tab</a> first.' ) );
+		wp_send_json_error( array( 'message' => 'Add an LLM API key on the <a href="' . esc_url( admin_url( 'admin.php?page=wookiee-settings#integrations' ) ) . '" target="_blank" rel="noopener">Activation tab</a> first.' ) );
 	}
 
 	update_option( 'wookiee_niche_brief', $brief );
@@ -1285,20 +1283,21 @@ function wookiee_set_domain_dns_records_handler() {
 }
 
 /**
- * The very first thing on the Settings page, above the tabs - nothing
- * else here works (AI generation, domain search, product sourcing) until
- * this site has a valid, activated code, so it's the primary action, not
- * one field buried in a tab. Validates against the backend's public
- * activate endpoint before ever saving anything locally - a wrong or
- * already-exhausted code shows an error right here and is never written
- * to wp_options.
+ * The Activation tab's whole reason to exist - nothing else in this
+ * theme works (AI generation, domain search, product sourcing) until
+ * this site has a valid, activated code. Validates against the
+ * backend's public activate endpoint before ever saving anything
+ * locally - a wrong or already-exhausted code shows an error right
+ * here and is never written to wp_options. Key management itself
+ * (Companies House, LLM, CJ, Cloudinary/rembg, Google Ads, Spaceship)
+ * happens entirely on the backend's own settings page from here on -
+ * nothing to migrate or clear on the WordPress side anymore.
  */
 function wookiee_render_activation_section() {
 	$activated = wookiee_central_api_configured();
 	$masked    = $activated ? wookiee_central_api_shared_secret() : '';
 	?>
-	<div style="background:#fff; border:1px solid <?php echo $activated ? '#00a32a' : '#d63638'; ?>; border-left-width:4px; border-radius:2px; padding:16px 20px; margin:16px 0 24px;">
-		<h2 style="margin-top:0;">Activation</h2>
+	<div style="background:#fff; border:1px solid <?php echo $activated ? '#00a32a' : '#d63638'; ?>; border-left-width:4px; border-radius:2px; padding:16px 20px; margin:0 0 24px;">
 		<?php if ( $activated ) : ?>
 			<p style="color:#00622e;">&#10003; This site is activated.</p>
 		<?php else : ?>
@@ -1312,19 +1311,6 @@ function wookiee_render_activation_section() {
 		</p>
 		<p class="description">Get this from whoever provides your Wookiee subscription. Checked against the backend immediately - it's only saved here if it's valid.</p>
 	</div>
-
-	<?php if ( $activated && ! wookiee_secrets_migrated_to_backend() ) : ?>
-		<p>
-			<button type="button" class="button button-primary" id="wookiee-migrate-secrets-btn">Migrate existing keys to backend</button>
-			<span id="wookiee-migrate-secrets-status" style="margin-left:8px;"></span>
-		</p>
-		<p class="description">Pushes every key currently filled in below (Companies House, LLM, CJ Dropshipping, Cloudinary/rembg, Google Ads, Spaceship) to the backend, then clears them from this site.</p>
-		<p>
-			<button type="button" class="button" id="wookiee-clear-local-secrets-btn">I already copied these to the backend myself - just clear them here</button>
-			<span id="wookiee-clear-local-secrets-status" style="margin-left:8px;"></span>
-		</p>
-		<p class="description">Use this if you read the values via the Show/Hide toggle and pasted them into the backend's env vars or settings UI directly, instead of using the migrate button above. Doesn't contact the backend at all - just deletes these fields from this site and hides them below.</p>
-	<?php endif; ?>
 
 	<script>
 	( function() {
@@ -1359,62 +1345,6 @@ function wookiee_render_activation_section() {
 					status.textContent = 'Activation failed — could not reach the server.';
 				} );
 		} );
-
-		var migrateBtn = document.getElementById( 'wookiee-migrate-secrets-btn' );
-		if ( migrateBtn ) {
-			migrateBtn.addEventListener( 'click', function() {
-				if ( ! window.confirm( 'This sends every key currently saved on this page to the backend, then removes them from this WordPress site. Continue?' ) ) { return; }
-				var status = document.getElementById( 'wookiee-migrate-secrets-status' );
-				migrateBtn.disabled = true;
-				status.textContent = 'Migrating…';
-				var data = new FormData();
-				data.append( 'action', 'wookiee_migrate_secrets_to_backend' );
-				data.append( 'nonce', <?php echo wp_json_encode( wp_create_nonce( 'wookiee_migrate_secrets_to_backend' ) ); ?> );
-				fetch( ajaxurl, { method: 'POST', credentials: 'same-origin', body: data } )
-					.then( function( r ) { return r.json(); } )
-					.then( function( res ) {
-						if ( ! res.success ) {
-							migrateBtn.disabled = false;
-							status.textContent = res.data && res.data.message ? res.data.message : 'Migration failed.';
-							return;
-						}
-						status.textContent = 'Done - reloading…';
-						window.location.reload();
-					} )
-					.catch( function() {
-						migrateBtn.disabled = false;
-						status.textContent = 'Migration failed — could not reach the server.';
-					} );
-			} );
-		}
-
-		var clearBtn = document.getElementById( 'wookiee-clear-local-secrets-btn' );
-		if ( clearBtn ) {
-			clearBtn.addEventListener( 'click', function() {
-				if ( ! window.confirm( 'This deletes these key fields from this WordPress site permanently - only do this if you have already copied their values to the backend. Continue?' ) ) { return; }
-				var status = document.getElementById( 'wookiee-clear-local-secrets-status' );
-				clearBtn.disabled = true;
-				status.textContent = 'Clearing…';
-				var data = new FormData();
-				data.append( 'action', 'wookiee_clear_local_secrets' );
-				data.append( 'nonce', <?php echo wp_json_encode( wp_create_nonce( 'wookiee_clear_local_secrets' ) ); ?> );
-				fetch( ajaxurl, { method: 'POST', credentials: 'same-origin', body: data } )
-					.then( function( r ) { return r.json(); } )
-					.then( function( res ) {
-						if ( ! res.success ) {
-							clearBtn.disabled = false;
-							status.textContent = res.data && res.data.message ? res.data.message : 'Failed to clear.';
-							return;
-						}
-						status.textContent = 'Done - reloading…';
-						window.location.reload();
-					} )
-					.catch( function() {
-						clearBtn.disabled = false;
-						status.textContent = 'Failed — could not reach the server.';
-					} );
-			} );
-		}
 	} )();
 	</script>
 	<?php

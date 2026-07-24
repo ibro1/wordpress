@@ -27,7 +27,7 @@ defined( 'ABSPATH' ) || exit;
 function wookiee_remove_background_to_white( $image_url ) {
 	$primary = wookiee_get_setting( 'bg_removal_provider' );
 	if ( '' === $primary || 'none' === $primary ) {
-		return new WP_Error( 'wookiee_bg_disabled', 'Background removal is not enabled (set a provider on the AI & Integrations tab).' );
+		return new WP_Error( 'wookiee_bg_disabled', 'Background removal is not enabled (set a provider on the Activation tab).' );
 	}
 
 	$providers = ( 'cloudinary' === $primary )

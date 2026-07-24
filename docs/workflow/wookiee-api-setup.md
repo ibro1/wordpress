@@ -8,9 +8,14 @@ Compose service block: `docs/workflow/docker-compose.yml`.
 
 ## 1. Deploy
 
-1. Add the `wookiee_api` service block from `docs/workflow/docker-compose.yml`
-   to your actual Dokploy-managed compose config (that file lives outside
-   this repo).
+1. In this Dokploy app's Provider settings: GitHub account, Repository
+   `wordpress` (ibro1/wordpress), Branch `main`, **Compose Path**
+   `./docs/workflow/docker-compose.yml`. Dokploy clones the whole repo, so
+   `services/wookiee-api` (the actual source Docker builds) comes along
+   with it automatically - the compose file's
+   `build.context: ../../services/wookiee-api` is written relative to its
+   own location for exactly this reason (Docker Compose always resolves
+   `build.context` relative to the compose file, never the repo root).
 2. Set these three env vars in Dokploy for this app (generate with
    `openssl rand -hex 32` / `openssl rand -hex 16`):
    - `WOOKIEE_API_MASTER_KEY`

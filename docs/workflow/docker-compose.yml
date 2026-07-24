@@ -158,7 +158,9 @@ services:
 
   wookiee_api:
     build:
-      context: ./services/wookiee-api
+      # Relative to this compose file's own location (docs/workflow/), not
+      # the repo root - two levels up, then into services/wookiee-api.
+      context: ../../services/wookiee-api
     container_name: wookiee_api
     restart: unless-stopped
     volumes:

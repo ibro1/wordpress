@@ -42,7 +42,7 @@ Then visit `http://localhost:3000/` (Basic Auth prompt, any username + `dev-only
 
 A `wookiee_api` service block, Traefik labels for `api.${MAIN_DOMAIN}`, and a `wookiee_api_data` volume have been added to `docs/workflow/docker-compose.yml` in the theme repo. To actually deploy:
 
-1. Confirm this repo (or wherever `services/wookiee-api` ends up) is the git source Dokploy builds `docs/workflow/docker-compose.yml`'s services from, so the `build: context: ./services/wookiee-api` path resolves correctly. Adjust the path if your Dokploy app checks out a different repo root.
+1. Point this Dokploy app's Git Provider at `ibro1/wordpress`, branch `main`, with Compose Path `./docs/workflow/docker-compose.yml`. The `build.context: ../../services/wookiee-api` in that file is relative to the compose file's own location (Docker Compose always resolves `build.context` that way, not relative to the repo root) - if you ever move the compose file, update this path to match.
 2. Set `WOOKIEE_API_MASTER_KEY`, `WOOKIEE_API_SHARED_SECRET`, `WOOKIEE_API_ADMIN_PASSWORD` as real environment variables/Dokploy secrets (same random-value guidance as above).
 3. Deploy. Traefik will route `api.<MAIN_DOMAIN>` to this service automatically, the same way it already routes the main WordPress domain - no separate DNS record needed beyond whatever wildcard/A record already points `*.<MAIN_DOMAIN>` (or the specific `api` subdomain) at your server.
 4. Visit `https://api.<MAIN_DOMAIN>/` and log in with `ADMIN_PASSWORD` to fill in every key via the settings UI - this replaces filling them into Wookiee Settings in WordPress (once WordPress is switched over to calling this service).

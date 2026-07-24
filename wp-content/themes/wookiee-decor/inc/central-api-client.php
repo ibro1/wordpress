@@ -62,7 +62,7 @@ function wookiee_operator_only_settings_keys() {
 		'llm_api_key', 'llm_base_url', 'llm_default_model',
 		'cj_email', 'cj_api_key',
 		'cloudinary_cloud_name', 'cloudinary_api_key', 'cloudinary_api_secret',
-		'rembg_endpoint_url',
+		'rembg_endpoint_url', 'bg_removal_provider',
 		'google_ads_developer_token', 'google_ads_client_id', 'google_ads_client_secret',
 		'google_ads_refresh_token', 'google_ads_customer_id', 'google_ads_login_customer_id',
 		'spaceship_api_key', 'spaceship_api_secret',

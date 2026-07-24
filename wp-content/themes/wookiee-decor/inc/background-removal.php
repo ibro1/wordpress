@@ -25,6 +25,17 @@ defined( 'ABSPATH' ) || exit;
  * falls back to the other provider if it has credentials/endpoint set.
  */
 function wookiee_remove_background_to_white( $image_url ) {
+	if ( wookiee_central_api_configured() ) {
+		$result = wookiee_central_api_request( 'POST', '/images/remove-background', array( 'image_url' => $image_url ) );
+		if ( is_wp_error( $result ) ) {
+			return $result;
+		}
+		if ( empty( $result['image_base64'] ) ) {
+			return new WP_Error( 'wookiee_bg_no_image', 'The backend did not return a processed image.' );
+		}
+		return wookiee_composite_png_onto_white( base64_decode( $result['image_base64'] ) );
+	}
+
 	$primary = wookiee_get_setting( 'bg_removal_provider' );
 	if ( '' === $primary || 'none' === $primary ) {
 		return new WP_Error( 'wookiee_bg_disabled', 'Background removal is not enabled (set a provider on the Activation tab).' );

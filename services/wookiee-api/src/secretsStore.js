@@ -30,6 +30,7 @@ const SECRET_KEYS = [
   'cloudinary_api_key',
   'cloudinary_api_secret',
   'rembg_endpoint_url',
+  'bg_removal_provider',
   'google_ads_developer_token',
   'google_ads_client_id',
   'google_ads_client_secret',
@@ -44,6 +45,7 @@ const DEFAULTS = {
   llm_base_url: 'https://api.openai.com/v1',
   llm_default_model: 'gpt-4o-mini',
   rembg_endpoint_url: 'http://rembg:7000',
+  bg_removal_provider: 'none',
 };
 
 // Every provider key can also be set as a plain environment variable

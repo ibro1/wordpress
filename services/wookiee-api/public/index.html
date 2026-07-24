@@ -75,6 +75,11 @@
       ['cj_api_key', 'CJ Dropshipping API key', 'password'],
     ] },
     { title: 'Image background removal', fields: [
+      ['bg_removal_provider', 'Featured image white-background provider', 'select', [
+        ['none', 'Disabled'],
+        ['cloudinary', 'Cloudinary'],
+        ['rembg', 'Self-hosted rembg'],
+      ]],
       ['cloudinary_cloud_name', 'Cloudinary cloud name', 'text'],
       ['cloudinary_api_key', 'Cloudinary API key', 'text'],
       ['cloudinary_api_secret', 'Cloudinary API secret', 'password'],
@@ -125,11 +130,27 @@
       }
 
       section.fields.forEach(function (f) {
-        var key = f[0], label = f[1], type = f[2];
+        var key = f[0], label = f[1], type = f[2], options = f[3];
         var labelEl = document.createElement('label');
         labelEl.htmlFor = fieldId(key);
         labelEl.textContent = label;
         form.appendChild(labelEl);
+
+        if (type === 'select') {
+          var select = document.createElement('select');
+          select.id = fieldId(key);
+          select.name = key;
+          options.forEach(function (opt) {
+            var optionEl = document.createElement('option');
+            optionEl.value = opt[0];
+            optionEl.textContent = opt[1];
+            if ((values[key] || 'none') === opt[0]) { optionEl.selected = true; }
+            select.appendChild(optionEl);
+          });
+          form.appendChild(select);
+          return;
+        }
+
         var input = document.createElement('input');
         input.type = type;
         input.id = fieldId(key);

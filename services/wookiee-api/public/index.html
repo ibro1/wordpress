@@ -21,11 +21,38 @@
   .ga-status { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 12px; margin-left: 8px; }
   .ga-status.connected { background: #d4f4dd; color: #00622e; }
   .ga-status.disconnected { background: #f0f0f1; color: #646970; }
+  table.licenses { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 13px; }
+  table.licenses th, table.licenses td { text-align: left; padding: 6px 8px; border-bottom: 1px solid #f0f0f1; }
+  table.licenses code { font-size: 12px; }
+  .license-badge { display: inline-block; padding: 1px 7px; border-radius: 10px; font-size: 11px; }
+  .license-badge.active { background: #d4f4dd; color: #00622e; }
+  .license-badge.revoked { background: #fbe4e4; color: #a3272a; }
+  .new-license-row { display: flex; gap: 8px; align-items: flex-end; margin-top: 12px; }
+  .new-license-row > div { flex: 1; }
+  .new-license-row button { margin-top: 0; }
 </style>
 </head>
 <body>
   <h1>Wookiee API</h1>
   <p class="lead">Centralized credentials for the Wookiee Decor theme. Changes here take effect immediately - no need to touch WordPress.</p>
+
+  <h2 style="margin-top:0;">Site licenses</h2>
+  <p class="description">Each activation code can be used on up to its allowed number of sites. Generate one per customer/store and give them the code - they paste it into their WordPress Settings to connect.</p>
+  <div class="new-license-row">
+    <div>
+      <label style="margin:0 0 4px;">Label</label>
+      <input type="text" id="new-license-label" placeholder="e.g. Netlinko">
+    </div>
+    <div style="flex:0 0 120px;">
+      <label style="margin:0 0 4px;">Max sites</label>
+      <input type="text" id="new-license-max" value="1">
+    </div>
+    <button type="button" id="new-license-btn">Generate code</button>
+  </div>
+  <table class="licenses" id="licenses-table">
+    <thead><tr><th>Code</th><th>Label</th><th>Sites</th><th>Status</th><th></th></tr></thead>
+    <tbody id="licenses-tbody"></tbody>
+  </table>
 
   <form id="settings-form"></form>
 
@@ -140,7 +167,78 @@
     }).catch(function () {
       statusEl.textContent = 'Failed to load settings.';
     });
+    loadLicenses();
   }
+
+  function loadLicenses() {
+    fetch('/licenses').then(function (r) { return r.json(); }).then(function (res) {
+      var tbody = document.getElementById('licenses-tbody');
+      tbody.innerHTML = '';
+      var codes = res.codes || {};
+      Object.keys(codes).sort(function (a, b) { return codes[b].created_at.localeCompare(codes[a].created_at); }).forEach(function (code) {
+        var entry = codes[code];
+        var tr = document.createElement('tr');
+
+        var codeTd = document.createElement('td');
+        var codeEl = document.createElement('code');
+        codeEl.textContent = code;
+        codeTd.appendChild(codeEl);
+        tr.appendChild(codeTd);
+
+        var labelTd = document.createElement('td');
+        labelTd.textContent = entry.label || '—';
+        tr.appendChild(labelTd);
+
+        var sitesTd = document.createElement('td');
+        sitesTd.textContent = entry.activations.length + ' / ' + entry.max_activations;
+        if (entry.activations.length) {
+          sitesTd.title = entry.activations.map(function (a) { return a.domain; }).join(', ');
+        }
+        tr.appendChild(sitesTd);
+
+        var statusTd = document.createElement('td');
+        var badge = document.createElement('span');
+        badge.className = 'license-badge ' + (entry.active ? 'active' : 'revoked');
+        badge.textContent = entry.active ? 'Active' : 'Revoked';
+        statusTd.appendChild(badge);
+        tr.appendChild(statusTd);
+
+        var actionTd = document.createElement('td');
+        if (entry.active) {
+          var revokeBtn = document.createElement('button');
+          revokeBtn.type = 'button';
+          revokeBtn.className = 'secondary';
+          revokeBtn.style.marginTop = '0';
+          revokeBtn.textContent = 'Revoke';
+          revokeBtn.addEventListener('click', function () {
+            if (!window.confirm('Revoke ' + code + '? Every site currently using it will lose access immediately.')) { return; }
+            fetch('/licenses/' + encodeURIComponent(code) + '/revoke', { method: 'POST' })
+              .then(function (r) { return r.json(); })
+              .then(function () { loadLicenses(); });
+          });
+          actionTd.appendChild(revokeBtn);
+        }
+        tr.appendChild(actionTd);
+
+        tbody.appendChild(tr);
+      });
+    });
+  }
+
+  document.getElementById('new-license-btn').addEventListener('click', function () {
+    var label = document.getElementById('new-license-label').value.trim();
+    var max = parseInt(document.getElementById('new-license-max').value, 10) || 1;
+    fetch('/licenses', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ label: label, max_activations: max }),
+    }).then(function (r) { return r.json(); }).then(function (res) {
+      document.getElementById('new-license-label').value = '';
+      document.getElementById('new-license-max').value = '1';
+      loadLicenses();
+      if (res.code) { window.alert('Generated: ' + res.code); }
+    });
+  });
 
   document.getElementById('save-btn').addEventListener('click', function () {
     var values = {};

@@ -1,6 +1,7 @@
 const express = require('express');
 const path = require('path');
-const { requireAuth } = require('./auth');
+const { requireAdminAuth, requireApiAuth } = require('./auth');
+const { router: licensesRouter, activatePublic } = require('./routes/licenses');
 
 const app = express();
 
@@ -14,17 +15,27 @@ app.use(express.urlencoded({ extended: true }));
 
 app.get('/health', (req, res) => res.json({ ok: true }));
 
-// Everything below this line requires either X-Api-Key (WordPress) or
-// HTTP Basic Auth (a human in a browser) - see src/auth.js.
-app.use(requireAuth);
+// The one deliberately unauthenticated endpoint - presenting zero prior
+// credentials is the whole point of activating a new code. Every other
+// route below requires either requireAdminAuth (operator only:
+// settings, license management, the static UI) or requireApiAuth (a
+// WordPress site with an already-activated code, or the operator).
+app.post('/licenses/activate', activatePublic);
 
-app.use(express.static(path.join(__dirname, '..', 'public')));
+// A dedicated exact-path route rather than app.use('/', ..., express.static(...))
+// on purpose - express.static mounted at '/' matches every path as a prefix,
+// which would run requireAdminAuth (and therefore reject) in front of every
+// route below too, since Express treats '/' as a prefix match, not an exact one.
+app.get('/', requireAdminAuth, (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
+});
+app.use('/settings', requireAdminAuth, require('./routes/settings'));
+app.use('/licenses', requireAdminAuth, licensesRouter);
 
-app.use('/settings', require('./routes/settings'));
-app.use('/llm', require('./routes/llm'));
-app.use('/companies-house', require('./routes/companiesHouse'));
-app.use('/domains', require('./routes/spaceship'));
-app.use('/google-ads', require('./routes/googleAds'));
+app.use('/llm', requireApiAuth, require('./routes/llm'));
+app.use('/companies-house', requireApiAuth, require('./routes/companiesHouse'));
+app.use('/domains', requireApiAuth, require('./routes/spaceship'));
+app.use('/google-ads', requireApiAuth, require('./routes/googleAds'));
 
 app.use((err, req, res, next) => {
   // eslint-disable-next-line no-console

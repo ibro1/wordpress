@@ -41,21 +41,41 @@ the exact `api.` host match on Traefik's default length-based priority. The
 compose file before this was added, re-copy it and redeploy. Don't submit
 the signup form if you land on it; nothing has actually been created yet.
 
-## 2. Connect WordPress to it
+## 2. Generate an activation code, then connect WordPress to it
 
-In WordPress: Wookiee Settings -> AI & Integrations tab -> top of the page:
+The backend URL is baked into the theme (`https://api.<MAIN_DOMAIN>`) - not
+something you type into WordPress. What WordPress DOES need is an
+**activation code**, one per site:
 
-- **Central backend URL**: `https://api.<MAIN_DOMAIN>`
-- **Central backend shared secret**: same value as `WOOKIEE_API_SHARED_SECRET`
+1. On the backend's own settings page (`https://api.<MAIN_DOMAIN>/`, Basic
+   Auth login), scroll to **Site licenses**. Give it a label (e.g. the
+   store name) and a max-sites number (almost always `1` - one code per
+   site), click **Generate code**. Copy the `WOOK-XXXX-...` code shown.
+2. In WordPress: Wookiee Settings -> the **Activation** box at the very top
+   of the page (above the tabs, not buried in a tab - it's the first thing
+   that has to happen before anything else works). Paste the code, click
+   **Activate**.
+3. WordPress sends the code + this site's domain to the backend's
+   `/licenses/activate` endpoint and only saves it locally if the backend
+   accepts it (wrong code, revoked code, or a code already used up to its
+   site limit on some OTHER domain all show an error right there and
+   nothing gets saved). Re-activating the same code for the same domain
+   later (e.g. after a typo fix) is always safe - it doesn't consume a
+   second activation slot.
+4. If no code is active yet, a red admin notice appears across all of
+   wp-admin (not just Settings) saying so - it disappears once activated.
 
-Save. From then on, Companies House lookups, AI generation, domain
+From then on, Companies House lookups, AI generation, domain
 suggestions/registration, and Google Ads calls all go through the backend
-instead of calling providers directly with local keys.
+instead of calling providers directly with local keys. A code can be
+revoked from the backend's Site licenses table at any time, which cuts off
+that site's access immediately (useful if a customer cancels, or a code
+leaks).
 
 ## 3. Getting rid of the old keys in WordPress
 
-Two ways, both in the same "AI & Integrations" tab, right below the backend
-URL/secret fields - only one is needed, not both:
+Two ways, both shown once a code is activated (in the same Activation box
+at the top of Settings) - only one is needed, not both:
 
 - **Migrate existing keys to backend** button - appears once the backend
   URL/secret above are saved. Reads whatever's currently in this

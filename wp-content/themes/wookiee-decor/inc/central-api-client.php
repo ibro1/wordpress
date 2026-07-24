@@ -40,6 +40,16 @@ function wookiee_central_api_configured() {
 }
 
 /**
+ * The domain this activation code is bound to on the backend - the
+ * backend rejects any request presenting a code that hasn't been
+ * activated for this exact host, so it has to be sent on every request,
+ * not just the one-time activation call.
+ */
+function wookiee_current_site_domain() {
+	return strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) );
+}
+
+/**
  * The provider keys a store owner using this theme has no business seeing
  * or entering - the platform operator manages exactly one copy of each,
  * centrally, in the backend's own settings UI. Shared between the
@@ -64,6 +74,29 @@ function wookiee_secrets_migrated_to_backend() {
 }
 
 /**
+ * Site-wide reminder that nothing depending on the backend works yet -
+ * shown across wp-admin, not just on the Settings page, since an admin
+ * could easily land on Products or the Setup wizard first and otherwise
+ * have no idea why AI/domain/sourcing features are all failing silently.
+ * Suppressed on the Settings page itself, where the same message is
+ * already the first thing on the page (see wookiee_render_activation_section()).
+ */
+add_action( 'admin_notices', 'wookiee_maybe_show_activation_notice' );
+function wookiee_maybe_show_activation_notice() {
+	if ( ! current_user_can( 'manage_options' ) || wookiee_central_api_configured() ) {
+		return;
+	}
+	if ( isset( $_GET['page'] ) && 'wookiee-settings' === $_GET['page'] ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		return;
+	}
+	?>
+	<div class="notice notice-error">
+		<p><strong>Wookiee is not activated.</strong> AI generation, Companies House lookup, domain search/registration, and CJ product sourcing are unavailable until an activation code is entered on the <a href="<?php echo esc_url( admin_url( 'admin.php?page=wookiee-settings' ) ); ?>">Wookiee Settings</a> page.</p>
+	</div>
+	<?php
+}
+
+/**
  * Generic authenticated request to the backend. $path starts with a slash,
  * e.g. '/companies-house/lookup?company_number=SC769264'. Returns the
  * decoded JSON body (array) on success, or a WP_Error - callers check
@@ -78,7 +111,8 @@ function wookiee_central_api_request( $method, $path, $body = null ) {
 	$args = array(
 		'method'  => $method,
 		'headers' => array(
-			'X-Api-Key' => wookiee_central_api_shared_secret(),
+			'X-Api-Key'     => wookiee_central_api_shared_secret(),
+			'X-Site-Domain' => wookiee_current_site_domain(),
 		),
 		'timeout' => 30,
 	);
@@ -103,6 +137,50 @@ function wookiee_central_api_request( $method, $path, $body = null ) {
 	}
 
 	return is_array( $data ) ? $data : array();
+}
+
+/**
+ * Validates an activation code against the backend's public activate
+ * endpoint (no X-Api-Key needed - that's the point of this call) and only
+ * saves it locally on success. A code is rejected if it doesn't exist, has
+ * been revoked, or has already reached its site limit on OTHER domains;
+ * re-activating the same code for this same domain always succeeds
+ * (idempotent), so re-saving after e.g. a typo fix never burns an
+ * activation slot twice.
+ */
+add_action( 'wp_ajax_wookiee_activate_backend', 'wookiee_activate_backend_handler' );
+function wookiee_activate_backend_handler() {
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_send_json_error( array( 'message' => 'Not allowed.' ), 403 );
+	}
+	check_ajax_referer( 'wookiee_activate_backend', 'nonce' );
+
+	$code = isset( $_POST['code'] ) ? strtoupper( sanitize_text_field( wp_unslash( $_POST['code'] ) ) ) : '';
+	if ( '' === trim( $code ) ) {
+		wp_send_json_error( array( 'message' => 'Enter an activation code first.' ) );
+	}
+
+	$response = wp_remote_post( wookiee_central_api_base_url() . '/licenses/activate', array(
+		'headers' => array( 'Content-Type' => 'application/json' ),
+		'body'    => wp_json_encode( array( 'code' => $code, 'domain' => wookiee_current_site_domain() ) ),
+		'timeout' => 20,
+	) );
+
+	if ( is_wp_error( $response ) ) {
+		wp_send_json_error( array( 'message' => $response->get_error_message() ) );
+	}
+
+	$status_code = wp_remote_retrieve_response_code( $response );
+	$data        = json_decode( wp_remote_retrieve_body( $response ), true );
+
+	if ( $status_code < 200 || $status_code >= 300 ) {
+		$message = is_array( $data ) && isset( $data['error'] ) ? $data['error'] : ( 'Backend returned HTTP ' . intval( $status_code ) );
+		wp_send_json_error( array( 'message' => $message ) );
+	}
+
+	update_option( 'wookiee_setting_wookiee_api_shared_secret', $code );
+
+	wp_send_json_success();
 }
 
 /**

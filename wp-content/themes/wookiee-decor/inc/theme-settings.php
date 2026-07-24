@@ -18,7 +18,6 @@ defined( 'ABSPATH' ) || exit;
 
 function wookiee_settings_fields() {
 	return array(
-		'wookiee_api_shared_secret' => array( 'label' => 'Activation code', 'default' => '', 'type' => 'password' ),
 		'contact_email'      => array( 'label' => 'Contact email', 'default' => 'info@wookied.com', 'type' => 'email' ),
 		'contact_phone'      => array( 'label' => 'Contact phone', 'default' => '+44 20 8472 6126', 'type' => 'text' ),
 		'support_hours'      => array( 'label' => 'Support hours', 'default' => 'Monday to Friday, 9am - 5pm', 'type' => 'text' ),
@@ -162,7 +161,7 @@ function wookiee_settings_tabs() {
 		),
 		'integrations' => array(
 			'label'  => 'AI & Integrations',
-			'fields' => array( 'wookiee_api_shared_secret', 'llm_api_key', 'llm_base_url', 'llm_default_model', 'cj_email', 'cj_api_key', 'product_markup_percent', 'bg_removal_provider', 'cloudinary_cloud_name', 'cloudinary_api_key', 'cloudinary_api_secret', 'rembg_endpoint_url', 'google_ads_developer_token', 'google_ads_client_id', 'google_ads_client_secret', 'google_ads_refresh_token', 'google_ads_customer_id', 'google_ads_login_customer_id', 'spaceship_api_key', 'spaceship_api_secret' ),
+			'fields' => array( 'llm_api_key', 'llm_base_url', 'llm_default_model', 'cj_email', 'cj_api_key', 'product_markup_percent', 'bg_removal_provider', 'cloudinary_cloud_name', 'cloudinary_api_key', 'cloudinary_api_secret', 'rembg_endpoint_url', 'google_ads_developer_token', 'google_ads_client_id', 'google_ads_client_secret', 'google_ads_refresh_token', 'google_ads_customer_id', 'google_ads_login_customer_id', 'spaceship_api_key', 'spaceship_api_secret' ),
 		),
 	);
 }
@@ -399,6 +398,8 @@ function wookiee_render_settings_page() {
 			<div class="notice notice-error"><p>Google Ads connection failed: <?php echo esc_html( sanitize_text_field( wp_unslash( $_GET['wookiee_google_ads_error'] ) ) ); ?></p></div>
 		<?php endif; ?>
 
+		<?php wookiee_render_activation_section(); ?>
+
 		<h2 class="nav-tab-wrapper" id="wookiee-settings-tabs" role="tablist">
 			<?php $is_first = true; ?>
 			<?php foreach ( $tabs as $tab_key => $tab ) : ?>
@@ -413,9 +414,6 @@ function wookiee_render_settings_page() {
 			<?php foreach ( $tabs as $tab_key => $tab ) : ?>
 				<div class="wookiee-tab-panel" id="wookiee-panel-<?php echo esc_attr( $tab_key ); ?>" data-tab-panel="<?php echo esc_attr( $tab_key ); ?>" role="tabpanel" aria-labelledby="wookiee-tab-<?php echo esc_attr( $tab_key ); ?>" <?php echo $is_first ? '' : 'hidden'; ?>>
 					<?php wookiee_render_ai_copy_generator_notice( $tab_key ); ?>
-					<?php if ( 'integrations' === $tab_key ) : ?>
-						<?php wookiee_render_backend_connection_section(); ?>
-					<?php endif; ?>
 					<?php
 					$fields_to_show = $tab['fields'];
 					if ( wookiee_secrets_migrated_to_backend() ) {
@@ -1287,38 +1285,81 @@ function wookiee_set_domain_dns_records_handler() {
 }
 
 /**
- * Renders the one-time "push my current keys up to the backend" button -
- * only shown once a backend URL + shared secret are actually saved (the
- * migration call needs somewhere to send the values), and only until the
- * migration has succeeded once (re-running it from a site with stale
- * local values would overwrite anything changed directly on the backend
- * since - hidden afterward for exactly that reason, not because it's a
- * one-shot API limitation).
+ * The very first thing on the Settings page, above the tabs - nothing
+ * else here works (AI generation, domain search, product sourcing) until
+ * this site has a valid, activated code, so it's the primary action, not
+ * one field buried in a tab. Validates against the backend's public
+ * activate endpoint before ever saving anything locally - a wrong or
+ * already-exhausted code shows an error right here and is never written
+ * to wp_options.
  */
-function wookiee_render_backend_connection_section() {
-	if ( wookiee_secrets_migrated_to_backend() ) {
-		return;
-	}
+function wookiee_render_activation_section() {
+	$activated = wookiee_central_api_configured();
+	$masked    = $activated ? wookiee_central_api_shared_secret() : '';
+	?>
+	<div style="background:#fff; border:1px solid <?php echo $activated ? '#00a32a' : '#d63638'; ?>; border-left-width:4px; border-radius:2px; padding:16px 20px; margin:16px 0 24px;">
+		<h2 style="margin-top:0;">Activation</h2>
+		<?php if ( $activated ) : ?>
+			<p style="color:#00622e;">&#10003; This site is activated.</p>
+		<?php else : ?>
+			<p style="color:#8a2424;"><strong>Not activated yet</strong> - AI generation, Companies House lookup, domain search/registration, and CJ product sourcing are unavailable until an activation code is entered below.</p>
+		<?php endif; ?>
+		<p>
+			<input type="password" id="wookiee-activation-code" class="regular-text wookiee-reveal-input" value="<?php echo esc_attr( $masked ); ?>" placeholder="WOOK-XXXX-XXXX-XXXX-XXXX" autocomplete="off">
+			<button type="button" class="button wookiee-reveal-btn" data-target="wookiee-activation-code">Show</button>
+			<button type="button" class="button button-primary" id="wookiee-activate-btn"><?php echo $activated ? 'Update code' : 'Activate'; ?></button>
+			<span id="wookiee-activate-status" style="margin-left:8px;"></span>
+		</p>
+		<p class="description">Get this from whoever provides your Wookiee subscription. Checked against the backend immediately - it's only saved here if it's valid.</p>
+	</div>
 
-	if ( wookiee_central_api_configured() ) :
-		?>
+	<?php if ( $activated && ! wookiee_secrets_migrated_to_backend() ) : ?>
 		<p>
 			<button type="button" class="button button-primary" id="wookiee-migrate-secrets-btn">Migrate existing keys to backend</button>
 			<span id="wookiee-migrate-secrets-status" style="margin-left:8px;"></span>
 		</p>
 		<p class="description">Pushes every key currently filled in below (Companies House, LLM, CJ Dropshipping, Cloudinary/rembg, Google Ads, Spaceship) to the backend, then clears them from this site.</p>
-	<?php else : ?>
-		<p class="description">Save the activation code below to unlock a one-click migration button.</p>
+		<p>
+			<button type="button" class="button" id="wookiee-clear-local-secrets-btn">I already copied these to the backend myself - just clear them here</button>
+			<span id="wookiee-clear-local-secrets-status" style="margin-left:8px;"></span>
+		</p>
+		<p class="description">Use this if you read the values via the Show/Hide toggle and pasted them into the backend's env vars or settings UI directly, instead of using the migrate button above. Doesn't contact the backend at all - just deletes these fields from this site and hides them below.</p>
 	<?php endif; ?>
-
-	<p>
-		<button type="button" class="button" id="wookiee-clear-local-secrets-btn">I already copied these to the backend myself - just clear them here</button>
-		<span id="wookiee-clear-local-secrets-status" style="margin-left:8px;"></span>
-	</p>
-	<p class="description">Use this if you read the values via the Show/Hide toggle and pasted them into the backend's env vars or settings UI directly, instead of using the migrate button above. Doesn't contact the backend at all - just deletes these fields from this site and hides them below.</p>
 
 	<script>
 	( function() {
+		var activateBtn = document.getElementById( 'wookiee-activate-btn' );
+		activateBtn.addEventListener( 'click', function() {
+			var input  = document.getElementById( 'wookiee-activation-code' );
+			var status = document.getElementById( 'wookiee-activate-status' );
+			var code   = input.value.trim();
+			if ( ! code ) {
+				status.textContent = 'Enter a code first.';
+				return;
+			}
+			activateBtn.disabled = true;
+			status.textContent = 'Checking…';
+			var data = new FormData();
+			data.append( 'action', 'wookiee_activate_backend' );
+			data.append( 'nonce', <?php echo wp_json_encode( wp_create_nonce( 'wookiee_activate_backend' ) ); ?> );
+			data.append( 'code', code );
+			fetch( ajaxurl, { method: 'POST', credentials: 'same-origin', body: data } )
+				.then( function( r ) { return r.json(); } )
+				.then( function( res ) {
+					activateBtn.disabled = false;
+					if ( ! res.success ) {
+						status.textContent = res.data && res.data.message ? res.data.message : 'Activation failed.';
+						return;
+					}
+					status.textContent = 'Activated - reloading…';
+					window.location.reload();
+				} )
+				.catch( function() {
+					activateBtn.disabled = false;
+					status.textContent = 'Activation failed — could not reach the server.';
+				} );
+		} );
+
 		var migrateBtn = document.getElementById( 'wookiee-migrate-secrets-btn' );
 		if ( migrateBtn ) {
 			migrateBtn.addEventListener( 'click', function() {
@@ -1348,30 +1389,32 @@ function wookiee_render_backend_connection_section() {
 		}
 
 		var clearBtn = document.getElementById( 'wookiee-clear-local-secrets-btn' );
-		clearBtn.addEventListener( 'click', function() {
-			if ( ! window.confirm( 'This deletes these key fields from this WordPress site permanently - only do this if you have already copied their values to the backend. Continue?' ) ) { return; }
-			var status = document.getElementById( 'wookiee-clear-local-secrets-status' );
-			clearBtn.disabled = true;
-			status.textContent = 'Clearing…';
-			var data = new FormData();
-			data.append( 'action', 'wookiee_clear_local_secrets' );
-			data.append( 'nonce', <?php echo wp_json_encode( wp_create_nonce( 'wookiee_clear_local_secrets' ) ); ?> );
-			fetch( ajaxurl, { method: 'POST', credentials: 'same-origin', body: data } )
-				.then( function( r ) { return r.json(); } )
-				.then( function( res ) {
-					if ( ! res.success ) {
+		if ( clearBtn ) {
+			clearBtn.addEventListener( 'click', function() {
+				if ( ! window.confirm( 'This deletes these key fields from this WordPress site permanently - only do this if you have already copied their values to the backend. Continue?' ) ) { return; }
+				var status = document.getElementById( 'wookiee-clear-local-secrets-status' );
+				clearBtn.disabled = true;
+				status.textContent = 'Clearing…';
+				var data = new FormData();
+				data.append( 'action', 'wookiee_clear_local_secrets' );
+				data.append( 'nonce', <?php echo wp_json_encode( wp_create_nonce( 'wookiee_clear_local_secrets' ) ); ?> );
+				fetch( ajaxurl, { method: 'POST', credentials: 'same-origin', body: data } )
+					.then( function( r ) { return r.json(); } )
+					.then( function( res ) {
+						if ( ! res.success ) {
+							clearBtn.disabled = false;
+							status.textContent = res.data && res.data.message ? res.data.message : 'Failed to clear.';
+							return;
+						}
+						status.textContent = 'Done - reloading…';
+						window.location.reload();
+					} )
+					.catch( function() {
 						clearBtn.disabled = false;
-						status.textContent = res.data && res.data.message ? res.data.message : 'Failed to clear.';
-						return;
-					}
-					status.textContent = 'Done - reloading…';
-					window.location.reload();
-				} )
-				.catch( function() {
-					clearBtn.disabled = false;
-					status.textContent = 'Failed — could not reach the server.';
-				} );
-		} );
+						status.textContent = 'Failed — could not reach the server.';
+					} );
+			} );
+		}
 	} )();
 	</script>
 	<?php

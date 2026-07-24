@@ -6,7 +6,7 @@ Centralized secrets + third-party API proxy for the Wookiee Decor theme. Every c
 
 Built and ported so far, all faithfully mirroring the existing (verified/working) PHP logic:
 
-- Encrypted secrets store (`src/secretsStore.js`) + a browser-based settings UI (`public/admin.html`)
+- Encrypted secrets store (`src/secretsStore.js`) + a browser-based settings UI (`public/index.html`)
 - Companies House: number lookup + name search (`src/routes/companiesHouse.js`)
 - Spaceship: availability check, site-title/domain suggestion, registration (contact + register + async poll), nameservers, DNS records (`src/routes/spaceship.js`)
 - Google Ads: one-click OAuth connect flow + keyword-ideas call (`src/routes/googleAds.js`)

@@ -5,12 +5,13 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'DBT_VERSION', '1.0.1' );
+define( 'DBT_VERSION', '1.0.2' );
 define( 'DBT_DIR', trailingslashit( get_template_directory() ) );
 define( 'DBT_URI', trailingslashit( get_template_directory_uri() ) );
 define( 'DBT_CONTACT_EMAIL', 'hello@davebukartechnologies.com' );
 
 require_once DBT_DIR . 'inc/site-content.php';
+require_once DBT_DIR . 'inc/lead-capture.php';
 
 add_action( 'after_setup_theme', 'dbt_setup' );
 function dbt_setup() {
@@ -37,6 +38,10 @@ function dbt_enqueue_assets() {
 	wp_enqueue_style( 'dbt-tokens', DBT_URI . 'assets/css/tokens.css', array(), DBT_VERSION );
 	wp_enqueue_style( 'dbt-main', DBT_URI . 'assets/css/main.css', array( 'dbt-tokens' ), DBT_VERSION );
 	wp_enqueue_script( 'dbt-main', DBT_URI . 'assets/js/main.js', array(), DBT_VERSION, true );
+	wp_localize_script( 'dbt-main', 'dbtBookCall', array(
+		'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+		'nonce'   => wp_create_nonce( 'dbt_book_call' ),
+	) );
 }
 
 /**

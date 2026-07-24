@@ -226,6 +226,90 @@ body.admin-bar .nav { top: 32px; }
 .cmdk__foot { display: flex; gap: var(--space-md); padding: var(--space-xs) var(--space-md); border-top: 1px solid var(--color-rule); font-size: 0.75rem; color: var(--color-muted); }
 .cmdk__foot kbd { border: 1px solid var(--color-rule); border-radius: 4px; padding: 1px 5px; margin-inline-end: 2px; }
 
+/* ---------- Lead-capture modal ("Book a call") ---------- */
+/* Hallmark · component: modal-form · genre: modern-minimal · theme: cobalt
+ * states: default · hover · focus · active · disabled · loading · error · success
+ * contrast: pass
+ */
+.leadform {
+	position: fixed; inset: 0;
+	z-index: var(--z-modal);
+	opacity: 0; visibility: hidden;
+	transition: opacity var(--dur-short) var(--ease-out), visibility var(--dur-short) var(--ease-out);
+}
+.leadform.is-open { opacity: 1; visibility: visible; }
+.leadform__backdrop { position: absolute; inset: 0; background: var(--color-scrim); }
+.leadform__panel {
+	position: absolute;
+	top: 50%; left: 50%;
+	transform: translate(-50%, -50%) translateY(8px);
+	width: min(460px, calc(100vw - 2rem));
+	max-height: calc(100vh - 4rem);
+	overflow-y: auto;
+	background: var(--color-paper);
+	border: 1px solid var(--color-rule-2);
+	border-radius: var(--radius-md);
+	box-shadow: 0 20px 60px -16px var(--color-shadow-modal);
+	padding: var(--space-xl);
+	transition: transform var(--dur-short) var(--ease-out);
+}
+.leadform.is-open .leadform__panel { transform: translate(-50%, -50%); }
+.leadform__close {
+	position: absolute; top: var(--space-sm); right: var(--space-sm);
+	width: 32px; height: 32px;
+	display: flex; align-items: center; justify-content: center;
+	font-size: 1.3rem; line-height: 1;
+	color: var(--color-muted);
+	border-radius: var(--radius-sm);
+	transition: background-color var(--dur-short) var(--ease-out), color var(--dur-short) var(--ease-out);
+}
+.leadform__close:hover { background: var(--color-paper-2); color: var(--color-ink); }
+.leadform__title { font-size: 1.4rem; margin-top: var(--space-2xs); }
+.leadform__lede { color: var(--color-muted); font-size: 0.92rem; margin-top: var(--space-2xs); }
+.leadform__body[hidden] { display: none; }
+#leadform-form { margin-top: var(--space-lg); display: flex; flex-direction: column; gap: var(--space-md); }
+.field { display: flex; flex-direction: column; gap: var(--space-3xs); }
+.field label { font-size: 0.82rem; font-weight: 500; color: var(--color-ink-2); }
+.field__optional { color: var(--color-muted); font-weight: 400; }
+.field input, .field select, .field textarea {
+	font: 0.92rem var(--font-body);
+	color: var(--color-ink);
+	background: var(--color-paper);
+	border: 1px solid var(--color-rule);
+	border-radius: var(--radius-sm);
+	padding: 0.6rem 0.75rem;
+	transition: border-color var(--dur-short) var(--ease-out);
+}
+.field input:hover, .field select:hover, .field textarea:hover { border-color: var(--color-rule-2); }
+.field input:focus-visible, .field select:focus-visible, .field textarea:focus-visible { border-color: var(--color-accent); outline: none; box-shadow: 0 0 0 3px var(--color-accent-soft); }
+.field textarea { resize: vertical; min-height: 5rem; }
+.field--honeypot { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+.leadform__error {
+	font-size: 0.85rem;
+	color: var(--color-accent);
+	background: var(--color-accent-soft);
+	border-radius: var(--radius-sm);
+	padding: var(--space-2xs) var(--space-sm);
+}
+.leadform__error[hidden] { display: none; }
+.leadform__submit { width: 100%; position: relative; }
+.leadform__submit:disabled { opacity: 0.6; cursor: not-allowed; }
+.leadform__submit[data-state="loading"] .leadform__submit-label { visibility: hidden; }
+.leadform__submit[data-state="loading"]::after {
+	content: "";
+	position: absolute; top: 50%; left: 50%;
+	width: 16px; height: 16px;
+	margin: -8px 0 0 -8px;
+	border: 2px solid var(--color-accent-ink);
+	border-top-color: transparent;
+	border-radius: 50%;
+	animation: leadform-spin 700ms linear infinite;
+}
+@keyframes leadform-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+	.leadform__submit[data-state="loading"]::after { animation-duration: 1400ms; }
+}
+
 /* ---------- Hero ---------- */
 .hero { padding: var(--space-3xl) var(--space-md) var(--space-2xl); }
 .hero__inner {

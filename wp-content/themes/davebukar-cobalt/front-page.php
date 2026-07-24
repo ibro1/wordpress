@@ -32,7 +32,7 @@ $svc_url = function ( $slug ) {
 			<h1 class="hero__title">We build the software behind your business — and keep it running.</h1>
 			<p class="hero__lede">Custom web, mobile and desktop apps. DevOps that ships without downtime. Advertising that gets found. AI agents that handle the repetitive part.</p>
 			<div class="hero__actions">
-				<a class="btn btn--primary" href="mailto:<?php echo esc_attr( DBT_CONTACT_EMAIL ); ?>">Book a call</a>
+				<button type="button" class="btn btn--primary js-book-call">Book a call</button>
 				<a class="btn btn--outline" href="#services">See what we build</a>
 			</div>
 		</div>
@@ -86,7 +86,7 @@ $svc_url = function ( $slug ) {
 	<article class="cell span-1x1 cell--accent">
 		<h3 class="cell__title">Not sure where to start?</h3>
 		<p class="cell__body">Tell us what you’re building. We’ll scope it on a call — no deck, no pitch.</p>
-		<a class="cell__link" href="mailto:<?php echo esc_attr( DBT_CONTACT_EMAIL ); ?>">Book a call →</a>
+		<button type="button" class="cell__link js-book-call">Book a call →</button>
 	</article>
 
 	<article class="cell span-1x1">
@@ -123,7 +123,7 @@ $svc_url = function ( $slug ) {
 	<div class="cta__inner">
 		<h2 class="cta__title">Tell us what you’re building.</h2>
 		<div class="cta__actions">
-			<a class="btn btn--primary" href="mailto:<?php echo esc_attr( DBT_CONTACT_EMAIL ); ?>">Book a call</a>
+			<button type="button" class="btn btn--primary js-book-call">Book a call</button>
 			<a class="cta__email" href="mailto:<?php echo esc_attr( DBT_CONTACT_EMAIL ); ?>"><?php echo esc_html( DBT_CONTACT_EMAIL ); ?></a>
 		</div>
 	</div>

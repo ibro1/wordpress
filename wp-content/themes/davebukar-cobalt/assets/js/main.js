@@ -176,4 +176,107 @@
 	if (input) {
 		input.addEventListener("input", function () { render(input.value); });
 	}
+
+	/* Lead-capture modal ("Book a call") */
+	var leadform = document.getElementById("leadform");
+	if (!leadform) return;
+
+	var lfForm        = document.getElementById("leadform-form");
+	var lfSubmit       = document.getElementById("leadform-submit");
+	var lfError        = document.getElementById("leadform-error");
+	var lfFormStep     = leadform.querySelector('[data-leadform-step="form"]');
+	var lfSuccessStep  = leadform.querySelector('[data-leadform-step="success"]');
+	var lfSuccessMsg   = document.getElementById("leadform-success-message");
+	var lfLastFocused  = null;
+
+	function lfShowError(message) {
+		lfError.textContent = message;
+		lfError.hidden = false;
+	}
+
+	function lfClearError() {
+		lfError.hidden = true;
+		lfError.textContent = "";
+	}
+
+	function openLeadform() {
+		lfLastFocused = document.activeElement;
+		leadform.classList.add("is-open");
+		leadform.setAttribute("aria-hidden", "false");
+		document.body.style.overflow = "hidden";
+
+		lfClearError();
+		lfFormStep.hidden = false;
+		lfSuccessStep.hidden = true;
+		if (lfForm) lfForm.reset();
+
+		var firstField = document.getElementById("lf-name");
+		if (firstField) requestAnimationFrame(function () { firstField.focus(); });
+	}
+
+	function closeLeadform() {
+		leadform.classList.remove("is-open");
+		leadform.setAttribute("aria-hidden", "true");
+		document.body.style.overflow = "";
+		if (lfLastFocused && lfLastFocused.focus) lfLastFocused.focus();
+	}
+
+	document.querySelectorAll(".js-book-call").forEach(function (btn) {
+		btn.addEventListener("click", openLeadform);
+	});
+
+	leadform.querySelectorAll("[data-leadform-close]").forEach(function (el) {
+		el.addEventListener("click", closeLeadform);
+	});
+
+	document.addEventListener("keydown", function (e) {
+		if (e.key === "Escape" && leadform.classList.contains("is-open")) closeLeadform();
+	});
+
+	if (lfForm) {
+		lfForm.addEventListener("submit", function (e) {
+			e.preventDefault();
+			lfClearError();
+
+			var name    = document.getElementById("lf-name").value.trim();
+			var email   = document.getElementById("lf-email").value.trim();
+			var message = document.getElementById("lf-message").value.trim();
+
+			if (!name || !email || !message) {
+				lfShowError("Please fill in your name, email, and a short note on what you need.");
+				return;
+			}
+
+			lfSubmit.disabled = true;
+			lfSubmit.dataset.state = "loading";
+
+			var formData = new FormData(lfForm);
+			formData.append("action", "dbt_book_call");
+			formData.append("nonce", window.dbtBookCall ? window.dbtBookCall.nonce : "");
+
+			fetch(window.dbtBookCall ? window.dbtBookCall.ajaxUrl : "/wp-admin/admin-ajax.php", {
+				method: "POST",
+				credentials: "same-origin",
+				body: formData,
+			})
+				.then(function (res) { return res.json(); })
+				.then(function (data) {
+					lfSubmit.disabled = false;
+					lfSubmit.removeAttribute("data-state");
+
+					if (data && data.success) {
+						lfSuccessMsg.textContent = (data.data && data.data.message) || "Thanks — we’ll be in touch.";
+						lfFormStep.hidden = true;
+						lfSuccessStep.hidden = false;
+					} else {
+						lfShowError((data && data.data && data.data.message) || "Something went wrong — please try again.");
+					}
+				})
+				.catch(function () {
+					lfSubmit.disabled = false;
+					lfSubmit.removeAttribute("data-state");
+					lfShowError("Network error — please check your connection and try again.");
+				});
+		});
+	}
 })();

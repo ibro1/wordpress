@@ -21,7 +21,7 @@ $service  = isset( $services[ $slug ] ) ? $services[ $slug ] : null;
 				<h1 class="hero__title"><?php echo esc_html( $service['title'] ); ?></h1>
 				<p class="hero__lede"><?php echo esc_html( $service['lede'] ); ?></p>
 				<div class="hero__actions">
-					<a class="btn btn--primary" href="mailto:<?php echo esc_attr( DBT_CONTACT_EMAIL ); ?>">Book a call</a>
+					<button type="button" class="btn btn--primary js-book-call">Book a call</button>
 				</div>
 			</div>
 
@@ -57,7 +57,7 @@ $service  = isset( $services[ $slug ] ) ? $services[ $slug ] : null;
 		<div class="cta__inner">
 			<h2 class="cta__title">Tell us what you’re building.</h2>
 			<div class="cta__actions">
-				<a class="btn btn--primary" href="mailto:<?php echo esc_attr( DBT_CONTACT_EMAIL ); ?>">Book a call</a>
+				<button type="button" class="btn btn--primary js-book-call">Book a call</button>
 				<a class="cta__email" href="mailto:<?php echo esc_attr( DBT_CONTACT_EMAIL ); ?>"><?php echo esc_html( DBT_CONTACT_EMAIL ); ?></a>
 			</div>
 		</div>

@@ -1,0 +1,24 @@
+{
+  "runs": [
+    {
+      "date": "2026-07-24T15:39:40Z",
+      "target": "wp-content/themes/davebukar-cobalt",
+      "brief": "davebukartechnologies.com company site — software dev, DevOps, advertising, AI agents",
+      "genre": "modern-minimal",
+      "theme": "cobalt",
+      "macrostructure": "bento-grid",
+      "nav": "n13-inline-cmdk-pill",
+      "footer": "ft5-statement",
+      "enrichment_tier": "A",
+      "pages": [
+        "front-page (home)",
+        "software-development",
+        "devops",
+        "advertising",
+        "ai-agents",
+        "privacy-policy",
+        "terms-of-service"
+      ]
+    }
+  ]
+}

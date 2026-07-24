@@ -1,0 +1,81 @@
+/* Hallmark · genre: modern-minimal · macrostructure: bento-grid · theme: cobalt · enrichment: tier-a · nav: n13 · footer: ft5 */
+
+:root {
+	/* Paper / surfaces — cool engineered near-white, never #fff */
+	--color-paper: oklch(98.5% 0.004 250);
+	--color-paper-2: oklch(96.5% 0.006 250);
+	--color-paper-3: oklch(94% 0.008 250);
+
+	/* Ink — cool charcoal, never #000 */
+	--color-ink: oklch(24% 0.02 258);
+	--color-ink-2: oklch(34% 0.018 257);
+	--color-muted: oklch(48% 0.02 255);
+
+	/* Hairlines */
+	--color-rule: oklch(90% 0.008 253);
+	--color-rule-2: oklch(82% 0.012 253);
+
+	/* The one signal — electric cobalt */
+	--color-accent: oklch(58% 0.20 256);
+	--color-accent-hover: oklch(52% 0.20 256);
+	--color-accent-ink: oklch(98% 0.006 250);
+	--color-accent-soft: oklch(94% 0.03 256);
+	--color-focus: var(--color-accent);
+
+	/* Translucent nav background (blur backdrop) */
+	--color-nav-bg: oklch(98.5% 0.004 250 / 0.85);
+
+	/* Shadow / scrim tints — derived from ink, never a bare hex/rgb */
+	--color-shadow-soft: oklch(24% 0.02 258 / 0.05);
+	--color-scrim: oklch(24% 0.02 258 / 0.35);
+	--color-shadow-modal: oklch(24% 0.02 258 / 0.25);
+
+	/* The one dark band — graphite, code-card + how-we-ship section */
+	--color-graphite: oklch(22% 0.016 260);
+	--color-graphite-2: oklch(27% 0.018 260);
+	--color-graphite-ink: oklch(92% 0.01 250);
+	--color-graphite-muted: oklch(68% 0.02 255);
+	--color-graphite-rule: oklch(34% 0.02 260);
+
+	/* Type */
+	--font-display: "Space Grotesk", sans-serif;
+	--font-body: "Inter", sans-serif;
+	--font-mono: "JetBrains Mono", monospace;
+
+	/* Spacing — 4pt scale */
+	--space-3xs: 0.25rem;
+	--space-2xs: 0.5rem;
+	--space-xs: 0.75rem;
+	--space-sm: 1rem;
+	--space-md: 1.5rem;
+	--space-lg: 2rem;
+	--space-xl: 3rem;
+	--space-2xl: 4rem;
+	--space-3xl: 6rem;
+	--space-4xl: 8rem;
+
+	/* Radii — "drawn with a ruler" */
+	--radius-sm: 6px;
+	--radius-md: 10px;
+	--radius-lg: 14px;
+	--radius-pill: 999px;
+
+	/* Motion */
+	--ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+	--ease-in: cubic-bezier(0.7, 0, 0.84, 0);
+	--ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+	--dur-micro: 120ms;
+	--dur-short: 220ms;
+	--dur-long: 420ms;
+
+	/* Z-index scale — named, never arbitrary */
+	--z-base: 1;
+	--z-raised: 10;
+	--z-sticky: 100;
+	--z-overlay: 500;
+	--z-modal: 700;
+	--z-toast: 900;
+
+	/* Layout */
+	--container-w: 1200px;
+}

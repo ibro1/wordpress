@@ -203,6 +203,13 @@ services:
       - "traefik.http.routers.wookiee-api.entrypoints=websecure"
       - "traefik.http.routers.wookiee-api.tls=true"
       - "traefik.http.routers.wookiee-api.service=wookiee-api-service"
+      # Without this, Traefik's default length-based priority sometimes lets
+      # the WordPress multisite wildcard router (HostRegexp matching every
+      # *.${MAIN_DOMAIN} subdomain, for mapped sites) win over this exact
+      # host match, sending api.${MAIN_DOMAIN} into WordPress's
+      # wp-signup.php instead of this service. Explicit priority forces the
+      # specific match to always win regardless of rule-string length.
+      - "traefik.http.routers.wookiee-api.priority=100"
 
   wp_db:
     image: mysql:8.0

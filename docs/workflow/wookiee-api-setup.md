@@ -32,6 +32,15 @@ Compose service block: `docs/workflow/docker-compose.yml`.
    username, password = `WOOKIEE_API_ADMIN_PASSWORD`) - to see the settings
    page and confirm everything you set actually landed.
 
+**If `api.<MAIN_DOMAIN>` redirects into WordPress's `wp-signup.php` instead**
+of reaching this service: WordPress's multisite wildcard Traefik router
+(`HostRegexp` matching every subdomain, for mapped sites) was winning over
+the exact `api.` host match on Traefik's default length-based priority. The
+`wookiee_api` router in `docs/workflow/docker-compose.yml` has an explicit
+`priority=100` label to force it to win regardless - if you copied the
+compose file before this was added, re-copy it and redeploy. Don't submit
+the signup form if you land on it; nothing has actually been created yet.
+
 ## 2. Connect WordPress to it
 
 In WordPress: Wookiee Settings -> AI & Integrations tab -> top of the page:

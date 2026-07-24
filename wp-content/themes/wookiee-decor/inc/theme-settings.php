@@ -1303,42 +1303,77 @@ function wookiee_render_backend_connection_section() {
 		echo '<p class="description" style="color:#00622e;">&#10003; Existing keys were already migrated to the backend.</p>';
 		return;
 	}
-	if ( ! wookiee_central_api_configured() ) {
-		echo '<p class="description">Save the backend URL and shared secret below, then a button will appear here to push every key currently stored below up to the backend in one click.</p>';
-		return;
-	}
-	?>
+
+	if ( wookiee_central_api_configured() ) :
+		?>
+		<p>
+			<button type="button" class="button button-primary" id="wookiee-migrate-secrets-btn">Migrate existing keys to backend</button>
+			<span id="wookiee-migrate-secrets-status" style="margin-left:8px;"></span>
+		</p>
+		<p class="description">Pushes every key currently filled in below (Companies House, LLM, CJ Dropshipping, Cloudinary/rembg, Google Ads, Spaceship) to the backend, then clears them from this site.</p>
+	<?php else : ?>
+		<p class="description">Save the backend URL and shared secret below to unlock a one-click migration button.</p>
+	<?php endif; ?>
+
 	<p>
-		<button type="button" class="button button-primary" id="wookiee-migrate-secrets-btn">Migrate existing keys to backend</button>
-		<span id="wookiee-migrate-secrets-status" style="margin-left:8px;"></span>
+		<button type="button" class="button" id="wookiee-clear-local-secrets-btn">I already copied these to the backend myself - just clear them here</button>
+		<span id="wookiee-clear-local-secrets-status" style="margin-left:8px;"></span>
 	</p>
-	<p class="description">Pushes every key currently filled in below (Companies House, LLM, CJ Dropshipping, Cloudinary/rembg, Google Ads, Spaceship) to the backend, then clears them from this site - the backend becomes the only place holding them, and this section disappears once that's done.</p>
+	<p class="description">Use this if you read the values via the Show/Hide toggle and pasted them into the backend's env vars or settings UI directly, instead of using the migrate button above. Doesn't contact the backend at all - just deletes these fields from this site and hides them below.</p>
+
 	<script>
 	( function() {
-		var btn = document.getElementById( 'wookiee-migrate-secrets-btn' );
-		if ( ! btn ) { return; }
-		btn.addEventListener( 'click', function() {
-			if ( ! window.confirm( 'This sends every key currently saved on this page to the backend, then removes them from this WordPress site. Continue?' ) ) { return; }
-			var status = document.getElementById( 'wookiee-migrate-secrets-status' );
-			btn.disabled = true;
-			status.textContent = 'Migrating…';
+		var migrateBtn = document.getElementById( 'wookiee-migrate-secrets-btn' );
+		if ( migrateBtn ) {
+			migrateBtn.addEventListener( 'click', function() {
+				if ( ! window.confirm( 'This sends every key currently saved on this page to the backend, then removes them from this WordPress site. Continue?' ) ) { return; }
+				var status = document.getElementById( 'wookiee-migrate-secrets-status' );
+				migrateBtn.disabled = true;
+				status.textContent = 'Migrating…';
+				var data = new FormData();
+				data.append( 'action', 'wookiee_migrate_secrets_to_backend' );
+				data.append( 'nonce', <?php echo wp_json_encode( wp_create_nonce( 'wookiee_migrate_secrets_to_backend' ) ); ?> );
+				fetch( ajaxurl, { method: 'POST', credentials: 'same-origin', body: data } )
+					.then( function( r ) { return r.json(); } )
+					.then( function( res ) {
+						if ( ! res.success ) {
+							migrateBtn.disabled = false;
+							status.textContent = res.data && res.data.message ? res.data.message : 'Migration failed.';
+							return;
+						}
+						status.textContent = 'Done - reloading…';
+						window.location.reload();
+					} )
+					.catch( function() {
+						migrateBtn.disabled = false;
+						status.textContent = 'Migration failed — could not reach the server.';
+					} );
+			} );
+		}
+
+		var clearBtn = document.getElementById( 'wookiee-clear-local-secrets-btn' );
+		clearBtn.addEventListener( 'click', function() {
+			if ( ! window.confirm( 'This deletes these key fields from this WordPress site permanently - only do this if you have already copied their values to the backend. Continue?' ) ) { return; }
+			var status = document.getElementById( 'wookiee-clear-local-secrets-status' );
+			clearBtn.disabled = true;
+			status.textContent = 'Clearing…';
 			var data = new FormData();
-			data.append( 'action', 'wookiee_migrate_secrets_to_backend' );
-			data.append( 'nonce', <?php echo wp_json_encode( wp_create_nonce( 'wookiee_migrate_secrets_to_backend' ) ); ?> );
+			data.append( 'action', 'wookiee_clear_local_secrets' );
+			data.append( 'nonce', <?php echo wp_json_encode( wp_create_nonce( 'wookiee_clear_local_secrets' ) ); ?> );
 			fetch( ajaxurl, { method: 'POST', credentials: 'same-origin', body: data } )
 				.then( function( r ) { return r.json(); } )
 				.then( function( res ) {
 					if ( ! res.success ) {
-						btn.disabled = false;
-						status.textContent = res.data && res.data.message ? res.data.message : 'Migration failed.';
+						clearBtn.disabled = false;
+						status.textContent = res.data && res.data.message ? res.data.message : 'Failed to clear.';
 						return;
 					}
 					status.textContent = 'Done - reloading…';
 					window.location.reload();
 				} )
 				.catch( function() {
-					btn.disabled = false;
-					status.textContent = 'Migration failed — could not reach the server.';
+					clearBtn.disabled = false;
+					status.textContent = 'Failed — could not reach the server.';
 				} );
 		} );
 	} )();

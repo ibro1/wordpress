@@ -137,3 +137,25 @@ function wookiee_migrate_secrets_to_backend_handler() {
 
 	wp_send_json_success();
 }
+
+/**
+ * Same end state as the migration above (local fields cleared, hidden from
+ * Settings from then on), but skips the backend call entirely - for when
+ * the values were already copied over to the backend by hand (e.g. read via
+ * the Show/Hide toggle and pasted into env vars) rather than through the
+ * migrate button. Doesn't require the backend to even be reachable.
+ */
+add_action( 'wp_ajax_wookiee_clear_local_secrets', 'wookiee_clear_local_secrets_handler' );
+function wookiee_clear_local_secrets_handler() {
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_send_json_error( array( 'message' => 'Not allowed.' ), 403 );
+	}
+	check_ajax_referer( 'wookiee_clear_local_secrets', 'nonce' );
+
+	foreach ( wookiee_operator_only_settings_keys() as $key ) {
+		delete_option( 'wookiee_setting_' . $key );
+	}
+	update_option( 'wookiee_secrets_migrated_to_backend', 1 );
+
+	wp_send_json_success();
+}

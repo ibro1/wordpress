@@ -1297,7 +1297,6 @@ function wookiee_set_domain_dns_records_handler() {
  */
 function wookiee_render_backend_connection_section() {
 	if ( wookiee_secrets_migrated_to_backend() ) {
-		echo '<p class="description" style="color:#00622e;">&#10003; Existing keys were already migrated to the backend.</p>';
 		return;
 	}
 

@@ -100,6 +100,15 @@ kbd { font-family: var(--font-mono); }
 	backdrop-filter: blur(8px);
 	border-bottom: 1px solid var(--color-rule);
 }
+
+/* WordPress admin toolbar (#wpadminbar) is fixed at top:0 with a z-index
+   above any theme content - offset the sticky nav below it for logged-in
+   users so the two don't fight for the same top edge. Toolbar is 32px on
+   desktop, 46px under the 782px breakpoint (WP core values). */
+body.admin-bar .nav { top: 32px; }
+@media screen and (max-width: 782px) {
+	body.admin-bar .nav { top: 46px; }
+}
 .nav__inner {
 	max-width: var(--container-w);
 	margin-inline: auto;

@@ -281,7 +281,10 @@ body.admin-bar .nav { top: 32px; }
 	box-shadow: 0 20px 60px -16px var(--color-shadow-modal);
 	overflow: hidden;
 	transition: transform var(--dur-short) var(--ease-out);
+	scrollbar-width: none; /* Firefox — panel becomes the scroll container on mobile */
+	-ms-overflow-style: none;
 }
+.leadform__panel::-webkit-scrollbar { display: none; }
 .leadform.is-open .leadform__panel { transform: translate(-50%, -50%); }
 .leadform__close {
 	position: absolute; top: var(--space-sm); right: var(--space-sm);
@@ -363,6 +366,7 @@ body.admin-bar .nav { top: 32px; }
 .field input:hover, .field select:hover, .field textarea:hover { border-color: var(--color-rule-2); }
 .field input:focus-visible, .field select:focus-visible, .field textarea:focus-visible { border-color: var(--color-accent); outline: none; box-shadow: 0 0 0 3px var(--color-accent-soft); }
 .field textarea { resize: vertical; min-height: 5rem; }
+.field input::placeholder, .field textarea::placeholder { color: var(--color-muted); opacity: 1; }
 .field--honeypot { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
 .leadform__error {
 	font-size: 0.85rem;

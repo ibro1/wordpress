@@ -120,15 +120,15 @@ defined( 'ABSPATH' ) || exit;
 				<form id="leadform-form" novalidate>
 					<div class="field">
 						<label for="lf-name">Name</label>
-						<input type="text" id="lf-name" name="name" autocomplete="name" required>
+						<input type="text" id="lf-name" name="name" autocomplete="name" placeholder="Ada Lovelace" required>
 					</div>
 					<div class="field">
 						<label for="lf-email">Email</label>
-						<input type="email" id="lf-email" name="email" autocomplete="email" required>
+						<input type="email" id="lf-email" name="email" autocomplete="email" placeholder="you@company.com" required>
 					</div>
 					<div class="field">
 						<label for="lf-company">Company <span class="field__optional">(optional)</span></label>
-						<input type="text" id="lf-company" name="company" autocomplete="organization">
+						<input type="text" id="lf-company" name="company" autocomplete="organization" placeholder="Acme Inc.">
 					</div>
 					<div class="field">
 						<label for="lf-service">What do you need?</label>
@@ -142,7 +142,7 @@ defined( 'ABSPATH' ) || exit;
 					</div>
 					<div class="field">
 						<label for="lf-message">What are you building?</label>
-						<textarea id="lf-message" name="message" rows="4" required></textarea>
+						<textarea id="lf-message" name="message" rows="4" placeholder="A quick note on what you’re building or what’s broken." required></textarea>
 					</div>
 					<div class="field field--honeypot" aria-hidden="true">
 						<label for="lf-website">Website</label>

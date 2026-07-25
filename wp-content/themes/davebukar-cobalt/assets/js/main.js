@@ -228,6 +228,7 @@
 	var lfForm        = document.getElementById("leadform-form");
 	var lfSubmit       = document.getElementById("leadform-submit");
 	var lfError        = document.getElementById("leadform-error");
+	var lfStatus       = document.getElementById("leadform-status");
 	var lfFormStep     = leadform.querySelector('[data-leadform-step="form"]');
 	var lfSuccessStep  = leadform.querySelector('[data-leadform-step="success"]');
 	var lfSuccessMsg   = document.getElementById("leadform-success-message");
@@ -243,6 +244,19 @@
 		lfError.textContent = "";
 	}
 
+	// The chip always shows the real state of the request — DRAFT before
+	// send, then the actual HTTP-style status the endpoint returned. Never
+	// a decorative label disconnected from what's actually happening.
+	function lfSetStatus(text, state) {
+		if (!lfStatus) return;
+		lfStatus.textContent = text;
+		if (state) {
+			lfStatus.dataset.state = state;
+		} else {
+			delete lfStatus.dataset.state;
+		}
+	}
+
 	function openLeadform() {
 		lfLastFocused = document.activeElement;
 		leadform.classList.add("is-open");
@@ -250,6 +264,7 @@
 		document.body.style.overflow = "hidden";
 
 		lfClearError();
+		lfSetStatus("DRAFT", null);
 		lfFormStep.hidden = false;
 		lfSuccessStep.hidden = true;
 		if (lfForm) lfForm.reset();
@@ -293,6 +308,7 @@
 
 			lfSubmit.disabled = true;
 			lfSubmit.dataset.state = "loading";
+			lfSetStatus("SENDING…", "sending");
 
 			var formData = new FormData(lfForm);
 			formData.append("action", "dbt_book_call");
@@ -303,22 +319,29 @@
 				credentials: "same-origin",
 				body: formData,
 			})
-				.then(function (res) { return res.json(); })
-				.then(function (data) {
+				.then(function (res) {
+					return res.json().then(function (data) {
+						return { status: res.status, data: data };
+					});
+				})
+				.then(function (result) {
 					lfSubmit.disabled = false;
 					lfSubmit.removeAttribute("data-state");
 
-					if (data && data.success) {
-						lfSuccessMsg.textContent = (data.data && data.data.message) || "Thanks — we’ll be in touch.";
+					if (result.data && result.data.success) {
+						lfSetStatus(result.status + " OK", "ok");
+						lfSuccessMsg.textContent = (result.data.data && result.data.data.message) || "We read every one ourselves — expect a reply within one business day.";
 						lfFormStep.hidden = true;
 						lfSuccessStep.hidden = false;
 					} else {
-						lfShowError((data && data.data && data.data.message) || "Something went wrong — please try again.");
+						lfSetStatus(result.status + " ERR", "err");
+						lfShowError((result.data && result.data.data && result.data.data.message) || "Something went wrong — please try again.");
 					}
 				})
 				.catch(function () {
 					lfSubmit.disabled = false;
 					lfSubmit.removeAttribute("data-state");
+					lfSetStatus("OFFLINE", "err");
 					lfShowError("Network error — please check your connection and try again.");
 				});
 		});

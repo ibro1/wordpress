@@ -38,7 +38,7 @@ function dbt_handle_book_call() {
 	// Honeypot: real visitors never fill in a field that's hidden from view.
 	$honeypot = isset( $_POST['website'] ) ? trim( sanitize_text_field( wp_unslash( $_POST['website'] ) ) ) : '';
 	if ( '' !== $honeypot ) {
-		wp_send_json_success( array( 'message' => 'Thanks — we’ll be in touch.' ) );
+		wp_send_json_success( array( 'message' => 'We read every one ourselves — expect a reply within one business day.' ) );
 	}
 
 	// Basic rate limit per IP: 5 submissions per 10 minutes.
@@ -87,5 +87,5 @@ function dbt_handle_book_call() {
 
 	set_transient( $limit_key, $submissions + 1, 10 * MINUTE_IN_SECONDS );
 
-	wp_send_json_success( array( 'message' => 'Thanks — we’ll be in touch within one business day.' ) );
+	wp_send_json_success( array( 'message' => 'We read every one ourselves — expect a reply within one business day.' ) );
 }

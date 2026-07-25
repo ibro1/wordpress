@@ -30,6 +30,11 @@
 	--color-scrim: oklch(24% 0.02 258 / 0.35);
 	--color-shadow-modal: oklch(24% 0.02 258 / 0.25);
 
+	/* Semantic error signal — the one sanctioned exception to the single-accent
+	   rule. Success/failure must be distinguishable without reading the text. */
+	--color-danger: oklch(58% 0.19 25);
+	--color-danger-soft: oklch(94% 0.03 25);
+
 	/* The one dark band — graphite, code-card + how-we-ship section */
 	--color-graphite: oklch(22% 0.016 260);
 	--color-graphite-2: oklch(27% 0.018 260);

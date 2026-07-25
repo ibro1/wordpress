@@ -89,63 +89,82 @@ defined( 'ABSPATH' ) || exit;
 	</div>
 </div>
 
-<!-- Hallmark · component: modal-form (book a call) · genre: modern-minimal · theme: cobalt
+<!-- frontend-design · component: modal-form (book a call) · system: Hallmark/Cobalt (unchanged tokens)
+     signature: real HTTP-style status chip (reuses the homepage code-card's "200 OK" device) +
+     split context/form panel (reuses the homepage's one-dark-band move) instead of a generic centered dialog
      states: default · hover · focus · active · disabled · loading · error · success -->
 <div class="leadform" id="leadform" aria-hidden="true">
 	<div class="leadform__backdrop" data-leadform-close></div>
 	<div class="leadform__panel" role="dialog" aria-modal="true" aria-labelledby="leadform-title">
 		<button type="button" class="leadform__close" data-leadform-close aria-label="Close">×</button>
 
-		<div class="leadform__body" data-leadform-step="form">
-			<p class="mono-label">Book a call</p>
-			<h2 id="leadform-title" class="leadform__title">Tell us what you’re building.</h2>
-			<p class="leadform__lede">A real reply from a person, usually within one business day.</p>
+		<aside class="leadform__context" aria-hidden="true">
+			<p class="mono-label mono-label--dark">After you send</p>
+			<p class="leadform__context-title">A person reads this. Not a bot.</p>
+			<ol class="leadform__context-steps">
+				<li><span class="leadform__context-no">01</span>Received — logged instantly, no auto-reply spam</li>
+				<li><span class="leadform__context-no">02</span>Reviewed — a founder reads it, same day</li>
+				<li><span class="leadform__context-no">03</span>Reply — you hear back within one business day</li>
+			</ol>
+			<p class="leadform__context-compact">A person reads this — reply within one business day.</p>
+		</aside>
 
-			<form id="leadform-form" novalidate>
-				<div class="field">
-					<label for="lf-name">Name</label>
-					<input type="text" id="lf-name" name="name" autocomplete="name" required>
+		<div class="leadform__form-pane">
+			<div class="leadform__body" data-leadform-step="form">
+				<div class="leadform__head-row">
+					<h2 id="leadform-title" class="leadform__title">Book a call</h2>
+					<span class="status status--chip" id="leadform-status">DRAFT</span>
 				</div>
-				<div class="field">
-					<label for="lf-email">Email</label>
-					<input type="email" id="lf-email" name="email" autocomplete="email" required>
-				</div>
-				<div class="field">
-					<label for="lf-company">Company <span class="field__optional">(optional)</span></label>
-					<input type="text" id="lf-company" name="company" autocomplete="organization">
-				</div>
-				<div class="field">
-					<label for="lf-service">What do you need?</label>
-					<select id="lf-service" name="service">
-						<option>Software Development</option>
-						<option>DevOps &amp; Infrastructure</option>
-						<option>Online Advertising</option>
-						<option>AI Agents &amp; Bots</option>
-						<option selected>Not sure yet</option>
-					</select>
-				</div>
-				<div class="field">
-					<label for="lf-message">What are you building?</label>
-					<textarea id="lf-message" name="message" rows="4" required></textarea>
-				</div>
-				<div class="field field--honeypot" aria-hidden="true">
-					<label for="lf-website">Website</label>
-					<input type="text" id="lf-website" name="website" tabindex="-1" autocomplete="off">
-				</div>
+				<p class="leadform__lede">Tell us what you’re building — a founder replies personally.</p>
 
-				<p class="leadform__error" id="leadform-error" role="alert" hidden></p>
+				<form id="leadform-form" novalidate>
+					<div class="field">
+						<label for="lf-name">Name</label>
+						<input type="text" id="lf-name" name="name" autocomplete="name" required>
+					</div>
+					<div class="field">
+						<label for="lf-email">Email</label>
+						<input type="email" id="lf-email" name="email" autocomplete="email" required>
+					</div>
+					<div class="field">
+						<label for="lf-company">Company <span class="field__optional">(optional)</span></label>
+						<input type="text" id="lf-company" name="company" autocomplete="organization">
+					</div>
+					<div class="field">
+						<label for="lf-service">What do you need?</label>
+						<select id="lf-service" name="service">
+							<option>Software Development</option>
+							<option>DevOps &amp; Infrastructure</option>
+							<option>Online Advertising</option>
+							<option>AI Agents &amp; Bots</option>
+							<option selected>Not sure yet</option>
+						</select>
+					</div>
+					<div class="field">
+						<label for="lf-message">What are you building?</label>
+						<textarea id="lf-message" name="message" rows="4" required></textarea>
+					</div>
+					<div class="field field--honeypot" aria-hidden="true">
+						<label for="lf-website">Website</label>
+						<input type="text" id="lf-website" name="website" tabindex="-1" autocomplete="off">
+					</div>
 
-				<button type="submit" class="btn btn--primary leadform__submit" id="leadform-submit">
-					<span class="leadform__submit-label">Send</span>
-				</button>
-			</form>
-		</div>
+					<p class="leadform__error" id="leadform-error" role="alert" hidden></p>
 
-		<div class="leadform__body leadform__success" data-leadform-step="success" hidden>
-			<p class="mono-label">Sent</p>
-			<h2 class="leadform__title">Thanks — message received.</h2>
-			<p class="leadform__lede" id="leadform-success-message">We’ll be in touch within one business day.</p>
-			<button type="button" class="btn btn--outline" data-leadform-close>Close</button>
+					<button type="submit" class="btn btn--primary leadform__submit" id="leadform-submit">
+						<span class="leadform__submit-label">Book the call</span>
+					</button>
+				</form>
+			</div>
+
+			<div class="leadform__body leadform__success" data-leadform-step="success" hidden>
+				<div class="leadform__head-row">
+					<h2 class="leadform__title">Request received</h2>
+					<span class="status status--ok">200 OK</span>
+				</div>
+				<p class="leadform__lede" id="leadform-success-message">We read every one ourselves — expect a reply within one business day.</p>
+				<button type="button" class="btn btn--outline" data-leadform-close>Close</button>
+			</div>
 		</div>
 	</div>
 </div>

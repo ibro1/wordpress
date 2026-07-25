@@ -1,6 +1,10 @@
 services:
   wordpress:
-    image: wordpress:latest
+    build:
+      # Relative to this compose file's own location (docs/workflow/) -
+      # repo root, so the Dockerfile's COPY paths can reach wp-content/.
+      context: ../..
+      dockerfile: docs/workflow/Dockerfile.wordpress
     restart: unless-stopped
     container_name: wordpress_multisite_app
     volumes:
@@ -100,7 +104,15 @@ services:
          docker-php-ext-install pdo pdo_mysql
       fi
 
-      # 3. FIX: Repair File Permissions
+      # 3. Sync themes/plugins baked into this image (see Dockerfile.wordpress)
+      # onto the persistent volume, then fix permissions. Runs on every
+      # container start, but the Dockerfile COPY layers are content-hash
+      # cached, so a fresh start only actually happens when theme/plugin
+      # files changed in git - a no-op push reuses the existing container.
+      echo "Syncing themes/plugins from image..."
+      rm -rf /var/www/html/wp-content/themes /var/www/html/wp-content/plugins
+      cp -r /wp-content-deploy/themes /var/www/html/wp-content/themes
+      cp -r /wp-content-deploy/plugins /var/www/html/wp-content/plugins
       echo "Fixing permissions..."
       chown -R www-data:www-data /var/www/html/wp-content
 

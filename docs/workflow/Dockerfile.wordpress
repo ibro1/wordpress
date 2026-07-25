@@ -1,0 +1,17 @@
+# Bakes the current git state of wp-content/themes and wp-content/plugins
+# into the image. These COPY layers are content-hash cached by Docker, so
+# the resulting image ID - and therefore whether `docker compose up --build`
+# actually recreates the wordpress container - only changes on a push that
+# touches theme or plugin files. WP core and wp-content/uploads are NOT
+# copied here; they stay solely on the wp_app named volume, self-managed
+# via wp-admin exactly as before.
+#
+# Landing at /wp-content-deploy/* (not directly at /var/www/html/wp-content/*)
+# because the named volume mounted over /var/www/html at container start
+# would otherwise permanently shadow anything baked in here after the first
+# run. The entrypoint in docker-compose.yml copies these into the volume on
+# every container start instead - which, thanks to the cache behaviour
+# above, now reliably happens exactly when this content actually changed.
+FROM wordpress:latest
+COPY wp-content/themes /wp-content-deploy/themes
+COPY wp-content/plugins /wp-content-deploy/plugins

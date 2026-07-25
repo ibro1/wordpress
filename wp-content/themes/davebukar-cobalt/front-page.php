@@ -59,6 +59,14 @@ $svc_url = function ( $slug ) {
 		<p class="cell__label">Software</p>
 		<h3 class="cell__title">Web, mobile &amp; desktop apps</h3>
 		<p class="cell__body">React, Next.js and Node on the web. Swift, Kotlin and React Native on mobile. Electron for desktop tools. One team, the whole stack.</p>
+		<div class="cell__tags">
+			<span class="cell__tag">React</span>
+			<span class="cell__tag">Next.js</span>
+			<span class="cell__tag">Node</span>
+			<span class="cell__tag">Swift</span>
+			<span class="cell__tag">Kotlin</span>
+			<span class="cell__tag">Electron</span>
+		</div>
 		<a class="cell__link" href="<?php echo esc_url( $svc_url( 'software-development' ) ); ?>">Software development →</a>
 	</article>
 
@@ -80,6 +88,12 @@ $svc_url = function ( $slug ) {
 		<p class="cell__label">AI Agents</p>
 		<h3 class="cell__title">AI Agents &amp; Bots</h3>
 		<p class="cell__body">Support agents, internal tools and workflow automation — wired into the systems you already run, not bolted on.</p>
+		<div class="cell__tags">
+			<span class="cell__tag">Claude</span>
+			<span class="cell__tag">GPT-4</span>
+			<span class="cell__tag">RAG</span>
+			<span class="cell__tag">Automation</span>
+		</div>
 		<a class="cell__link" href="<?php echo esc_url( $svc_url( 'ai-agents' ) ); ?>">Explore AI agents →</a>
 	</article>
 

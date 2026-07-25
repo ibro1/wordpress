@@ -647,8 +647,23 @@ body.admin-bar .nav { top: 32px; }
 .cell--accent { background: var(--color-accent-soft); border-color: transparent; }
 .cell__label { font-family: var(--font-mono); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--color-accent); margin: 0; }
 .cell__title { font-size: 1.2rem; font-weight: 600; margin-top: var(--space-2xs); }
-.cell__body { color: var(--color-muted); font-size: 0.95rem; flex: 1; margin-top: var(--space-2xs); }
-.cell__link { margin-top: var(--space-sm); font-size: 0.9rem; font-weight: 500; color: var(--color-ink); position: relative; align-self: flex-start; white-space: nowrap; }
+.cell__body { color: var(--color-muted); font-size: 0.95rem; margin-top: var(--space-2xs); }
+.cell__tags { margin-top: var(--space-sm); display: flex; flex-wrap: wrap; gap: var(--space-2xs); }
+.cell__tag {
+	font-family: var(--font-mono);
+	font-size: 0.72rem;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color: var(--color-ink-2);
+	background: var(--color-paper-2);
+	border: 1px solid var(--color-rule);
+	border-radius: var(--radius-pill);
+	padding: 0.25rem 0.6rem;
+}
+/* margin-top:auto (not flex:1 on the body) so the link always pins to the
+   cell's bottom edge with exactly one gap above it, however tall the
+   row-spanning grid track ends up being - never a dead gap mid-card. */
+.cell__link { margin-top: auto; padding-top: var(--space-sm); font-size: 0.9rem; font-weight: 500; color: var(--color-ink); position: relative; align-self: flex-start; white-space: nowrap; }
 .cell__link::after { content: ""; position: absolute; left: 0; right: 0; bottom: -2px; height: 1px; background: var(--color-accent); transform: scaleX(0); transform-origin: left; transition: transform var(--dur-short) var(--ease-out); }
 .cell__link:hover::after, .cell__link:focus-visible::after { transform: scaleX(1); }
 

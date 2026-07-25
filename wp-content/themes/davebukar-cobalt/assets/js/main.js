@@ -58,32 +58,47 @@
 		}
 	});
 
-	/* Mobile nav toggle — reveals Services / How we work below the 768px breakpoint */
+	/* Mobile nav drawer — off-canvas menu below the 768px breakpoint */
 	var navToggle = document.getElementById("navToggle");
-	var navLinks = document.getElementById("navLinks");
-	if (navToggle && navLinks) {
-		var closeNavLinks = function () {
-			navLinks.classList.remove("is-open");
+	var navDrawer = document.getElementById("navDrawer");
+	if (navToggle && navDrawer) {
+		var drawerLastFocused = null;
+
+		var openDrawer = function () {
+			drawerLastFocused = document.activeElement;
+			navDrawer.classList.add("is-open");
+			navDrawer.setAttribute("aria-hidden", "false");
+			navToggle.setAttribute("aria-expanded", "true");
+			document.body.style.overflow = "hidden";
+			var closeBtn = navDrawer.querySelector(".drawer__close");
+			if (closeBtn) requestAnimationFrame(function () { closeBtn.focus(); });
+		};
+
+		var closeDrawer = function () {
+			navDrawer.classList.remove("is-open");
+			navDrawer.setAttribute("aria-hidden", "true");
 			navToggle.setAttribute("aria-expanded", "false");
+			document.body.style.overflow = "";
+			if (drawerLastFocused && drawerLastFocused.focus) drawerLastFocused.focus();
 		};
 
 		navToggle.addEventListener("click", function () {
-			var isOpen = navLinks.classList.toggle("is-open");
-			navToggle.setAttribute("aria-expanded", isOpen ? "true" : "false");
+			navDrawer.classList.contains("is-open") ? closeDrawer() : openDrawer();
 		});
 
-		navLinks.querySelectorAll(".nav__link").forEach(function (link) {
-			link.addEventListener("click", closeNavLinks);
+		navDrawer.querySelectorAll("[data-drawer-close]").forEach(function (el) {
+			el.addEventListener("click", closeDrawer);
 		});
 
-		document.addEventListener("click", function (e) {
-			if (!navLinks.classList.contains("is-open")) return;
-			if (navLinks.contains(e.target) || navToggle.contains(e.target)) return;
-			closeNavLinks();
+		// Any real navigation inside the drawer (link or the Book-a-call
+		// trigger) should close the drawer first, so it doesn't sit open
+		// behind the lead-capture modal or a page navigation.
+		navDrawer.querySelectorAll("a, .js-book-call").forEach(function (el) {
+			el.addEventListener("click", closeDrawer);
 		});
 
 		document.addEventListener("keydown", function (e) {
-			if (e.key === "Escape" && navLinks.classList.contains("is-open")) closeNavLinks();
+			if (e.key === "Escape" && navDrawer.classList.contains("is-open")) closeDrawer();
 		});
 	}
 

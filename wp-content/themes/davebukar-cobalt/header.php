@@ -26,17 +26,51 @@ defined( 'ABSPATH' ) || exit;
 		</button>
 
 		<nav class="nav__right" aria-label="Primary">
-			<div class="nav__links" id="navLinks">
+			<div class="nav__links">
 				<a class="nav__link" href="<?php echo esc_url( home_url( '/#services' ) ); ?>">Services</a>
 				<a class="nav__link" href="<?php echo esc_url( home_url( '/#how-we-work' ) ); ?>">How we work</a>
 			</div>
-			<button type="button" class="nav__toggle" id="navToggle" aria-label="Menu" aria-expanded="false" aria-controls="navLinks">
+			<button type="button" class="btn btn--primary btn--sm js-book-call nav__cta-desktop">Book a call</button>
+			<button type="button" class="nav__toggle" id="navToggle" aria-label="Open menu" aria-expanded="false" aria-controls="navDrawer">
 				<span class="nav__toggle-bars" aria-hidden="true"></span>
 			</button>
-			<button type="button" class="btn btn--primary btn--sm js-book-call">Book a call</button>
 		</nav>
 	</div>
 </header>
+
+<!-- Hallmark · component: nav-drawer (mobile off-canvas) · genre: modern-minimal · theme: cobalt
+     states: default · hover · focus · active (drawer links + CTA button) -->
+<div class="drawer" id="navDrawer" aria-hidden="true">
+	<div class="drawer__backdrop" data-drawer-close></div>
+	<div class="drawer__panel" role="dialog" aria-modal="true" aria-label="Menu">
+		<div class="drawer__head">
+			<a class="drawer__brand" href="<?php echo esc_url( home_url( '/' ) ); ?>">Dave Bukar<span class="nav__brand-mono">.tech</span></a>
+			<button type="button" class="drawer__close" data-drawer-close aria-label="Close menu">×</button>
+		</div>
+
+		<div class="drawer__section">
+			<a class="drawer__link" href="<?php echo esc_url( home_url( '/#services' ) ); ?>"><span>Services</span><span class="drawer__link-arrow" aria-hidden="true">→</span></a>
+			<a class="drawer__link" href="<?php echo esc_url( home_url( '/#how-we-work' ) ); ?>"><span>How we work</span><span class="drawer__link-arrow" aria-hidden="true">→</span></a>
+		</div>
+
+		<p class="drawer__label">Explore</p>
+		<div class="drawer__section drawer__section--compact">
+			<?php foreach ( dbt_services() as $slug => $service ) : $page = get_page_by_path( $slug, OBJECT, 'page' ); ?>
+				<a class="drawer__sublink" href="<?php echo esc_url( $page ? get_permalink( $page ) : home_url( '/' . $slug . '/' ) ); ?>"><?php echo esc_html( $service['title'] ); ?></a>
+			<?php endforeach; ?>
+		</div>
+
+		<div class="drawer__foot">
+			<button type="button" class="btn btn--primary drawer__cta js-book-call">Book a call</button>
+			<div class="drawer__legal">
+				<?php $privacy = get_page_by_path( 'privacy-policy', OBJECT, 'page' ); ?>
+				<a href="<?php echo esc_url( $privacy ? get_permalink( $privacy ) : home_url( '/privacy-policy/' ) ); ?>">Privacy</a>
+				<?php $terms = get_page_by_path( 'terms-of-service', OBJECT, 'page' ); ?>
+				<a href="<?php echo esc_url( $terms ? get_permalink( $terms ) : home_url( '/terms-of-service/' ) ); ?>">Terms</a>
+			</div>
+		</div>
+	</div>
+</div>
 
 <div class="cmdk" id="cmdk" aria-hidden="true">
 	<div class="cmdk__backdrop" data-close></div>

@@ -9,9 +9,19 @@
 # Landing at /wp-content-deploy/* (not directly at /var/www/html/wp-content/*)
 # because the named volume mounted over /var/www/html at container start
 # would otherwise permanently shadow anything baked in here after the first
-# run. The entrypoint in docker-compose.yml copies these into the volume on
-# every container start instead - which, thanks to the cache behaviour
-# above, now reliably happens exactly when this content actually changed.
+# run. The entrypoint in docker-compose.yml rsyncs these onto the volume on
+# every container start instead (merge, not replace - anything installed
+# directly via wp-admin and never added to git survives) - which, thanks to
+# the cache behaviour above, now reliably happens exactly when this content
+# actually changed.
 FROM wordpress:latest
+
+# rsync merges git's content onto the volume without deleting anything
+# installed there directly (e.g. a plugin added via wp-admin) - see the
+# entrypoint in docker-compose.yml.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends rsync \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY wp-content/themes /wp-content-deploy/themes
 COPY wp-content/plugins /wp-content-deploy/plugins

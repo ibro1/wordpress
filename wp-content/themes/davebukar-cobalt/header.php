@@ -26,8 +26,13 @@ defined( 'ABSPATH' ) || exit;
 		</button>
 
 		<nav class="nav__right" aria-label="Primary">
-			<a class="nav__link" href="<?php echo esc_url( home_url( '/#services' ) ); ?>">Services</a>
-			<a class="nav__link" href="<?php echo esc_url( home_url( '/#how-we-work' ) ); ?>">How we work</a>
+			<div class="nav__links" id="navLinks">
+				<a class="nav__link" href="<?php echo esc_url( home_url( '/#services' ) ); ?>">Services</a>
+				<a class="nav__link" href="<?php echo esc_url( home_url( '/#how-we-work' ) ); ?>">How we work</a>
+			</div>
+			<button type="button" class="nav__toggle" id="navToggle" aria-label="Menu" aria-expanded="false" aria-controls="navLinks">
+				<span class="nav__toggle-bars" aria-hidden="true"></span>
+			</button>
 			<button type="button" class="btn btn--primary btn--sm js-book-call">Book a call</button>
 		</nav>
 	</div>

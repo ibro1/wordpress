@@ -58,6 +58,35 @@
 		}
 	});
 
+	/* Mobile nav toggle — reveals Services / How we work below the 768px breakpoint */
+	var navToggle = document.getElementById("navToggle");
+	var navLinks = document.getElementById("navLinks");
+	if (navToggle && navLinks) {
+		var closeNavLinks = function () {
+			navLinks.classList.remove("is-open");
+			navToggle.setAttribute("aria-expanded", "false");
+		};
+
+		navToggle.addEventListener("click", function () {
+			var isOpen = navLinks.classList.toggle("is-open");
+			navToggle.setAttribute("aria-expanded", isOpen ? "true" : "false");
+		});
+
+		navLinks.querySelectorAll(".nav__link").forEach(function (link) {
+			link.addEventListener("click", closeNavLinks);
+		});
+
+		document.addEventListener("click", function (e) {
+			if (!navLinks.classList.contains("is-open")) return;
+			if (navLinks.contains(e.target) || navToggle.contains(e.target)) return;
+			closeNavLinks();
+		});
+
+		document.addEventListener("keydown", function (e) {
+			if (e.key === "Escape" && navLinks.classList.contains("is-open")) closeNavLinks();
+		});
+	}
+
 	/* Command palette (N13) */
 	var pill = document.getElementById("searchpill");
 	var cmdk = document.getElementById("cmdk");

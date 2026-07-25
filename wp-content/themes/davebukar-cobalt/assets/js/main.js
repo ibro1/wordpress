@@ -257,6 +257,76 @@
 		}
 	}
 
+	// interaction-and-states.md § Forms: validate on blur, not on every
+	// keystroke; revalidate on change once the field has been blurred once
+	// (the "touched" pattern). Error message states what broke and implies
+	// the fix, one sentence.
+	var lfFieldRules = {
+		"lf-name": {
+			validate: function (v) { return v.trim().length > 0; },
+			message: "Add your name — we don’t take anonymous requests.",
+		},
+		"lf-email": {
+			validate: function (v) {
+				v = v.trim();
+				return v.length > 0 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+			},
+			message: "Enter a valid email — that’s how we reply.",
+		},
+		"lf-message": {
+			validate: function (v) { return v.trim().length > 0; },
+			message: "Add a line about what you need — an empty message won’t get read.",
+		},
+	};
+	var lfTouched = {};
+
+	function lfValidateField(id) {
+		var el = document.getElementById(id);
+		var rule = lfFieldRules[id];
+		var errorEl = document.getElementById(id + "-error");
+		var valid = rule.validate(el.value);
+
+		if (valid) {
+			el.removeAttribute("aria-invalid");
+			if (errorEl) errorEl.textContent = "";
+		} else {
+			el.setAttribute("aria-invalid", "true");
+			if (errorEl) errorEl.textContent = rule.message;
+		}
+		return valid;
+	}
+
+	function lfValidateAll() {
+		var firstInvalid = null;
+		Object.keys(lfFieldRules).forEach(function (id) {
+			lfTouched[id] = true;
+			if (!lfValidateField(id) && !firstInvalid) firstInvalid = document.getElementById(id);
+		});
+		return firstInvalid;
+	}
+
+	function lfResetValidation() {
+		lfTouched = {};
+		Object.keys(lfFieldRules).forEach(function (id) {
+			var el = document.getElementById(id);
+			var errorEl = document.getElementById(id + "-error");
+			el.removeAttribute("aria-invalid");
+			if (errorEl) errorEl.textContent = "";
+		});
+	}
+
+	Object.keys(lfFieldRules).forEach(function (id) {
+		var el = document.getElementById(id);
+		if (!el) return;
+		el.addEventListener("blur", function () {
+			lfTouched[id] = true;
+			lfValidateField(id);
+		});
+		el.addEventListener("input", function () {
+			if (lfTouched[id]) lfValidateField(id);
+		});
+	});
+
 	function openLeadform() {
 		lfLastFocused = document.activeElement;
 		leadform.classList.add("is-open");
@@ -264,6 +334,7 @@
 		document.body.style.overflow = "hidden";
 
 		lfClearError();
+		lfResetValidation();
 		lfSetStatus("DRAFT", null);
 		lfFormStep.hidden = false;
 		lfSuccessStep.hidden = true;
@@ -297,12 +368,9 @@
 			e.preventDefault();
 			lfClearError();
 
-			var name    = document.getElementById("lf-name").value.trim();
-			var email   = document.getElementById("lf-email").value.trim();
-			var message = document.getElementById("lf-message").value.trim();
-
-			if (!name || !email || !message) {
-				lfShowError("Please fill in your name, email, and a short note on what you need.");
+			var firstInvalid = lfValidateAll();
+			if (firstInvalid) {
+				firstInvalid.focus();
 				return;
 			}
 

@@ -120,11 +120,19 @@ defined( 'ABSPATH' ) || exit;
 				<form id="leadform-form" novalidate>
 					<div class="field">
 						<label for="lf-name">Name</label>
-						<input type="text" id="lf-name" name="name" autocomplete="name" placeholder="Ada Lovelace" required>
+						<div class="field__control">
+							<input type="text" id="lf-name" name="name" autocomplete="name" placeholder="Ada Lovelace" required aria-required="true" aria-describedby="lf-name-error">
+							<span class="field__glyph" aria-hidden="true"></span>
+						</div>
+						<p class="field__error" id="lf-name-error" aria-live="polite"></p>
 					</div>
 					<div class="field">
 						<label for="lf-email">Email</label>
-						<input type="email" id="lf-email" name="email" autocomplete="email" placeholder="you@company.com" required>
+						<div class="field__control">
+							<input type="email" id="lf-email" name="email" autocomplete="email" placeholder="you@company.com" required aria-required="true" aria-describedby="lf-email-error">
+							<span class="field__glyph" aria-hidden="true"></span>
+						</div>
+						<p class="field__error" id="lf-email-error" aria-live="polite"></p>
 					</div>
 					<div class="field">
 						<label for="lf-company">Company <span class="field__optional">(optional)</span></label>
@@ -142,7 +150,11 @@ defined( 'ABSPATH' ) || exit;
 					</div>
 					<div class="field">
 						<label for="lf-message">What are you building?</label>
-						<textarea id="lf-message" name="message" rows="4" placeholder="A quick note on what you’re building or what’s broken." required></textarea>
+						<div class="field__control">
+							<textarea id="lf-message" name="message" rows="4" placeholder="A quick note on what you’re building or what’s broken." required aria-required="true" aria-describedby="lf-message-error"></textarea>
+							<span class="field__glyph field__glyph--textarea" aria-hidden="true"></span>
+						</div>
+						<p class="field__error" id="lf-message-error" aria-live="polite"></p>
 					</div>
 					<div class="field field--honeypot" aria-hidden="true">
 						<label for="lf-website">Website</label>

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#52BBE8"/>
+      <stop offset="100%" stop-color="#2196F3"/>
+    </linearGradient>
+  </defs>
+  <rect width="256" height="256" rx="28" fill="#1A2332"/>
+  <g transform="translate(60,32)">
+    <path d="M68 16L120 48L120 112L68 144L16 112L16 48Z" fill="url(#g)" opacity="0.9"/>
+    <path d="M68 16L120 48L120 112L68 144" fill="#fff" opacity="0.15"/>
+    <path d="M68 48L96 64L96 96L68 112L40 96L40 64Z" fill="#fff" opacity="0.25"/>
+    <path d="M68 144L68 176" stroke="#52BBE8" stroke-width="6" stroke-linecap="round"/>
+    <circle cx="68" cy="188" r="8" fill="#52BBE8"/>
+  </g>
+  <text x="128" y="240" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="20" fill="#FFFFFF" opacity="0.9">Plesk</text>
+</svg>

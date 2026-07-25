@@ -1,0 +1,11 @@
+.wu-flag-icon {
+	position: relative;
+	display: inline-block;
+	width: 1.3333333333em;
+	line-height: 1;
+	font-size: 1.3333333333em;
+	font-family: "Twemoji Country Flags", serif;
+}
+.wu-flag-icon.wu-flag-icon-squared {
+	width: 1em;
+}

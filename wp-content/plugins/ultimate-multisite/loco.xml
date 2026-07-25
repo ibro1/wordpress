@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<bundle name="Ultimate Multisite">
+  <domain name="ultimate-multisite">
+    <project name="Ultimate Multisite" slug="ultimate-multisite">
+      <source>
+        <directory>.</directory>
+      </source>
+      <target>
+        <directory>lang</directory>
+      </target>
+      <template>
+        <file>lang/ultimate-multisite.pot</file>
+      </template>
+    </project>
+  </domain>
+  <exclude>
+    <directory>node_modules</directory>
+    <directory>vendor</directory>
+    <directory>dependencies</directory>
+  </exclude>
+</bundle>

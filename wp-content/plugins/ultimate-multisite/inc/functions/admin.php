@@ -1,0 +1,72 @@
+<?php
+/**
+ * Admin Panel Functions
+ *
+ * @package WP_Ultimo\Functions
+ * @since   2.0.0
+ */
+
+// Exit if accessed directly
+defined('ABSPATH') || exit;
+
+/**
+ * Returns the HTML markup of a empty state page.
+ *
+ * @since 2.0.0
+ *
+ * @param array $args List of the page arguments.
+ * @return void
+ */
+function wu_render_empty_state($args = []) {
+
+	$args = wp_parse_args(
+		$args,
+		[
+			'message'                  => __('This is not yet available...', 'ultimate-multisite'),
+			'sub_message'              => __('We\'re still working on this part of the product.', 'ultimate-multisite'),
+			'link_label'               => __('&larr; Go Back', 'ultimate-multisite'),
+			'link_url'                 => 'javascript:history.go(-1)',
+			'link_classes'             => '',
+			'link_icon'                => '',
+			'display_background_image' => true,
+		]
+	);
+
+	wu_get_template('base/empty-state', $args);
+}
+
+/**
+ * Checks if should use wrap container or not based on user setting.
+ *
+ * @since 2.0.0
+ */
+function wu_wrap_use_container() {
+
+	echo get_user_setting('wu_use_container', false) ? 'admin-lg:wu-container admin-lg:wu-mx-auto' : '';
+}
+
+/**
+ * Renders the responsive table single-line.
+ *
+ * @since 2.0.0
+ *
+ * @param array $args Main arguments.
+ * @param array $first_row The first row of icons + labels.
+ * @param array $second_row The second row, on the right.
+ * @return void
+ */
+function wu_responsive_table_row($args = [], $first_row = [], $second_row = []) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter
+
+	$args = wp_parse_args(
+		$args,
+		[
+			'id'     => '',
+			'title'  => __('No Title', 'ultimate-multisite'),
+			'url'    => '#',
+			'status' => '',
+			'image'  => '',
+		]
+	);
+
+	wu_get_template('base/responsive-table-row', compact('args', 'first_row', 'second_row'));
+}

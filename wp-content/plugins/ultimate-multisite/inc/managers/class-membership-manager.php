@@ -1,0 +1,744 @@
+<?php
+/**
+ * Membership Manager
+ *
+ * Handles processes related to memberships.
+ *
+ * @package WP_Ultimo
+ * @subpackage Managers/Membership_Manager
+ * @since 2.0.0
+ */
+
+namespace WP_Ultimo\Managers;
+
+use Psr\Log\LogLevel;
+use WP_Ultimo\Database\Memberships\Membership_Status;
+
+// Exit if accessed directly
+defined('ABSPATH') || exit;
+
+/**
+ * Handles processes related to memberships.
+ *
+ * @since 2.0.0
+ */
+class Membership_Manager extends Base_Manager {
+
+	use \WP_Ultimo\Apis\Rest_Api;
+	use \WP_Ultimo\Apis\WP_CLI;
+	use \WP_Ultimo\Apis\MCP_Abilities;
+	use \WP_Ultimo\Apis\Command_Palette;
+	use \WP_Ultimo\Traits\Singleton;
+
+	const LOG_FILE_NAME = 'memberships';
+	/**
+	 * The manager slug.
+	 *
+	 * @since 2.0.0
+	 * @var string
+	 */
+	protected $slug = 'membership';
+
+	/**
+	 * The model class associated to this manager.
+	 *
+	 * @since 2.0.0
+	 * @var string
+	 */
+	protected $model_class = \WP_Ultimo\Models\Membership::class;
+
+	/**
+	 * Instantiate the necessary hooks.
+	 *
+	 * @since 2.0.0
+	 * @return void
+	 */
+	public function init(): void {
+
+		$this->enable_rest_api();
+
+		$this->enable_wp_cli();
+
+		$this->enable_mcp_abilities();
+
+		$this->enable_command_palette();
+
+		add_action(
+			'init',
+			function () {
+				Event_Manager::register_model_events('membership', __('Membership', 'ultimate-multisite'), ['created', 'updated']);
+			}
+		);
+
+		add_action('wu_async_transfer_membership', [$this, 'async_transfer_membership'], 10, 2);
+
+		add_action('wu_async_delete_membership', [$this, 'async_delete_membership'], 10);
+
+		/*
+		 * Transitions
+		 */
+		add_action('wu_transition_membership_status', [$this, 'mark_cancelled_date'], 10, 3);
+
+		add_action('wu_transition_membership_status', [$this, 'transition_membership_status'], 10, 3);
+
+		add_action('wu_transition_membership_status', [$this, 'handle_pending_site_on_cancellation'], 10, 3);
+
+		/*
+		 * Deal with delayed/schedule swaps
+		 */
+		add_action('wu_async_membership_swap', [$this, 'async_membership_swap'], 10);
+
+		/*
+		 * Deal with pending sites creation.
+		 *
+		 * `publish_pending_site` is also registered on the nopriv hook
+		 * because the loopback fast-path called by
+		 * Membership::publish_pending_site_async() uses
+		 * wp_remote_request() — which does not forward auth cookies, so
+		 * admin-ajax.php dispatches `wp_ajax_nopriv_wu_publish_pending_site`.
+		 * Without a nopriv listener the dispatch falls through to
+		 * `wp_die('0')` and admin-ajax returns HTTP 400 on every loopback,
+		 * forcing the slower Action Scheduler fallback for every site
+		 * creation. Security on the nopriv path is enforced by the HMAC
+		 * token verified in publish_pending_site(); the admin-modal
+		 * (logged-in) path keeps the nonce check.
+		 */
+		add_action('wp_ajax_wu_publish_pending_site', [$this, 'publish_pending_site']);
+		add_action('wp_ajax_nopriv_wu_publish_pending_site', [$this, 'publish_pending_site']);
+
+		add_action('wp_ajax_wu_check_pending_site_created', [$this, 'check_pending_site_created']);
+
+		add_action('wu_async_publish_pending_site', [$this, 'async_publish_pending_site'], 10);
+
+		/*
+		 * Reclaim orphaned pending_site when a WooCommerce order completes.
+		 */
+		add_action('woocommerce_order_status_completed', [$this, 'reclaim_pending_site_on_wc_order_completion']);
+	}
+
+	/**
+	 * Processes a delayed site publish action.
+	 *
+	 * @since 2.0.11
+	 */
+	public function publish_pending_site(): void {
+
+		// Check for HMAC token (loopback fast-path) or nonce (admin modal).
+		$wu_token   = wu_request('wu_token');
+		$wu_expires = wu_request('wu_expires');
+
+		if ($wu_token && $wu_expires) {
+			// Verify HMAC token for loopback requests.
+			$membership_id = wu_request('membership_id');
+			$expires       = (int) $wu_expires;
+
+			// Token must not be expired.
+			if ($expires < time()) {
+				wp_die('0', 400);
+			}
+
+			// Verify HMAC.
+			$expected_token = hash_hmac('sha256', $membership_id . '|' . $expires, wp_salt('auth'));
+			if (! hash_equals($expected_token, $wu_token)) {
+				wp_die('0', 400);
+			}
+		} else {
+			// Fall back to nonce check for admin modal / manual flow.
+			check_ajax_referer('wu_publish_pending_site');
+			$membership_id = wu_request('membership_id');
+		}
+
+		ignore_user_abort(true);
+
+		$this->send_pending_site_publish_started_response();
+
+		$this->async_publish_pending_site($membership_id);
+
+		exit; // Just exit the request
+	}
+
+	/**
+	 * Sends the loopback response before the long-running publish starts.
+	 *
+	 * The checkout fast-path calls this endpoint with a normal blocking
+	 * wp_remote_request() so it can confirm that the HMAC-protected action was
+	 * reached. The endpoint must therefore complete the HTTP response before it
+	 * starts copying/provisioning the pending site, otherwise FrankenPHP and other
+	 * non-FastCGI SAPIs keep the checkout waiting for the full publish.
+	 *
+	 * @since 2.5.x
+	 * @return void
+	 */
+	protected function send_pending_site_publish_started_response() {
+
+		$response = wp_json_encode(['status' => 'creating-site']);
+
+		if ( ! headers_sent()) {
+			header('Content-Type: application/json; charset=' . get_option('blog_charset'));
+			header('Cache-Control: no-cache, must-revalidate, max-age=0');
+			header('Content-Length: ' . strlen($response));
+
+			/*
+			 * The manual fallback below relies on the client being able to treat
+			 * the response body as complete after Content-Length bytes even though
+			 * PHP continues executing the publish in the same request.
+			 */
+			header('Connection: close');
+		}
+
+		echo $response; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Safe JSON from wp_json_encode().
+
+		$this->finish_pending_site_publish_response();
+	}
+
+	/**
+	 * Finishes or flushes the HTTP response while allowing PHP to keep running.
+	 *
+	 * @since 2.5.x
+	 * @return void
+	 */
+	protected function finish_pending_site_publish_response() {
+
+		if (function_exists('litespeed_finish_request')) {
+			litespeed_finish_request();
+			return;
+		}
+
+		if (function_exists('fastcgi_finish_request')) {
+			fastcgi_finish_request();
+			return;
+		}
+
+		/*
+		 * FrankenPHP does not expose a PHP-level finish_request() function in all
+		 * contexts. Flush every active output buffer and the SAPI buffer so the
+		 * loopback client can receive the Content-Length-delimited response before
+		 * the pending-site publish work starts.
+		 */
+		while (ob_get_level() > 0) {
+			ob_end_flush();
+		}
+
+		flush();
+	}
+
+	/**
+	 * Processes a delayed site publish action.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param int $membership_id The membership id.
+	 * @return void
+	 */
+	public function async_publish_pending_site($membership_id) {
+		/*
+		 * Allow unlimited execution time for site initialization.
+		 *
+		 * Complex site templates (Elementor kits, Freemius SDK, Rank Math,
+		 * large database tables) can exceed PHP's default time limit,
+		 * killing the process and leaving the Action Scheduler action
+		 * stuck in-progress status.
+		 *
+		 * @since 2.4.13
+		 */
+		if (function_exists('set_time_limit')) {
+			set_time_limit(0);
+		}
+
+		$membership = wu_get_membership($membership_id);
+
+		if ( ! $membership) {
+			wu_log_add(self::LOG_FILE_NAME, __('An unexpected error happened.', 'ultimate-multisite'), LogLevel::ERROR);
+			return;
+		}
+
+		$status = $membership->publish_pending_site();
+
+		if (is_wp_error($status)) {
+			wu_log_add('site-errors', $status, LogLevel::ERROR);
+		}
+	}
+
+	/**
+	 * Processes a delayed site publish action.
+	 *
+	 * Checks whether the pending site has been created. If is_publishing
+	 * has been true for longer than 5 minutes, we assume the creation
+	 * process was killed (PHP timeout, OOM, server restart) and reset
+	 * the flag so the Action Scheduler retry can pick it up.
+	 *
+	 * @since 2.0.11
+	 */
+	public function check_pending_site_created() {
+
+		$membership_id = wu_request('membership_hash');
+
+		$membership = wu_get_membership_by_hash($membership_id);
+
+		if ( ! $membership) {
+			return new \WP_Error('error', __('An unexpected error happened.', 'ultimate-multisite'));
+		}
+
+		/*
+		 * The async publish loopback can run in a different long-lived PHP
+		 * worker than this polling request. Clear this worker's in-process
+		 * membership meta cache before reading pending_site so stale cached
+		 * data cannot keep the thank-you page stuck after creation completes.
+		 */
+		wp_cache_delete($membership->get_id(), 'wu_membership_meta');
+
+		$pending_site = $membership->get_pending_site();
+
+		if ( ! $pending_site) {
+			/**
+			 * We do not have a pending site, so we can assume the site was created.
+			 */
+			wp_send_json(['publish_status' => 'completed']);
+
+			exit;
+		}
+
+		/*
+		 * Detect stale publishing state. When the PHP process that was
+		 * creating the site gets killed mid-execution, is_publishing
+		 * stays true forever — the AS retry sees the flag and bails
+		 * out, creating an infinite loop. Reset the flag after 5 min
+		 * so the next AS run or cron kick can retry site creation.
+		 *
+		 * @since 2.5.3
+		 */
+		if ($pending_site->is_publishing_stale()) {
+			$pending_site->set_publishing(false);
+
+			$membership->update_pending_site($pending_site);
+
+			wu_log_add(
+				self::LOG_FILE_NAME,
+				sprintf(
+					// translators: %d: membership ID.
+					__('Reset stale is_publishing flag for membership %d. The site creation process appears to have been killed before completing.', 'ultimate-multisite'),
+					$membership->get_id()
+				)
+			);
+
+			/*
+			 * Return 'stopped' so the frontend polling loop retries.
+			 * Do NOT also enqueue wu_async_publish_pending_site here —
+			 * that would create two competing retry sources (Action
+			 * Scheduler + frontend) and risk double site creation.
+			 * The existing AS scheduled action will pick up the reset
+			 * flag on its next run.
+			 */
+			wp_send_json(['publish_status' => 'stopped']);
+
+			exit;
+		}
+
+		wp_send_json(['publish_status' => $pending_site->is_publishing() ? 'running' : 'stopped']);
+
+		exit;
+	}
+
+	/**
+	 * Processes a membership swap.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param int $membership_id The membership id.
+	 * @return void
+	 */
+	public function async_membership_swap($membership_id) {
+
+		global $wpdb;
+
+		$membership = wu_get_membership($membership_id);
+
+		if ( ! $membership) {
+			wu_log_add(self::LOG_FILE_NAME, __('An unexpected error happened.', 'ultimate-multisite'), LogLevel::ERROR);
+			return;
+		}
+
+		$scheduled_swap = $membership->get_scheduled_swap();
+
+		if (empty($scheduled_swap)) {
+			wu_log_add(self::LOG_FILE_NAME, __('An unexpected error happened.', 'ultimate-multisite'), LogLevel::ERROR);
+			return;
+		}
+
+		$order = $scheduled_swap->order;
+
+		$wpdb->query('START TRANSACTION'); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+
+		try {
+			$membership->swap($order);
+
+			$status = $membership->save();
+
+			if (is_wp_error($status)) {
+				$wpdb->query('ROLLBACK');  // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				wu_log_add(self::LOG_FILE_NAME, $status->get_error_message(), LogLevel::ERROR);
+				return;
+			}
+		} catch (\Throwable $exception) {
+			$wpdb->query('ROLLBACK'); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+
+			wu_log_add(self::LOG_FILE_NAME, $exception->getMessage(), LogLevel::ERROR);
+			return;
+		}
+
+		/*
+		 * Clean up the membership swap order.
+		 */
+		$membership->delete_scheduled_swap();
+
+		$wpdb->query('COMMIT'); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+	}
+
+	/**
+	 * Watches the change in payment status to take action when needed.
+	 *
+	 * @todo Publishing sites should be done in async.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param string  $old_status The old status of the membership.
+	 * @param string  $new_status The new status of the membership.
+	 * @param integer $membership_id Payment ID.
+	 * @return void
+	 */
+	public function transition_membership_status($old_status, $new_status, $membership_id): void {
+
+		$allowed_previous_status = [
+			Membership_Status::PENDING,
+			Membership_Status::ON_HOLD,
+		];
+
+		if ( ! in_array($old_status, $allowed_previous_status, true)) {
+			return;
+		}
+
+		$allowed_status = [
+			Membership_Status::ACTIVE,
+			Membership_Status::TRIALING,
+		];
+
+		if ( ! in_array($new_status, $allowed_status, true)) {
+			return;
+		}
+
+		/*
+		 * Create pending sites.
+		 */
+		$membership = wu_get_membership($membership_id);
+
+		/*
+		 * If the customer has not yet verified their email, hold off on
+		 * publishing the pending site. The site will be published later
+		 * when the customer completes email verification (handled in
+		 * Customer_Manager::handle_email_verification()).
+		 */
+		$customer = $membership->get_customer();
+
+		if ($customer && $customer->get_email_verification() === 'pending') {
+			return;
+		}
+
+		$membership->publish_pending_site_async();
+	}
+
+	/**
+	 * Mark the membership date of cancellation.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param string $old_value Old status value.
+	 * @param string $new_value New status value.
+	 * @param int    $item_id The membership id.
+	 * @return void
+	 */
+	public function mark_cancelled_date($old_value, $new_value, $item_id): void {
+
+		if ('cancelled' === $new_value && $new_value !== $old_value) {
+			$membership = wu_get_membership($item_id);
+
+			$membership->set_date_cancellation(wu_get_current_time('mysql', true));
+
+			$membership->save();
+		}
+	}
+
+	/**
+	 * Preserve pending_site data in a transient when a membership is cancelled.
+	 *
+	 * When a membership transitions to `cancelled`, any orphaned pending_site
+	 * stored in membership meta is moved to a 24-hour transient keyed by the
+	 * customer's email hash. This allows a retry checkout flow to reclaim the
+	 * pending site rather than losing it permanently.
+	 *
+	 * Transient key format: `wu_transferable_pending_` . md5( $email )
+	 *
+	 * @since 2.3.2
+	 *
+	 * @param string $old_status    The previous membership status.
+	 * @param string $new_status    The new membership status.
+	 * @param int    $membership_id The ID of the membership.
+	 * @return void
+	 */
+	public function handle_pending_site_on_cancellation($old_status, $new_status, $membership_id): void {
+
+		if ('cancelled' !== $new_status) {
+			return;
+		}
+
+		$membership = wu_get_membership($membership_id);
+
+		if ( ! $membership) {
+			return;
+		}
+
+		$pending_site = $membership->get_pending_site();
+
+		if ( ! $pending_site) {
+			return;
+		}
+
+		$customer = $membership->get_customer();
+
+		if ( ! $customer) {
+			$membership->delete_pending_site();
+			return;
+		}
+
+		$email         = $customer->get_email_address();
+		$transient_key = 'wu_transferable_pending_' . md5($email);
+
+		set_transient($transient_key, $pending_site, DAY_IN_SECONDS);
+
+		$membership->delete_pending_site();
+	}
+
+	/**
+	 * Reclaim an orphaned pending_site when a WooCommerce order completes.
+	 *
+	 * When a membership is cancelled, `handle_pending_site_on_cancellation`
+	 * stores the pending_site in a 24-hour transient keyed by the customer's
+	 * billing email hash. If the customer then completes a new WooCommerce
+	 * order, this method reclaims the pending_site, reactivates their
+	 * cancelled membership, triggers async site provisioning, and links the
+	 * WC order to the membership via `_wu_membership_id` post meta.
+	 *
+	 * Transient key format: `wu_transferable_pending_` . md5( $email )
+	 *
+	 * @since 2.3.2
+	 *
+	 * @param int $order_id The WooCommerce order ID.
+	 * @return void
+	 */
+	public function reclaim_pending_site_on_wc_order_completion($order_id): void {
+
+		if ( ! function_exists('wc_get_order')) {
+			return;
+		}
+
+		$order = wc_get_order($order_id);
+
+		if ( ! $order) {
+			return;
+		}
+
+		$billing_email = $order->get_billing_email();
+
+		if ( ! $billing_email) {
+			return;
+		}
+
+		$transient_key = 'wu_transferable_pending_' . md5($billing_email);
+		$pending_site  = get_transient($transient_key);
+
+		if ( ! $pending_site) {
+			return;
+		}
+
+		$wp_user = get_user_by('email', $billing_email);
+
+		if ( ! $wp_user) {
+			return;
+		}
+
+		$customer = wu_get_customer_by_user_id($wp_user->ID);
+
+		if ( ! $customer) {
+			return;
+		}
+
+		$memberships = wu_get_memberships(
+			[
+				'customer_id' => $customer->get_id(),
+				'status'      => Membership_Status::CANCELLED,
+				'number'      => 1,
+				'orderby'     => 'date_created',
+				'order'       => 'DESC',
+			]
+		);
+
+		if (empty($memberships)) {
+			return;
+		}
+
+		$membership = $memberships[0];
+
+		$result = $membership->reactivate();
+
+		if (is_wp_error($result)) {
+			wu_log_add(self::LOG_FILE_NAME, $result->get_error_message(), LogLevel::ERROR);
+			return;
+		}
+
+		$membership->update_pending_site($pending_site);
+
+		update_post_meta(absint($order_id), '_wu_membership_id', $membership->get_id());
+
+		delete_transient($transient_key);
+
+		$membership->publish_pending_site_async();
+	}
+
+	/**
+	 * Transfer a membership from a user to another.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param int $membership_id The ID of the membership being transferred.
+	 * @param int $target_customer_id The new owner.
+	 * @return void
+	 */
+	public function async_transfer_membership($membership_id, $target_customer_id) {
+
+		global $wpdb;
+
+		$membership = wu_get_membership($membership_id);
+
+		$target_customer = wu_get_customer($target_customer_id);
+
+		if ( ! $membership || ! $target_customer || absint($membership->get_customer_id()) === absint($target_customer->get_id())) {
+			wu_log_add(self::LOG_FILE_NAME, __('An unexpected error happened.', 'ultimate-multisite'), LogLevel::ERROR);
+			return;
+		}
+
+		$wpdb->query('START TRANSACTION'); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+
+		try {
+			/*
+			 * Get Sites and move them over.
+			 */
+			$sites = wu_get_sites(
+				[
+					'meta_query' => [ // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
+						'membership_id' => [
+							'key'   => 'wu_membership_id',
+							'value' => $membership->get_id(),
+						],
+					],
+				]
+			);
+
+			foreach ($sites as $site) {
+				$site->set_customer_id($target_customer_id);
+
+				$saved = $site->save();
+
+				if (is_wp_error($saved)) {
+					$wpdb->query('ROLLBACK'); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+					wu_log_add(self::LOG_FILE_NAME, $saved->get_error_message(), LogLevel::ERROR);
+					return;
+				}
+			}
+
+			/*
+			 * Change the membership
+			 */
+			$membership->set_customer_id($target_customer_id);
+
+			$saved = $membership->save();
+
+			if (is_wp_error($saved)) {
+				$wpdb->query('ROLLBACK'); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+
+				wu_log_add(self::LOG_FILE_NAME, $saved->get_error_message(), LogLevel::ERROR);
+				return;
+			}
+			$wpdb->query('COMMIT'); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		} catch (\Throwable $e) {
+			$wpdb->query('ROLLBACK'); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+
+			wu_log_add(self::LOG_FILE_NAME, $e->getMessage(), LogLevel::ERROR);
+		} finally {
+			$membership->unlock();
+		}
+	}
+
+	/**
+	 * Delete a membership.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param int $membership_id The ID of the membership being deleted.
+	 * @return void
+	 */
+	public function async_delete_membership($membership_id) {
+
+		global $wpdb;
+
+		$membership = wu_get_membership($membership_id);
+
+		if ( ! $membership) {
+			wu_log_add(self::LOG_FILE_NAME, __('An unexpected error happened.', 'ultimate-multisite'), LogLevel::ERROR);
+			return;
+		}
+
+		$wpdb->query('START TRANSACTION'); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+
+		try {
+			/*
+			 * Get Sites and delete them.
+			 */
+			$sites = wu_get_sites(
+				[
+					'meta_query' => [ // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
+						'membership_id' => [
+							'key'   => 'wu_membership_id',
+							'value' => $membership->get_id(),
+						],
+					],
+				]
+			);
+
+			foreach ($sites as $site) {
+				$saved = $site->delete();
+
+				if (is_wp_error($saved)) {
+					$wpdb->query('ROLLBACK'); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+					wu_log_add(self::LOG_FILE_NAME, $saved->get_error_message(), LogLevel::ERROR);
+					return;
+				}
+			}
+
+			/*
+			 * Delete the membership
+			 */
+			$saved = $membership->delete();
+
+			if (is_wp_error($saved)) {
+				$wpdb->query('ROLLBACK'); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				wu_log_add(self::LOG_FILE_NAME, $saved->get_error_message(), LogLevel::ERROR);
+				return;
+			}
+		} catch (\Throwable $e) {
+			$wpdb->query('ROLLBACK'); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			wu_log_add(self::LOG_FILE_NAME, $e->getMessage(), LogLevel::ERROR);
+			return;
+		}
+
+		$wpdb->query('COMMIT'); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+	}
+}

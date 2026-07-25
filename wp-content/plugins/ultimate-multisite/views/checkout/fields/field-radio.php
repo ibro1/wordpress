@@ -1,0 +1,47 @@
+<?php
+/**
+ * Radio field view.
+ *
+ * @since 2.0.0
+ */
+defined('ABSPATH') || exit;
+
+?>
+<div class="<?php echo esc_attr(trim($field->wrapper_classes)); ?>" <?php $field->print_wrapper_html_attributes(); ?>>
+
+	<?php
+	/**
+	 * Adds the partial title template.
+	 *
+	 * @since 2.0.0
+	 */
+	wu_get_template(
+		'checkout/fields/partials/field-title',
+		[
+			'field' => $field,
+		]
+	);
+	?>
+
+	<?php foreach ($field->options as $option_value => $option_name) : ?>
+		<label class="wu-radio-option" for="field-<?php echo esc_attr($field->id); ?>-<?php echo esc_attr($option_value); ?>">
+			<input id="field-<?php echo esc_attr($field->id); ?>-<?php echo esc_attr($option_value); ?>" type="radio" name="<?php echo esc_attr($field->id); ?>" value="<?php echo esc_attr($option_value); ?>" class="wu-radio-input" <?php $field->print_html_attributes(); ?> <?php checked($field->value == $option_value); ?>>
+			<?php echo esc_html($option_name); ?>
+		</label>
+	<?php endforeach; ?>
+
+	<?php
+	/**
+	 * Adds the partial title template.
+	 *
+	 * @since 2.0.0
+	 */
+	wu_get_template(
+		'checkout/fields/partials/field-errors',
+		[
+			'field' => $field,
+		]
+	);
+	?>
+
+</div>

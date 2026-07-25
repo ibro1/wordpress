@@ -1,0 +1,273 @@
+{
+    "name": "ultimate-multisite/ultimate-multisite",
+    "homepage": "https://UltimateMultisite.com",
+    "description": "The Multisite Website as a Service (WaaS) plugin.",
+    "version": "2.5.0",
+    "authors": [
+        {
+            "name": "Arindo Duque",
+            "email": "arindo@wpultimo.com",
+            "homepage": "https://wpultimo.com"
+        },
+        {
+            "name": "David Stone",
+            "homepage": "https://github.com/superdav42"
+        }
+    ],
+    "license": [
+        "GPL-3.0-or-later"
+    ],
+    "autoload": {
+        "classmap": [
+            "inc"
+        ],
+        "exclude-from-classmap": [
+            "/inc/site-exporter/mu-migration/"
+        ]
+    },
+    "repositories": [
+        {
+            "type": "package",
+            "package": {
+                "name": "remotelyliving/php-dns",
+                "version": "4.3.0",
+                "source": {
+                    "type": "git",
+                    "url": "https://github.com/remotelyliving/php-dns.git",
+                    "reference": "fa1eebebe6275487e947cd2109874ce960dd7717"
+                },
+                "dist": {
+                    "type": "zip",
+                    "url": "https://api.github.com/repos/remotelyliving/php-dns/zipball/fa1eebebe6275487e947cd2109874ce960dd7717",
+                    "reference": "fa1eebebe6275487e947cd2109874ce960dd7717",
+                    "shasum": ""
+                },
+                "require": {
+                    "ext-filter": "*",
+                    "ext-intl": "*",
+                    "ext-json": "*",
+                    "ext-mbstring": "*",
+                    "guzzlehttp/guzzle": "^7.0 || ^6.0",
+                    "guzzlehttp/promises": "^1.3 || ^2.5",
+                    "php": ">=7.4",
+                    "psr/cache": "^1.0 || ^2.0",
+                    "psr/log": "^1.0 || ^2.0 || ^3.0",
+                    "spatie/dns": "^1.5",
+                    "symfony/event-dispatcher": "^6.0 || ^5.0 || ^4.0 || ^3.0"
+                },
+                "require-dev": {
+                    "bmitch/churn-php": "^1.5",
+                    "maglnet/composer-require-checker": "@stable",
+                    "php-coveralls/php-coveralls": "^2.1",
+                    "phpunit/phpunit": "^9.0",
+                    "psy/psysh": "^0.9.9",
+                    "rector/rector": "^0.12.8",
+                    "squizlabs/php_codesniffer": "^3.3",
+                    "symfony/cache": "^4.3",
+                    "vimeo/psalm": "^4.10"
+                },
+                "type": "library",
+                "autoload": {
+                    "psr-4": {
+                        "RemotelyLiving\\PHPDNS\\": "src/"
+                    }
+                },
+                "notification-url": "https://packagist.org/downloads/",
+                "license": [
+                    "MIT"
+                ],
+                "authors": [
+                    {
+                        "name": "chthomas",
+                        "email": "christian.h.thomas@me.com"
+                    }
+                ],
+                "description": "A php library for abstracting DNS querying",
+                "support": {
+                    "issues": "https://github.com/remotelyliving/php-dns/issues",
+                    "source": "https://github.com/remotelyliving/php-dns/tree/4.3.0"
+                },
+                "time": "2021-12-22T02:56:43+00:00"
+            }
+        },
+        {
+            "type": "path",
+            "url": "composer-plugins/wp-ultimo-autoloader-plugin"
+        }
+    ],
+    "type": "wordpress-plugin",
+    "require": {
+        "php": ">=8.2",
+        "automattic/jetpack-autoloader": "^3.0 || ^4.0 || ^5.0",
+        "wp-ultimo/autoloader-plugin": "dev-main",
+        "wordpress/abilities-api": "^0.4.0",
+        "wordpress/mcp-adapter": "^0.4.1",
+        "rpnzl/arrch": "dev-master#994258bbefb7722243211654c4f78813312cd5ed",
+        "amphp/amp": "^2.6.2",
+        "amphp/byte-stream": "^1.8.1",
+        "amphp/cache": "^1.5.1",
+        "amphp/http-client": "^4.6.3",
+        "amphp/http": "^1.7.1",
+        "amphp/sync": "^1.4.2",
+        "psr/log": "^1.1.4",
+        "delight-im/cookie": "^3.4.0",
+        "berlindb/core": "^2.0.1",
+        "mexitek/phpcolors": "^1.0.4",
+        "phpdocumentor/reflection-docblock": "^5.3.0",
+        "stripe/stripe-php": "^17.4.0",
+        "rakit/validation": "dev-master#ff003a35cdf5030a5f2482299f4c93f344a35b29",
+        "ifsnop/mysqldump-php": "^2.12",
+        "mpdf/mpdf": "^8.2.0",
+        "remotelyliving/php-dns": "4.3.0",
+        "nyholm/psr7": "^1.8.0",
+        "scssphp/scssphp": "^1.11.1",
+        "cweagans/composer-patches": "^1.7",
+        "woocommerce/action-scheduler": "^3.9.1",
+        "ext-json": "*",
+        "symfony/polyfill-php80": "^1.31.0",
+        "symfony/polyfill-php81": "^1.31.0",
+        "symfony/polyfill-php82": "^1.31.0",
+        "symfony/polyfill-php83": "^1.31.0",
+        "symfony/polyfill-php84": "^1.31.0",
+        "ext-curl": "*",
+        "pondermatic/composer-archive-project": "^1.1",
+        "maxmind-db/reader": "^1.12"
+    },
+    "require-dev": {
+
+        "composer/installers": "^1.9.0",
+        "phpunit/phpunit": "^9.6.22",
+        "yoast/phpunit-polyfills": "^1.1.3",
+        "woocommerce/woocommerce-sniffs": "^1.0.0",
+        "symplify/vendor-patches": "^11.3",
+        "fakerphp/faker": "^1.24",
+        "rector/rector": "^2.0.8",
+        "szepeviktor/phpstan-wordpress": "^2.0.1",
+        "phpstan/extension-installer": "^1.1"
+    },
+    "config": {
+        "platform": {
+            "php": "8.2.0"
+        },
+        "allow-plugins": {
+            "composer/installers": true,
+            "dealerdirect/phpcodesniffer-composer-installer": true,
+            "automattic/jetpack-autoloader": true,
+            "cweagans/composer-patches": true,
+            "phpstan/extension-installer": true,
+            "php-http/discovery": true,
+            "wp-ultimo/autoloader-plugin": true,
+            "pondermatic/composer-archive-project": true
+        },
+        "autoloader-suffix": "230080190a3968d4856a2879371108a7",
+        "optimize-autoloader": true,
+        "classmap-authoritative": true
+    },
+    "archive": {
+        "exclude": [
+            "tests",
+            "cypress.env.json",
+            "cypress.config.js",
+            "cypress.config.dev.js",
+            "cypress.config.test.js",
+            ".wp-env.json",
+            "bin",
+            "phpunit.xml.dist",
+            "composer.lock",
+            ".phpcs.xml.dist",
+            ".circleci",
+            ".idea",
+            "node_modules",
+            ".gitignore",
+            ".phpcs.xml.dist",
+            ".phpunit.result.cache",
+            "build.sh",
+            "package.json",
+            "package-lock.json",
+            "setuptest.sh",
+            "utils",
+            "update.sh",
+            "phpstan.neon.dist",
+            "rector.php",
+            "inc/development",
+            ".github",
+            ".wiki",
+            "codeception.yml",
+            "CLAUDE.md",
+            ".claude",
+            "patches",
+            "composer-plugins",
+            "blueprint.json",
+            "vendor/amphp/sync/docs/Gemfile",
+            "vendor/amphp/dns/docs/Gemfile",
+            "vendor/stripe/stripe-php/API_VERSION",
+            "vendor/amphp/hpack/src/Internal/amp-hpack.h",
+            "vendor/amphp/socket/docs/Gemfile",
+            "vendor/delight-im/cookie/.travis-ci-apache",
+            "vendor/doctrine",
+            ".distignore",
+            "encrypt-secrets.php",
+            "scripts",
+            "mu-plugins",
+            "DEPLOY.md",
+            "deploy.sh",
+            ".vscode",
+            "coverage.xml",
+            "coverage-html",
+            "AGENTS.md",
+            "TODO.md",
+            "todo",
+            "docs",
+            ".intelephense",
+            ".task-counter"
+        ]
+    },
+    "extra": {
+        "patches": {
+            "berlindb/core": [
+                "patches/berlindb-core-src-database-table-php.patch",
+                "patches/berlindb-core-src-database-query-php.patch",
+                "patches/berlindb-core-src-database-column-php.patch"
+            ],
+            "mpdf/psr-log-aware-trait": [
+                "patches/mpdf-psr-log-aware-trait-void-return.patch",
+                "patches/mpdf-mpdf-psr-log-aware-trait-void-return.patch"
+            ],
+            "mpdf/psr-http-message-shim": [
+                "patches/mpdf-psr-http-message-shim-php8-compat.patch"
+            ]
+        },
+        "installer-paths": {
+            "vendor/woocommerce/{$name}/": [
+                "type:wordpress-plugin"
+            ]
+        }
+    },
+    "scripts": {
+        "post-install-cmd": [
+            "@php scripts/remove-mpdf-fonts.php"
+        ],
+        "post-update-cmd": [
+            "@php scripts/remove-mpdf-fonts.php"
+        ],
+        "test": "phpunit",
+        "test:coverage": "phpunit --coverage-html=coverage-html --coverage-clover=coverage.xml",
+        "lint": "phpcs",
+        "lint:fix": "phpcbf",
+        "stan": "phpstan analyse",
+        "quality": [
+            "@lint",
+            "@stan"
+        ],
+        "setup-hooks": "bash bin/setup-hooks.sh"
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Utils\\Rector\\": "utils/rector/src",
+            "Utils\\Rector\\Tests\\": "utils/rector/tests"
+        }
+    },
+    "replace": {
+        "paragonie/random_compat": "9.99.99"
+    }
+}

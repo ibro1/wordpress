@@ -1,0 +1,45 @@
+<?php
+/**
+ * Total payments view.
+ *
+ * @since 2.0.0
+ */
+defined('ABSPATH') || exit;
+?>
+<div id="payments-tax-breakthrough" class="wu-widget-inset">
+
+	<table class="wp-list-table widefat striped payments wu-border-0">
+	<tbody>
+
+		<?php if ( ! empty($tax_breakthrough)) : ?>
+
+			<?php foreach ($tax_breakthrough as $tax_rate => $tax_total) : ?>
+			<tr>
+			<td><?php echo esc_html($tax_rate); ?>%</td>
+			<td><?php echo esc_html(wu_format_currency($tax_total)); ?></td>
+			</tr>
+		<?php endforeach; ?>
+
+			<?php if ( ! empty($payment)) : ?>
+			<tr>
+			<td><span class="wu-font-bold wu-uppercase wu-text-xs wu-text-gray-700"><?php esc_html_e('Total', 'ultimate-multisite'); ?></span></td>
+			<td><?php echo esc_html(wu_format_currency($payment->get_tax_total())); ?></td>
+			</tr>
+		<?php endif; ?>
+
+		<?php else : ?>
+
+		<tr>
+			<td colspan="2">
+			<?php esc_html_e('No tax rates.', 'ultimate-multisite'); ?>
+			</td>
+		</tr>
+
+		<?php endif; ?>
+
+	</tbody>
+	</table>
+
+</div>
+
+<?php wp_enqueue_style('wu-tax-details', wu_get_asset('tax-details.css', 'css'), [], wu_get_version()); ?>

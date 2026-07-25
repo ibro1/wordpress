@@ -1,0 +1,1159 @@
+<?php
+/**
+ * Handles registration pages and such.
+ *
+ * @package WP_Ultimo
+ * @subpackage Checkout
+ * @since 2.0.0
+ */
+
+namespace WP_Ultimo\Checkout;
+
+// Exit if accessed directly
+defined('ABSPATH') || exit;
+
+/**
+ * Handles registration pages and such.
+ *
+ * @since 2.0.0
+ */
+class Checkout_Pages {
+
+	use \WP_Ultimo\Traits\Singleton;
+
+	/**
+	 * Initializes the Checkout_Pages singleton and adds hooks.
+	 *
+	 * @since 2.0.0
+	 * @return void
+	 */
+	public function init(): void {
+
+		add_filter('display_post_states', [$this, 'add_wp_ultimo_status_annotation'], 10, 2);
+
+		add_action('wu_thank_you_site_block', [$this, 'add_verify_email_notice'], 10, 3);
+
+		add_shortcode('wu_confirmation', [$this, 'render_confirmation_page']);
+
+		/*
+		 * Enqueue payment status polling script on thank you page.
+		 */
+		add_action('wp_enqueue_scripts', [$this, 'maybe_enqueue_payment_status_poll']);
+
+		add_filter('lostpassword_redirect', [$this, 'filter_lost_password_redirect']);
+
+		$use_custom_login = wu_get_setting('enable_custom_login_page', false);
+
+		/*
+		 * Login URL filters need to run on ALL sites (including subsites)
+		 * so that password reset and login links redirect to the main site's
+		 * custom login page instead of wp-login.php (which may be obfuscated).
+		 *
+		 * @see https://github.com/Ultimate-Multisite/ultimate-multisite/issues/291
+		 */
+		if ($use_custom_login) {
+			add_filter('login_url', [$this, 'filter_login_url'], 10, 3);
+
+			/*
+			 * Use a dedicated filter for lostpassword_url so that subsites
+			 * keep users on their own domain instead of redirecting to the
+			 * main network site's login page.
+			 *
+			 * @see https://github.com/Ultimate-Multisite/ultimate-multisite/issues/291
+			 */
+			add_filter('lostpassword_url', [$this, 'filter_lostpassword_url'], 10, 2);
+
+			/*
+			 * Rewrite the reset password link inside the email body on ALL
+			 * sites (main + subsites). On the main site the URL points to
+			 * the custom login page; on subsites it stays on the subsite
+			 * domain so users never leave the site they signed up on.
+			 *
+			 * @see https://github.com/Ultimate-Multisite/ultimate-multisite/issues/1168
+			 */
+			add_filter('retrieve_password_message', [$this, 'replace_reset_password_link'], 10, 4);
+
+			/*
+			 * Rewrite the "set your password" link in the new-user
+			 * notification email so users created on a subsite get a link
+			 * to that subsite (not to the main network site).
+			 *
+			 * @see https://github.com/Ultimate-Multisite/ultimate-multisite/issues/1168
+			 */
+			add_filter('wp_new_user_notification_email', [$this, 'rewrite_new_user_notification_email'], 10, 3);
+
+			/*
+			 * Rewrite the URL inside the admin notification that fires
+			 * when a user requests a password reset, so subsite admins
+			 * receive links to their own subsite.
+			 *
+			 * @see https://github.com/Ultimate-Multisite/ultimate-multisite/issues/1168
+			 */
+			add_filter('retrieve_password_notification_email', [$this, 'rewrite_password_notification_email'], 10, 4);
+
+			/*
+			 * Rewrite the URL inside the email-change confirmation message
+			 * so the confirmation link stays on the subsite the user is
+			 * editing their profile on.
+			 *
+			 * @see https://github.com/Ultimate-Multisite/ultimate-multisite/issues/1168
+			 */
+			add_filter('new_user_email_content', [$this, 'rewrite_email_change_content'], 10, 2);
+		}
+
+		if (is_main_site()) {
+			add_action('before_signup_header', [$this, 'redirect_to_registration_page']);
+
+			add_action('save_post_page', [$this, 'maybe_flush_rewrite_rules_on_page_save'], 20);
+			add_action('wp_trash_post', [$this, 'maybe_flush_rewrite_rules_on_page_trash']);
+
+			if ( ! $use_custom_login) {
+				return;
+			}
+
+			add_filter('network_site_url', [$this, 'maybe_change_wp_login_on_urls']);
+
+			add_action('login_init', [$this, 'maybe_obfuscate_login_url'], 9);
+
+			add_action('template_redirect', [$this, 'maybe_redirect_to_admin_panel']);
+
+			add_action('after_password_reset', [$this, 'maybe_redirect_to_confirm_screen']);
+
+			add_action('lost_password', [$this, 'maybe_handle_password_reset_errors']);
+
+			add_action('validate_password_reset', [$this, 'maybe_handle_password_reset_errors']);
+
+			/**
+			 * Adds the force elements controls.
+			 */
+			add_action('post_submitbox_misc_actions', [$this, 'render_compat_mode_setting']);
+
+			add_action('save_post', [$this, 'handle_compat_mode_setting']);
+		}
+
+		add_filter('post_type_link', [$this, 'filter_checkout_urls'], 10, 2);
+		add_filter('page_link', [$this, 'filter_checkout_urls'], 10, 2);
+	}
+
+	/**
+	 * Filters checkout URLs.
+	 *
+	 * @since 2.5.2
+	 *
+	 * @param string   $permalink The post permalink.
+	 * @param \WP_Post $post      The post object.
+	 * @return string The modified permalink.
+	 */
+	public function filter_checkout_urls($permalink, $post) {
+
+		if (! is_a($post, '\WP_Post')) {
+			return $permalink;
+		}
+
+		$signup_pages = $this->get_signup_pages();
+
+		// Check if this post is a checkout-related page
+		if (in_array($post->ID, array_filter($signup_pages), true)) {
+			return apply_filters('wu_checkout_pages_checkout_url', $permalink, $post, $this);
+		}
+
+		return $permalink;
+	}
+
+	/**
+	 * Filters the lost password redirect URL.
+	 *
+	 * @param string $redirect_to The redirect URL.
+	 */
+	public function filter_lost_password_redirect(string $redirect_to): string {
+
+		if ( ! empty($redirect_to)) {
+			return $redirect_to;
+		}
+
+		return add_query_arg('checkemail', 'confirm', wp_login_url());
+	}
+
+	/**
+	 * Renders the compat mode option for pages and posts.
+	 *
+	 * @since 2.0.0
+	 * @return void
+	 */
+	public function render_compat_mode_setting(): void {
+
+		$post_id = get_the_ID();
+
+		$value = get_post_meta($post_id, '_wu_force_elements_loading', true);
+
+		wp_nonce_field('_wu_force_compat_' . $post_id, '_wu_force_compat');
+
+		?>
+
+	<div class="misc-pub-section misc-pub-section-last" style="margin-top: 12px; margin-bottom: 6px; display: flex; align-items: center;">
+		<label for="wu-compat-mode">
+				<span style="display: block; font-weight: 600; margin-bottom: 3px;"><?php esc_html_e('Force loading Ultimate Multisite frontend assets', 'ultimate-multisite'); ?></span>
+				<small style="display: block; line-height: 1.8em;"><?php esc_html_e('If Ultimate Multisite elements are not loading correctly on this page enable this option to always inject the javascripts and css assets on this page.', 'ultimate-multisite'); ?></small>
+		</label>
+		<div style="margin-left: 6px;">
+			<input id="wu-compat-mode" type="checkbox" value="1" <?php checked($value, true, true); ?> name="_wu_force_elements_loading" />
+		</div>
+	</div>
+
+		<?php
+	}
+
+	/**
+	 * Handles saving the compat mode switch on posts.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param int $post_id The id of the post being saved.
+	 * @return void
+	 */
+	public function handle_compat_mode_setting($post_id): void {
+
+		if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
+			return;
+		}
+		// Nonce checked in calling method.
+		if ( ! isset($_POST['_wu_force_compat']) || ! wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['_wu_force_compat'])), '_wu_force_compat_' . $post_id)) {
+			return;
+		}
+
+		if ( ! current_user_can('edit_post', $post_id)) {
+			return;
+		}
+
+		if (isset($_POST['_wu_force_elements_loading'])) {
+			update_post_meta($post_id, '_wu_force_elements_loading', sanitize_text_field(wp_unslash($_POST['_wu_force_elements_loading'])));
+		} else {
+			delete_post_meta($post_id, '_wu_force_elements_loading');
+		}
+	}
+
+	/**
+	 * Flush rewrite rules when a signup page is saved and its slug may have changed.
+	 *
+	 * The checkout rewrite rules depend on the registration page slug,
+	 * so they must be refreshed whenever a signup page is modified.
+	 *
+	 * @since 2.3.0
+	 *
+	 * @param int $post_id The post ID.
+	 * @return void
+	 */
+	public function maybe_flush_rewrite_rules_on_page_save(int $post_id): void {
+
+		if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
+			return;
+		}
+
+		$signup_page_ids = array_filter(array_map('absint', array_values($this->get_signup_pages())));
+
+		if (in_array(absint($post_id), $signup_page_ids, true)) {
+			flush_rewrite_rules();
+		}
+	}
+
+	/**
+	 * Flush rewrite rules when a signup page is trashed.
+	 *
+	 * @since 2.3.0
+	 *
+	 * @param int $post_id The post ID.
+	 * @return void
+	 */
+	public function maybe_flush_rewrite_rules_on_page_trash(int $post_id): void {
+
+		if (get_post_type($post_id) !== 'page') {
+			return;
+		}
+
+		$signup_page_ids = array_filter(array_map('absint', array_values($this->get_signup_pages())));
+
+		if (in_array(absint($post_id), $signup_page_ids, true)) {
+			flush_rewrite_rules();
+		}
+	}
+
+	/**
+	 * Replace wp-login.php in email URLs.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param string $url The URL to filter.
+	 * @return string
+	 */
+	public function maybe_change_wp_login_on_urls($url) {
+		/*
+		 * Only perform computational-heavy tasks if the URL has
+		 * wp-login.php in it to begin with.
+		 */
+		if (! str_contains($url, 'wp-login.php')) {
+			return $url;
+		}
+
+		$post_id = wu_get_setting('default_login_page', 0);
+
+		$post = get_post($post_id);
+
+		if ($post) {
+			$url = str_replace('wp-login.php', $post->post_name, $url);
+		}
+
+		return $url;
+	}
+
+	/**
+	 * Get an error message.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param string $error_code The error code.
+	 * @param string $username The username.
+	 * @return string
+	 */
+	public function get_error_message($error_code, $username = '') {
+
+		$messages = [
+			'incorrect_password'         => sprintf(__('<strong>Error:</strong> The password you entered is incorrect.', 'ultimate-multisite')),
+			// From here we are using the same messages as WordPress core.
+			'expired'                    => __('Your session has expired. Please log in to continue where you left off.'), // phpcs:ignore WordPress.WP.I18n.MissingArgDomain
+			/* translators: %s: Link to the login page. */
+			'confirm'                    => sprintf(__('Check your email for the confirmation link, then visit the <a href="%s">login page</a>.'), wp_login_url()), // phpcs:ignore WordPress.WP.I18n.MissingArgDomain
+			/* translators: %s: Link to the login page. */
+			'registered'                 => sprintf(__('Registration complete. Please check your email, then visit the <a href="%s">login page</a>.'), wp_login_url()), // phpcs:ignore WordPress.WP.I18n.MissingArgDomain
+			'loggedout'                  => __('You are now logged out.'), // phpcs:ignore WordPress.WP.I18n.MissingArgDomain
+			'registerdisabled'           => __('<strong>Error:</strong> User registration is currently not allowed.'), // phpcs:ignore WordPress.WP.I18n.MissingArgDomain
+			'empty_username'             => __('<strong>Error:</strong> The username field is empty.'), // phpcs:ignore WordPress.WP.I18n.MissingArgDomain
+			'empty_password'             => __('<strong>Error:</strong> The password field is empty.'), // phpcs:ignore WordPress.WP.I18n.MissingArgDomain
+			'invalid_email'              => __('Unknown email address. Check again or try your username.'), // phpcs:ignore WordPress.WP.I18n.MissingArgDomain
+			/* translators: %s: User name. */
+			'invalid_username'           => sprintf(__('<strong>Error:</strong> The username <strong>%s</strong> is not registered on this site. If you are unsure of your username, try your email address instead.'), $username), // phpcs:ignore WordPress.WP.I18n.MissingArgDomain
+			'invalidcombo'               => __('<strong>Error:</strong> There is no account with that username or email address.'), // phpcs:ignore WordPress.WP.I18n.MissingArgDomain
+			'password_reset_empty_space' => __('The password cannot be a space or all spaces.'), // phpcs:ignore WordPress.WP.I18n.MissingArgDomain
+			'password_reset_mismatch'    => __('<strong>Error:</strong> The passwords do not match.'), // phpcs:ignore WordPress.WP.I18n.MissingArgDomain
+			'invalidkey'                 => __('<strong>Error:</strong> Your password reset link appears to be invalid. Please request a new link below.'), // phpcs:ignore WordPress.WP.I18n.MissingArgDomain
+			'expiredkey'                 => __('<strong>Error:</strong> Your password reset link has expired. Please request a new link below.'), // phpcs:ignore WordPress.WP.I18n.MissingArgDomain
+			'invalid_key'                => __('<strong>Error:</strong> Your password reset link appears to be invalid. Please request a new link below.'), // phpcs:ignore WordPress.WP.I18n.MissingArgDomain
+			'expired_key'                => __('<strong>Error:</strong> Your password reset link has expired. Please request a new link below.'), // phpcs:ignore WordPress.WP.I18n.MissingArgDomain
+		];
+
+		/**
+		 * Filter the error messages.
+		 *
+		 * @since 2.1.1
+		 * @param array $messages The error messages.
+		 * @return array
+		 */
+		$messages = apply_filters('wu_checkout_pages_error_messages', $messages);
+
+		return wu_get_isset($messages, $error_code, __('Something went wrong', 'ultimate-multisite'));
+	}
+
+	/**
+	 * Handle password reset errors.
+	 *
+	 * We redirect users to our custom login URL,
+	 * so we can add an error message.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param \WP_Error $errors The error object.
+	 * @return void
+	 */
+	public function maybe_handle_password_reset_errors($errors): void {
+
+		if ($errors->has_errors()) {
+			$url = add_query_arg(
+				[
+					'action'     => wu_request('action', ''),
+					'user_login' => wu_request('user_login', ''),
+					'error'      => $errors->get_error_code(),
+				],
+				wp_login_url()
+			);
+
+			wp_safe_redirect($url);
+
+			exit;
+		}
+	}
+
+	/**
+	 * Maybe redirects users to the confirm screen.
+	 *
+	 * If we are successful in resetting a password,
+	 * we need to prevent the user from reaching the empty
+	 * wp-login.php message, so we redirect them to the passed
+	 * redirect_to query argument.
+	 *
+	 * @since 2.0.0
+	 * @return void
+	 */
+	public function maybe_redirect_to_confirm_screen(): void {
+
+		if (wu_request('redirect_to')) {
+			wp_safe_redirect(wu_request('redirect_to'));
+
+			exit;
+		}
+	}
+
+	/**
+	 * Replace the reset password link, if necessary.
+	 *
+	 * Works on both the main site and subsites:
+	 *
+	 * - On the main site the wp-login.php URL is replaced with the custom
+	 *   login page configured in the network settings.
+	 * - On subsites the URL is rewritten so the reset flow stays on the
+	 *   user's own domain, avoiding cross-domain jumps that confuse end
+	 *   users on mapped domains and break the subsite branding.
+	 *
+	 * @since 2.0.0
+	 * @since 2.10.2 Subsite-aware: keeps the reset URL on the subsite domain.
+	 *
+	 * @param string $message The email message.
+	 * @param string $key The reset key.
+	 * @param string $user_login The user login.
+	 * @param array  $user_data The user data array.
+	 * @return string
+	 */
+	public function replace_reset_password_link($message, $key, $user_login, $user_data) {
+
+		$results = [];
+
+		preg_match_all('/.*\/wp-login\.php.*/', $message, $results);
+
+		if (empty($results[0][0])) {
+			return $message;
+		}
+
+		// Localize password reset message content for user.
+		$locale = get_user_locale($user_data);
+
+		$switched_locale = switch_to_locale($locale);
+
+		if (is_main_site()) {
+			/*
+			 * On the main site, point the reset URL at the custom login
+			 * page so users land on the network's branded login screen.
+			 */
+			$new_url = add_query_arg(
+				[
+					'action'  => 'rp',
+					'key'     => $key,
+					'login'   => rawurlencode($user_login),
+					'wp_lang' => $locale,
+				],
+				wp_login_url()
+			);
+
+			$new_url = set_url_scheme($new_url, null);
+		} else {
+			/*
+			 * On a subsite, rewrite the URL so the reset flow stays on the
+			 * subsite's own domain. The default wp-login.php URL points to
+			 * the main network site, which:
+			 *
+			 *   1. Confuses end users who signed up on a mapped domain
+			 *      (e.g. someone who registered on example.com would land
+			 *      on networksite.com to set their password).
+			 *   2. Breaks the subsite owner's branding for their own
+			 *      customers.
+			 *
+			 * We send the user to the subsite home URL with the reset
+			 * parameters so existing handlers (WooCommerce my-account,
+			 * BuddyPress, custom themes, etc.) can pick the request up.
+			 *
+			 * Filter wu_subsite_password_reset_url lets integrations point
+			 * the URL at a specific page on the subsite (e.g. the
+			 * WooCommerce reset-password endpoint).
+			 */
+			$subsite_base = home_url('/');
+
+			$new_url = add_query_arg(
+				[
+					'action'  => 'rp',
+					'key'     => $key,
+					'login'   => rawurlencode($user_login),
+					'wp_lang' => $locale,
+				],
+				$subsite_base
+			);
+
+			/**
+			 * Filter the subsite-aware password reset URL.
+			 *
+			 * Allows integrations (WooCommerce, BuddyPress, custom themes)
+			 * to override the destination URL while keeping it on the
+			 * subsite's own domain.
+			 *
+			 * @since 2.10.2
+			 *
+			 * @param string  $new_url    The default subsite reset URL.
+			 * @param string  $key        The reset key.
+			 * @param string  $user_login The user login.
+			 * @param array   $user_data  The user data.
+			 */
+			$new_url = apply_filters('wu_subsite_password_reset_url', $new_url, $key, $user_login, $user_data);
+
+			$new_url = set_url_scheme($new_url, null);
+		}
+
+		$message = str_replace($results[0], $new_url, $message);
+
+		if ($switched_locale) {
+			restore_previous_locale();
+		}
+
+		return $message;
+	}
+
+	/**
+	 * Rewrite a URL that points at the main network site's wp-login.php
+	 * so that it stays on the current site instead.
+	 *
+	 * Used by the auth-related email filters to keep URLs on the subsite
+	 * the email was triggered from. On the main site the URL is rewritten
+	 * to the custom login page; on a subsite it is rewritten to the
+	 * subsite's home_url('/').
+	 *
+	 * @since 2.10.2
+	 *
+	 * @param string $url The URL to rewrite.
+	 * @return string
+	 */
+	protected function rewrite_subsite_aware_login_url($url) {
+
+		if ( ! str_contains($url, 'wp-login.php')) {
+			return $url;
+		}
+
+		if (is_main_site()) {
+			$post_id = wu_get_setting('default_login_page', 0);
+			$post    = get_post($post_id);
+
+			if ($post) {
+				return str_replace('wp-login.php', $post->post_name, $url);
+			}
+
+			return $url;
+		}
+
+		/*
+		 * On a subsite, replace the host (and the wp-login.php path) with
+		 * the subsite's own home URL so the request stays on the subsite.
+		 */
+		$parts = wp_parse_url($url);
+
+		if (empty($parts['query'])) {
+			return home_url('/');
+		}
+
+		return home_url('/?' . $parts['query']);
+	}
+
+	/**
+	 * Rewrite the "set your password" link in the new-user notification
+	 * email so users created on a subsite get a link to that subsite.
+	 *
+	 * Without this filter the URL inside the email is built with
+	 * network_site_url('wp-login.php'), which always resolves to the main
+	 * network site. The new user is then taken away from the subsite they
+	 * were just registered on.
+	 *
+	 * @since 2.10.2
+	 *
+	 * @param array   $email   The email arguments (to/subject/message/headers).
+	 * @param WP_User $user    The user that was created.
+	 * @param string  $blogname The site name.
+	 * @return array
+	 */
+	public function rewrite_new_user_notification_email($email, $user, $blogname) {
+		unset($user, $blogname);
+
+		if (empty($email['message']) || ! is_array($email)) {
+			return $email;
+		}
+
+		$email['message'] = preg_replace_callback(
+			'#https?://[^\s<>"]+wp-login\.php[^\s<>"]*#i',
+			function ($matches) {
+				return $this->rewrite_subsite_aware_login_url($matches[0]);
+			},
+			$email['message']
+		);
+
+		return $email;
+	}
+
+	/**
+	 * Rewrite the URL inside the admin notification that fires when a
+	 * user requests a password reset.
+	 *
+	 * Subsite admins should receive a link that stays on their own
+	 * subsite, not on the main network site.
+	 *
+	 * @since 2.10.2
+	 *
+	 * @param array   $defaults    The email defaults (to/subject/message/headers).
+	 * @param string  $key         The reset key.
+	 * @param string  $user_login  The username for the user.
+	 * @param WP_User $user_data   WP_User object.
+	 * @return array
+	 */
+	public function rewrite_password_notification_email($defaults, $key, $user_login, $user_data) {
+		unset($key, $user_login, $user_data);
+
+		if (empty($defaults['message']) || ! is_array($defaults)) {
+			return $defaults;
+		}
+
+		$defaults['message'] = preg_replace_callback(
+			'#https?://[^\s<>"]+wp-login\.php[^\s<>"]*#i',
+			function ($matches) {
+				return $this->rewrite_subsite_aware_login_url($matches[0]);
+			},
+			$defaults['message']
+		);
+
+		return $defaults;
+	}
+
+	/**
+	 * Rewrite the URL inside the email-change confirmation message so the
+	 * confirmation link stays on the subsite the user is editing their
+	 * profile on.
+	 *
+	 * Without this filter wp-admin/profile.php URLs in the message body
+	 * point to the main network site even when the user is editing their
+	 * profile on a subsite.
+	 *
+	 * @since 2.10.2
+	 *
+	 * @param string $email_text Email content.
+	 * @param array  $new_user_email Data on the changed email.
+	 * @return string
+	 */
+	public function rewrite_email_change_content($email_text, $new_user_email) {
+		unset($new_user_email);
+
+		if (empty($email_text) || ! is_string($email_text)) {
+			return $email_text;
+		}
+
+		return preg_replace_callback(
+			'#https?://[^\s<>"]+wp-login\.php[^\s<>"]*#i',
+			function ($matches) {
+				return $this->rewrite_subsite_aware_login_url($matches[0]);
+			},
+			$email_text
+		);
+	}
+
+	/**
+	 * Redirect logged users when they reach the login page.
+	 *
+	 * @since 2.0.0
+	 * @return void
+	 */
+	public function maybe_redirect_to_admin_panel(): void {
+
+		global $post;
+
+		if ( ! is_user_logged_in()) {
+			return;
+		}
+
+		/*
+		 * When reauth=1 is present the user was sent here by auth_redirect()
+		 * because the auth cookie check failed.  Honour the re-authentication
+		 * request instead of bouncing back, which would cause a redirect loop.
+		 */
+		if (isset($_GET['reauth'])) { // phpcs:ignore WordPress.Security.NonceVerification
+			return;
+		}
+
+		$custom_login_page = $this->get_signup_page('login');
+
+		if (empty($custom_login_page) || empty($post)) {
+			return;
+		}
+
+		if ($custom_login_page->ID !== $post->ID) {
+			return;
+		}
+
+		/**
+		 * Create an exclusion list of parameters that prevent the auto-redirect.
+		 *
+		 * This is needed because otherwise page builder won't be able to
+		 * edit the login page once it is defined.
+		 *
+		 * @since 2.0.4
+		 * @return array
+		 */
+		$exclusion_list = apply_filters(
+			'wu_maybe_redirect_to_admin_panel_exclusion_list',
+			[
+				'preview',           // WordPress Preview
+				'ct_builder',        // Oxygen Builder
+				'fl_builder',        // Beaver Builder
+				'elementor-preview', // Elementor
+				'brizy-edit',        // Brizy
+				'brizy-edit-iframe', // Brizy
+			],
+			$custom_login_page,
+			$post,
+			$this
+		);
+
+		foreach ($exclusion_list as $exclusion_param) {
+			if (wu_request($exclusion_param, null) !== null) {
+				return;
+			}
+		}
+
+		$user = wp_get_current_user();
+
+		$active_blog = get_active_blog_for_user($user->ID);
+
+		$redirect_to = $active_blog ? get_admin_url($active_blog->blog_id) : false;
+
+		if (isset($_GET['redirect_to'])) { // phpcs:ignore WordPress.Security.NonceVerification
+			$redirect_to = sanitize_url(wp_unslash($_GET['redirect_to'])); // phpcs:ignore WordPress.Security.NonceVerification
+		} elseif (is_multisite() && ! get_active_blog_for_user($user->ID) && ! is_super_admin($user->ID)) {
+			$redirect_to = user_admin_url();
+		} elseif (is_multisite() && ! $user->has_cap('read')) {
+			$redirect_to = get_dashboard_url($user->ID);
+		} elseif ( ! $user->has_cap('edit_posts')) {
+			$redirect_to = $user->has_cap('read') ? admin_url('profile.php') : home_url();
+		}
+
+		if ( ! $redirect_to) {
+			return;
+		}
+
+		wp_safe_redirect($redirect_to);
+
+		exit;
+	}
+
+	/**
+	 * Adds the unverified email account error message.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param \WP_Ultimo\Models\Payment    $payment The current payment.
+	 * @param \WP_Ultimo\Models\Membership $membership the current membership.
+	 * @param \WP_Ultimo\Models\Customer   $customer the current customer.
+	 * @return void
+	 */
+	public function add_verify_email_notice($payment, $membership, $customer): void {
+
+		if (0.0 < $payment->get_total()) {
+			return;
+		}
+
+		if ('pending' === $customer->get_email_verification()) {
+			printf(
+				'<div class="wu-p-4 wu-bg-yellow-200 wu-mb-2 wu-text-yellow-700 wu-rounded">
+                    %s
+                    <br>
+                    <a href="#" class="wu-resend-verification-email wu-text-gray-700">%s</a>
+                </div>',
+				sprintf(
+					// translators: %1$s and %2$s are <strong></strong> HTML tags
+					esc_html__('Your email address is not yet verified. Your site %1$s will only be activated %2$s after your email address is verified. Check your inbox and verify your email address.', 'ultimate-multisite'),
+					'<strong>',
+					'</strong>'
+				),
+				esc_html__('Resend verification email →', 'ultimate-multisite')
+			);
+		}
+	}
+
+	/**
+	 * Check if we should obfuscate the login URL.
+	 *
+	 * @since 2.0.0
+	 * @return void
+	 */
+	public function maybe_obfuscate_login_url(): void {
+
+		$use_custom_login = wu_get_setting('enable_custom_login_page', false);
+
+		if ( ! $use_custom_login) {
+			return;
+		}
+
+		if (isset($_SERVER['REQUEST_METHOD']) && 'POST' === $_SERVER['REQUEST_METHOD']) {
+			return;
+		}
+
+		if (wu_request('interim-login')) {
+			return;
+		}
+
+		if (wu_request('action') === 'logout') {
+			return;
+		}
+
+		$new_login_url = $this->get_page_url('login');
+
+		if ( ! $new_login_url) {
+			return;
+		}
+
+		$should_obfuscate = wu_get_setting('obfuscate_original_login_url', 1);
+
+		$bypass_obfuscation = wu_request('wu_bypass_obfuscation');
+
+		if ($should_obfuscate && ! $bypass_obfuscation) {
+			status_header(404);
+
+			nocache_headers();
+
+			global $wp_query;
+
+			$wp_query->set_404();
+
+			$four_oh_four = get_404_template();
+
+			// Apparently not all themes have a 404 template.
+			if ($four_oh_four) {
+				include $four_oh_four;
+			}
+
+			die;
+		} else {
+			wp_safe_redirect($new_login_url);
+
+			exit;
+		}
+	}
+
+	/**
+	 * Redirects the customers to the registration page, when one is used.
+	 *
+	 * @since 2.0.0
+	 * @return void
+	 */
+	public function redirect_to_registration_page(): void {
+
+		$registration_url = $this->get_page_url('register');
+
+		if ($registration_url) {
+			wp_safe_redirect($registration_url);
+
+			exit;
+		}
+	}
+
+	/**
+	 * Filters the login URL if necessary.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param string $login_url Original login URL.
+	 * @param string $redirect URL to redirect to after login.
+	 * @param bool   $force_reauth If we need to force reauth.
+	 * @return string
+	 */
+	public function filter_login_url($login_url, $redirect, $force_reauth = false) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed
+
+		/**
+		 * Fix incompatibility with UIPress, making sure we only filter after wp_loaded ran.
+		 */
+		if ( ! did_action('wp_loaded')) {
+			return $login_url;
+		}
+
+		$function_caller = wu_get_function_caller(5);
+
+		if ('wp_auth_check_html' === $function_caller) {
+			return $login_url;
+		}
+
+		$new_login_url = $this->get_page_url('login');
+
+		if ( ! $new_login_url) {
+			return $login_url;
+		}
+
+		/*
+		 * Preserve the raw query string from the original login URL
+		 * to avoid URL decoding issues. wp_parse_str() + add_query_arg()
+		 * decodes percent-encoded values like %2F without re-encoding them,
+		 * which causes parameters inside redirect_to to leak as top-level
+		 * query params (e.g., path=%2Fanalytics%2Foverview leaking out of
+		 * the redirect_to value). By preserving the raw query string, we
+		 * maintain the original encoding. WordPress's wp_login_url() already
+		 * adds redirect_to and reauth before this filter runs.
+		 */
+		$raw_query = wp_parse_url($login_url, PHP_URL_QUERY);
+
+		if ($raw_query) {
+			$new_login_url .= (str_contains($new_login_url, '?') ? '&' : '?') . $raw_query;
+		}
+
+		return $new_login_url;
+	}
+
+	/**
+	 * Filters the lost password URL to keep users on their subsite domain.
+	 *
+	 * On the main site, this delegates to filter_login_url() so the custom
+	 * login page is used. On subsites, we return the subsite's own login
+	 * page URL (the current page) with ?action=lostpassword appended, so
+	 * users are never redirected to the main network site's wp-login.php.
+	 *
+	 * @since 2.3.2
+	 * @see https://github.com/Ultimate-Multisite/ultimate-multisite/issues/291
+	 *
+	 * @param string $lostpassword_url The default lost password URL.
+	 * @param string $redirect         URL to redirect to after password reset.
+	 * @return string
+	 */
+	public function filter_lostpassword_url($lostpassword_url, $redirect = '') {
+
+		if ( ! did_action('wp_loaded')) {
+			return $lostpassword_url;
+		}
+
+		/*
+		 * On the main site, use the custom login page (same as filter_login_url).
+		 * Pass an empty string for $force_reauth since it's not relevant here.
+		 */
+		if (is_main_site()) {
+			return $this->filter_login_url($lostpassword_url, $redirect, false);
+		}
+
+		/*
+		 * On subsites, keep the user on their own domain.
+		 *
+		 * wp_lostpassword_url() generates a URL pointing to the main site's
+		 * wp-login.php. Instead, we build the URL from the current page so
+		 * the user stays on the subsite throughout the password reset flow.
+		 *
+		 * wu_get_current_url() returns the current page URL. We strip any
+		 * existing action/error params and add action=lostpassword so the
+		 * custom login form element renders the lost-password view.
+		 */
+		$current_url = wu_get_current_url();
+
+		if ( ! $current_url) {
+			return $lostpassword_url;
+		}
+
+		$query_args = ['action' => 'lostpassword'];
+
+		/*
+		 * Preserve the redirect_to parameter when provided by the caller,
+		 * so callers that supply a $redirect receive it on the subsite URL
+		 * just as they would on the main site via filter_login_url().
+		 */
+		if ( ! empty($redirect)) {
+			$query_args['redirect_to'] = $redirect;
+		}
+
+		$subsite_lostpassword_url = add_query_arg(
+			$query_args,
+			remove_query_arg(['action', 'error', 'checkemail', 'redirect_to'], $current_url)
+		);
+
+		return $subsite_lostpassword_url;
+	}
+
+	/**
+	 * Returns the ID of the pages being used for each Ultimate Multisite purpose.
+	 *
+	 * @since 2.0.0
+	 * @return array
+	 */
+	public function get_signup_pages() {
+
+		return [
+			'register'       => wu_guess_registration_page(),
+			'update'         => wu_get_setting('default_update_page', false),
+			'login'          => wu_get_setting('default_login_page', false),
+			'block_frontend' => wu_get_setting('default_block_frontend_page', false),
+			'new_site'       => wu_get_setting('default_new_site_page', false),
+		];
+	}
+	/**
+	 * Returns the WP_Post object for one of the pages.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param string $page The slug of the page to retrieve.
+	 * @return \WP_Post|false
+	 */
+	public function get_signup_page($page) {
+
+		$pages = $this->get_signup_pages();
+
+		$page_id = wu_get_isset($pages, $page);
+
+		if ( ! $page_id) {
+			return false;
+		}
+
+		return get_blog_post(wu_get_main_site_id(), $page_id);
+	}
+	/**
+	 * Returns the URL for a particular page type.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param string $page_slug The signup page to get.
+	 * @return string|false
+	 */
+	public function get_page_url($page_slug = 'login') {
+
+		$page = $this->get_signup_page($page_slug);
+
+		if ( ! $page) {
+			return false;
+		}
+
+		return wu_switch_blog_and_run(fn() => get_the_permalink($page));
+	}
+
+	/**
+	 * Tags the Ultimate Multisite pages on the main site.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param array    $states The previous states of that page.
+	 * @param \WP_Post $post The current post.
+	 * @return array
+	 */
+	public function add_wp_ultimo_status_annotation($states, $post) {
+
+		if ( ! is_main_site()) {
+			return $states;
+		}
+
+		$labels = [
+			'register'       => __('Ultimate Multisite - Register Page', 'ultimate-multisite'),
+			'login'          => __('Ultimate Multisite - Login Page', 'ultimate-multisite'),
+			'block_frontend' => __('Ultimate Multisite - Site Blocked Page', 'ultimate-multisite'),
+			'update'         => __('Ultimate Multisite - Membership Update Page', 'ultimate-multisite'),
+			'new_site'       => __('Ultimate Multisite - New Site Page', 'ultimate-multisite'),
+		];
+
+		$pages = array_map('absint', $this->get_signup_pages());
+
+		if (in_array($post->ID, $pages, true)) {
+			$key = array_search($post->ID, $pages, true);
+
+			$states['wp_ultimo_page'] = wu_get_isset($labels, $key);
+		}
+
+		return $states;
+	}
+
+	/**
+	 * Renders the confirmation page.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param array       $atts Shortcode attributes.
+	 * @param null|string $content The post content.
+	 * @return string
+	 */
+	public function render_confirmation_page($atts, $content = null) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter
+
+		return wu_get_template_contents(
+			'checkout/confirmation',
+			[
+				'errors'     => Checkout::get_instance()->errors,
+				'membership' => wu_get_membership_by_hash(wu_request('membership')),
+			]
+		);
+	}
+
+	/**
+	 * Maybe enqueue payment status polling script on thank you page.
+	 *
+	 * This script polls the server to check if a pending payment has been completed,
+	 * providing a fallback mechanism when webhooks are delayed or not working.
+	 *
+	 * @since 2.x.x
+	 * @return void
+	 */
+	public function maybe_enqueue_payment_status_poll(): void {
+
+		// Only on thank you page (payment hash and status=done in URL)
+		$payment_hash = wu_request('payment');
+		$status       = wu_request('status');
+
+		if (empty($payment_hash) || 'done' !== $status || 'none' === $payment_hash) {
+			return;
+		}
+
+		$payment = wu_get_payment_by_hash($payment_hash);
+
+		if (! $payment) {
+			return;
+		}
+
+		// Only poll for pending Stripe payments
+		$gateway_id = $payment->get_gateway();
+
+		if (empty($gateway_id)) {
+			$membership = $payment->get_membership();
+			$gateway_id = $membership ? $membership->get_gateway() : '';
+		}
+
+		$is_pending = $payment->get_status() === \WP_Ultimo\Database\Payments\Payment_Status::PENDING;
+
+		// Ask the gateway itself — no hardcoded list here, third-party gateways can opt in.
+		$gateway = wu_get_gateway($gateway_id);
+
+		if (! $gateway || ! $gateway->supports_payment_polling()) {
+			return;
+		}
+
+		$pending_message = __('Verifying your payment...', 'ultimate-multisite');
+
+		wp_register_script(
+			'wu-payment-status-poll',
+			wu_get_asset('payment-status-poll.js', 'js'),
+			[],
+			wu_get_version(),
+			true
+		);
+
+		wp_localize_script(
+			'wu-payment-status-poll',
+			'wu_payment_poll',
+			[
+				'payment_hash'     => $payment_hash,
+				'ajax_url'         => admin_url('admin-ajax.php'),
+				'nonce'            => wp_create_nonce('wu_payment_status_poll'),
+				'poll_interval'    => 3000, // 3 seconds
+				'max_attempts'     => 20, // 60 seconds total
+				'should_poll'      => $is_pending,
+				'status_selector'  => '.wu-payment-status',
+				'success_redirect' => '',
+				'messages'         => [
+					'completed' => __('Payment confirmed! Refreshing page...', 'ultimate-multisite'),
+					'pending'   => $pending_message,
+					'timeout'   => __('Payment verification is taking longer than expected. Your payment may still be processing. Please refresh the page or contact support if you believe payment was made.', 'ultimate-multisite'),
+					'error'     => __('Error checking payment status. Retrying...', 'ultimate-multisite'),
+					'checking'  => __('Checking payment status...', 'ultimate-multisite'),
+				],
+			]
+		);
+
+		wp_enqueue_script('wu-payment-status-poll');
+
+		// Enqueue checkout styles for payment status messages.
+		wp_enqueue_style('wu-checkout');
+	}
+}

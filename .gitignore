@@ -27,6 +27,11 @@ vendor/
 npm-debug.log
 yarn-error.log
 
+# Ultimate Multisite ships its compiled PHP dependencies inside the plugin
+# zip itself (no composer available in this environment to rebuild them) -
+# the blanket vendor/ rule above would otherwise silently drop them.
+!wp-content/plugins/ultimate-multisite/vendor/
+
 # OS / editor
 .DS_Store
 Thumbs.db

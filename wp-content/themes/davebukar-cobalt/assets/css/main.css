@@ -309,7 +309,14 @@ body.admin-bar .nav { top: 32px; }
 .leadform__context-no { font-family: var(--font-mono); color: var(--color-accent); font-size: 0.78rem; flex-shrink: 0; padding-top: 0.15em; }
 .leadform__context-compact { display: none; margin: 0; font-size: 0.82rem; color: var(--color-graphite-ink); }
 
-.leadform__form-pane { overflow-y: auto; max-height: calc(100vh - 4rem); padding: var(--space-xl); }
+.leadform__form-pane {
+	overflow-y: auto;
+	max-height: calc(100vh - 4rem);
+	padding: var(--space-lg) var(--space-xl) var(--space-xl);
+	scrollbar-width: none; /* Firefox */
+	-ms-overflow-style: none; /* legacy Edge */
+}
+.leadform__form-pane::-webkit-scrollbar { display: none; } /* Chrome/Safari — overflow-y:auto keeps scroll working */
 .leadform__head-row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-sm); }
 .leadform__title { font-size: 1.4rem; margin: 0; }
 .leadform__lede { color: var(--color-muted); font-size: 0.92rem; margin-top: var(--space-2xs); }
@@ -333,7 +340,7 @@ body.admin-bar .nav { top: 32px; }
 .status--chip[data-state="ok"] { color: var(--color-accent); background: var(--color-accent-soft); border-color: var(--color-accent); }
 .status--chip[data-state="err"] { color: var(--color-danger); background: var(--color-danger-soft); border-color: var(--color-danger); }
 
-#leadform-form { margin-top: var(--space-lg); display: flex; flex-direction: column; gap: var(--space-md); }
+#leadform-form { margin-top: var(--space-md); display: flex; flex-direction: column; gap: var(--space-sm); }
 .field { display: flex; flex-direction: column; gap: var(--space-3xs); }
 .field label { font-size: 0.82rem; font-weight: 500; color: var(--color-ink-2); }
 .field:focus-within label::before {

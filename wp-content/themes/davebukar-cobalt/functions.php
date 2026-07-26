@@ -45,6 +45,21 @@ function dbt_enqueue_assets() {
 }
 
 /**
+ * Skins the Ultimate Multisite [wu_checkout] form to match the site design.
+ * Hooked late and gated on wu-checkout actually being enqueued, so this
+ * never loads (or forces the plugin's own checkout.css) on pages that
+ * don't have a checkout form on them.
+ */
+add_action( 'wp_enqueue_scripts', 'dbt_enqueue_checkout_assets', 20 );
+function dbt_enqueue_checkout_assets() {
+	if ( ! wp_style_is( 'wu-checkout', 'enqueued' ) ) {
+		return;
+	}
+
+	wp_enqueue_style( 'dbt-checkout', DBT_URI . 'assets/css/checkout.css', array( 'dbt-tokens', 'wu-checkout' ), DBT_VERSION );
+}
+
+/**
  * Auto-provision the four service pages and two legal pages on theme
  * activation, so activating the theme is enough to get a working site
  * with real routable URLs - no manual page creation required. front-page.php

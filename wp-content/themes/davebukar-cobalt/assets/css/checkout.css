@@ -1,0 +1,155 @@
+/**
+ * Cobalt skin for the Ultimate Multisite checkout form ([wu_checkout]).
+ * Loaded after the plugin's own checkout.css (see functions.php), so it can
+ * win by re-pointing the plugin's own CSS custom properties at our tokens -
+ * the plugin already exposes --wu-accent-color/--wu-input-*/--wu-submit-*
+ * for exactly this purpose, so most of the form (labels, text inputs,
+ * buttons) is themed here with no markup changes at all.
+ */
+
+.wu-styling {
+	--wu-accent-color: var( --color-accent );
+
+	--wu-input-bg: var( --color-paper );
+	--wu-input-color: var( --color-ink );
+	--wu-input-border-color: var( --color-rule-2 );
+	--wu-input-border-radius: var( --radius-sm );
+	--wu-input-padding: 0.7rem 0.9rem;
+	--wu-input-font-size: 0.95rem;
+	--wu-input-focus-border-color: var( --color-accent );
+	--wu-input-focus-shadow: 0 0 0 3px var( --color-accent-soft );
+
+	--wu-label-font-size: 0.85rem;
+	--wu-label-font-weight: 600;
+	--wu-label-color: var( --color-ink-2 );
+
+	--wu-submit-bg: var( --color-accent );
+	--wu-submit-color: var( --color-accent-ink );
+	--wu-submit-padding: 0.85rem 1.75rem;
+	--wu-submit-border-radius: var( --radius-sm );
+	--wu-submit-font-size: 0.95rem;
+
+	font-family: var( --font-body );
+	color: var( --color-ink );
+}
+
+/* ---------- Wide checkout shell (template-checkout.php) ---------- */
+.dbt-checkout {
+	max-width: var( --container-w );
+	margin-inline: auto;
+	padding: var( --space-2xl ) var( --space-md ) var( --space-3xl );
+}
+.dbt-checkout__title { font-size: clamp( 1.6rem, 2.5vw + 0.5rem, 2.2rem ); margin-bottom: var( --space-xl ); }
+
+/* ---------- Currency toggle ---------- */
+.dbt-currency-toggle {
+	display: inline-flex;
+	gap: var( --space-3xs );
+	padding: var( --space-3xs );
+	background: var( --color-paper-2 );
+	border: 1px solid var( --color-rule );
+	border-radius: var( --radius-pill );
+	margin-bottom: var( --space-lg );
+}
+.dbt-currency-toggle__option {
+	font-family: var( --font-mono );
+	font-size: 0.8rem;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	padding: 0.4rem 0.9rem;
+	border-radius: var( --radius-pill );
+	color: var( --color-muted );
+	text-decoration: none;
+	transition: background var( --dur-short ) var( --ease-out ), color var( --dur-short ) var( --ease-out );
+}
+.dbt-currency-toggle__option:hover { color: var( --color-ink ); }
+.dbt-currency-toggle__option.is-active {
+	background: var( --color-accent );
+	color: var( --color-accent-ink );
+}
+
+/* ---------- Pricing table ---------- */
+.dbt-plans {
+	display: grid;
+	grid-template-columns: repeat( auto-fit, minmax( 240px, 1fr ) );
+	gap: var( --space-md );
+}
+label.dbt-plan {
+	cursor: pointer;
+	position: relative;
+	justify-content: space-between;
+}
+label.dbt-plan.dbt-plan--selected {
+	border-color: var( --color-accent );
+	box-shadow: 0 0 0 1px var( --color-accent );
+}
+.dbt-plan__name { font-family: var( --font-display); font-weight: 600; font-size: 1.05rem; color: var( --color-ink ); }
+.dbt-plan__desc { color: var( --color-muted ); font-size: 0.88rem; margin-top: var( --space-3xs ); }
+.dbt-plan__price { font-family: var( --font-display ); font-weight: 600; font-size: 1.3rem; color: var( --color-ink ); margin-top: var( --space-sm ); }
+.dbt-plan__period { color: var( --color-muted ); font-size: 0.82rem; }
+
+.dbt-plan__pwyw { margin-top: var( --space-sm ); display: flex; flex-direction: column; gap: var( --space-2xs ); }
+.dbt-plan__pwyw-input { display: flex; align-items: center; gap: var( --space-2xs ); }
+.dbt-plan__pwyw-input span { font-family: var( --font-mono ); color: var( --color-muted ); }
+.dbt-plan__pwyw-input input {
+	width: 7rem;
+	padding: 0.45rem 0.6rem;
+	border: 1px solid var( --color-rule-2 );
+	border-radius: var( --radius-sm );
+	font-size: 0.9rem;
+	background: var( --color-paper );
+	color: var( --color-ink );
+}
+.dbt-plan__pwyw-recurring { display: flex; align-items: center; gap: var( --space-2xs ); font-size: 0.85rem; color: var( --color-muted ); }
+
+/* ---------- Payment methods ---------- */
+.dbt-payment-methods { display: flex; flex-direction: column; gap: var( --space-2xs ); margin-top: var( --space-sm ); }
+.dbt-payment-method {
+	display: flex;
+	align-items: center;
+	gap: var( --space-xs );
+	padding: var( --space-sm );
+	border: 1px solid var( --color-rule );
+	border-radius: var( --radius-md );
+	cursor: pointer;
+	transition: border-color var( --dur-short ) var( --ease-out );
+}
+.dbt-payment-method:hover { border-color: var( --color-rule-2 ); }
+.dbt-payment-method:has( input:checked ) { border-color: var( --color-accent ); box-shadow: 0 0 0 1px var( --color-accent ); }
+.dbt-payment-method input { accent-color: var( --color-accent ); }
+.dbt-payment-badge {
+	display: inline-block;
+	padding: var( --space-sm );
+	border: 1px solid var( --color-rule );
+	border-radius: var( --radius-md );
+	font-size: 0.9rem;
+	color: var( --color-ink-2 );
+}
+
+/* ---------- Order summary ---------- */
+#wu-order-summary-content {
+	border: 1px solid var( --color-rule );
+	border-radius: var( --radius-md );
+	padding: var( --space-lg );
+	background: var( --color-paper );
+}
+#wu-order-summary-table { font-size: 0.9rem; border-collapse: collapse; }
+#wu-order-summary-table th {
+	font-family: var( --font-mono );
+	font-size: 0.7rem;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	color: var( --color-muted );
+	text-align: left;
+	padding-bottom: var( --space-2xs );
+	font-weight: 500;
+}
+#wu-order-summary-table td { padding: var( --space-2xs ) 0; border-top: 1px solid var( --color-rule ); }
+#wu-order-summary-table tfoot td { border-top: 1px solid var( --color-rule-2 ); }
+#wu-order-summary-table .col-total-gross,
+#wu-order-summary-table .col-total-net,
+#wu-order-summary-table .col-total-vat-percentage,
+#wu-order-summary-table .col-total-tax { text-align: right; }
+
+/* ---------- Submit button ---------- */
+.dbt-checkout-submit { margin-top: var( --space-lg ); }

@@ -29,6 +29,8 @@ class Dual_Currency {
 		add_filter('wu_cart_parameters', [$this, 'inject_cart_currency'], 10, 2);
 		add_filter('wu_add_product_line_item', [$this, 'convert_line_item'], 10, 5);
 		add_filter('wu_cart_product_setup_fee', [$this, 'convert_setup_fee'], 10, 3);
+
+		add_action('wp_footer', [$this, 'enqueue_display_symbol_override'], 1);
 	}
 
 	/**
@@ -196,6 +198,17 @@ class Dual_Currency {
 	 * @return array
 	 */
 	public function convert_line_item($line_item_data, $product, $duration, $duration_unit, $cart) {
+		/*
+		 * Pay-what-you-want amounts are typed in by the customer while
+		 * looking at whatever currency the pricing table is showing them -
+		 * the number is already in the selected currency, not the base
+		 * currency, so converting it here would silently multiply (or
+		 * divide) a real charge by the exchange rate.
+		 */
+		if ($product->is_pay_what_you_want()) {
+			return $line_item_data;
+		}
+
 		if (isset($line_item_data['unit_price'])) {
 			$line_item_data['unit_price'] = $this->convert_amount($line_item_data['unit_price'], $cart->get_currency());
 		}
@@ -214,6 +227,45 @@ class Dual_Currency {
 	 */
 	public function convert_setup_fee($setup_fee, $product, $cart) {
 		return $this->convert_amount($setup_fee, $cart->get_currency());
+	}
+
+	/**
+	 * The live order totals (order.totals.total, line_item.subtotal, etc.)
+	 * that the Vue checkout app displays already carry the right converted
+	 * number - they come straight from the Cart/Line_Item objects our own
+	 * filters ran against. But the JS money formatter (wu_format_money in
+	 * assets/js/functions.js) reads its currency *symbol* from a single
+	 * global localized at page load (wu_settings.currency_symbol), so
+	 * without this it would show the right amount with the wrong symbol
+	 * (e.g. "$45,000" for a Naira charge). wu_format_money already runs its
+	 * settings through the wp.hooks 'wu_format_money' JS filter for exactly
+	 * this kind of override, so we just swap the symbol there when the
+	 * visitor isn't on the base currency.
+	 *
+	 * @return void
+	 */
+	public function enqueue_display_symbol_override(): void {
+		if ( ! wp_script_is('wu-checkout', 'enqueued')) {
+			return;
+		}
+
+		$base = dual_currency_get_base_currency();
+		$selected = $this->resolve_currency();
+
+		if ($selected === $base) {
+			return;
+		}
+
+		$symbol = function_exists('wu_get_currency_symbol') ? wu_get_currency_symbol($selected) : $selected;
+
+		wp_add_inline_script(
+			'wu-checkout',
+			sprintf(
+				'(function(){if(window.wp&&wp.hooks){wp.hooks.addFilter("wu_format_money","dual-currency/symbol",function(s){s.currency.symbol=%s;return s;});}}());',
+				wp_json_encode((string) $symbol)
+			),
+			'after'
+		);
 	}
 
 	/**

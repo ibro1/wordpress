@@ -107,9 +107,11 @@ class Paystack_Gateway extends Base_Gateway {
 				toggle.textContent = 'Show';
 				toggle.style.marginLeft = '8px';
 				toggle.className = 'button button-secondary';
-				toggle.addEventListener('click', function () {
-					var revealed = input.type === 'text';
-					input.type = revealed ? 'password' : 'text';
+				toggle.addEventListener('click', function (e) {
+					e.preventDefault();
+					e.stopPropagation();
+					var revealed = input.getAttribute('type') === 'text';
+					input.setAttribute('type', revealed ? 'password' : 'text');
 					toggle.textContent = revealed ? 'Show' : 'Hide';
 				});
 				input.parentNode.insertBefore(toggle, input.nextSibling);

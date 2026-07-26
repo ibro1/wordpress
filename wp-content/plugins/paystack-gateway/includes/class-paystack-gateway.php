@@ -112,7 +112,6 @@ class Paystack_Gateway extends Base_Gateway {
 				'placeholder' => __('pk_test_***********', 'paystack-gateway'),
 				'type'        => 'text',
 				'default'     => '',
-				'capability'  => 'manage_api_keys',
 				'require'     => [
 					'active_gateways'      => 'paystack',
 					'paystack_sandbox_mode' => 1,
@@ -129,7 +128,6 @@ class Paystack_Gateway extends Base_Gateway {
 				'placeholder' => __('sk_test_***********', 'paystack-gateway'),
 				'type'        => 'text',
 				'default'     => '',
-				'capability'  => 'manage_api_keys',
 				'require'     => [
 					'active_gateways'      => 'paystack',
 					'paystack_sandbox_mode' => 1,
@@ -146,7 +144,6 @@ class Paystack_Gateway extends Base_Gateway {
 				'placeholder' => __('pk_live_***********', 'paystack-gateway'),
 				'type'        => 'text',
 				'default'     => '',
-				'capability'  => 'manage_api_keys',
 				'require'     => [
 					'active_gateways'      => 'paystack',
 					'paystack_sandbox_mode' => 0,
@@ -163,7 +160,6 @@ class Paystack_Gateway extends Base_Gateway {
 				'placeholder' => __('sk_live_***********', 'paystack-gateway'),
 				'type'        => 'text',
 				'default'     => '',
-				'capability'  => 'manage_api_keys',
 				'require'     => [
 					'active_gateways'      => 'paystack',
 					'paystack_sandbox_mode' => 0,

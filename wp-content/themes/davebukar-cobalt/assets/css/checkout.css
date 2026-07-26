@@ -228,14 +228,14 @@ label.dbt-plan {
 	cursor: pointer;
 	justify-content: space-between;
 	background: var( --color-paper );
-	box-shadow: 0 1px 2px var( --color-shadow-soft ), 0 8px 20px -12px var( --color-shadow-soft );
+	box-shadow: 0 2px 4px var( --color-shadow-soft ), 0 12px 28px -8px var( --color-shadow-card );
 	transition: border-color var( --dur-short ) var( --ease-out ), box-shadow var( --dur-short ) var( --ease-out ), transform var( --dur-short ) var( --ease-out );
 }
 @media ( hover: hover ) {
 	label.dbt-plan:hover {
-		transform: translateY( -3px );
+		transform: translateY( -4px );
 		border-color: var( --color-rule-2 );
-		box-shadow: 0 2px 4px var( --color-shadow-soft ), 0 16px 32px -14px var( --color-shadow-lift );
+		box-shadow: 0 4px 8px var( --color-shadow-soft ), 0 20px 40px -10px var( --color-shadow-lift );
 	}
 }
 label.dbt-plan:focus-within { outline: 2px solid var( --color-focus ); outline-offset: 2px; }
@@ -343,10 +343,10 @@ label.dbt-plan.dbt-plan--selected {
 	border-radius: var( --radius-md );
 	background: var( --color-paper );
 	cursor: pointer;
-	box-shadow: 0 1px 2px var( --color-shadow-soft );
+	box-shadow: 0 2px 4px var( --color-shadow-soft ), 0 8px 16px -8px var( --color-shadow-card );
 	transition: border-color var( --dur-short ) var( --ease-out ), box-shadow var( --dur-short ) var( --ease-out );
 }
-.dbt-payment-method:hover { border-color: var( --color-rule-2 ); box-shadow: 0 4px 12px -4px var( --color-shadow-soft ); }
+.dbt-payment-method:hover { border-color: var( --color-rule-2 ); box-shadow: 0 4px 12px -4px var( --color-shadow-lift ); }
 .dbt-payment-method:has( input:checked ) { border-color: var( --color-accent ); box-shadow: 0 0 0 1px var( --color-accent ), 0 8px 20px -10px var( --color-shadow-accent ); }
 .dbt-payment-method:focus-within { outline: 2px solid var( --color-focus ); outline-offset: 2px; }
 .dbt-payment-method input { accent-color: var( --color-accent ); }
@@ -389,11 +389,11 @@ label.dbt-plan.dbt-plan--selected {
 }
 .dbt-template {
 	background: var( --color-paper );
-	box-shadow: 0 1px 2px var( --color-shadow-soft ), 0 8px 20px -14px var( --color-shadow-soft );
+	box-shadow: 0 2px 4px var( --color-shadow-soft ), 0 12px 28px -10px var( --color-shadow-card );
 	transition: border-color var( --dur-short ) var( --ease-out ), box-shadow var( --dur-short ) var( --ease-out ), transform var( --dur-short ) var( --ease-out );
 }
 @media ( hover: hover ) {
-	.dbt-template:hover { transform: translateY( -3px ); box-shadow: 0 16px 32px -14px var( --color-shadow-lift ); }
+	.dbt-template:hover { transform: translateY( -4px ); box-shadow: 0 20px 40px -10px var( --color-shadow-lift ); }
 }
 .dbt-template--selected { border-color: var( --color-accent ); box-shadow: 0 0 0 1px var( --color-accent ), 0 16px 32px -14px var( --color-shadow-accent ); }
 .dbt-template__preview { display: block; border-radius: var( --radius-sm ); overflow: hidden; }
@@ -410,7 +410,7 @@ label.dbt-plan.dbt-plan--selected {
 	border-radius: var( --radius-md );
 	padding: var( --space-lg );
 	background: var( --color-paper );
-	box-shadow: 0 1px 2px var( --color-shadow-soft ), 0 20px 40px -20px var( --color-shadow-soft );
+	box-shadow: 0 4px 8px var( --color-shadow-soft ), 0 24px 48px -16px var( --color-shadow-card );
 }
 .dbt-summary__loading {
 	background: var( --color-paper-2 );

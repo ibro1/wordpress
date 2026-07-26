@@ -27,8 +27,9 @@
 
 	/* Shadow / scrim tints — derived from ink, never a bare hex/rgb */
 	--color-shadow-soft: oklch(24% 0.02 258 / 0.05);
-	--color-shadow-lift: oklch(24% 0.02 258 / 0.14);
-	--color-shadow-accent: oklch(58% 0.20 256 / 0.16);
+	--color-shadow-card: oklch(24% 0.02 258 / 0.10);
+	--color-shadow-lift: oklch(24% 0.02 258 / 0.20);
+	--color-shadow-accent: oklch(58% 0.20 256 / 0.22);
 	--color-scrim: oklch(24% 0.02 258 / 0.35);
 	--color-shadow-modal: oklch(24% 0.02 258 / 0.25);
 

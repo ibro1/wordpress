@@ -68,6 +68,58 @@ class Paystack_Gateway extends Base_Gateway {
 	}
 
 	/**
+	 * The settings-field system has no 'password' field type (only
+	 * 'text' has a template - views/settings/fields/field-text.php - and
+	 * the field's declared type is used both to pick that template AND
+	 * as the rendered <input>'s literal HTML type attribute, so the two
+	 * can't be decoupled from PHP alone without a template that doesn't
+	 * exist). Masking the secret-key inputs is done in JS instead, only
+	 * on this plugin's own settings screen - the public keys are left as
+	 * plain text since they're designed to be exposed client-side and
+	 * masking them would just be friction with no security benefit.
+	 *
+	 * @return void
+	 */
+	public function hooks() {
+
+		add_action('admin_footer', [$this, 'render_secret_key_mask_script']);
+	}
+
+	/**
+	 * @return void
+	 */
+	public function render_secret_key_mask_script() {
+
+		if ('wp-ultimo-settings' !== wu_request('page')) {
+			return;
+		}
+		?>
+		<script>
+		(function () {
+			['paystack_test_secret_key', 'paystack_live_secret_key'].forEach(function (id) {
+				var input = document.getElementById(id);
+				if (!input) {
+					return;
+				}
+				input.type = 'password';
+				var toggle = document.createElement('button');
+				toggle.type = 'button';
+				toggle.textContent = 'Show';
+				toggle.style.marginLeft = '8px';
+				toggle.className = 'button button-secondary';
+				toggle.addEventListener('click', function () {
+					var revealed = input.type === 'text';
+					input.type = revealed ? 'password' : 'text';
+					toggle.textContent = revealed ? 'Show' : 'Hide';
+				});
+				input.parentNode.insertBefore(toggle, input.nextSibling);
+			});
+		})();
+		</script>
+		<?php
+	}
+
+	/**
 	 * @return void
 	 */
 	public function settings() {

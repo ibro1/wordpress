@@ -86,6 +86,15 @@ class Paystack_Gateway extends Base_Gateway {
 			]
 		);
 
+		/*
+		 * The toggle's true-value/false-value are '1'/'0' (strings), and
+		 * assets/js/vue-apps.js's require() does a strict === comparison
+		 * - so every `require: ['..._sandbox_mode' => 1]` (integer) below
+		 * would silently never match, permanently hiding the fields it
+		 * gates. This affects Stripe/PayPal's own key fields the same
+		 * way (they use the same integer convention); using string '1'/'0'
+		 * here instead sidesteps that bug rather than reproducing it.
+		 */
 		wu_register_settings_field(
 			'payment-gateways',
 			'paystack_sandbox_mode',
@@ -93,7 +102,7 @@ class Paystack_Gateway extends Base_Gateway {
 				'title'     => __('Paystack Sandbox Mode', 'paystack-gateway'),
 				'desc'      => __('Toggle this to put Paystack on test mode. Turn off only once you have confirmed real test transactions complete correctly.', 'paystack-gateway'),
 				'type'      => 'toggle',
-				'default'   => 1,
+				'default'   => '1',
 				'html_attr' => [
 					'v-model' => 'paystack_sandbox_mode',
 				],
@@ -114,7 +123,7 @@ class Paystack_Gateway extends Base_Gateway {
 				'default'     => '',
 				'require'     => [
 					'active_gateways'      => 'paystack',
-					'paystack_sandbox_mode' => 1,
+					'paystack_sandbox_mode' => '1',
 				],
 			]
 		);
@@ -130,7 +139,7 @@ class Paystack_Gateway extends Base_Gateway {
 				'default'     => '',
 				'require'     => [
 					'active_gateways'      => 'paystack',
-					'paystack_sandbox_mode' => 1,
+					'paystack_sandbox_mode' => '1',
 				],
 			]
 		);
@@ -146,7 +155,7 @@ class Paystack_Gateway extends Base_Gateway {
 				'default'     => '',
 				'require'     => [
 					'active_gateways'      => 'paystack',
-					'paystack_sandbox_mode' => 0,
+					'paystack_sandbox_mode' => '0',
 				],
 			]
 		);
@@ -162,7 +171,7 @@ class Paystack_Gateway extends Base_Gateway {
 				'default'     => '',
 				'require'     => [
 					'active_gateways'      => 'paystack',
-					'paystack_sandbox_mode' => 0,
+					'paystack_sandbox_mode' => '0',
 				],
 			]
 		);

@@ -22,11 +22,11 @@ defined( 'ABSPATH' ) || exit;
 
 		<h3 class="dbt-summary__title"><?php esc_html_e( 'Order summary', 'davebukar-cobalt' ); ?></h3>
 
-		<div v-if="order.line_items.length === 0" class="dbt-summary__empty">
+		<div v-if="!order.line_items.length" class="dbt-summary__empty">
 			<?php esc_html_e( 'No products in shopping cart.', 'davebukar-cobalt' ); ?>
 		</div>
 
-		<ul class="dbt-summary__lines" v-if="order.line_items.length > 0">
+		<ul class="dbt-summary__lines" v-if="order.line_items.length">
 
 			<li class="dbt-summary__line" v-for="line_item in order.line_items">
 
@@ -93,7 +93,7 @@ defined( 'ABSPATH' ) || exit;
 			<?php printf( esc_html__( 'Next charge of %1$s on %2$s.', 'davebukar-cobalt' ), '{{ wu_format_money(order.totals.recurring.total) }}', '{{ $moment.unix(order.dates.date_next_charge).format(`LL`) }}' ); ?>
 		</p>
 
-		<p class="dbt-summary__note" v-if="order.totals.total_discounts < 0">
+		<p class="dbt-summary__note" v-if="order.totals.total_discounts < 0 ">
 			<?php
 			// translators: 1 is the discount name, 2 is the coupon code, 3 is the coupon amount, 4 is the discount total.
 			printf( esc_html__( 'Discount applied: %1$s — %2$s (%3$s) %4$s', 'davebukar-cobalt' ), '{{ order.discount_code.name }}', '{{ order.discount_code.code }}', '{{ order.discount_code.discount_description }}', '{{ wu_format_money(-order.totals.total_discounts) }}' );

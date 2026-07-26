@@ -32,7 +32,7 @@ defined( 'ABSPATH' ) || exit;
 		<button
 			type="button"
 			class="field__pwd-toggle wu-pwd-toggle hide-if-no-js"
-			data-toggle="0"
+			data-toggle="&#48;"
 			aria-label="<?php esc_attr_e( 'Show password', 'davebukar-cobalt' ); ?>"
 		>
 			<span class="dashicons dashicons-visibility" aria-hidden="true"></span>

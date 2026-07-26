@@ -5,7 +5,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'DBT_VERSION', '1.1.0' );
+define( 'DBT_VERSION', '1.1.1' );
 define( 'DBT_DIR', trailingslashit( get_template_directory() ) );
 define( 'DBT_URI', trailingslashit( get_template_directory_uri() ) );
 define( 'DBT_CONTACT_EMAIL', 'hello@davebukartechnologies.com' );
@@ -57,6 +57,44 @@ function dbt_enqueue_checkout_assets() {
 	}
 
 	wp_enqueue_style( 'dbt-checkout', DBT_URI . 'assets/css/checkout.css', array( 'dbt-tokens', 'wu-checkout' ), DBT_VERSION );
+}
+
+/**
+ * Protects the checkout block's rendered output from wptexturize().
+ *
+ * the_content runs do_blocks() (priority 9) before wptexturize (priority 10),
+ * so by the time wptexturize sees the page it's looking at this block's
+ * fully-expanded HTML - including every Vue directive and numeric HTML
+ * attribute inside it. wptexturize's "double prime" rule (formatting.php,
+ * wptexturize_primes()) converts any digit immediately followed by a
+ * straight " into &#8243; (a Unicode double-prime), assuming feet/inches
+ * notation like 6'2" - with no awareness that the " it just ate was closing
+ * an HTML attribute or a Vue v-if expression. That silently corrupts the
+ * markup from that point in the document onward (the browser's parser
+ * treats everything up to the next literal " as part of one broken
+ * attribute value), which is exactly what caused the whole form to vanish
+ * and Vue to throw "line_item is not defined" - the real closing quote of
+ * a v-if got eaten and replaced with that entity.
+ *
+ * wptexturize already supports skipping specific tag names via the
+ * no_texturize_tags filter (defaults to pre/code/kbd/style/script/tt) - so
+ * this wraps the checkout block's own output in a fake, purely structural
+ * tag name added to that list. display:contents in checkout.css makes the
+ * wrapper invisible to layout - it isn't a real element, just a boundary
+ * marker wptexturize's tag-stack tracking already knows how to skip.
+ */
+add_filter( 'no_texturize_tags', 'dbt_no_texturize_checkout_tag' );
+function dbt_no_texturize_checkout_tag( $tags ) {
+	$tags[] = 'dbt-no-texturize';
+	return $tags;
+}
+
+add_filter( 'render_block_wp-ultimo/checkout', 'dbt_wrap_checkout_block_no_texturize', 10, 1 );
+function dbt_wrap_checkout_block_no_texturize( $block_content ) {
+	if ( '' === trim( (string) $block_content ) ) {
+		return $block_content;
+	}
+	return '<dbt-no-texturize>' . $block_content . '</dbt-no-texturize>';
 }
 
 /**

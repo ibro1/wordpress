@@ -15,6 +15,11 @@
  * focus/error states and is not redeclared here.
  */
 
+/* Purely structural marker element (see functions.php,
+   dbt_wrap_checkout_block_no_texturize) that protects the checkout block's
+   output from wptexturize - not a real element, must have zero footprint. */
+dbt-no-texturize { display: contents; }
+
 .wu-styling {
 	--wu-accent-color: var( --color-accent );
 

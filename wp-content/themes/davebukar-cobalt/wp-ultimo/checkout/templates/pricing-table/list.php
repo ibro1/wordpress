@@ -50,15 +50,19 @@ $dbt_dc_selected = function_exists( 'dual_currency_get_selected_currency' ) ? du
 
 		<label
 			id="wu-product-<?php echo esc_attr( $product->get_id() ); ?>"
-			class="cell dbt-plan"
+			class="cell dbt-plan<?php echo $product->is_featured_plan() ? ' dbt-plan--featured' : ''; ?>"
 			:class="( $parent.has_product( <?php echo esc_attr( $product->get_id() ); ?> ) || $parent.has_product( '<?php echo esc_attr( $product->get_slug() ); ?>' ) ) ? 'dbt-plan--selected' : ''"
 		>
+
+		<?php if ( $product->is_featured_plan() ) : ?>
+			<span class="dbt-plan__badge"><?php esc_html_e( 'Recommended', 'davebukar-cobalt' ); ?></span>
+		<?php endif; ?>
 
 		<input v-if="<?php echo wp_json_encode( $product->get_pricing_type() !== 'contact_us' ); ?>" v-on:click="$parent.add_plan(<?php echo esc_attr( $product->get_id() ); ?>)" type="checkbox" name="products[]" value="<?php echo esc_attr( $product->get_id() ); ?>" class="screen-reader-text wu-hidden">
 
 		<input v-else v-on:click="$parent.open_url('<?php echo esc_url( $product->get_contact_us_link() ); ?>', '_blank');" type="checkbox" name="products[]" value="<?php echo esc_attr( $product->get_id() ); ?>" class="screen-reader-text wu-hidden">
 
-		<div>
+		<div class="dbt-plan__body">
 			<div class="dbt-plan__name"><?php echo esc_html( $product->get_name() ); ?></div>
 			<div class="dbt-plan__desc"><?php echo wp_kses( $product->get_description(), wu_kses_allowed_html() ); ?></div>
 
@@ -111,6 +115,14 @@ $dbt_dc_selected = function_exists( 'dual_currency_get_selected_currency' ) ? du
 
 			</div>
 		<?php endif; ?>
+
+		<div class="dbt-plan__footer">
+			<span class="dbt-plan__radio" aria-hidden="true"></span>
+			<span
+				v-if="$parent.has_product( <?php echo esc_attr( $product->get_id() ); ?> ) || $parent.has_product( '<?php echo esc_attr( $product->get_slug() ); ?>' )"
+			><?php esc_html_e( 'Selected', 'davebukar-cobalt' ); ?></span>
+			<span v-else><?php echo $product->get_pricing_type() === 'contact_us' ? esc_html__( 'Contact us', 'davebukar-cobalt' ) : esc_html__( 'Select plan', 'davebukar-cobalt' ); ?></span>
+		</div>
 
 		</label>
 

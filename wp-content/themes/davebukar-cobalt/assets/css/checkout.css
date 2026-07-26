@@ -1,10 +1,18 @@
+/* Hallmark · redesign: split-rail checkout (sequential form + sticky order-summary rail, numbered ordinal sections)
+ * theme: cobalt (locked, no rotation - same brand as the rest of the site)
+ * pre-emit critique: P4 H4 E4 S4 R4 V4
+ */
+
 /**
  * Cobalt skin for the Ultimate Multisite checkout form ([wu_checkout]).
  * Loaded after the plugin's own checkout.css (see functions.php), so it can
- * win by re-pointing the plugin's own CSS custom properties at our tokens -
- * the plugin already exposes --wu-accent-color/--wu-input-*/--wu-submit-*
- * for exactly this purpose, so most of the form (labels, text inputs,
- * buttons) is themed here with no markup changes at all.
+ * win by re-pointing the plugin's own CSS custom properties at our tokens.
+ *
+ * Text/password/select inputs reuse the site's own .field/.field__control/
+ * .field__glyph/.field__error system (defined once in main.css, built for
+ * the Book-a-call lead form) rather than inventing a second input language
+ * for the same site - that base rule set already covers default/hover/
+ * focus/error states and is not redeclared here.
  */
 
 .wu-styling {
@@ -33,6 +41,23 @@
 	color: var( --color-ink );
 }
 
+/* Any stock notice/error box we haven't individually overridden (a gateway's
+   own "you'll be redirected" banner, a general submit-error banner) still
+   uses the plugin's wu-bg-red-100/wu-bg-yellow-200 utility classes - retint
+   those to Cobalt's tokens instead of leaving Tailwind-default red/yellow,
+   as a safety net that doesn't require chasing every field-type template. */
+.wu-styling .wu-bg-red-100 {
+	background: var( --color-error-soft );
+	color: var( --color-error );
+	border-radius: var( --radius-sm );
+}
+.wu-styling .wu-bg-yellow-200 {
+	background: var( --color-paper-2 );
+	color: var( --color-ink-2 );
+	border: 1px solid var( --color-rule );
+	border-radius: var( --radius-sm );
+}
+
 /* ---------- Wide checkout shell (template-checkout.php) ---------- */
 .dbt-checkout {
 	max-width: var( --container-w );
@@ -40,6 +65,105 @@
 	padding: var( --space-2xl ) var( --space-md ) var( --space-3xl );
 }
 .dbt-checkout__title { font-size: clamp( 1.6rem, 2.5vw + 0.5rem, 2.2rem ); margin-bottom: var( --space-xl ); }
+
+/* ---------- Split-rail layout ---------- */
+/* #wu-step-checkout ships as a Tailwind-utility wu-grid-cols-2 with every
+   field spanning both columns (wu-col-span-2), i.e. already a de-facto
+   single column. Above 960px we repurpose the same grid: form fields stay
+   in column 1, the order-summary field alone moves to column 2 and goes
+   sticky - a real sticky rail with zero markup changes, since every field
+   wrapper already carries a stable #wrapper-field-<name> id. */
+@media ( min-width: 960px ) {
+	#wu-step-checkout {
+		grid-template-columns: 1fr 340px;
+		gap: var( --space-xl );
+		align-items: start;
+	}
+	#wu-step-checkout > .wu-col-span-2 { grid-column: 1; }
+	#wu-step-checkout > #wrapper-field-order_summary {
+		grid-column: 2;
+		grid-row: 1 / -1;
+		position: sticky;
+		top: var( --space-lg );
+	}
+}
+
+/* Numbered section eyebrows - legitimate here because the checkout genuinely
+   IS a sequence of ordinal steps, not decorative numbering on prose. */
+#wrapper-field-pricing_table::before,
+#wrapper-field-email_address::before,
+#wrapper-field-site_title::before,
+#wrapper-field-template_selection::before,
+#wrapper-field-payment::before {
+	display: block;
+	font-family: var( --font-mono );
+	font-size: 0.72rem;
+	font-weight: 500;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	color: var( --color-accent );
+	margin-bottom: var( --space-sm );
+}
+#wrapper-field-pricing_table::before { content: "01 — Choose your plan"; }
+#wrapper-field-email_address::before { content: "02 — Create your account"; margin-top: var( --space-2xl ); }
+#wrapper-field-site_title::before { content: "03 — Set up your site"; margin-top: var( --space-2xl ); }
+#wrapper-field-template_selection::before { content: "04 — Pick a starting point"; margin-top: var( --space-2xl ); }
+#wrapper-field-payment::before { content: "05 — Payment"; margin-top: var( --space-2xl ); }
+
+/* ---------- Grouped inputs (site_url's https:// prefix + .domain suffix) ---------- */
+.field__control--grouped { display: flex; align-items: stretch; position: relative; }
+.field__control--grouped input {
+	flex: 1 1 auto;
+	min-width: 0;
+	border-radius: 0;
+}
+.field__addon {
+	display: flex;
+	align-items: center;
+	white-space: nowrap;
+	padding: 0 0.75rem;
+	background: var( --color-paper-2 );
+	border: 1px solid var( --color-rule-2 );
+	font-family: var( --font-mono );
+	font-size: 0.82rem;
+	color: var( --color-muted );
+}
+.field__addon--prefix { border-right: 0; border-radius: var( --radius-sm ) 0 0 var( --radius-sm ); }
+.field__addon--suffix { border-left: 0; border-radius: 0 var( --radius-sm ) var( --radius-sm ) 0; }
+.field__addon--prefix + input { border-radius: 0; }
+.field__control--grouped input:last-child { border-radius: 0 var( --radius-sm ) var( --radius-sm ) 0; }
+/* The floating error glyph would sit on top of the suffix badge in a
+   grouped field - the border-colour flip + message text still carry the
+   error state, so the glyph is simply omitted here rather than overlapping. */
+.field__control--grouped .field__glyph { display: none; }
+
+#wu-your-site-block {
+	margin-top: var( --space-2xs );
+	font-size: 0.85rem;
+	color: var( --color-muted );
+}
+#wu-your-site-block strong { color: var( --color-ink ); font-family: var( --font-mono ); }
+
+/* ---------- Password toggle + strength meter ---------- */
+.field__pwd-toggle {
+	position: absolute;
+	top: 50%; right: 0.5rem;
+	transform: translateY( -50% );
+	display: flex; align-items: center; justify-content: center;
+	width: 1.75rem; height: 1.75rem;
+	padding: 0;
+	background: transparent;
+	border: 0;
+	border-radius: var( --radius-sm );
+	color: var( --color-muted );
+	cursor: pointer;
+	transition: color var( --dur-short ) var( --ease-out ), background-color var( --dur-short ) var( --ease-out );
+}
+.field__pwd-toggle:hover { color: var( --color-ink ); background: var( --color-paper-2 ); }
+.field__pwd-toggle:focus-visible { outline: 2px solid var( --color-focus ); outline-offset: 1px; }
+.field__control input.wu-password-input { padding-right: 2.25rem; }
+.field__pwd-meter { margin-top: var( --space-3xs ); }
+.field__pwd-meter-label { font-size: 0.78rem; color: var( --color-muted ); }
 
 /* ---------- Currency toggle ---------- */
 .dbt-currency-toggle {
@@ -63,6 +187,7 @@
 	transition: background var( --dur-short ) var( --ease-out ), color var( --dur-short ) var( --ease-out );
 }
 .dbt-currency-toggle__option:hover { color: var( --color-ink ); }
+.dbt-currency-toggle__option:focus-visible { outline: 2px solid var( --color-focus ); outline-offset: 2px; }
 .dbt-currency-toggle__option.is-active {
 	background: var( --color-accent );
 	color: var( --color-accent-ink );
@@ -71,19 +196,35 @@
 /* ---------- Pricing table ---------- */
 .dbt-plans {
 	display: grid;
-	grid-template-columns: repeat( auto-fit, minmax( 240px, 1fr ) );
+	grid-template-columns: repeat( auto-fit, minmax( 220px, 1fr ) );
 	gap: var( --space-md );
 }
 label.dbt-plan {
-	cursor: pointer;
 	position: relative;
+	cursor: pointer;
 	justify-content: space-between;
+	transition: border-color var( --dur-short ) var( --ease-out ), box-shadow var( --dur-short ) var( --ease-out );
 }
+label.dbt-plan:focus-within { outline: 2px solid var( --color-focus ); outline-offset: 2px; }
 label.dbt-plan.dbt-plan--selected {
 	border-color: var( --color-accent );
 	box-shadow: 0 0 0 1px var( --color-accent );
 }
-.dbt-plan__name { font-family: var( --font-display); font-weight: 600; font-size: 1.05rem; color: var( --color-ink ); }
+label.dbt-plan.dbt-plan--featured { border-color: var( --color-rule-2 ); }
+.dbt-plan__badge {
+	position: absolute;
+	top: -0.6rem; left: var( --space-lg );
+	font-family: var( --font-mono );
+	font-size: 0.68rem;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	color: var( --color-accent-ink );
+	background: var( --color-accent );
+	padding: 0.2rem 0.6rem;
+	border-radius: var( --radius-pill );
+}
+.dbt-plan__body { flex: 1 1 auto; }
+.dbt-plan__name { font-family: var( --font-display ); font-weight: 600; font-size: 1.05rem; color: var( --color-ink ); }
 .dbt-plan__desc { color: var( --color-muted ); font-size: 0.88rem; margin-top: var( --space-3xs ); }
 .dbt-plan__price { font-family: var( --font-display ); font-weight: 600; font-size: 1.3rem; color: var( --color-ink ); margin-top: var( --space-sm ); }
 .dbt-plan__period { color: var( --color-muted ); font-size: 0.82rem; }
@@ -100,7 +241,33 @@ label.dbt-plan.dbt-plan--selected {
 	background: var( --color-paper );
 	color: var( --color-ink );
 }
+.dbt-plan__pwyw-input input:focus-visible { outline: 2px solid var( --color-focus ); outline-offset: 1px; }
 .dbt-plan__pwyw-recurring { display: flex; align-items: center; gap: var( --space-2xs ); font-size: 0.85rem; color: var( --color-muted ); }
+
+.dbt-plan__footer {
+	margin-top: var( --space-md );
+	padding-top: var( --space-sm );
+	border-top: 1px solid var( --color-rule );
+	display: flex;
+	align-items: center;
+	gap: var( --space-2xs );
+	font-size: 0.85rem;
+	font-weight: 500;
+	color: var( --color-muted );
+}
+.dbt-plan__radio {
+	width: 0.9rem; height: 0.9rem;
+	border-radius: 50%;
+	border: 1.5px solid var( --color-rule-2 );
+	flex-shrink: 0;
+	transition: border-color var( --dur-short ) var( --ease-out ), background-color var( --dur-short ) var( --ease-out ), box-shadow var( --dur-short ) var( --ease-out );
+}
+.dbt-plan--selected .dbt-plan__radio {
+	border-color: var( --color-accent );
+	background: var( --color-accent );
+	box-shadow: inset 0 0 0 2px var( --color-paper );
+}
+.dbt-plan--selected .dbt-plan__footer { color: var( --color-accent ); }
 
 /* ---------- Payment methods ---------- */
 .dbt-payment-methods { display: flex; flex-direction: column; gap: var( --space-2xs ); margin-top: var( --space-sm ); }
@@ -116,6 +283,7 @@ label.dbt-plan.dbt-plan--selected {
 }
 .dbt-payment-method:hover { border-color: var( --color-rule-2 ); }
 .dbt-payment-method:has( input:checked ) { border-color: var( --color-accent ); box-shadow: 0 0 0 1px var( --color-accent ); }
+.dbt-payment-method:focus-within { outline: 2px solid var( --color-focus ); outline-offset: 2px; }
 .dbt-payment-method input { accent-color: var( --color-accent ); }
 .dbt-payment-badge {
 	display: inline-block;
@@ -126,30 +294,96 @@ label.dbt-plan.dbt-plan--selected {
 	color: var( --color-ink-2 );
 }
 
-/* ---------- Order summary ---------- */
-#wu-order-summary-content {
+/* ---------- Template selection ---------- */
+.dbt-template-filter {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var( --space-2xs );
+	list-style: none;
+	margin: 0 0 var( --space-md );
+	padding: 0;
+}
+.dbt-template-filter a {
+	display: inline-block;
+	font-size: 0.82rem;
+	font-weight: 500;
+	color: var( --color-muted );
+	text-decoration: none;
+	padding: 0.35rem 0.8rem;
+	border-radius: var( --radius-pill );
+	border: 1px solid var( --color-rule );
+	transition: border-color var( --dur-short ) var( --ease-out ), color var( --dur-short ) var( --ease-out );
+}
+.dbt-template-filter a:hover { color: var( --color-ink ); border-color: var( --color-rule-2 ); }
+.dbt-template-filter a.is-active { color: var( --color-accent-ink ); background: var( --color-accent ); border-color: var( --color-accent ); }
+
+.dbt-templates {
+	display: grid;
+	grid-template-columns: repeat( auto-fit, minmax( 220px, 1fr ) );
+	gap: var( --space-md );
+}
+.dbt-template { transition: border-color var( --dur-short ) var( --ease-out ), box-shadow var( --dur-short ) var( --ease-out ); }
+.dbt-template--selected { border-color: var( --color-accent ); box-shadow: 0 0 0 1px var( --color-accent ); }
+.dbt-template__preview { display: block; border-radius: var( --radius-sm ); overflow: hidden; }
+.dbt-template__image { display: block; width: 100%; height: auto; border: 1px solid var( --color-rule ); border-radius: var( --radius-sm ); }
+.dbt-template__name { font-family: var( --font-display ); font-weight: 600; font-size: 1rem; margin-top: var( --space-sm ); }
+.dbt-template__desc { color: var( --color-muted ); font-size: 0.85rem; margin-top: var( --space-3xs ); }
+.dbt-template__select { width: 100%; margin-top: var( --space-md ); }
+.dbt-template__select--selected { background: var( --color-accent ); color: var( --color-accent-ink ); border-color: var( --color-accent ); }
+
+/* ---------- Order summary (sticky rail on desktop, see layout section above) ---------- */
+#wu-order-summary-content.dbt-summary {
 	border: 1px solid var( --color-rule );
 	border-radius: var( --radius-md );
 	padding: var( --space-lg );
 	background: var( --color-paper );
 }
-#wu-order-summary-table { font-size: 0.9rem; border-collapse: collapse; }
-#wu-order-summary-table th {
-	font-family: var( --font-mono );
-	font-size: 0.7rem;
-	text-transform: uppercase;
-	letter-spacing: 0.05em;
+.dbt-summary__loading {
+	background: var( --color-paper-2 );
+	padding: var( --space-md );
+	text-align: center;
+	font-size: 0.85rem;
 	color: var( --color-muted );
-	text-align: left;
-	padding-bottom: var( --space-2xs );
-	font-weight: 500;
+	border-radius: var( --radius-sm );
 }
-#wu-order-summary-table td { padding: var( --space-2xs ) 0; border-top: 1px solid var( --color-rule ); }
-#wu-order-summary-table tfoot td { border-top: 1px solid var( --color-rule-2 ); }
-#wu-order-summary-table .col-total-gross,
-#wu-order-summary-table .col-total-net,
-#wu-order-summary-table .col-total-vat-percentage,
-#wu-order-summary-table .col-total-tax { text-align: right; }
+.dbt-summary__title { font-family: var( --font-display ); font-size: 1.05rem; margin: 0 0 var( --space-md ); }
+.dbt-summary__empty { font-size: 0.85rem; color: var( --color-muted ); }
+.dbt-summary__lines { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var( --space-sm ); }
+.dbt-summary__line { display: flex; justify-content: space-between; gap: var( --space-sm ); font-size: 0.88rem; padding-bottom: var( --space-sm ); border-bottom: 1px solid var( --color-rule ); }
+.dbt-summary__line-desc { color: var( --color-ink-2 ); }
+.dbt-summary__line-amount { font-weight: 600; color: var( --color-ink ); white-space: nowrap; }
+.dbt-summary__remove {
+	display: block;
+	margin-top: 0.15rem;
+	font-size: 0.78rem;
+	color: var( --color-muted );
+	background: none;
+	border: 0;
+	padding: 0;
+	cursor: pointer;
+	text-decoration: underline;
+	text-underline-offset: 2px;
+}
+.dbt-summary__remove:hover { color: var( --color-error ); }
+.dbt-summary__totals { margin: var( --space-sm ) 0 0; }
+.dbt-summary__totals-row { display: flex; justify-content: space-between; font-size: 0.85rem; color: var( --color-muted ); padding: var( --space-3xs ) 0; }
+.dbt-summary__totals-row dt, .dbt-summary__totals-row dd { margin: 0; font-weight: 400; }
+.dbt-summary__totals-row--grand {
+	margin-top: var( --space-2xs );
+	padding-top: var( --space-sm );
+	border-top: 1px solid var( --color-rule-2 );
+	font-size: 1rem;
+	font-weight: 600;
+	color: var( --color-ink );
+}
+.dbt-summary__note { font-size: 0.78rem; color: var( --color-muted ); margin-top: var( --space-sm ); }
 
-/* ---------- Submit button ---------- */
+/* ---------- Submit ---------- */
 .dbt-checkout-submit { margin-top: var( --space-lg ); }
+.dbt-checkout-submit .btn { width: 100%; }
+
+/* ---------- Mobile (320/375/414/768) ---------- */
+@media ( max-width: 480px ) {
+	.dbt-plans, .dbt-templates { grid-template-columns: 1fr; }
+	.dbt-plan__badge { left: var( --space-md ); }
+}

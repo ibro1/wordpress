@@ -387,7 +387,7 @@ body.admin-bar .nav { top: 32px; }
 
 /* Error — border-colour flip is allowed here because aria-invalid + the
    glyph + the message all signal it too; never colour alone. */
-.field input[aria-invalid="true"], .field textarea[aria-invalid="true"] { border-color: var(--color-error); }
+.field input[aria-invalid="true"], .field textarea[aria-invalid="true"], .field select[aria-invalid="true"] { border-color: var(--color-error); }
 .field__glyph {
 	position: absolute;
 	top: 50%; right: 0.6rem;

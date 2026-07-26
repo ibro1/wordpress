@@ -10,7 +10,7 @@ defined( 'ABSPATH' ) || exit;
 $active_gateways = wu_get_active_gateway_as_options();
 
 ?>
-<div class="<?php echo esc_attr( trim( $field->wrapper_classes ) ); ?>" v-cloak v-show="order && order.should_collect_payment" <?php $field->print_wrapper_html_attributes(); ?>>
+<div class="field <?php echo esc_attr( trim( $field->wrapper_classes ) ); ?>" v-cloak v-show="order && order.should_collect_payment" <?php $field->print_wrapper_html_attributes(); ?>>
 
 	<?php
 	wu_get_template(

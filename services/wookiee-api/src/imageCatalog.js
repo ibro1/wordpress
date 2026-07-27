@@ -59,6 +59,28 @@ const PROVIDERS = {
     label: 'OpenAI',
     base_url: 'https://api.openai.com/v1',
     key_setting: 'llm_openai_api_key',
+    /*
+     * Falls back to the legacy single-endpoint key. Most installs configured
+     * that field first and it holds an OpenAI key in practice, so requiring
+     * the newer per-provider field would report "no key saved" on a backend
+     * that is perfectly able to generate - which is exactly the "0 models"
+     * confusion the text catalogue already had to fix.
+     *
+     * Guarded on the fallback base URL: that key belongs to whatever endpoint
+     * llm_base_url points at, and shipping a Groq or vLLM key to
+     * api.openai.com would just produce a baffling 401.
+     */
+    resolveKey: (get) => {
+      const direct = String(get('llm_openai_api_key') || '').trim();
+      if (direct) {
+        return direct;
+      }
+      const base = String(get('llm_base_url') || '').trim();
+      if (!base || /\/\/(www\.)?api\.openai\.com/i.test(base)) {
+        return String(get('llm_api_key') || '').trim();
+      }
+      return '';
+    },
     generatePath: '/images/generations',
     listPath: '/models',
     authStyle: 'bearer',
@@ -192,6 +214,21 @@ const PROVIDERS = {
   },
 };
 
+/**
+ * A provider's API key. Most read one setting; a provider may declare
+ * resolveKey() to inherit from elsewhere when its own field is blank.
+ */
+function providerKey_key(providerKey, getSetting) {
+  const provider = PROVIDERS[providerKey];
+  if (!provider) {
+    return '';
+  }
+  if (provider.resolveKey) {
+    return String(provider.resolveKey(getSetting) || '').trim();
+  }
+  return String(getSetting(provider.key_setting) || '').trim();
+}
+
 function resolveBaseUrl(providerKey, getSetting) {
   const provider = PROVIDERS[providerKey];
   if (!provider) {
@@ -307,7 +344,7 @@ async function listConfiguredModels(getSetting, { force = false } = {}) {
   const providerKeys = Object.keys(PROVIDERS);
 
   const results = await Promise.all(providerKeys.map(async (providerKey) => {
-    const apiKey = String(getSetting(PROVIDERS[providerKey].key_setting) || '').trim();
+    const apiKey = providerKey_key(providerKey, getSetting);
     const baseUrl = resolveBaseUrl(providerKey, getSetting);
     const result = await fetchProviderModels(providerKey, apiKey, { force, baseUrl });
     return { providerKey, apiKey: Boolean(apiKey), baseUrl, result };
@@ -356,7 +393,7 @@ async function generate({ id, prompt, size, getSetting, timeoutMs = 180000 }) {
   }
 
   const provider = PROVIDERS[parsed.provider];
-  const apiKey = String(getSetting(provider.key_setting) || '').trim();
+  const apiKey = providerKey_key(parsed.provider, getSetting);
   if (!apiKey) {
     throw new Error(`No API key saved for ${provider.label}.`);
   }

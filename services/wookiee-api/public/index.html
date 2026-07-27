@@ -120,6 +120,15 @@
       ['llm_base_url', 'Fallback LLM base URL', 'text'],
       ['llm_default_model', 'Fallback model name', 'text'],
     ] },
+    { title: 'Image generation', note: 'Providers for the store photograph generator. OpenAI and Google reuse their keys from above - one account covers both text and images. OpenAI also inherits the fallback key when that endpoint points at api.openai.com, so an install configured before these fields existed keeps working.', fields: [
+      ['image_together_api_key', 'Together AI API key', 'password'],
+      ['image_xai_api_key', 'xAI (Grok) API key', 'password'],
+      ['image_model', 'Default image model (e.g. openai:gpt-image-1)', 'text'],
+    ] },
+    { title: 'Image generation fallback (custom endpoint)', note: 'Any other OpenAI-compatible /images/generations endpoint - a self-hosted shim, Fireworks, DeepInfra. Leave blank unless you are using one.', fields: [
+      ['image_api_key', 'Custom image API key', 'password'],
+      ['image_base_url', 'Custom image base URL', 'text'],
+    ] },
     { title: 'CJ Dropshipping', fields: [
       ['cj_email', 'CJ Dropshipping account email', 'email'],
       ['cj_api_key', 'CJ Dropshipping API key', 'password'],

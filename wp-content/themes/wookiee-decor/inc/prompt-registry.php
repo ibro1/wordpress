@@ -116,9 +116,9 @@ function wookiee_prompt_registry() {
 		'required'     => array(),
 	);
 
-	$registry['design_pick'] = array(
-		'label'        => 'Design chooser (palette + layout)',
-		'description'  => 'Picks which approved colour palette and layout suit the niche. The model only ever chooses from the built-in lists - it never writes CSS - so an edit here changes how it chooses, not what it can choose.',
+	$registry['design_params'] = array(
+		'label'        => 'Store design generator',
+		'description'  => 'Generates the storefront design from the niche. The model returns design parameters (hue, chroma, density, columns...) which the theme turns into CSS with contrast verified in code - it never returns colours or CSS itself.',
 		'placeholders' => array( 'brief' ),
 		'required'     => array( 'brief' ),
 	);
@@ -332,7 +332,7 @@ function wookiee_prompt_capture_builders() {
 			);
 		},
 
-		'design_pick' => function () { return wookiee_build_design_pick_prompt( '{{brief}}' ); },
+		'design_params' => function () { return wookiee_build_design_params_prompt( '{{brief}}' ); },
 
 		'supplier_import' => function () {
 			return wookiee_build_supplier_import_prompt(

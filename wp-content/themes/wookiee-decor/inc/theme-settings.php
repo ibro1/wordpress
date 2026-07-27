@@ -127,6 +127,16 @@ function wookiee_settings_fields() {
 		'contact_form_subtitle' => array( 'label' => 'Contact: form subtitle', 'default' => 'We typically reply within 24 business hours.', 'type' => 'text' ),
 		'shipping_rate'      => array( 'label' => 'Flat shipping rate (£)', 'default' => '5.99', 'type' => 'text' ),
 		'shipping_dispatch'  => array( 'label' => 'Dispatch / transit time', 'default' => 'Dispatched within 24 hours, 3-5 working days transit', 'type' => 'text' ),
+		// Granular fulfilment timings. Kept separate from shipping_dispatch
+		// (a free-text summary shown on the storefront) because policy pages
+		// have to state handling and transit as distinct commitments - a
+		// single blended sentence isn't enough for a returns/shipping policy
+		// to be specific about when each clock starts.
+		'handling_time'      => array( 'label' => 'Handling time (before dispatch)', 'default' => '1-2 business days', 'type' => 'text' ),
+		'transit_time'       => array( 'label' => 'Transit time (with the carrier)', 'default' => '2-3 business days', 'type' => 'text' ),
+		'estimated_delivery' => array( 'label' => 'Estimated delivery time (total)', 'default' => '3-5 business days', 'type' => 'text' ),
+		'restocking_fee'     => array( 'label' => 'Restocking fee policy', 'default' => 'We do not charge restocking fees', 'type' => 'text' ),
+		'cancellation_period' => array( 'label' => 'Cancellation period (after ordering)', 'default' => '24 hours', 'type' => 'text' ),
 		'facebook_url'       => array( 'label' => 'Facebook URL (leave blank to hide the icon)', 'default' => '', 'type' => 'url' ),
 		'instagram_url'      => array( 'label' => 'Instagram URL (leave blank to hide the icon)', 'default' => '', 'type' => 'url' ),
 		'linkedin_url'       => array( 'label' => 'LinkedIn URL (leave blank to hide the icon)', 'default' => '', 'type' => 'url' ),
@@ -154,7 +164,7 @@ function wookiee_settings_tabs() {
 		),
 		'shipping' => array(
 			'label'  => 'Shipping & Returns',
-			'fields' => array( 'shipping_rate', 'shipping_dispatch', 'returns_address', 'returns_period_days' ),
+			'fields' => array( 'shipping_rate', 'shipping_dispatch', 'handling_time', 'transit_time', 'estimated_delivery', 'returns_address', 'returns_period_days', 'cancellation_period', 'restocking_fee' ),
 		),
 		'homepage' => array(
 			'label'  => 'Homepage Copy',

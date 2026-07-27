@@ -652,9 +652,27 @@ function wookiee_business_details_block() {
 		'Contact phone: ' . wookiee_get_setting( 'contact_phone' ),
 		'Support hours: ' . wookiee_get_setting( 'support_hours' ),
 		'Countries served: ' . wookiee_get_setting( 'countries_served' ),
-		'Typical delivery time: ' . wookiee_get_setting( 'shipping_dispatch' ),
 		'Flat shipping rate: £' . wookiee_get_setting( 'shipping_rate' ),
+		/*
+		 * Handling and transit are given separately, then the total, because
+		 * a shipping/returns policy has to be explicit about which clock a
+		 * given promise runs on. The free-text summary below is what the
+		 * storefront already displays; it is labelled as such so the model
+		 * treats the three figures above as authoritative and doesn't emit a
+		 * policy that contradicts its own delivery estimate.
+		 */
+		'Handling time before dispatch: ' . wookiee_get_setting( 'handling_time' ),
+		'Transit time once with the carrier: ' . wookiee_get_setting( 'transit_time' ),
+		'Estimated total delivery time (handling plus transit): ' . wookiee_get_setting( 'estimated_delivery' ),
+		'Delivery summary already shown on the storefront (keep any policy consistent with this): ' . wookiee_get_setting( 'shipping_dispatch' ),
 		'Returns period offered: ' . wookiee_get_setting( 'returns_period_days' ) . ' days (this is the business\'s own voluntary returns window - it sits ALONGSIDE, not instead of, the customer\'s 14-day statutory right to cancel under the Consumer Contracts Regulations; state both clearly rather than treating them as conflicting)',
+		/*
+		 * Distinct from the returns window: cancelling an order that hasn't
+		 * shipped yet, versus sending back goods already received. Policies
+		 * routinely conflate the two, so they're labelled explicitly here.
+		 */
+		'Order cancellation period after ordering (before dispatch - not the same as the returns window above): ' . wookiee_get_setting( 'cancellation_period' ),
+		'Restocking fees: ' . wookiee_get_setting( 'restocking_fee' ),
 		'Returns address: ' . str_replace( "\n", ', ', wookiee_get_returns_address() ),
 		'Website: ' . home_url( '/' ),
 	);

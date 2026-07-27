@@ -168,12 +168,20 @@ function wookiee_derive_palette( array $p ) {
 	$accent = fmod( $hue + (float) $p['accent_offset'] + 360, 360 );
 	$chroma = wookiee_chroma_value( $p['chroma'] );
 
-	// Page background: barely-tinted, and tinted toward the requested
-	// temperature rather than the brand hue itself, so a vivid brand colour
-	// doesn't produce a vivid page.
-	$paper_hue = array( 'warm' => 35, 'neutral' => $hue, 'cool' => 210 );
-	$ph        = isset( $paper_hue[ $p['paper'] ] ) ? $paper_hue[ $p['paper'] ] : 35;
-	$bg        = wookiee_hsl_to_hex( $ph, min( 0.30, $chroma * 0.55 ), 0.925 );
+	/*
+	 * Page background: the BRAND hue, nudged warm or cool, not a fixed
+	 * orange or blue. Pinning paper to a fixed hue meant a green brand with
+	 * "warm paper" produced a beige page with no green in it anywhere - the
+	 * chosen hue only survived in small accents, so every generated design
+	 * looked like the same off-white site.
+	 *
+	 * Saturation has a floor as well as a ceiling: below roughly 0.12 at
+	 * this lightness the tint is invisible on most screens, which is what
+	 * made earlier output indistinguishable from the stock theme.
+	 */
+	$paper_shift = array( 'warm' => 18, 'neutral' => 0, 'cool' => -18 );
+	$ph          = $hue + ( isset( $paper_shift[ $p['paper'] ] ) ? $paper_shift[ $p['paper'] ] : 0 );
+	$bg          = wookiee_hsl_to_hex( $ph, max( 0.16, min( 0.55, $chroma * 1.1 ) ), 0.94 );
 
 	// Body text must clear 7:1 on the page background (AAA at body size);
 	// headings sit a touch darker still.
@@ -189,7 +197,7 @@ function wookiee_derive_palette( array $p ) {
 	$accent_dk  = wookiee_solve_contrast( $accent, max( 0.35, $chroma ), '#ffffff', 7.0, 0.42 );
 
 	// Borders are decorative - no contrast requirement, just a visible edge.
-	$border = wookiee_hsl_to_hex( $ph, min( 0.28, $chroma * 0.5 ), 0.83 );
+	$border = wookiee_hsl_to_hex( $ph, max( 0.14, min( 0.40, $chroma * 0.8 ) ), 0.84 );
 
 	$gold = wookiee_solve_contrast( 42, 0.55, '#ffffff', 3.0, 0.48 );
 
@@ -421,7 +429,7 @@ function wookiee_render_design_panel() {
 			<div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;align-items:center;">
 				<?php foreach ( array( 'wookiee-bg' => 'Page', 'wookiee-ink' => 'Headings', 'wookiee-text' => 'Body', 'wookiee-text-muted' => 'Muted', 'wookiee-accent' => 'Accent', 'wookiee-border' => 'Border' ) as $tok => $label ) : ?>
 					<span title="<?php echo esc_attr( $label . ': ' . $tokens[ $tok ] ); ?>" style="display:inline-flex;align-items:center;gap:6px;font-size:11px;color:#50575e;">
-						<span style="width:22px;height:22px;border-radius:4px;border:1px solid #dcdcde;background:<?php echo esc_attr( $tokens[ $tok ] ); ?>;display:inline-block;"></span>
+						<span data-swatch="<?php echo esc_attr( $tok ); ?>" style="width:22px;height:22px;border-radius:4px;border:1px solid #dcdcde;background:<?php echo esc_attr( $tokens[ $tok ] ); ?>;display:inline-block;"></span>
 						<?php echo esc_html( $label ); ?>
 					</span>
 				<?php endforeach; ?>
@@ -429,15 +437,15 @@ function wookiee_render_design_panel() {
 
 			<p class="description" style="margin:0 0 10px;">
 				<strong>Current design:</strong>
-				hue <?php echo esc_html( round( $params['hue'] ) ); ?>°,
+				<span id="wookiee-design-summary">hue <?php echo esc_html( round( $params['hue'] ) ); ?>°,
 				<?php echo esc_html( $params['chroma'] ); ?> saturation,
 				<?php echo esc_html( $params['paper'] ); ?> paper,
 				<?php echo esc_html( $params['density'] ); ?> spacing,
 				<?php echo esc_html( $params['corners'] ); ?> corners,
 				<?php echo esc_html( $params['elevation'] ); ?> elevation,
 				<?php echo esc_html( $params['columns'] ); ?> columns,
-				<?php echo esc_html( 'story' === $params['emphasis'] ? 'story first' : 'products first' ); ?>.
-				<?php if ( $note ) : ?><br><em><?php echo esc_html( $note ); ?></em><?php endif; ?>
+				<?php echo esc_html( 'story' === $params['emphasis'] ? 'story first' : 'products first' ); ?>.</span>
+				<br><em id="wookiee-design-note"><?php echo esc_html( $note ); ?></em>
 			</p>
 
 			<p class="description" style="margin:0 0 12px;">
@@ -489,14 +497,39 @@ function wookiee_render_design_panel() {
 					status.textContent = ( res.data && res.data.message ) || 'Could not generate a design.';
 					return;
 				}
+				// Update the panel in place from the response, which already
+				// carries the derived tokens and parameters - the previous
+				// version made you reload just to see what had been saved.
+				var t = res.data.tokens || {};
+				[ [ 'wookiee-bg', 'Page' ], [ 'wookiee-ink', 'Headings' ], [ 'wookiee-text', 'Body' ],
+				  [ 'wookiee-text-muted', 'Muted' ], [ 'wookiee-accent', 'Accent' ], [ 'wookiee-border', 'Border' ] ]
+					.forEach( function ( pair ) {
+						var sw = document.querySelector( '[data-swatch="' + pair[0] + '"]' );
+						if ( sw && t[ pair[0] ] ) {
+							sw.style.background = t[ pair[0] ];
+							sw.parentNode.title = pair[1] + ': ' + t[ pair[0] ];
+						}
+					} );
+
+				var p = res.data.params || {};
+				var summary = document.getElementById( 'wookiee-design-summary' );
+				if ( summary && p.hue !== undefined ) {
+					summary.textContent = 'hue ' + Math.round( p.hue ) + '°, ' + p.chroma + ' saturation, ' +
+						p.paper + ' paper, ' + p.density + ' spacing, ' + p.corners + ' corners, ' +
+						p.elevation + ' elevation, ' + p.columns + ' columns, ' +
+						( p.emphasis === 'story' ? 'story first' : 'products first' ) + '.';
+				}
+				var noteEl = document.getElementById( 'wookiee-design-note' );
+				if ( noteEl ) { noteEl.textContent = res.data.reason || ''; }
+
 				status.innerHTML = '';
-				status.appendChild( document.createTextNode( ( res.data.reason || 'Design generated.' ) + ' ' ) );
-				var reload = document.createElement( 'button' );
-				reload.type = 'button';
-				reload.className = 'button button-primary';
-				reload.textContent = 'Reload to see it';
-				reload.addEventListener( 'click', function () { window.location.reload(); } );
-				status.appendChild( reload );
+				status.appendChild( document.createTextNode( 'Saved and live. ' ) );
+				var view = document.createElement( 'a' );
+				view.className = 'button button-primary';
+				view.target = '_blank';
+				view.href = '<?php echo esc_js( home_url( '/' ) ); ?>';
+				view.textContent = 'View store';
+				status.appendChild( view );
 			} );
 		} );
 
@@ -527,7 +560,8 @@ function wookiee_render_design_panel() {
 function wookiee_build_design_params_prompt( $brief ) {
 	$prompt = "You are art-directing the storefront of a UK single-niche ecommerce store.\n\n"
 		. "Store niche, in the owner's own words: \"{$brief}\"\n\n"
-		. "Choose design parameters that suit this specific niche and the customer who buys from it. Commit to a real point of view - a considered, distinctive choice beats a safe neutral one, and two different niches should not end up with the same answer.\n\n"
+		. "Choose design parameters that suit this specific niche and the customer who buys from it.\n\n"
+		. "Commit to a real point of view. The middle option on every scale produces a storefront indistinguishable from every other one, which is the outcome to avoid: prefer a definite choice - dense or airy rather than balanced, sharp or round rather than soft, 2 or 4 columns rather than 3 - unless the middle genuinely is right for this niche and you can say why. Two different niches must not end up with the same answer.\n\n"
 		. "Respond with exactly these labelled lines, nothing else:\n"
 		. "HUE: a number 0-359. The brand's base hue on the colour wheel (0 red, 30 orange, 60 yellow, 120 green, 180 cyan, 210 blue, 270 purple, 330 pink).\n"
 		. "ACCENT_OFFSET: a number -60 to 60. How far the accent hue sits from the base. 0 is monochrome and calm; 30+ gives a complementary pop.\n"

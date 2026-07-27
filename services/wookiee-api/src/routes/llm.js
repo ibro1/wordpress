@@ -86,8 +86,15 @@ function resolveTarget(requestedModel, licenseEntry) {
     return { error: `No API key is configured for ${provider.label}.`, status: 400 };
   }
 
+  // Fixed for the known vendors; read from settings for the operator's own
+  // fallback endpoint, which can point anywhere OpenAI-compatible.
+  const baseUrl = provider.base_url || store.get(provider.base_url_setting).trim();
+  if (!baseUrl) {
+    return { error: `No base URL is configured for ${provider.label}.`, status: 400 };
+  }
+
   return {
-    baseUrl: provider.base_url.replace(/\/+$/, ''),
+    baseUrl: baseUrl.replace(/\/+$/, ''),
     apiKey,
     model: parsed.model,
   };

@@ -119,7 +119,42 @@ const PROVIDERS = {
       context: null,
     })),
   },
+  // The legacy/fallback endpoint as a first-class model source. Its base URL
+  // is whatever the operator configured (OpenAI, Groq, a self-hosted vLLM,
+  // ...), so it is read from settings rather than fixed here. Without this,
+  // an install that already had a working key in the fallback field - which
+  // is every install that predates the per-provider fields - would show an
+  // empty model picker despite being perfectly well configured.
+  custom: {
+    label: 'Fallback endpoint',
+    base_url_setting: 'llm_base_url',
+    key_setting: 'llm_api_key',
+    listPath: '/models',
+    authStyle: 'bearer',
+    normalize: (body) => (body && Array.isArray(body.data) ? body.data : []).map((m) => ({
+      model: m.id,
+      label: m.id,
+      in: null,
+      out: null,
+      context: null,
+    })),
+  },
 };
+
+/**
+ * A provider's base URL: fixed for the known vendors, read from settings for
+ * the operator-configured fallback endpoint.
+ */
+function resolveBaseUrl(providerKey, getSetting) {
+  const provider = PROVIDERS[providerKey];
+  if (!provider) {
+    return '';
+  }
+  if (provider.base_url) {
+    return provider.base_url;
+  }
+  return String(getSetting(provider.base_url_setting) || '').trim();
+}
 
 /**
  * Splits a catalogue id into provider + wire model name.
@@ -166,7 +201,7 @@ function buildHeaders(provider, apiKey) {
  * down the whole picker, so failures come back as { error } and the caller
  * surfaces them per provider.
  */
-async function fetchProviderModels(providerKey, apiKey, { force = false } = {}) {
+async function fetchProviderModels(providerKey, apiKey, { force = false, baseUrl = '' } = {}) {
   const provider = PROVIDERS[providerKey];
   if (!provider) {
     return { error: 'Unknown provider.' };
@@ -175,12 +210,20 @@ async function fetchProviderModels(providerKey, apiKey, { force = false } = {}) 
     return { models: [], unconfigured: true };
   }
 
-  const cached = cache.get(providerKey);
+  const effectiveBase = String(baseUrl || provider.base_url || '').trim();
+  if (!effectiveBase) {
+    return { error: `${provider.label}: no base URL configured.` };
+  }
+
+  // Keyed by base URL too: the fallback endpoint's models change entirely if
+  // the operator repoints it, and a cache hit on the old URL would be wrong.
+  const cacheKey = `${providerKey}|${effectiveBase}`;
+  const cached = cache.get(cacheKey);
   if (!force && cached && (Date.now() - cached.fetchedAt) < CACHE_TTL_MS) {
     return { models: cached.models, cached: true, fetchedAt: cached.fetchedAt };
   }
 
-  const url = provider.base_url.replace(/\/+$/, '') + provider.listPath;
+  const url = effectiveBase.replace(/\/+$/, '') + provider.listPath;
 
   let response;
   try {
@@ -211,7 +254,7 @@ async function fetchProviderModels(providerKey, apiKey, { force = false } = {}) 
     return { error: `${provider.label}: unexpected response shape (${err.message})` };
   }
 
-  cache.set(providerKey, { fetchedAt: Date.now(), models });
+  cache.set(cacheKey, { fetchedAt: Date.now(), models });
   return { models, fetchedAt: Date.now() };
 }
 
@@ -223,23 +266,37 @@ async function fetchProviderModels(providerKey, apiKey, { force = false } = {}) 
  * Returns per-provider errors alongside the models so the UI can say
  * "Anthropic failed" without pretending Anthropic simply has no models.
  */
-async function listConfiguredModels(getKey, { force = false } = {}) {
+async function listConfiguredModels(getSetting, { force = false } = {}) {
   const providerKeys = Object.keys(PROVIDERS);
 
   const results = await Promise.all(providerKeys.map(async (providerKey) => {
-    const apiKey = String(getKey(PROVIDERS[providerKey].key_setting) || '').trim();
-    const result = await fetchProviderModels(providerKey, apiKey, { force });
-    return { providerKey, apiKey: Boolean(apiKey), result };
+    const apiKey = String(getSetting(PROVIDERS[providerKey].key_setting) || '').trim();
+    const baseUrl = resolveBaseUrl(providerKey, getSetting);
+    const result = await fetchProviderModels(providerKey, apiKey, { force, baseUrl });
+    return { providerKey, apiKey: Boolean(apiKey), baseUrl, result };
   }));
 
   const models = [];
   const errors = {};
   const providers = [];
 
-  results.forEach(({ providerKey, apiKey, result }) => {
+  results.forEach(({ providerKey, apiKey, baseUrl, result }) => {
+    // Name the fallback by the host it actually points at, so "Fallback
+    // endpoint (api.openai.com)" tells the operator what they're looking at
+    // instead of an opaque label.
+    let label = PROVIDERS[providerKey].label;
+    if (!PROVIDERS[providerKey].base_url && baseUrl) {
+      try {
+        label += ` (${new URL(baseUrl).host})`;
+      } catch (err) {
+        // A malformed base URL is the operator's to fix; the plain label and
+        // the fetch error below already tell them enough.
+      }
+    }
+
     providers.push({
       key: providerKey,
-      label: PROVIDERS[providerKey].label,
+      label,
       configured: apiKey,
       count: result.models ? result.models.length : 0,
       error: result.error || null,
@@ -248,7 +305,7 @@ async function listConfiguredModels(getKey, { force = false } = {}) {
       errors[providerKey] = result.error;
     }
     if (result.models) {
-      models.push(...result.models);
+      models.push(...result.models.map((m) => ({ ...m, provider_label: label })));
     }
   });
 

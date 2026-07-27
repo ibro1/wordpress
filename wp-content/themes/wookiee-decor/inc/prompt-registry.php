@@ -52,6 +52,13 @@ function wookiee_prompt_registry() {
 		);
 	}
 
+	$registry['policy_audit_feedback'] = array(
+		'label'        => 'Regeneration: resolve previous audit findings',
+		'description'  => 'Appended when regenerating a page that has already been audited, so the rewrite fixes the known issues instead of repeating them. Not used on a page\'s first generation.',
+		'placeholders' => array( 'previous_audit' ),
+		'required'     => array( 'previous_audit' ),
+	);
+
 	$registry['policy_audit'] = array(
 		'label'        => 'Policy compliance audit',
 		'description'  => 'Reviews an existing policy page against UK consumer law and Google Merchant Center requirements, and reports the issues found.',
@@ -275,6 +282,7 @@ function wookiee_prompt_capture_builders() {
 		'policy_returns'  => function () { return wookiee_build_content_prompt( 'returns', '{{brief}}' ); },
 		'policy_payment'  => function () { return wookiee_build_content_prompt( 'payment', '{{brief}}' ); },
 		'policy_cookies'  => function () { return wookiee_build_content_prompt( 'cookies', '{{brief}}' ); },
+		'policy_audit_feedback' => function () { return wookiee_build_audit_feedback_block( '{{previous_audit}}' ); },
 		'policy_audit'    => function () { return wookiee_build_policy_audit_prompt( '{{title}}', '{{policy_text}}' ); },
 		'policy_fix'      => function () { return wookiee_build_policy_fix_prompt( '{{title}}', '{{current_text}}', '{{audit_report}}' ); },
 		'policy_custom'   => function () { return wookiee_build_custom_policy_prompt( '{{title}}', '{{custom_instruction}}' ); },

@@ -525,10 +525,23 @@ function wookiee_generate_content_handler() {
 		if ( ! isset( $available[ $key ] ) ) {
 			continue;
 		}
-		$piece  = $available[ $key ];
+		$piece = $available[ $key ];
+
+		/*
+		 * Feed the previous audit back in on a regeneration.
+		 *
+		 * Without this, "Regenerate" rebuilt the identical prompt from the
+		 * identical brief, so the model had no idea the last attempt had
+		 * already been reviewed and found wanting - it would produce
+		 * essentially the same page and score the same again, which is
+		 * exactly what regenerating was supposed to fix. The report is read
+		 * here, before wookiee_update_real_static_page() clears it as stale.
+		 */
+		$previous_audit = wookiee_previous_audit_for_piece( $piece );
+
 		$prompt = '' !== trim( $custom_prompt )
 			? wookiee_build_custom_policy_prompt( $piece['title'], $custom_prompt )
-			: wookiee_build_content_prompt( $key, $brief );
+			: wookiee_build_content_prompt( $key, $brief, $previous_audit );
 		$text   = wookiee_call_llm( $prompt, wookiee_content_piece_max_tokens( $key ) );
 
 		if ( is_wp_error( $text ) ) {
@@ -692,7 +705,43 @@ function wookiee_content_piece_max_tokens( $key ) {
 	return 4096;
 }
 
-function wookiee_build_content_prompt( $key, $brief ) {
+/**
+ * Voice instructions shared by every customer-facing page.
+ *
+ * Named anti-patterns rather than an abstract "write authentically": models
+ * reliably reproduce the exact phrases below when asked for ecommerce copy,
+ * and a generic instruction to avoid being generic does not stop it. The
+ * dropshipping tells in particular are what make a new store read as
+ * disposable to both customers and reviewers.
+ */
+function wookiee_founder_voice_block() {
+	return "VOICE - this is written BY the founder/director of the business, in their own words:\n"
+		. "- Write in the first person as the owner (\"I started this because...\", \"we keep our range small because...\"). Not a faceless corporate register, and not a marketing agency describing the business from outside.\n"
+		. "- Be specific to THIS business and its niche. Every sentence should be one that could not be copied onto a different store's site unchanged. If a sentence would work equally well for a phone-case shop and a garden-furniture shop, it is filler - cut it or replace it with something concrete.\n"
+		. "- Never use these phrases or close variants, they are the standard tells of a templated dropshipping site: \"we are passionate about\", \"our mission is to bring you\", \"curated collection\", \"carefully curated\", \"sourced from trusted suppliers around the world\", \"quality you can trust\", \"we believe that everyone deserves\", \"at [business name], we...\", \"your one-stop shop\", \"look no further\", \"we pride ourselves on\", \"elevate your\", \"transform your space\".\n"
+		. "- Do not imply scale, facilities, staff, heritage, or partnerships that are not in the business details above - no invented warehouses, teams, design studios, founding dates, or awards. A small, honestly-described business reads as more credible than a vague large one.\n"
+		. "- It is fine, and better, to acknowledge being small and deliberate about it - a short range, a specific reason for stocking what it stocks, a personal standard the owner holds.\n"
+		. "- Use plain British English. No exclamation marks, no hype adjectives stacked together, no sentence that exists only to sound warm.\n";
+}
+
+/**
+ * The "resolve these audit findings" section appended to a regeneration.
+ *
+ * Its own editable slot rather than part of each policy prompt, because it
+ * is conditional - it only exists when the page has actually been audited -
+ * and a flat editable template cannot express that. Folding it into the six
+ * policy prompts would mean an override either always claimed a previous
+ * review existed, or lost the behaviour entirely.
+ */
+function wookiee_build_audit_feedback_block( $previous_audit ) {
+	$block = "A previous version of this exact page was reviewed by a compliance auditor and scored below full marks. That review is reproduced below. You are rewriting the page specifically to resolve every issue it raises - this is not a fresh first draft.\n\n"
+		. "--- PREVIOUS COMPLIANCE REVIEW ---\n" . trim( (string) $previous_audit ) . "\n--- END REVIEW ---\n\n"
+		. "Address every point in that review. Keep whatever the review did not criticise. Where the review says information is missing and it genuinely isn't available in the business details above, use an explicit \"[Business input required: X]\" placeholder rather than inventing it or silently omitting the section - a missing fact the owner can fill in scores better, and is more honest, than a plausible-sounding guess.";
+
+	return wookiee_maybe_override( 'policy_audit_feedback', $block, array( 'previous_audit' => $previous_audit ) );
+}
+
+function wookiee_build_content_prompt( $key, $brief, $previous_audit = '' ) {
 	$policy_labels = array(
 		'terms'    => 'Terms & Conditions',
 		'privacy'  => 'Privacy Policy',
@@ -711,6 +760,7 @@ function wookiee_build_content_prompt( $key, $brief ) {
 			. "- Do not invent any business fact beyond the details given above. If something relevant is missing, write a clear inline placeholder like \"[Business input required: X]\" instead of guessing.\n"
 			. "- Do not copy another company's policy text.\n"
 			. "- Write in plain, professional, customer-friendly English - not robotic or generic-sounding boilerplate.\n"
+			. "- A policy page is still the business speaking, not a template: where it is not a legal requirement to use set wording, use the business's own plain voice.\n"
 			. "- Include a clearly labelled section near the end on how customers can contact the business about this policy, using the contact email given above.\n"
 			. "- In that same section, also explain how a customer can escalate a complaint if they're unhappy with how it was handled directly - mention that UK customers can contact Citizens Advice or their local Trading Standards if the issue can't be resolved with the business directly. Do not just give the contact email and stop.\n"
 			. "- Include a brief note that this policy may be updated from time to time and customers should check this page periodically.\n"
@@ -764,7 +814,20 @@ function wookiee_build_content_prompt( $key, $brief ) {
 				. "Present the returns address as a clearly separated block, one line each for: business/trading name, street address, city, postcode, country - not as a single flowing sentence.";
 		}
 
-		return wookiee_maybe_override( 'policy_' . $key, $prompt, array( 'brief' => $brief ) );
+		/*
+		 * Appended after the per-policy instructions so it is the last thing
+		 * the model reads before writing - a known-issues list buried above
+		 * several paragraphs of general rules gets weighted far less.
+		 */
+		if ( '' !== trim( (string) $previous_audit ) ) {
+			$prompt .= "\n\n" . wookiee_build_audit_feedback_block( $previous_audit );
+		}
+
+		return wookiee_maybe_override(
+			'policy_' . $key,
+			$prompt,
+			array( 'brief' => $brief, 'previous_audit' => $previous_audit )
+		);
 	}
 
 	if ( 'cookie_pref' === $key ) {
@@ -778,6 +841,7 @@ function wookiee_build_content_prompt( $key, $brief ) {
 			. "- Point customers to the full Cookie Policy page by name for complete details, and give the contact email for questions.\n"
 			. "- Do not invent any business fact beyond the details given above.\n"
 			. "- Write in plain, professional, customer-friendly English - not robotic or generic-sounding boilerplate.\n"
+			. "- A policy page is still the business speaking, not a template: where it is not a legal requirement to use set wording, use the business's own plain voice.\n"
 			. "- Output ONLY the finished page text as plain paragraphs/short headings separated by a blank line, starting with a single plain-text heading line. No markdown, no HTML, no commentary.";
 	}
 
@@ -786,6 +850,7 @@ function wookiee_build_content_prompt( $key, $brief ) {
 			. "Store niche, in the owner's own words: \"{$brief}\"\n\n"
 			. "Real business details to use (do not invent anything beyond this list):\n" . wookiee_business_details_block() . "\n\n"
 			. "The page has these fixed sections, in this order: a hero (eyebrow tag, headline, subheadline, two buttons, a shipping stat badge), a 3-item trust bar, a best-selling-products section (kicker+title only, products are real and already listed), a categories section (kicker+title+subtitle, cards are real categories already listed), a \"how it works\" section (kicker, title, lead paragraph, 3 numbered steps each with a title+description, a button), a philosophy section (heading+paragraph), and a collections section (kicker+title).\n\n"
+			. wookiee_founder_voice_block() . "\n"
 			. "Provide EXACTLY these labelled sections, each on its own line as \"LABEL: value\" (including the colon), nothing before or after them, in this exact order:\n"
 			. "HERO_EYEBROW: very short tag line above the headline (2-5 words)\n"
 			. "HERO_HEADLINE: short, punchy hero headline (under 10 words)\n"
@@ -826,6 +891,7 @@ function wookiee_build_content_prompt( $key, $brief ) {
 			. "Real business details to use (do not invent anything beyond this list):\n" . wookiee_business_details_block() . "\n\n"
 			. "The About page has: a hero (kicker, heading, one bold lead sentence, one body paragraph, two buttons), a small stat badge (kicker only - the business name/tagline is filled in automatically), a 4-item facts strip (a short note on legal registration; a fulfilment title+note; a delivery note), a second section (kicker, heading, bold lead sentence, two body paragraphs) and one small highlight card (title+description).\n"
 			. "The Contact page has: a kicker, a heading, one lead sentence, and a form subtitle.\n\n"
+			. wookiee_founder_voice_block() . "\n"
 			. "Provide EXACTLY these labelled sections, each on its own line as \"LABEL: value\" (including the colon), nothing before or after them, in this exact order:\n"
 			. "ABOUT_HERO_KICKER: short kicker tag (2-4 words)\n"
 			. "ABOUT_HERO_HEADING: page heading, e.g. \"About {Business Name}\" (adapt naturally)\n"
@@ -942,6 +1008,24 @@ function wookiee_store_audit_result( $post_id, $report ) {
  * should show "not yet analysed" rather than a number that might now
  * be wrong in either direction.
  */
+/**
+ * The stored audit report for a page that's about to be regenerated, or ''
+ * if it has never been analysed. Looked up by the piece's slug because the
+ * generator works in slugs, not post IDs.
+ */
+function wookiee_previous_audit_for_piece( array $piece ) {
+	if ( empty( $piece['slug'] ) ) {
+		return '';
+	}
+
+	$existing = get_page_by_path( $piece['slug'] );
+	if ( ! $existing ) {
+		return '';
+	}
+
+	return (string) get_post_meta( $existing->ID, '_wookiee_audit_report', true );
+}
+
 function wookiee_clear_audit_result( $post_id ) {
 	delete_post_meta( $post_id, '_wookiee_audit_report' );
 	delete_post_meta( $post_id, '_wookiee_audit_score' );

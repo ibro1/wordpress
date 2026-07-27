@@ -2528,3 +2528,180 @@ a.added_to_cart:hover,
         padding: 24px;
     }
 }
+/* =========================================
+   About page
+   -----------------------------------------
+   The About page's layout used to live in 41 inline style="" attributes
+   baked into post_content. Inline styles beat every stylesheet rule, so
+   the generated design engine could recolour the page but could never
+   restyle it - About stayed on the same fixed layout no matter what was
+   generated. These classes replace those attributes so the engine has
+   something to target, and so the palette tokens reach the page instead
+   of the storage-niche terracotta that was hardcoded into it.
+   ========================================= */
+
+.about-hero {
+	background-color: var(--wookiee-bg);
+	padding: 72px 0;
+}
+.about-hero-inner {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 40px;
+	align-items: center;
+}
+
+.about-kicker {
+	display: flex;
+	align-items: center;
+	gap: 15px;
+	color: var(--wookiee-accent);
+	font-size: 12px;
+	font-weight: 700;
+	letter-spacing: 1.5px;
+	text-transform: uppercase;
+	margin-bottom: 20px;
+}
+.about-kicker-rule {
+	width: 30px;
+	height: 2px;
+	background: var(--wookiee-accent);
+	display: inline-block;
+	flex: none;
+}
+
+.about-title {
+	font-size: clamp(32px, 5vw, 48px);
+	color: var(--wookiee-ink);
+	margin: 0 0 20px;
+	font-weight: 800;
+	letter-spacing: -2px;
+	line-height: 1.05;
+	/* Long single-word brand names must not push the page sideways. */
+	overflow-wrap: anywhere;
+}
+.about-lead {
+	font-size: 18px;
+	color: var(--wookiee-ink);
+	font-weight: 700;
+	line-height: 1.5;
+	margin: 0 0 20px;
+}
+.about-body {
+	font-size: 16px;
+	color: var(--wookiee-text);
+	line-height: 1.7;
+	margin: 0 0 22px;
+}
+.about-cta-row {
+	display: flex;
+	gap: 15px;
+	flex-wrap: wrap;
+}
+
+.about-hero-image,
+.about-story-image {
+	width: 100%;
+	border-radius: var(--radius-lg);
+	box-shadow: var(--shadow-lg);
+	display: block;
+}
+.about-hero-image {
+	max-height: 380px;
+	object-fit: cover;
+}
+
+/* Facts strip */
+.about-facts {
+	background: var(--wookiee-white);
+	border-top: 1px solid var(--wookiee-border);
+	border-bottom: 1px solid var(--wookiee-border);
+}
+.about-facts-inner {
+	display: grid;
+	grid-template-columns: repeat(4, minmax(0, 1fr));
+	gap: 0;
+}
+.about-fact {
+	padding: 40px 20px;
+	border-right: 1px solid var(--wookiee-border);
+}
+.about-fact:last-child {
+	border-right: none;
+}
+.about-fact-label {
+	font-size: 10px;
+	font-weight: 700;
+	color: var(--wookiee-text-muted);
+	text-transform: uppercase;
+	letter-spacing: 1px;
+	margin-bottom: 10px;
+}
+.about-fact-value {
+	font-size: 16px;
+	font-weight: 700;
+	color: var(--wookiee-ink);
+	margin-bottom: 5px;
+	overflow-wrap: anywhere;
+}
+.about-fact-note {
+	font-size: 12px;
+	color: var(--wookiee-text);
+}
+
+/* Story section */
+.about-story {
+	background: var(--wookiee-white);
+	padding: 100px 0;
+}
+.about-story-inner {
+	display: grid;
+	grid-template-columns: 1fr 1.2fr;
+	gap: 80px;
+	align-items: center;
+}
+.about-story-title {
+	font-size: clamp(30px, 4.5vw, 48px);
+	color: var(--wookiee-ink);
+	margin: 0 0 30px;
+	font-weight: 800;
+	letter-spacing: -1.5px;
+	line-height: 1.1;
+	overflow-wrap: anywhere;
+}
+.about-highlight {
+	background: var(--wookiee-bg);
+	border-radius: var(--radius-md);
+	padding: 30px;
+	display: flex;
+	gap: 20px;
+	align-items: flex-start;
+}
+.about-highlight-num {
+	color: var(--wookiee-gold);
+	font-weight: 700;
+	font-size: 14px;
+	margin-top: 3px;
+	flex: none;
+}
+.about-highlight-title {
+	margin: 0 0 10px;
+	font-size: 18px;
+	color: var(--wookiee-ink);
+}
+.about-highlight-desc {
+	margin: 0;
+	color: var(--wookiee-text);
+	font-size: 14px;
+	line-height: 1.6;
+}
+
+@media (max-width: 860px) {
+	.about-hero { padding: 48px 0; }
+	.about-story { padding: 56px 0; }
+	.about-story-inner { gap: 36px; }
+	/* Image below the text on narrow screens, where a tall photo above the
+	   heading would push the actual introduction off the first screen. */
+	.about-story-media { order: 2; }
+	.about-fact { border-right: none; }
+}

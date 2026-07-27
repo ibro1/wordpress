@@ -9,26 +9,21 @@ function wookiee_starter_pages() {
 	return array(
 		'home'    => array( 'title' => 'Home', 'menu' => 'Home', 'content' => '' ),
 		'shop'    => array( 'title' => 'Shop', 'menu' => 'Shop', 'content' => '' ),
-		'about'   => array( 'title' => 'About', 'menu' => 'About', 'content' => '<div style="background-color: var(--wookiee-bg); padding: 40px 20px;">
-    <div class="wookiee-content-grid-2" style="max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center;">
-        <div>
-            <div style="color: #c1704a; font-size: 12px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 20px; display: flex; align-items: center; gap: 15px;">
-                <span style="width: 30px; height: 2px; background: #c1704a; display: inline-block;"></span> [wookiee_field key="about_hero_kicker"]
-            </div>
-            <h1 style="font-size: 48px; color: var(--wookiee-ink); margin: 0 0 20px 0; font-weight: 800; letter-spacing: -2px; line-height: 1;">[wookiee_field key="about_hero_heading"]</h1>
-            <p style="font-size: 18px; color: var(--wookiee-ink); font-weight: 700; margin-bottom: 20px;">
-                [wookiee_field key="about_hero_lead"]
-            </p>
-            <p style="font-size: 16px; color: #5c5044; line-height: 1.7; margin-bottom: 25px;">
-                [wookiee_field key="about_hero_body"]
-            </p>
-            <div style="display: flex; gap: 15px;">
+		'about'   => array( 'title' => 'About', 'menu' => 'About', 'content' => '
+<section class="about-hero">
+    <div class="container about-hero-inner wookiee-content-grid-2">
+        <div class="about-hero-text">
+            <div class="about-kicker"><span class="about-kicker-rule"></span>[wookiee_field key="about_hero_kicker"]</div>
+            <h1 class="about-title">[wookiee_field key="about_hero_heading"]</h1>
+            <p class="about-lead">[wookiee_field key="about_hero_lead"]</p>
+            <p class="about-body">[wookiee_field key="about_hero_body"]</p>
+            <div class="about-cta-row">
                 <a href="/shop/" class="btn">[wookiee_field key="about_cta_primary"]</a>
-                <a href="/contact/" class="btn-outline" style="border-radius: 30px; padding: 12px 24px; font-weight: 600; text-decoration: none; border: 2px solid var(--wookiee-ink); color: var(--wookiee-ink); display: inline-block;">[wookiee_field key="about_cta_secondary"]</a>
+                <a href="/contact/" class="btn btn-outline">[wookiee_field key="about_cta_secondary"]</a>
             </div>
         </div>
         <div class="about-hero-image-wrap">
-            <img src="' . WOOKIEE_URI . 'assets/images/drawer-organizer.png" alt="Drawer Organizer" style="border-radius: 20px; width: 100%; max-height: 380px; object-fit: cover; box-shadow: 0 20px 40px rgba(0,0,0,0.1);">
+            [wookiee_image slot="about_hero" class="about-hero-image"]
             <div class="about-stat-badge">
                 <div class="about-stat-kicker">[wookiee_field key="about_stat_kicker"]</div>
                 <div class="about-stat-name">[wookiee_field key="business_name"]</div>
@@ -36,63 +31,56 @@ function wookiee_starter_pages() {
             </div>
         </div>
     </div>
-</div>
+</section>
 
-<div style="background: white; border-bottom: 1px solid var(--wookiee-border); border-top: 1px solid var(--wookiee-border);">
-    <div class="wookiee-content-grid-4" style="max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: repeat(4, 1fr); gap: 0;">
-        <div style="padding: 40px 20px; border-right: 1px solid var(--wookiee-border);">
-            <div style="font-size: 10px; font-weight: 700; color: #8a7d6d; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;">LEGAL BUSINESS</div>
-            <div style="font-size: 16px; font-weight: 700; color: var(--wookiee-ink); margin-bottom: 5px;">[wookiee_field key="business_name"]</div>
-            <div style="font-size: 12px; color: #6b6058;">[wookiee_field key="about_legal_note"]</div>
+<section class="about-facts">
+    <div class="container about-facts-inner wookiee-content-grid-4">
+        <div class="about-fact">
+            <div class="about-fact-label">Legal business</div>
+            <div class="about-fact-value">[wookiee_field key="business_name"]</div>
+            <div class="about-fact-note">[wookiee_field key="about_legal_note"]</div>
         </div>
-        <div style="padding: 40px 20px; border-right: 1px solid var(--wookiee-border);">
-            <div style="font-size: 10px; font-weight: 700; color: #8a7d6d; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;">COMPANY NUMBER</div>
-            <div style="font-size: 16px; font-weight: 700; color: var(--wookiee-ink); margin-bottom: 5px;">[wookiee_field key="company_number"]</div>
-            <div style="font-size: 12px; color: #6b6058;">Registered business</div>
+        <div class="about-fact">
+            <div class="about-fact-label">Company number</div>
+            <div class="about-fact-value">[wookiee_field key="company_number"]</div>
+            <div class="about-fact-note">Registered business</div>
         </div>
-        <div style="padding: 40px 20px; border-right: 1px solid var(--wookiee-border);">
-            <div style="font-size: 10px; font-weight: 700; color: #8a7d6d; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;">ORDER FULFILMENT</div>
-            <div style="font-size: 16px; font-weight: 700; color: var(--wookiee-ink); margin-bottom: 5px;">[wookiee_field key="about_fulfilment_title"]</div>
-            <div style="font-size: 12px; color: #6b6058;">[wookiee_field key="about_fulfilment_note"]</div>
+        <div class="about-fact">
+            <div class="about-fact-label">Order fulfilment</div>
+            <div class="about-fact-value">[wookiee_field key="about_fulfilment_title"]</div>
+            <div class="about-fact-note">[wookiee_field key="about_fulfilment_note"]</div>
         </div>
-        <div style="padding: 40px 20px;">
-            <div style="font-size: 10px; font-weight: 700; color: #8a7d6d; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;">DELIVERY MARKET</div>
-            <div style="font-size: 16px; font-weight: 700; color: var(--wookiee-ink); margin-bottom: 5px;">[wookiee_field key="countries_served"]</div>
-            <div style="font-size: 12px; color: #6b6058;">[wookiee_field key="about_delivery_note"]</div>
+        <div class="about-fact">
+            <div class="about-fact-label">Delivery market</div>
+            <div class="about-fact-value">[wookiee_field key="countries_served"]</div>
+            <div class="about-fact-note">[wookiee_field key="about_delivery_note"]</div>
         </div>
     </div>
-</div>
+</section>
 
-<div style="background: white; padding: 100px 20px;">
-    <div class="wookiee-content-grid-2" style="max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1.2fr; gap: 80px; align-items: center;">
-        <div>
-            <img src="' . WOOKIEE_URI . 'assets/images/bathroom-shelf.png" alt="Bathroom Shelf" style="border-radius: 20px; width: 100%; box-shadow: 0 20px 40px rgba(0,0,0,0.05);">
+<section class="about-story">
+    <div class="container about-story-inner wookiee-content-grid-2">
+        <div class="about-story-media">
+            [wookiee_image slot="about_story" class="about-story-image"]
         </div>
-        <div>
-            <div style="color: #c1704a; font-size: 12px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 20px; display: flex; align-items: center; gap: 15px;">
-                <span style="width: 30px; height: 2px; background: #c1704a; display: inline-block;"></span> [wookiee_field key="about_section2_kicker"]
-            </div>
-            <h2 style="font-size: 48px; color: var(--wookiee-ink); margin: 0 0 30px 0; font-weight: 800; letter-spacing: -1.5px; line-height: 1.1;">[wookiee_field key="about_section2_heading"]</h2>
-            <p style="font-size: 18px; color: var(--wookiee-ink); font-weight: 700; margin-bottom: 20px; line-height: 1.5;">
-                [wookiee_field key="about_section2_lead"]
-            </p>
-            <p style="font-size: 16px; color: #6b6058; line-height: 1.7; margin-bottom: 20px;">
-                [wookiee_field key="about_section2_body1"]
-            </p>
-            <p style="font-size: 16px; color: #6b6058; line-height: 1.7; margin-bottom: 25px;">
-                [wookiee_field key="about_section2_body2"]
-            </p>
+        <div class="about-story-text">
+            <div class="about-kicker"><span class="about-kicker-rule"></span>[wookiee_field key="about_section2_kicker"]</div>
+            <h2 class="about-story-title">[wookiee_field key="about_section2_heading"]</h2>
+            <p class="about-lead">[wookiee_field key="about_section2_lead"]</p>
+            <p class="about-body">[wookiee_field key="about_section2_body1"]</p>
+            <p class="about-body">[wookiee_field key="about_section2_body2"]</p>
 
-            <div style="background: var(--wookiee-bg); border-radius: 15px; padding: 30px; display: flex; gap: 20px; align-items: flex-start;">
-                <div style="color: #c9972f; font-weight: 700; font-size: 14px; margin-top: 3px;">01</div>
+            <div class="about-highlight">
+                <div class="about-highlight-num">01</div>
                 <div>
-                    <h4 style="margin: 0 0 10px 0; font-size: 18px; color: var(--wookiee-ink);">[wookiee_field key="about_highlight_title"]</h4>
-                    <p style="margin: 0; color: #6b6058; font-size: 14px; line-height: 1.6;">[wookiee_field key="about_highlight_desc"]</p>
+                    <h4 class="about-highlight-title">[wookiee_field key="about_highlight_title"]</h4>
+                    <p class="about-highlight-desc">[wookiee_field key="about_highlight_desc"]</p>
                 </div>
             </div>
         </div>
     </div>
-</div>' ),
+</section>
+' ),
 		'contact' => array( 'title' => 'Contact', 'menu' => 'Contact', 'content' => '<section class="contact-page">
     <div class="container">
         <div class="contact-header">
@@ -202,7 +190,7 @@ function wookiee_starter_pages() {
 <ul style="padding-left:22px;">
   <li><strong>Company number:</strong> [wookiee_field key="company_number"]</li>
   <li><strong>Registered address:</strong> [wookiee_field key="registered_address"]</li>
-  <li><strong>Email:</strong> <a href=\'mailto:[wookiee_field key="contact_email"]\' style="color:#c1704a;">[wookiee_field key="contact_email"]</a></li>
+  <li><strong>Email:</strong> <a href=\'mailto:[wookiee_field key="contact_email"]\' style="color:var(--wookiee-accent);">[wookiee_field key="contact_email"]</a></li>
   <li><strong>Phone:</strong> [wookiee_field key="contact_phone"]</li>
 </ul>
 
@@ -230,7 +218,7 @@ function wookiee_starter_pages() {
 
 <h2 style="font-size:20px; font-weight:700; color:#1a1614; margin-bottom:12px;">5. Your Right to Cancel (Cooling-Off Period)</h2>
 <p>Under the Consumer Contracts (Information, Cancellation and Additional Charges) Regulations 2013, you have the right to cancel your order within <strong>14 days</strong> of receiving your goods, without giving any reason.</p>
-<p>To exercise this right, you must notify us clearly within the 14-day period by emailing <a href=\'mailto:[wookiee_field key="contact_email"]\' style="color:#c1704a;">[wookiee_field key="contact_email"]</a>. You must then return the goods to us within a further 14 days of notifying us.</p>
+<p>To exercise this right, you must notify us clearly within the 14-day period by emailing <a href=\'mailto:[wookiee_field key="contact_email"]\' style="color:var(--wookiee-accent);">[wookiee_field key="contact_email"]</a>. You must then return the goods to us within a further 14 days of notifying us.</p>
 <p>We will issue a full refund, including the original standard delivery charge, within <strong>14 days</strong> of receiving the returned goods or evidence of return, whichever is earlier. We may reduce the refund to reflect any diminishment in the value of the goods caused by handling beyond what is necessary to inspect them.</p>
 <p>Return shipping costs for change-of-mind cancellations are your responsibility unless otherwise stated.</p>
 
@@ -243,12 +231,12 @@ function wookiee_starter_pages() {
   <li><strong>After 30 days (up to 6 months):</strong> We will offer a repair or replacement. If neither is possible or both fail, you are entitled to a partial or full refund.</li>
   <li><strong>After 6 months:</strong> You must demonstrate the fault existed at the time of delivery. If proven, we will offer a repair, replacement, or partial refund.</li>
 </ul>
-<p>To report a fault, please contact us at <a href=\'mailto:[wookiee_field key="contact_email"]\' style="color:#c1704a;">[wookiee_field key="contact_email"]</a> with your order number and a description or photo of the issue.</p>
+<p>To report a fault, please contact us at <a href=\'mailto:[wookiee_field key="contact_email"]\' style="color:var(--wookiee-accent);">[wookiee_field key="contact_email"]</a> with your order number and a description or photo of the issue.</p>
 
 <hr style="border:none;border-top:1px solid #e5dbc9;margin:36px 0;">
 
 <h2 style="font-size:20px; font-weight:700; color:#1a1614; margin-bottom:12px;">7. Commercial Returns Policy</h2>
-<p>In addition to your statutory rights, we offer a <strong>30-day commercial returns policy</strong>. If you change your mind about a purchase within 30 days of receipt, you may return the goods for a refund provided they are unused, in their original packaging, and in resalable condition. Please see our full <a href="/returns/" style="color:#c1704a;">Returns, Refunds and Cancellations Policy</a> for details.</p>
+<p>In addition to your statutory rights, we offer a <strong>30-day commercial returns policy</strong>. If you change your mind about a purchase within 30 days of receipt, you may return the goods for a refund provided they are unused, in their original packaging, and in resalable condition. Please see our full <a href="/returns/" style="color:var(--wookiee-accent);">Returns, Refunds and Cancellations Policy</a> for details.</p>
 
 <hr style="border:none;border-top:1px solid #e5dbc9;margin:36px 0;">
 
@@ -264,7 +252,7 @@ function wookiee_starter_pages() {
 <hr style="border:none;border-top:1px solid #e5dbc9;margin:36px 0;">
 
 <h2 style="font-size:20px; font-weight:700; color:#1a1614; margin-bottom:12px;">10. Privacy</h2>
-<p>We process your personal data in accordance with our <a href="/privacy/" style="color:#c1704a;">Privacy Policy</a>, which forms part of these terms.</p>
+<p>We process your personal data in accordance with our <a href="/privacy/" style="color:var(--wookiee-accent);">Privacy Policy</a>, which forms part of these terms.</p>
 
 <hr style="border:none;border-top:1px solid #e5dbc9;margin:36px 0;">
 
@@ -278,7 +266,7 @@ function wookiee_starter_pages() {
 
 <hr style="border:none;border-top:1px solid #e5dbc9;margin:36px 0;">
 
-<p style="font-size:13px; color:#9c8f7f;">If you have any questions about these terms, please contact us at <a href=\'mailto:[wookiee_field key="contact_email"]\' style="color:#c1704a;">[wookiee_field key="contact_email"]</a>.</p>
+<p style="font-size:13px; color:#9c8f7f;">If you have any questions about these terms, please contact us at <a href=\'mailto:[wookiee_field key="contact_email"]\' style="color:var(--wookiee-accent);">[wookiee_field key="contact_email"]</a>.</p>
 
 </div>
 ' ),
@@ -330,7 +318,7 @@ function wookiee_starter_pages() {
 <hr style="border:none;border-top:1px solid #e5dbc9;margin:36px 0;">
 
 <h2 style="font-size:20px; font-weight:700; color:#1a1614; margin-bottom:12px;">Tracking Your Order</h2>
-<p>Once your order is dispatched, you will receive an email containing your tracking number and a link to track your parcel. You can also log in to your account at <a href="/my-account/" style="color:#c1704a;">wookied.com/my-account</a> to view your order status.</p>
+<p>Once your order is dispatched, you will receive an email containing your tracking number and a link to track your parcel. You can also log in to your account at <a href="/my-account/" style="color:var(--wookiee-accent);">wookied.com/my-account</a> to view your order status.</p>
 
 <hr style="border:none;border-top:1px solid #e5dbc9;margin:36px 0;">
 
@@ -341,14 +329,14 @@ function wookiee_starter_pages() {
 <hr style="border:none;border-top:1px solid #e5dbc9;margin:36px 0;">
 
 <h2 style="font-size:20px; font-weight:700; color:#1a1614; margin-bottom:12px;">Damaged or Lost Parcels</h2>
-<p>If your order arrives damaged, please take photos immediately and contact us at <a href=\'mailto:[wookiee_field key="contact_email"]\' style="color:#c1704a;">[wookiee_field key="contact_email"]</a> within 48 hours of delivery. If your tracked parcel shows as delivered but you have not received it, please check with neighbours and your local courier depot first, then contact us and we will investigate.</p>
+<p>If your order arrives damaged, please take photos immediately and contact us at <a href=\'mailto:[wookiee_field key="contact_email"]\' style="color:var(--wookiee-accent);">[wookiee_field key="contact_email"]</a> within 48 hours of delivery. If your tracked parcel shows as delivered but you have not received it, please check with neighbours and your local courier depot first, then contact us and we will investigate.</p>
 
 <hr style="border:none;border-top:1px solid #e5dbc9;margin:36px 0;">
 
 <h2 style="font-size:20px; font-weight:700; color:#1a1614; margin-bottom:12px;">Contact Us</h2>
 <p>If you have any questions about your delivery, please reach out to our support team:</p>
 <ul style="padding-left:22px;">
-  <li>Email: <a href=\'mailto:[wookiee_field key="contact_email"]\' style="color:#c1704a;">[wookiee_field key="contact_email"]</a></li>
+  <li>Email: <a href=\'mailto:[wookiee_field key="contact_email"]\' style="color:var(--wookiee-accent);">[wookiee_field key="contact_email"]</a></li>
   <li>Phone: [wookiee_field key="contact_phone"]</li>
   <li>Address: [wookiee_field key="registered_address"]</li>
 </ul>
@@ -367,7 +355,7 @@ function wookiee_starter_pages() {
 
 <h2 style="font-size:20px; font-weight:700; color:#1a1614; margin-bottom:12px;">Your Statutory Right to Cancel (14-Day Cooling-Off Period)</h2>
 <p>Under the Consumer Contracts (Information, Cancellation and Additional Charges) Regulations 2013, you have the right to cancel your order within <strong>14 days</strong> of the day you (or someone you nominate) receive the goods, without giving any reason.</p>
-<p>To exercise this right, you must inform us clearly within the 14-day period. The easiest way is to email us at <a href=\'mailto:[wookiee_field key="contact_email"]\' style="color:#c1704a;">[wookiee_field key="contact_email"]</a> with your name, order number, and a clear statement that you wish to cancel.</p>
+<p>To exercise this right, you must inform us clearly within the 14-day period. The easiest way is to email us at <a href=\'mailto:[wookiee_field key="contact_email"]\' style="color:var(--wookiee-accent);">[wookiee_field key="contact_email"]</a> with your name, order number, and a clear statement that you wish to cancel.</p>
 <p>Once you have notified us, you have a further <strong>14 days</strong> to return the goods to us. You are responsible for the cost of return shipping for change-of-mind cancellations.</p>
 <p>We will issue a full refund — including the original standard delivery charge — within <strong>14 days</strong> of receiving the returned goods or evidence of return, whichever is earlier. We process refunds to your original payment method. We may reduce the refund amount to reflect any reduction in the value of the goods if you have handled them beyond what is necessary to check their nature and condition.</p>
 
@@ -397,7 +385,7 @@ function wookiee_starter_pages() {
 
 <h2 style="font-size:20px; font-weight:700; color:#1a1614; margin-bottom:12px;">How to Start a Return</h2>
 <ol style="padding-left:22px;">
-  <li>Email <a href=\'mailto:[wookiee_field key="contact_email"]\' style="color:#c1704a;">[wookiee_field key="contact_email"]</a> with your order number, reason for return, and photos if the item is damaged or faulty.</li>
+  <li>Email <a href=\'mailto:[wookiee_field key="contact_email"]\' style="color:var(--wookiee-accent);">[wookiee_field key="contact_email"]</a> with your order number, reason for return, and photos if the item is damaged or faulty.</li>
   <li>Our team will respond within 2 business days with a returns authorisation and instructions.</li>
   <li>Pack the item securely and send it to the address provided in our response.</li>
   <li>Once we receive and inspect the return, we will process your refund within 5–14 business days.</li>
@@ -407,7 +395,7 @@ function wookiee_starter_pages() {
 <hr style="border:none;border-top:1px solid #e5dbc9;margin:36px 0;">
 
 <h2 style="font-size:20px; font-weight:700; color:#1a1614; margin-bottom:12px;">Cancellations</h2>
-<p>If you wish to cancel an order before it has been dispatched, please contact us immediately at <a href=\'mailto:[wookiee_field key="contact_email"]\' style="color:#c1704a;">[wookiee_field key="contact_email"]</a>. We will do our best to stop the order before it ships. If the order has already been dispatched, you will need to follow the returns process above once the parcel arrives.</p>
+<p>If you wish to cancel an order before it has been dispatched, please contact us immediately at <a href=\'mailto:[wookiee_field key="contact_email"]\' style="color:var(--wookiee-accent);">[wookiee_field key="contact_email"]</a>. We will do our best to stop the order before it ships. If the order has already been dispatched, you will need to follow the returns process above once the parcel arrives.</p>
 
 <hr style="border:none;border-top:1px solid #e5dbc9;margin:36px 0;">
 
@@ -422,7 +410,7 @@ function wookiee_starter_pages() {
 
 <hr style="border:none;border-top:1px solid #e5dbc9;margin:36px 0;">
 
-<p style="font-size:13px; color:#9c8f7f;">Nothing in this policy affects your statutory rights under UK consumer law. For queries, contact <a href=\'mailto:[wookiee_field key="contact_email"]\' style="color:#c1704a;">[wookiee_field key="contact_email"]</a> or call [wookiee_field key="contact_phone"].</p>
+<p style="font-size:13px; color:#9c8f7f;">Nothing in this policy affects your statutory rights under UK consumer law. For queries, contact <a href=\'mailto:[wookiee_field key="contact_email"]\' style="color:var(--wookiee-accent);">[wookiee_field key="contact_email"]</a> or call [wookiee_field key="contact_phone"].</p>
 
 </div>
 ' ),
@@ -467,12 +455,12 @@ function wookiee_starter_pages() {
 <hr style="border:none;border-top:1px solid #e5dbc9;margin:36px 0;">
 
 <h2 style="font-size:20px; font-weight:700; color:#1a1614; margin-bottom:12px;">Failed Payments</h2>
-<p>If your payment is declined, your order will not be confirmed and no charge will be made. Please check your card details and billing address, or try an alternative payment method. If you continue to experience issues, please contact your bank or payment provider first, then reach out to us at <a href=\'mailto:[wookiee_field key="contact_email"]\' style="color:#c1704a;">[wookiee_field key="contact_email"]</a>.</p>
+<p>If your payment is declined, your order will not be confirmed and no charge will be made. Please check your card details and billing address, or try an alternative payment method. If you continue to experience issues, please contact your bank or payment provider first, then reach out to us at <a href=\'mailto:[wookiee_field key="contact_email"]\' style="color:var(--wookiee-accent);">[wookiee_field key="contact_email"]</a>.</p>
 
 <hr style="border:none;border-top:1px solid #e5dbc9;margin:36px 0;">
 
 <h2 style="font-size:20px; font-weight:700; color:#1a1614; margin-bottom:12px;">Refunds</h2>
-<p>Approved refunds are returned to the original payment method used at checkout. We do not issue refunds via a different method. Please see our <a href="/returns/" style="color:#c1704a;">Returns, Refunds and Cancellations Policy</a> for full details on how and when refunds are processed.</p>
+<p>Approved refunds are returned to the original payment method used at checkout. We do not issue refunds via a different method. Please see our <a href="/returns/" style="color:var(--wookiee-accent);">Returns, Refunds and Cancellations Policy</a> for full details on how and when refunds are processed.</p>
 
 <hr style="border:none;border-top:1px solid #e5dbc9;margin:36px 0;">
 
@@ -481,7 +469,7 @@ function wookiee_starter_pages() {
 
 <hr style="border:none;border-top:1px solid #e5dbc9;margin:36px 0;">
 
-<p style="font-size:13px; color:#9c8f7f;">Questions about a payment? Contact us at <a href=\'mailto:[wookiee_field key="contact_email"]\' style="color:#c1704a;">[wookiee_field key="contact_email"]</a> or call [wookiee_field key="contact_phone"].</p>
+<p style="font-size:13px; color:#9c8f7f;">Questions about a payment? Contact us at <a href=\'mailto:[wookiee_field key="contact_email"]\' style="color:var(--wookiee-accent);">[wookiee_field key="contact_email"]</a> or call [wookiee_field key="contact_phone"].</p>
 
 </div>
 ' ),
@@ -502,7 +490,7 @@ function wookiee_starter_pages() {
   <li><strong>Wookiee Decor Ltd</strong></li>
   <li>[wookiee_field key="registered_address"]</li>
   <li>Company number: [wookiee_field key="company_number"]</li>
-  <li>Email: <a href=\'mailto:[wookiee_field key="contact_email"]\' style="color:#c1704a;">[wookiee_field key="contact_email"]</a></li>
+  <li>Email: <a href=\'mailto:[wookiee_field key="contact_email"]\' style="color:var(--wookiee-accent);">[wookiee_field key="contact_email"]</a></li>
 </ul>
 <p>We process your data in accordance with the UK General Data Protection Regulation (UK GDPR) and the Data Protection Act 2018.</p>
 
@@ -593,7 +581,7 @@ function wookiee_starter_pages() {
 <hr style="border:none;border-top:1px solid #e5dbc9;margin:36px 0;">
 
 <h2 style="font-size:20px; font-weight:700; color:#1a1614; margin-bottom:12px;">6. Cookies</h2>
-<p>We use cookies and similar tracking technologies on our website. For full details of the cookies we use and how to manage your preferences, please see our <a href="/cookie/" style="color:#c1704a;">Cookie Policy</a>.</p>
+<p>We use cookies and similar tracking technologies on our website. For full details of the cookies we use and how to manage your preferences, please see our <a href="/cookie/" style="color:var(--wookiee-accent);">Cookie Policy</a>.</p>
 
 <hr style="border:none;border-top:1px solid #e5dbc9;margin:36px 0;">
 
@@ -608,7 +596,7 @@ function wookiee_starter_pages() {
   <li><strong>Right to object:</strong> Object to us processing your data based on legitimate interests or for direct marketing purposes.</li>
   <li><strong>Rights related to automated decision-making:</strong> We do not make automated decisions that have legal or significant effects on you.</li>
 </ul>
-<p>To exercise any of these rights, please email us at <a href=\'mailto:[wookiee_field key="contact_email"]\' style="color:#c1704a;">[wookiee_field key="contact_email"]</a>. We will respond within one calendar month. We do not charge a fee for exercising your rights unless a request is manifestly unfounded or excessive.</p>
+<p>To exercise any of these rights, please email us at <a href=\'mailto:[wookiee_field key="contact_email"]\' style="color:var(--wookiee-accent);">[wookiee_field key="contact_email"]</a>. We will respond within one calendar month. We do not charge a fee for exercising your rights unless a request is manifestly unfounded or excessive.</p>
 
 <hr style="border:none;border-top:1px solid #e5dbc9;margin:36px 0;">
 
@@ -623,15 +611,15 @@ function wookiee_starter_pages() {
 <hr style="border:none;border-top:1px solid #e5dbc9;margin:36px 0;">
 
 <h2 style="font-size:20px; font-weight:700; color:#1a1614; margin-bottom:12px;">10. Marketing Communications</h2>
-<p>We will only send you marketing emails if you have opted in to receive them. You can unsubscribe at any time by clicking the unsubscribe link in any marketing email or by emailing us at <a href=\'mailto:[wookiee_field key="contact_email"]\' style="color:#c1704a;">[wookiee_field key="contact_email"]</a>. Opting out of marketing does not affect your order-related communications.</p>
+<p>We will only send you marketing emails if you have opted in to receive them. You can unsubscribe at any time by clicking the unsubscribe link in any marketing email or by emailing us at <a href=\'mailto:[wookiee_field key="contact_email"]\' style="color:var(--wookiee-accent);">[wookiee_field key="contact_email"]</a>. Opting out of marketing does not affect your order-related communications.</p>
 
 <hr style="border:none;border-top:1px solid #e5dbc9;margin:36px 0;">
 
 <h2 style="font-size:20px; font-weight:700; color:#1a1614; margin-bottom:12px;">11. Complaints</h2>
-<p>If you are unhappy with how we have handled your personal data, please contact us first at <a href=\'mailto:[wookiee_field key="contact_email"]\' style="color:#c1704a;">[wookiee_field key="contact_email"]</a> so we can try to resolve your concern.</p>
+<p>If you are unhappy with how we have handled your personal data, please contact us first at <a href=\'mailto:[wookiee_field key="contact_email"]\' style="color:var(--wookiee-accent);">[wookiee_field key="contact_email"]</a> so we can try to resolve your concern.</p>
 <p>You also have the right to lodge a complaint with the UK Information Commissioner\'s Office (ICO):</p>
 <ul style="padding-left:22px;">
-  <li>Website: <a href="https://ico.org.uk/make-a-complaint" style="color:#c1704a;" target="_blank" rel="noopener">ico.org.uk/make-a-complaint</a></li>
+  <li>Website: <a href="https://ico.org.uk/make-a-complaint" style="color:var(--wookiee-accent);" target="_blank" rel="noopener">ico.org.uk/make-a-complaint</a></li>
   <li>Helpline: 0303 123 1113</li>
 </ul>
 
@@ -648,7 +636,7 @@ function wookiee_starter_pages() {
 <h1 style="font-size:32px; font-weight:800; color:#1a1614; margin-bottom:6px;">Cookie Policy</h1>
 <p style="color:#8a7d6d; font-size:14px; margin-bottom:40px;">Last updated: July 2025 &nbsp;|&nbsp; Wookiee Decor Ltd &nbsp;|&nbsp; Company No. [wookiee_field key="company_number"]</p>
 
-<p>This cookie policy explains what cookies are, which cookies we use on wookied.com, why we use them, and how you can manage your preferences. It should be read alongside our <a href="/privacy/" style="color:#c1704a;">Privacy Policy</a>.</p>
+<p>This cookie policy explains what cookies are, which cookies we use on wookied.com, why we use them, and how you can manage your preferences. It should be read alongside our <a href="/privacy/" style="color:var(--wookiee-accent);">Privacy Policy</a>.</p>
 
 <hr style="border:none;border-top:1px solid #e5dbc9;margin:36px 0;">
 
@@ -752,26 +740,26 @@ function wookiee_starter_pages() {
 
 <h2 style="font-size:20px; font-weight:700; color:#1a1614; margin-bottom:12px;">Your Consent</h2>
 <p>When you first visit wookied.com, you will be presented with a cookie consent notice asking for your permission to set non-essential cookies. You can choose to accept all cookies, accept only essential cookies, or customise your preferences.</p>
-<p>You can change or withdraw your consent at any time by visiting our <a href="/cookie-pref/" style="color:#c1704a;">Cookie Preferences</a> page.</p>
+<p>You can change or withdraw your consent at any time by visiting our <a href="/cookie-pref/" style="color:var(--wookiee-accent);">Cookie Preferences</a> page.</p>
 
 <hr style="border:none;border-top:1px solid #e5dbc9;margin:36px 0;">
 
 <h2 style="font-size:20px; font-weight:700; color:#1a1614; margin-bottom:12px;">Managing Cookies in Your Browser</h2>
 <p>You can also control cookies through your browser settings. Most browsers allow you to refuse or delete cookies. Please note that disabling cookies may affect the functionality of our website, including the shopping cart and checkout process. Guidance on managing cookies in popular browsers:</p>
 <ul style="padding-left:22px;">
-  <li><a href="https://support.google.com/chrome/answer/95647" style="color:#c1704a;" target="_blank" rel="noopener">Google Chrome</a></li>
-  <li><a href="https://support.mozilla.org/en-US/kb/cookies-information-websites-store-on-your-computer" style="color:#c1704a;" target="_blank" rel="noopener">Mozilla Firefox</a></li>
-  <li><a href="https://support.apple.com/en-gb/guide/safari/sfri11471/mac" style="color:#c1704a;" target="_blank" rel="noopener">Apple Safari</a></li>
-  <li><a href="https://support.microsoft.com/en-gb/topic/delete-and-manage-cookies-168dab11-0753-043d-7c16-ede5947fc64d" style="color:#c1704a;" target="_blank" rel="noopener">Microsoft Edge</a></li>
+  <li><a href="https://support.google.com/chrome/answer/95647" style="color:var(--wookiee-accent);" target="_blank" rel="noopener">Google Chrome</a></li>
+  <li><a href="https://support.mozilla.org/en-US/kb/cookies-information-websites-store-on-your-computer" style="color:var(--wookiee-accent);" target="_blank" rel="noopener">Mozilla Firefox</a></li>
+  <li><a href="https://support.apple.com/en-gb/guide/safari/sfri11471/mac" style="color:var(--wookiee-accent);" target="_blank" rel="noopener">Apple Safari</a></li>
+  <li><a href="https://support.microsoft.com/en-gb/topic/delete-and-manage-cookies-168dab11-0753-043d-7c16-ede5947fc64d" style="color:var(--wookiee-accent);" target="_blank" rel="noopener">Microsoft Edge</a></li>
 </ul>
 
 <hr style="border:none;border-top:1px solid #e5dbc9;margin:36px 0;">
 
 <h2 style="font-size:20px; font-weight:700; color:#1a1614; margin-bottom:12px;">Third-Party Opt-Outs</h2>
 <ul style="padding-left:22px;">
-  <li>Google Analytics: <a href="https://tools.google.com/dlpage/gaoptout" style="color:#c1704a;" target="_blank" rel="noopener">tools.google.com/dlpage/gaoptout</a></li>
-  <li>Google Ads: <a href="https://adssettings.google.com" style="color:#c1704a;" target="_blank" rel="noopener">adssettings.google.com</a></li>
-  <li>General advertising opt-out: <a href="https://www.youronlinechoices.com" style="color:#c1704a;" target="_blank" rel="noopener">youronlinechoices.com</a></li>
+  <li>Google Analytics: <a href="https://tools.google.com/dlpage/gaoptout" style="color:var(--wookiee-accent);" target="_blank" rel="noopener">tools.google.com/dlpage/gaoptout</a></li>
+  <li>Google Ads: <a href="https://adssettings.google.com" style="color:var(--wookiee-accent);" target="_blank" rel="noopener">adssettings.google.com</a></li>
+  <li>General advertising opt-out: <a href="https://www.youronlinechoices.com" style="color:var(--wookiee-accent);" target="_blank" rel="noopener">youronlinechoices.com</a></li>
 </ul>
 
 <hr style="border:none;border-top:1px solid #e5dbc9;margin:36px 0;">
@@ -781,7 +769,7 @@ function wookiee_starter_pages() {
 
 <hr style="border:none;border-top:1px solid #e5dbc9;margin:36px 0;">
 
-<p style="font-size:13px; color:#9c8f7f;">Questions about cookies? Email us at <a href=\'mailto:[wookiee_field key="contact_email"]\' style="color:#c1704a;">[wookiee_field key="contact_email"]</a>.</p>
+<p style="font-size:13px; color:#9c8f7f;">Questions about cookies? Email us at <a href=\'mailto:[wookiee_field key="contact_email"]\' style="color:var(--wookiee-accent);">[wookiee_field key="contact_email"]</a>.</p>
 
 </div>
 ' ),
@@ -798,19 +786,19 @@ function wookiee_starter_pages() {
 <div style="background:#ece2d3; border-radius:12px; padding:28px 32px; margin-bottom:24px;">
   <h2 style="font-size:18px; font-weight:700; color:#1a1614; margin:0 0 8px 0;">✅ Strictly Necessary Cookies</h2>
   <p style="margin:0 0 12px 0; font-size:14px;">These cookies are essential for the website to work. They keep your shopping cart intact, allow you to log in, and secure your checkout. They cannot be turned off as the site cannot function without them.</p>
-  <p style="margin:0; font-size:13px; color:#c1704a; font-weight:600;">Always active — no opt-out available</p>
+  <p style="margin:0; font-size:13px; color:var(--wookiee-accent); font-weight:600;">Always active — no opt-out available</p>
 </div>
 
 <div style="background:#ece2d3; border-radius:12px; padding:28px 32px; margin-bottom:24px;">
   <h2 style="font-size:18px; font-weight:700; color:#1a1614; margin:0 0 8px 0;">📊 Analytics Cookies</h2>
   <p style="margin:0 0 12px 0; font-size:14px;">Analytics cookies (such as Google Analytics) help us understand how visitors use our site, so we can improve the experience. The data is aggregated and does not identify you personally.</p>
-  <p style="margin:0; font-size:14px;">To opt out of Google Analytics specifically, install the <a href="https://tools.google.com/dlpage/gaoptout" style="color:#c1704a;" target="_blank" rel="noopener">Google Analytics Opt-out Browser Add-on</a>.</p>
+  <p style="margin:0; font-size:14px;">To opt out of Google Analytics specifically, install the <a href="https://tools.google.com/dlpage/gaoptout" style="color:var(--wookiee-accent);" target="_blank" rel="noopener">Google Analytics Opt-out Browser Add-on</a>.</p>
 </div>
 
 <div style="background:#ece2d3; border-radius:12px; padding:28px 32px; margin-bottom:24px;">
   <h2 style="font-size:18px; font-weight:700; color:#1a1614; margin:0 0 8px 0;">🎯 Marketing &amp; Advertising Cookies</h2>
   <p style="margin:0 0 12px 0; font-size:14px;">Marketing cookies allow us and our advertising partners to show you relevant ads on other websites and to measure the performance of ad campaigns. These require your explicit consent.</p>
-  <p style="margin:0; font-size:14px;">To manage advertising preferences: <a href="https://adssettings.google.com" style="color:#c1704a;" target="_blank" rel="noopener">Google Ad Settings</a> &nbsp;|&nbsp; <a href="https://www.youronlinechoices.com" style="color:#c1704a;" target="_blank" rel="noopener">YourOnlineChoices.com</a></p>
+  <p style="margin:0; font-size:14px;">To manage advertising preferences: <a href="https://adssettings.google.com" style="color:var(--wookiee-accent);" target="_blank" rel="noopener">Google Ad Settings</a> &nbsp;|&nbsp; <a href="https://www.youronlinechoices.com" style="color:var(--wookiee-accent);" target="_blank" rel="noopener">YourOnlineChoices.com</a></p>
 </div>
 
 <hr style="border:none;border-top:1px solid #e5dbc9;margin:36px 0;">
@@ -818,15 +806,15 @@ function wookiee_starter_pages() {
 <h2 style="font-size:20px; font-weight:700; color:#1a1614; margin-bottom:12px;">Managing Cookies in Your Browser</h2>
 <p>You can control and delete cookies through your browser settings at any time. Keep in mind that disabling certain cookies may affect how parts of the website function, including your basket and checkout.</p>
 <ul style="padding-left:22px;">
-  <li><a href="https://support.google.com/chrome/answer/95647" style="color:#c1704a;" target="_blank" rel="noopener">Google Chrome — Manage cookies</a></li>
-  <li><a href="https://support.mozilla.org/en-US/kb/cookies-information-websites-store-on-your-computer" style="color:#c1704a;" target="_blank" rel="noopener">Mozilla Firefox — Manage cookies</a></li>
-  <li><a href="https://support.apple.com/en-gb/guide/safari/sfri11471/mac" style="color:#c1704a;" target="_blank" rel="noopener">Apple Safari — Manage cookies</a></li>
-  <li><a href="https://support.microsoft.com/en-gb/topic/delete-and-manage-cookies-168dab11-0753-043d-7c16-ede5947fc64d" style="color:#c1704a;" target="_blank" rel="noopener">Microsoft Edge — Manage cookies</a></li>
+  <li><a href="https://support.google.com/chrome/answer/95647" style="color:var(--wookiee-accent);" target="_blank" rel="noopener">Google Chrome — Manage cookies</a></li>
+  <li><a href="https://support.mozilla.org/en-US/kb/cookies-information-websites-store-on-your-computer" style="color:var(--wookiee-accent);" target="_blank" rel="noopener">Mozilla Firefox — Manage cookies</a></li>
+  <li><a href="https://support.apple.com/en-gb/guide/safari/sfri11471/mac" style="color:var(--wookiee-accent);" target="_blank" rel="noopener">Apple Safari — Manage cookies</a></li>
+  <li><a href="https://support.microsoft.com/en-gb/topic/delete-and-manage-cookies-168dab11-0753-043d-7c16-ede5947fc64d" style="color:var(--wookiee-accent);" target="_blank" rel="noopener">Microsoft Edge — Manage cookies</a></li>
 </ul>
 
 <hr style="border:none;border-top:1px solid #e5dbc9;margin:36px 0;">
 
-<p>For full details of all cookies we use and why, please read our <a href="/cookie/" style="color:#c1704a;">Cookie Policy</a>. For questions, email us at <a href=\'mailto:[wookiee_field key="contact_email"]\' style="color:#c1704a;">[wookiee_field key="contact_email"]</a>.</p>
+<p>For full details of all cookies we use and why, please read our <a href="/cookie/" style="color:var(--wookiee-accent);">Cookie Policy</a>. For questions, email us at <a href=\'mailto:[wookiee_field key="contact_email"]\' style="color:var(--wookiee-accent);">[wookiee_field key="contact_email"]</a>.</p>
 
 </div>
 ' ),

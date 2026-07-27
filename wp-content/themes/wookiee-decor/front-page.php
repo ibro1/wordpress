@@ -20,14 +20,13 @@ get_header(); ?>
 			</div>
 			<div class="hero-image-col">
 				<?php
-				$hero_id = get_option( 'wookiee_hero_image_id' );
-				$hero_url = $hero_id ? wp_get_attachment_url( $hero_id ) : '';
-				if ( $hero_url ) :
+				// Resolved through the slot helper so the hero, the About
+				// images and anything that fills them later all read from one
+				// place. Always returns a URL - the bundled asset when this
+				// store has not set its own - so there is no placeholder path.
+				$hero_url = wookiee_image_url( 'hero' );
 				?>
 				<img src="<?php echo esc_url( $hero_url ); ?>" alt="<?php echo esc_attr( wookiee_get_setting( 'hero_headline' ) ); ?>">
-				<?php else : ?>
-				<div class="hero-image-placeholder">Hero Image Placeholder</div>
-				<?php endif; ?>
 				<div class="hero-stat-badge">
 					<div class="stat-number">&pound;<?php echo esc_html( wookiee_get_setting( 'shipping_rate' ) ); ?></div>
 					<div class="stat-label"><?php echo esc_html( wookiee_get_setting( 'hero_stat_label' ) ); ?></div>

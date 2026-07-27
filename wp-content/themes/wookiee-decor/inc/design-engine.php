@@ -367,6 +367,113 @@ function wookiee_derive_layout_css( array $p ) {
 	}
 	$css .= '}';
 
+	$css .= wookiee_derive_sitewide_layout_css( $p, $pad, $r_md, $r_lg, $s_sm, $s_md, $title, $cols );
+
+	return $css;
+}
+
+/**
+ * Layout rules for everything that is not the homepage: the footer, the
+ * About and Contact pages, and the WooCommerce shop.
+ *
+ * Until this existed the engine was a homepage-only layout engine. The
+ * palette reached the whole site, because those are CSS custom properties
+ * set on :root, but not one layout rule targeted anything outside
+ * front-page.php. Regenerating a design visibly restyled the homepage and
+ * left the other four surfaces on a fixed layout, which read as the feature
+ * being broken rather than being scoped.
+ *
+ * @param array  $p     Sanitised design parameters.
+ * @param int    $pad   Section padding derived from density.
+ * @param int    $r_md  Medium corner radius.
+ * @param int    $r_lg  Large corner radius.
+ * @param string $s_sm  Small shadow.
+ * @param string $s_md  Medium shadow.
+ * @param int    $title Section title size.
+ * @param int    $cols  Products per row.
+ */
+function wookiee_derive_sitewide_layout_css( array $p, $pad, $r_md, $r_lg, $s_sm, $s_md, $title, $cols ) {
+	$css = '';
+
+	/* ---- Footer ---------------------------------------------------- */
+
+	$css .= '.wookiee-gen .footer-columns-grid{padding-top:' . $pad . 'px;padding-bottom:' . $pad . 'px;}';
+	$css .= '.wookiee-gen .footer-newsletter{padding-top:' . (int) round( $pad * 0.6 ) . 'px;padding-bottom:' . (int) round( $pad * 0.6 ) . 'px;}';
+	$css .= '.wookiee-gen .newsletter-form input,.wookiee-gen .newsletter-form button{border-radius:' . $r_md . 'px;}';
+
+	/*
+	 * Story emphasis gives the brand column more room and pulls the link
+	 * columns tighter; shop emphasis evens them out so the shop links read
+	 * as the point of the footer. Structural, so desktop only - the footer
+	 * collapses to one column below 860px through the theme's own rules.
+	 */
+	$css .= '@media(min-width:900px){';
+	if ( 'story' === $p['emphasis'] ) {
+		$css .= '.wookiee-gen .footer-columns-grid{grid-template-columns:2fr 1fr 1fr 1.2fr;}';
+	} else {
+		$css .= '.wookiee-gen .footer-columns-grid{grid-template-columns:1.2fr 1fr 1fr 1.4fr;}';
+	}
+	$css .= '}';
+
+	/* ---- About ------------------------------------------------------ */
+
+	$css .= '.wookiee-gen .about-hero{padding-top:' . $pad . 'px;padding-bottom:' . $pad . 'px;}';
+	$css .= '.wookiee-gen .about-story{padding-top:' . (int) round( $pad * 1.3 ) . 'px;padding-bottom:' . (int) round( $pad * 1.3 ) . 'px;}';
+	$css .= '.wookiee-gen .about-title{font-size:' . $title . 'px;}';
+	$css .= '.wookiee-gen .about-story-title{font-size:' . (int) round( $title * 0.92 ) . 'px;}';
+	$css .= '.wookiee-gen .about-highlight{border-radius:' . $r_md . 'px;}';
+	$css .= '.wookiee-gen .about-hero-image,.wookiee-gen .about-story-image{border-radius:' . $r_lg . 'px;box-shadow:' . $s_md . ';}';
+	$css .= '.wookiee-gen .about-stat-badge{border-radius:' . $r_md . 'px;box-shadow:' . $s_md . ';}';
+
+	// The About hero follows the homepage hero's treatment, so a "centered"
+	// design is centered on both pages rather than only the front.
+	$css .= '@media(min-width:900px){';
+	if ( 'centered' === $p['hero'] ) {
+		$css .= '.wookiee-gen .about-hero-inner{grid-template-columns:1fr;text-align:center;max-width:900px;}';
+		$css .= '.wookiee-gen .about-kicker,.wookiee-gen .about-cta-row{justify-content:center;}';
+	} elseif ( 'image-left' === $p['hero'] ) {
+		$css .= '.wookiee-gen .about-hero-text{order:2;}';
+		$css .= '.wookiee-gen .about-hero-image-wrap{order:1;}';
+		$css .= '.wookiee-gen .about-story-media{order:2;}';
+		$css .= '.wookiee-gen .about-story-text{order:1;}';
+	}
+	$css .= '}';
+
+	/* ---- Contact ---------------------------------------------------- */
+
+	$css .= '.wookiee-gen .contact-card,.wookiee-gen .contact-info-card{border-radius:' . $r_lg . 'px;box-shadow:' . $s_sm . ';}';
+	$css .= '.wookiee-gen .contact-input{border-radius:' . $r_md . 'px;}';
+	$css .= '.wookiee-gen .contact-header{padding-top:' . (int) round( $pad * 0.8 ) . 'px;padding-bottom:' . (int) round( $pad * 0.5 ) . 'px;}';
+	$css .= '.wookiee-gen .contact-title{font-size:' . $title . 'px;}';
+
+	/*
+	 * Story emphasis leads with the support channels rather than the form -
+	 * a store telling a story wants to be talked to, not filled in. Only
+	 * swaps the two columns; the form keeps its DOM position, so reading
+	 * order and tab order are untouched.
+	 */
+	$css .= '@media(min-width:900px){';
+	if ( 'story' === $p['emphasis'] ) {
+		$css .= '.wookiee-gen .contact-grid{grid-template-columns:1fr 1.3fr;}';
+		$css .= '.wookiee-gen .contact-form{order:2;}';
+		$css .= '.wookiee-gen .contact-sidebar{order:1;}';
+	}
+	$css .= '}';
+
+	/* ---- Shop ------------------------------------------------------- */
+
+	/*
+	 * The shop stylesheet sets its loop grid and cards with !important
+	 * throughout, so these have to match that weight or they are simply
+	 * discarded. Matching the homepage column count keeps the two grids
+	 * consistent instead of the shop always being auto-fill 280px.
+	 */
+	$css .= '@media(min-width:900px){';
+	$css .= '.wookiee-gen.woocommerce ul.products,.wookiee-gen .woocommerce ul.products{grid-template-columns:repeat(' . $cols . ',minmax(0,1fr))!important;}';
+	$css .= '}';
+	$css .= '.wookiee-gen ul.products li.product{border-radius:' . $r_lg . 'px!important;box-shadow:' . $s_sm . '!important;border-color:var(--wookiee-border)!important;}';
+	$css .= '.wookiee-gen .woocommerce-products-header .page-title{font-size:' . $title . 'px!important;}';
+
 	return $css;
 }
 

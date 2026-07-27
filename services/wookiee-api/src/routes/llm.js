@@ -30,21 +30,14 @@ const router = express.Router();
  * default. The WordPress side calls this to build its model dropdown, so it
  * only ever offers models that will actually be accepted.
  */
-router.get('/models', (req, res) => {
+router.get('/models', async (req, res) => {
   const entry = req.license ? req.license.entry : null;
-  const all = modelCatalog.listModels();
 
-  // Only surface models whose provider actually has a key saved - offering
-  // one that would 400 on first use is worse than not listing it.
-  const configured = all.filter((m) => {
-    const parsed = modelCatalog.parseId(m.id);
-    if (!parsed) {
-      return false;
-    }
-    return Boolean(store.get(modelCatalog.PROVIDERS[parsed.provider].key_setting).trim());
-  });
+  // Live from each configured provider - so a site only ever sees models
+  // that genuinely exist right now under a key the operator has saved.
+  const { models } = await modelCatalog.listConfiguredModels((k) => store.get(k));
 
-  const allowed = configured.filter((m) => licenseStore.isModelAllowed(entry, m.id));
+  const allowed = models.filter((m) => licenseStore.isModelAllowed(entry, m.id));
 
   res.json({
     models: allowed,
@@ -79,8 +72,8 @@ function resolveTarget(requestedModel, licenseEntry) {
   }
 
   const parsed = modelCatalog.parseId(wanted);
-  if (!parsed || !modelCatalog.isKnownModel(wanted)) {
-    return { error: `Unknown model "${wanted}".`, status: 400 };
+  if (!parsed) {
+    return { error: `Malformed model id "${wanted}" - expected "<provider>:<model>".`, status: 400 };
   }
 
   if (!licenseStore.isModelAllowed(licenseEntry, wanted)) {

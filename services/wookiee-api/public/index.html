@@ -41,7 +41,17 @@
   .model-opt .price { color: #646970; font-size: 11px; margin-left: 6px; }
   .model-editor .actions { margin-top: 10px; display: flex; gap: 8px; align-items: center; }
   .model-editor .actions button { margin-top: 0; padding: 6px 14px; font-size: 13px; }
-  .model-editor select { padding: 6px; border: 1px solid #8c8f94; border-radius: 4px; font-size: 13px; }
+  .model-editor select { padding: 6px; border: 1px solid #8c8f94; border-radius: 4px; font-size: 13px; max-width: 100%; }
+  .model-search { width: 100%; box-sizing: border-box; padding: 8px 10px; border: 1px solid #8c8f94; border-radius: 4px; font-size: 13px; margin-bottom: 8px; }
+  .model-list { max-height: 340px; overflow-y: auto; border: 1px solid #dcdcde; border-radius: 4px; background: #fff; padding: 8px; }
+  .model-count { font-size: 12px; color: #646970; margin: 0 0 8px; }
+  .model-selected-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
+  .chip { background: #e8f0f7; color: #0a4b78; border-radius: 10px; padding: 2px 8px; font-size: 11px; display: inline-flex; align-items: center; gap: 5px; }
+  .chip button { all: unset; cursor: pointer; font-weight: 700; line-height: 1; }
+  .model-empty { color: #646970; font-size: 13px; padding: 10px 2px; }
+  .provider-err { background: #fbe4e4; color: #a3272a; border-radius: 4px; padding: 6px 8px; font-size: 12px; margin-bottom: 8px; }
+  .provider-warn { background: #fcf3d7; color: #7a5c00; border-radius: 4px; padding: 6px 8px; font-size: 12px; margin-bottom: 8px; }
+  .model-meta { color: #646970; font-size: 11px; margin-left: 6px; }
 </style>
 </head>
 <body>
@@ -77,7 +87,7 @@
     { title: 'Companies House', fields: [
       ['companies_house_api_key', 'Companies House API key', 'password'],
     ] },
-    { title: 'LLM provider keys', note: 'Save a key for each provider you want available. Models from a provider with no key saved are greyed out in the per-licence model picker above and never offered to a site.', fields: [
+    { title: 'LLM provider keys', note: 'Save a key for each provider you want available. Model lists are pulled live from each provider using these keys - a provider with no key saved contributes no models, and a key the provider rejects is reported in the per-licence picker above.', fields: [
       ['llm_openrouter_api_key', 'OpenRouter API key', 'password'],
       ['llm_openai_api_key', 'OpenAI API key', 'password'],
       ['llm_anthropic_api_key', 'Anthropic API key', 'password'],
@@ -120,18 +130,22 @@
   var form = document.getElementById('settings-form');
   var statusEl = document.getElementById('status');
 
-  // Model catalogue, fetched once from /licenses/models and reused by every
-  // per-licence picker. Kept in a module-level cache so opening the editor
-  // on ten different licences doesn't refetch it ten times.
-  var CATALOG = { models: [], providers: [] };
+  // Live model catalogue from /licenses/models - fetched from each provider
+  // that has a key saved, never hardcoded. Cached module-level so opening
+  // the editor on ten licences doesn't refetch ten times.
+  var CATALOG = { models: [], providers: [], errors: {} };
 
-  function loadCatalog() {
-    return fetch('/licenses/models')
+  function loadCatalog(force) {
+    return fetch('/licenses/models' + (force ? '?refresh=1' : ''))
       .then(function (r) { return r.json(); })
       .then(function (res) {
-        CATALOG = { models: res.models || [], providers: res.providers || [] };
+        CATALOG = {
+          models: res.models || [],
+          providers: res.providers || [],
+          errors: res.errors || {},
+        };
       })
-      .catch(function () { /* picker degrades to "All models" text; not fatal */ });
+      .catch(function () { /* picker degrades to a message; not fatal */ });
   }
 
   function providerLabel(key) {
@@ -141,8 +155,31 @@
     return key;
   }
 
+  function modelById(id) {
+    for (var i = 0; i < CATALOG.models.length; i++) {
+      if (CATALOG.models[i].id === id) { return CATALOG.models[i]; }
+    }
+    return null;
+  }
+
+  // "$0.30 in / $2.50 out per 1M · 1M ctx" - only the parts the provider
+  // actually reported. Providers other than OpenRouter don't publish pricing
+  // on their models endpoint, so showing nothing beats inventing a number.
+  function modelMeta(m) {
+    var bits = [];
+    if (m.in !== null && m.in !== undefined && m.out !== null && m.out !== undefined) {
+      bits.push('$' + m.in + ' in / $' + m.out + ' out per 1M');
+    }
+    if (m.context) {
+      bits.push(m.context >= 1000000
+        ? (Math.round(m.context / 100000) / 10) + 'M ctx'
+        : Math.round(m.context / 1000) + 'K ctx');
+    }
+    return bits.join(' · ');
+  }
+
   /**
-   * Builds the checkbox list + default-model select for one licence.
+   * Searchable multi-select of models for one licence.
    * onSave receives { allowed_models, default_model }.
    */
   function buildModelEditor(entry, onSave, onCancel) {
@@ -156,50 +193,48 @@
     var hint = document.createElement('p');
     hint.className = 'description';
     hint.style.margin = '0 0 10px';
-    hint.textContent = 'Tick none to allow every model. Greyed-out models have no provider key saved yet.';
+    hint.textContent = 'Tick none to allow every model. The list is pulled live from each provider you have saved a key for.';
     wrap.appendChild(hint);
 
+    // Surface per-provider trouble explicitly: a saved-but-rejected key and
+    // a never-entered key both yield zero models but need different fixes.
+    CATALOG.providers.forEach(function (p) {
+      if (p.error) {
+        var err = document.createElement('div');
+        err.className = 'provider-err';
+        // p.error already carries the provider label from the server - don't
+        // prepend it again ("Anthropic: Anthropic: invalid x-api-key").
+        err.textContent = p.error;
+        wrap.appendChild(err);
+      }
+    });
+    var unconfigured = CATALOG.providers.filter(function (p) { return !p.configured; });
+    if (unconfigured.length) {
+      var warn = document.createElement('div');
+      warn.className = 'provider-warn';
+      warn.textContent = 'No API key saved yet for: ' + unconfigured.map(function (p) { return p.label; }).join(', ') + ' - their models are not listed.';
+      wrap.appendChild(warn);
+    }
+
     var selected = (entry.allowed_models || []).slice();
-    var boxes = [];
 
-    // Group by provider so the operator sees "everything I can reach through
-    // OpenRouter" vs "everything I'm billed for directly" as distinct blocks.
-    var byProvider = {};
-    CATALOG.models.forEach(function (m) {
-      if (!byProvider[m.provider]) { byProvider[m.provider] = []; }
-      byProvider[m.provider].push(m);
-    });
+    var chips = document.createElement('div');
+    chips.className = 'model-selected-chips';
+    wrap.appendChild(chips);
 
-    Object.keys(byProvider).forEach(function (pk) {
-      var group = document.createElement('div');
-      group.className = 'model-provider';
-      var strong = document.createElement('strong');
-      strong.textContent = providerLabel(pk);
-      group.appendChild(strong);
+    var search = document.createElement('input');
+    search.type = 'search';
+    search.className = 'model-search';
+    search.placeholder = 'Search ' + CATALOG.models.length + ' models by name, provider or id...';
+    wrap.appendChild(search);
 
-      byProvider[pk].forEach(function (m) {
-        var lab = document.createElement('label');
-        lab.className = 'model-opt' + (m.configured ? '' : ' unconfigured');
-        var cb = document.createElement('input');
-        cb.type = 'checkbox';
-        cb.value = m.id;
-        cb.checked = selected.indexOf(m.id) !== -1;
-        cb.addEventListener('change', syncDefaults);
-        boxes.push(cb);
-        lab.appendChild(cb);
-        lab.appendChild(document.createTextNode(m.label));
-        var price = document.createElement('span');
-        price.className = 'price';
-        price.textContent = '$' + m.in.toFixed(2) + ' in / $' + m.out.toFixed(2) + ' out per 1M';
-        lab.appendChild(price);
-        if (!m.configured) {
-          lab.title = 'No API key saved for ' + providerLabel(pk) + ' yet.';
-        }
-        group.appendChild(lab);
-      });
+    var countEl = document.createElement('p');
+    countEl.className = 'model-count';
+    wrap.appendChild(countEl);
 
-      wrap.appendChild(group);
-    });
+    var list = document.createElement('div');
+    list.className = 'model-list';
+    wrap.appendChild(list);
 
     var defLabel = document.createElement('label');
     defLabel.textContent = 'Default model';
@@ -208,31 +243,137 @@
     var defSelect = document.createElement('select');
     wrap.appendChild(defSelect);
 
+    function renderChips() {
+      chips.innerHTML = '';
+      if (!selected.length) {
+        var none = document.createElement('span');
+        none.className = 'model-count';
+        none.style.margin = '0';
+        none.textContent = 'Nothing selected - this code may use any available model.';
+        chips.appendChild(none);
+        return;
+      }
+      selected.forEach(function (id) {
+        var m = modelById(id);
+        var chip = document.createElement('span');
+        chip.className = 'chip';
+        chip.appendChild(document.createTextNode(m ? m.label : id));
+        var x = document.createElement('button');
+        x.type = 'button';
+        x.textContent = '×';
+        x.title = 'Remove';
+        x.addEventListener('click', function () {
+          selected = selected.filter(function (s) { return s !== id; });
+          renderAll();
+        });
+        chip.appendChild(x);
+        chips.appendChild(chip);
+      });
+    }
+
+    function renderList() {
+      var q = search.value.trim().toLowerCase();
+      var matches = CATALOG.models.filter(function (m) {
+        if (!q) { return true; }
+        return (m.label + ' ' + m.id + ' ' + (m.provider_label || '')).toLowerCase().indexOf(q) !== -1;
+      });
+
+      countEl.textContent = q
+        ? matches.length + ' of ' + CATALOG.models.length + ' models match "' + search.value.trim() + '"'
+        : CATALOG.models.length + ' models available across ' + CATALOG.providers.filter(function (p) { return p.configured && !p.error; }).length + ' provider(s)';
+
+      list.innerHTML = '';
+
+      if (!CATALOG.models.length) {
+        var empty = document.createElement('p');
+        empty.className = 'model-empty';
+        empty.textContent = 'No models available - save at least one provider API key below, then click Refresh models.';
+        list.appendChild(empty);
+        return;
+      }
+      if (!matches.length) {
+        var noMatch = document.createElement('p');
+        noMatch.className = 'model-empty';
+        noMatch.textContent = 'No models match that search.';
+        list.appendChild(noMatch);
+        return;
+      }
+
+      // Group by provider so "everything via OpenRouter" and "everything I'm
+      // billed for directly" read as distinct blocks.
+      var byProvider = {};
+      matches.forEach(function (m) {
+        if (!byProvider[m.provider]) { byProvider[m.provider] = []; }
+        byProvider[m.provider].push(m);
+      });
+
+      Object.keys(byProvider).forEach(function (pk) {
+        var group = document.createElement('div');
+        group.className = 'model-provider';
+        var strong = document.createElement('strong');
+        strong.textContent = providerLabel(pk) + ' (' + byProvider[pk].length + ')';
+        group.appendChild(strong);
+
+        byProvider[pk].forEach(function (m) {
+          var lab = document.createElement('label');
+          lab.className = 'model-opt';
+          var cb = document.createElement('input');
+          cb.type = 'checkbox';
+          cb.value = m.id;
+          cb.checked = selected.indexOf(m.id) !== -1;
+          cb.addEventListener('change', function () {
+            if (cb.checked) {
+              if (selected.indexOf(m.id) === -1) { selected.push(m.id); }
+            } else {
+              selected = selected.filter(function (s) { return s !== m.id; });
+            }
+            renderChips();
+            syncDefaults();
+          });
+          lab.appendChild(cb);
+          lab.appendChild(document.createTextNode(m.label));
+          var meta = modelMeta(m);
+          if (meta) {
+            var metaEl = document.createElement('span');
+            metaEl.className = 'model-meta';
+            metaEl.textContent = meta;
+            lab.appendChild(metaEl);
+          }
+          lab.title = m.id;
+          group.appendChild(lab);
+        });
+
+        list.appendChild(group);
+      });
+    }
+
     // The default must always be one of the currently-ticked models (or the
-    // global fallback when nothing is ticked) - rebuilt on every tick so the
-    // two controls can never disagree.
+    // server fallback when nothing is ticked), so it's rebuilt on every change.
     function syncDefaults() {
-      var ticked = boxes.filter(function (b) { return b.checked; }).map(function (b) { return b.value; });
       var previous = defSelect.value;
       defSelect.innerHTML = '';
 
       var noneOpt = document.createElement('option');
       noneOpt.value = '';
-      noneOpt.textContent = ticked.length ? '(first ticked model)' : '(server fallback settings)';
+      noneOpt.textContent = selected.length ? '(first selected model)' : '(server fallback settings)';
       defSelect.appendChild(noneOpt);
 
-      ticked.forEach(function (id) {
-        var m = CATALOG.models.filter(function (x) { return x.id === id; })[0];
+      selected.forEach(function (id) {
+        var m = modelById(id);
         var opt = document.createElement('option');
         opt.value = id;
         opt.textContent = m ? m.label : id;
         defSelect.appendChild(opt);
       });
 
-      if (ticked.indexOf(previous) !== -1) { defSelect.value = previous; }
-      else if (ticked.indexOf(entry.default_model) !== -1) { defSelect.value = entry.default_model; }
+      if (selected.indexOf(previous) !== -1) { defSelect.value = previous; }
+      else if (selected.indexOf(entry.default_model) !== -1) { defSelect.value = entry.default_model; }
     }
-    syncDefaults();
+
+    function renderAll() { renderChips(); renderList(); syncDefaults(); }
+
+    search.addEventListener('input', renderList);
+    renderAll();
 
     var actions = document.createElement('div');
     actions.className = 'actions';
@@ -240,18 +381,31 @@
     saveBtn.type = 'button';
     saveBtn.textContent = 'Save models';
     saveBtn.addEventListener('click', function () {
-      onSave({
-        allowed_models: boxes.filter(function (b) { return b.checked; }).map(function (b) { return b.value; }),
-        default_model: defSelect.value,
-      });
+      onSave({ allowed_models: selected, default_model: defSelect.value });
     });
     var cancelBtn = document.createElement('button');
     cancelBtn.type = 'button';
     cancelBtn.className = 'secondary';
     cancelBtn.textContent = 'Cancel';
     cancelBtn.addEventListener('click', onCancel);
+    var refreshBtn = document.createElement('button');
+    refreshBtn.type = 'button';
+    refreshBtn.className = 'secondary';
+    refreshBtn.textContent = 'Refresh models';
+    refreshBtn.title = 'Re-fetch the model list from every configured provider';
+    refreshBtn.addEventListener('click', function () {
+      refreshBtn.disabled = true;
+      refreshBtn.textContent = 'Refreshing...';
+      loadCatalog(true).then(function () {
+        refreshBtn.disabled = false;
+        refreshBtn.textContent = 'Refresh models';
+        search.placeholder = 'Search ' + CATALOG.models.length + ' models by name, provider or id...';
+        renderAll();
+      });
+    });
     actions.appendChild(saveBtn);
     actions.appendChild(cancelBtn);
+    actions.appendChild(refreshBtn);
     wrap.appendChild(actions);
 
     return wrap;

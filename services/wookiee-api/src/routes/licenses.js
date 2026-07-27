@@ -19,21 +19,21 @@ router.get('/', (req, res) => {
 });
 
 /**
- * The full model catalog for the admin UI's per-license picker. Each entry
- * carries `configured` so the UI can show (and grey out) models whose
- * provider has no key saved yet, rather than hiding them and leaving the
- * operator wondering where a model went.
+ * Live model catalogue for the admin UI's per-licence picker, fetched from
+ * each provider that has a key saved. `?refresh=1` bypasses the cache.
+ *
+ * Per-provider `error` and `configured` flags come back alongside the models
+ * so the UI can distinguish "no key saved yet" from "key saved but the
+ * provider rejected it / was unreachable" - those need different fixes, and
+ * collapsing both into an empty list would hide the second one entirely.
  */
-router.get('/models', (req, res) => {
-  const models = modelCatalog.listModels().map((m) => {
-    const parsed = modelCatalog.parseId(m.id);
-    const provider = parsed ? modelCatalog.PROVIDERS[parsed.provider] : null;
-    return {
-      ...m,
-      configured: provider ? Boolean(store.get(provider.key_setting).trim()) : false,
-    };
-  });
-  res.json({ models, providers: modelCatalog.listProviders() });
+router.get('/models', async (req, res) => {
+  const force = req.query.refresh === '1' || req.query.refresh === 'true';
+  const { models, errors, providers } = await modelCatalog.listConfiguredModels(
+    (k) => store.get(k),
+    { force }
+  );
+  res.json({ models, errors, providers });
 });
 
 router.post('/', (req, res) => {

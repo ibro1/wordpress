@@ -58,10 +58,14 @@ function list() {
 }
 
 /**
- * Normalizes an allowed-models value to an array of known catalog ids.
- * Unknown ids are dropped rather than stored, so a typo in the admin UI (or
- * a model later removed from the catalog) can't silently become a rule that
- * blocks every request for that license.
+ * Normalizes an allowed-models value to an array of well-formed catalogue
+ * ids (`<known provider>:<model>`), de-duplicated.
+ *
+ * Validates shape only, deliberately NOT membership of the live model list:
+ * that list is fetched from the providers and changes as they add/retire
+ * models, so checking against it here would mean a licence silently losing
+ * a saved model the day its provider renamed it. A stale id instead fails
+ * loudly at call time with the provider's own error message.
  */
 function sanitizeModels(models) {
   if (!Array.isArray(models)) {
@@ -69,7 +73,7 @@ function sanitizeModels(models) {
   }
   return models
     .map((m) => String(m || '').trim())
-    .filter((m) => m && modelCatalog.isKnownModel(m))
+    .filter((m) => m && modelCatalog.parseId(m))
     .filter((m, i, arr) => arr.indexOf(m) === i);
 }
 

@@ -764,7 +764,7 @@ function wookiee_build_content_prompt( $key, $brief ) {
 				. "Present the returns address as a clearly separated block, one line each for: business/trading name, street address, city, postcode, country - not as a single flowing sentence.";
 		}
 
-		return $prompt;
+		return wookiee_maybe_override( 'policy_' . $key, $prompt, array( 'brief' => $brief ) );
 	}
 
 	if ( 'cookie_pref' === $key ) {
@@ -863,7 +863,7 @@ function wookiee_build_content_prompt( $key, $brief ) {
  * path was used to get here.
  */
 function wookiee_build_custom_policy_prompt( $title, $custom_instruction ) {
-	return "Write a complete, ready-to-publish {$title} page for a UK online store, following these instructions from the store owner:\n\n"
+	$prompt = "Write a complete, ready-to-publish {$title} page for a UK online store, following these instructions from the store owner:\n\n"
 		. "--- OWNER'S INSTRUCTIONS ---\n{$custom_instruction}\n--- END INSTRUCTIONS ---\n\n"
 		. "Real business details to use (do not invent anything beyond this list):\n" . wookiee_business_details_block() . "\n\n"
 		. "Rules:\n"
@@ -871,6 +871,8 @@ function wookiee_build_custom_policy_prompt( $title, $custom_instruction ) {
 		. "- State the business's full legal/trading name and company registration number explicitly within the body text itself.\n"
 		. "- End with a short note that this policy should be reviewed by a qualified UK solicitor before being relied on, since it is not legal advice.\n"
 		. "- Output ONLY the finished page text as plain paragraphs separated by a blank line, starting with a single plain-text heading line. No markdown, no HTML, no commentary.";
+
+	return wookiee_maybe_override( 'policy_custom', $prompt, array( 'title' => $title, 'custom_instruction' => $custom_instruction ) );
 }
 
 /**
@@ -948,7 +950,7 @@ function wookiee_clear_audit_result( $post_id ) {
 }
 
 function wookiee_build_policy_audit_prompt( $title, $policy_text ) {
-	return "Act as a senior UK e-commerce compliance reviewer: a Google Merchant Center (GMC) policy reviewer, a UK solicitor specialising in consumer protection and e-commerce law, and a professional legal copywriter. Perform a compliance audit of the following policy page - do not just proofread it.\n\n"
+	$prompt = "Act as a senior UK e-commerce compliance reviewer: a Google Merchant Center (GMC) policy reviewer, a UK solicitor specialising in consumer protection and e-commerce law, and a professional legal copywriter. Perform a compliance audit of the following policy page - do not just proofread it.\n\n"
 		. "Policy page: {$title}\n\n"
 		. "--- POLICY TEXT ---\n{$policy_text}\n--- END POLICY TEXT ---\n\n"
 		. "Review against:\n"
@@ -969,6 +971,8 @@ function wookiee_build_policy_audit_prompt( $title, $policy_text ) {
 		. "MISSING INFORMATION: anything the business needs to supply that isn't in the text\n"
 		. "RECOMMENDATION: a short closing paragraph\n\n"
 		. "Be critical and specific. This is a QA report for a human to act on - do not rewrite the policy, only assess it.";
+
+	return wookiee_maybe_override( 'policy_audit', $prompt, array( 'title' => $title, 'policy_text' => $policy_text ) );
 }
 
 /**
@@ -1062,7 +1066,7 @@ function wookiee_build_policy_fix_prompt( $title, $current_text, $audit_report )
 		$prompt .= "\n\nState a specific refund timeframe (within 14 days of the return/cancellation being accepted) and note it may take a few extra days depending on the customer's bank. Replace any vague \"factors beyond our control\" wording on delivery with 2-3 concrete examples (courier delays, extreme weather, high demand). State that payments are processed through a PCI-DSS compliant provider and full card details are never stored on the store's own servers. Include a brief accessibility statement inviting customers to report any barrier via the contact email above.";
 	}
 
-	return $prompt;
+	return wookiee_maybe_override( 'policy_fix', $prompt, array( 'title' => $title, 'current_text' => $current_text, 'audit_report' => $audit_report ) );
 }
 
 /**

@@ -2,6 +2,7 @@ const express = require('express');
 const path = require('path');
 const { requireAdminAuth, requireApiAuth } = require('./auth');
 const { router: licensesRouter, activatePublic } = require('./routes/licenses');
+const { adminRouter: promptsAdminRouter, siteRouter: promptsSiteRouter } = require('./routes/prompts');
 
 const app = express();
 
@@ -31,8 +32,13 @@ app.get('/', requireAdminAuth, (req, res) => {
 });
 app.use('/settings', requireAdminAuth, require('./routes/settings'));
 app.use('/licenses', requireAdminAuth, licensesRouter);
+// Editing prompts is operator-only - a customer site must not be able to
+// read or rewrite the prompts driving every other customer's content. The
+// site-facing half of this feature is mounted under /site-prompts below.
+app.use('/prompts', requireAdminAuth, promptsAdminRouter);
 
 app.use('/llm', requireApiAuth, require('./routes/llm'));
+app.use('/site-prompts', requireApiAuth, promptsSiteRouter);
 app.use('/companies-house', requireApiAuth, require('./routes/companiesHouse'));
 app.use('/domains', requireApiAuth, require('./routes/spaceship'));
 app.use('/google-ads', requireApiAuth, require('./routes/googleAds'));

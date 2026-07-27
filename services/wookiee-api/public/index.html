@@ -52,6 +52,23 @@
   .provider-err { background: #fbe4e4; color: #a3272a; border-radius: 4px; padding: 6px 8px; font-size: 12px; margin-bottom: 8px; }
   .provider-warn { background: #fcf3d7; color: #7a5c00; border-radius: 4px; padding: 6px 8px; font-size: 12px; margin-bottom: 8px; }
   .model-meta { color: #646970; font-size: 11px; margin-left: 6px; }
+  .prompt-row { border: 1px solid #dcdcde; border-radius: 4px; margin-bottom: 8px; background: #fff; }
+  .prompt-head { display: flex; align-items: center; gap: 10px; padding: 10px 12px; cursor: pointer; }
+  .prompt-head:hover { background: #f6f7f7; }
+  .prompt-title { font-weight: 600; font-size: 13px; flex: 1; }
+  .prompt-state { font-size: 11px; padding: 1px 8px; border-radius: 10px; }
+  .prompt-state.default { background: #f0f0f1; color: #646970; }
+  .prompt-state.edited { background: #d4f4dd; color: #00622e; }
+  .prompt-state.orphan { background: #fbe4e4; color: #a3272a; }
+  .prompt-body { padding: 0 12px 12px; }
+  .prompt-body textarea { width: 100%; box-sizing: border-box; min-height: 320px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; line-height: 1.5; padding: 10px; border: 1px solid #8c8f94; border-radius: 4px; }
+  .prompt-vars { font-size: 12px; color: #646970; margin: 8px 0; }
+  .prompt-vars code { background: #f0f0f1; padding: 1px 5px; border-radius: 3px; cursor: pointer; }
+  .prompt-actions { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
+  .prompt-actions button { margin-top: 0; padding: 6px 14px; font-size: 13px; }
+  .prompt-msg { font-size: 12px; }
+  .prompt-msg.err { color: #a3272a; }
+  .prompt-msg.ok { color: #00622e; }
 </style>
 </head>
 <body>
@@ -75,6 +92,10 @@
     <thead><tr><th>Code</th><th>Label</th><th>Sites</th><th>AI models</th><th>Status</th><th></th></tr></thead>
     <tbody id="licenses-tbody"></tbody>
   </table>
+
+  <h2>AI prompts</h2>
+  <p class="description">The exact instructions sent to the model for each feature. Editing one changes it for every activated site. Leave a prompt untouched to keep tracking the theme's own version, which improves with each release.</p>
+  <div id="prompts-list"><p class="description">Loading…</p></div>
 
   <form id="settings-form"></form>
 
@@ -508,6 +529,7 @@
     // Catalogue first - the licence rows' model pickers need it, and
     // "configured" flags depend on which provider keys are saved.
     loadCatalog().then(loadLicenses);
+    loadPrompts();
   }
 
   function loadLicenses() {
@@ -649,6 +671,158 @@
       statusEl.textContent = 'Save failed - could not reach the server.';
     });
   });
+
+  // ---- AI prompts -----------------------------------------------------
+
+  function loadPrompts() {
+    var host = document.getElementById('prompts-list');
+    fetch('/prompts').then(function (r) { return r.json(); }).then(function (res) {
+      renderPrompts(res.prompts || []);
+    }).catch(function () {
+      host.innerHTML = '<p class="description">Could not load prompts.</p>';
+    });
+  }
+
+  function renderPrompts(prompts) {
+    var host = document.getElementById('prompts-list');
+    host.innerHTML = '';
+
+    if (!prompts.length) {
+      host.innerHTML = '<p class="description">No prompts published yet. Open any Wookiee screen in a connected WordPress site once - the theme publishes its prompts on load.</p>';
+      return;
+    }
+
+    prompts.forEach(function (p) {
+      var row = document.createElement('div');
+      row.className = 'prompt-row';
+
+      var head = document.createElement('div');
+      head.className = 'prompt-head';
+
+      var title = document.createElement('span');
+      title.className = 'prompt-title';
+      title.textContent = p.label;
+      head.appendChild(title);
+
+      var state = document.createElement('span');
+      if (p.orphaned) {
+        state.className = 'prompt-state orphan';
+        state.textContent = 'edited, no longer used';
+        state.title = 'The theme no longer publishes a prompt with this id, so this edit has no effect.';
+      } else if (p.overridden) {
+        state.className = 'prompt-state edited';
+        state.textContent = 'edited';
+      } else {
+        state.className = 'prompt-state default';
+        state.textContent = 'theme default';
+      }
+      head.appendChild(state);
+
+      var caret = document.createElement('span');
+      caret.textContent = '▾';
+      caret.style.color = '#646970';
+      head.appendChild(caret);
+
+      row.appendChild(head);
+
+      var body = document.createElement('div');
+      body.className = 'prompt-body';
+      body.hidden = true;
+
+      if (p.description) {
+        var desc = document.createElement('p');
+        desc.className = 'description';
+        desc.style.margin = '0 0 8px';
+        desc.textContent = p.description;
+        body.appendChild(desc);
+      }
+
+      var ta = document.createElement('textarea');
+      ta.value = p.overridden ? p.override_text : p.default_text;
+      ta.spellcheck = false;
+      body.appendChild(ta);
+
+      if (p.placeholders && p.placeholders.length) {
+        var vars = document.createElement('p');
+        vars.className = 'prompt-vars';
+        vars.appendChild(document.createTextNode('Variables (click to copy): '));
+        p.placeholders.forEach(function (name) {
+          var code = document.createElement('code');
+          code.textContent = '{{' + name + '}}';
+          code.title = (p.required_placeholders || []).indexOf(name) !== -1
+            ? 'Required - this prompt cannot be saved without it'
+            : 'Optional';
+          if ((p.required_placeholders || []).indexOf(name) !== -1) {
+            code.style.fontWeight = '700';
+          }
+          code.addEventListener('click', function () {
+            // Insert at the cursor rather than only copying - that's what
+            // the operator almost always wants after clicking one.
+            var start = ta.selectionStart, end = ta.selectionEnd;
+            ta.value = ta.value.slice(0, start) + code.textContent + ta.value.slice(end);
+            ta.focus();
+            ta.selectionStart = ta.selectionEnd = start + code.textContent.length;
+          });
+          vars.appendChild(code);
+          vars.appendChild(document.createTextNode(' '));
+        });
+        body.appendChild(vars);
+      }
+
+      var actions = document.createElement('div');
+      actions.className = 'prompt-actions';
+
+      var msg = document.createElement('span');
+      msg.className = 'prompt-msg';
+
+      var saveBtn = document.createElement('button');
+      saveBtn.type = 'button';
+      saveBtn.textContent = 'Save prompt';
+      saveBtn.addEventListener('click', function () {
+        msg.className = 'prompt-msg';
+        msg.textContent = 'Saving…';
+        fetch('/prompts/' + encodeURIComponent(p.id), {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: ta.value }),
+        }).then(function (r) { return r.json().then(function (b) { return { ok: r.ok, body: b }; }); })
+          .then(function (res) {
+            if (!res.ok) {
+              msg.className = 'prompt-msg err';
+              msg.textContent = res.body.error || 'Could not save.';
+              return;
+            }
+            renderPrompts(res.body.prompts || []);
+          });
+      });
+      actions.appendChild(saveBtn);
+
+      if (p.overridden) {
+        var resetBtn = document.createElement('button');
+        resetBtn.type = 'button';
+        resetBtn.className = 'secondary';
+        resetBtn.textContent = 'Reset to theme default';
+        resetBtn.addEventListener('click', function () {
+          if (!window.confirm('Discard your edit and go back to the theme default for "' + p.label + '"?')) { return; }
+          fetch('/prompts/' + encodeURIComponent(p.id) + '/reset', { method: 'POST' })
+            .then(function (r) { return r.json(); })
+            .then(function (res) { renderPrompts(res.prompts || []); });
+        });
+        actions.appendChild(resetBtn);
+      }
+
+      actions.appendChild(msg);
+      body.appendChild(actions);
+      row.appendChild(body);
+
+      head.addEventListener('click', function () {
+        body.hidden = !body.hidden;
+        caret.textContent = body.hidden ? '▾' : '▴';
+      });
+
+      host.appendChild(row);
+    });
+  }
 
   load();
 })();

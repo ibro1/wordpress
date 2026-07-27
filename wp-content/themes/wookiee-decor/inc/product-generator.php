@@ -483,6 +483,7 @@ function wookiee_generate_products_handler() {
  * both audits share one badge-parsing/UI pattern.
  */
 function wookiee_build_product_audit_prompt( $product_id ) {
+
 	$title              = get_the_title( $product_id );
 	$description        = wp_strip_all_tags( get_post_field( 'post_content', $product_id ) );
 	$short_description  = wp_strip_all_tags( get_post_field( 'post_excerpt', $product_id ) );
@@ -491,13 +492,25 @@ function wookiee_build_product_audit_prompt( $product_id ) {
 	$has_image          = has_post_thumbnail( $product_id );
 	$niche              = get_option( 'wookiee_niche_brief', '' );
 
-	return "Act as a Google Merchant Center (GMC) product-data policy reviewer, checking one UK ecommerce product listing before it goes live - do not just proofread it.\n\n"
+	$categories_str = ( ! empty( $categories ) && ! is_wp_error( $categories ) ) ? implode( ', ', $categories ) : '(none assigned)';
+
+	return wookiee_build_product_audit_prompt_from_data(
+		$title, $short_description, $description, $price, $categories_str, $has_image, $niche
+	);
+}
+
+/**
+ * Pure builder - takes the listing's values rather than reading them, so
+ * the prompt can be captured and overridden without a real product.
+ */
+function wookiee_build_product_audit_prompt_from_data( $title, $short_description, $description, $price, $categories_str, $has_image, $niche ) {
+	$prompt = "Act as a Google Merchant Center (GMC) product-data policy reviewer, checking one UK ecommerce product listing before it goes live - do not just proofread it.\n\n"
 		. "Store niche: \"{$niche}\"\n"
 		. "Product title: {$title}\n"
 		. "Short description: " . ( $short_description ? $short_description : '(none)' ) . "\n"
 		. "Full description: " . ( $description ? $description : '(none)' ) . "\n"
 		. "Price: £" . ( $price ? $price : '(not set)' ) . "\n"
-		. "Category: " . ( ! empty( $categories ) && ! is_wp_error( $categories ) ? implode( ', ', $categories ) : '(none assigned)' ) . "\n"
+		. "Category: {$categories_str}\n"
 		. "Featured image set: " . ( $has_image ? 'Yes' : 'No - no product photo currently attached' ) . "\n\n"
 		. "Review against Google Merchant Center's product data policies:\n"
 		. "- Title accuracy: no keyword stuffing, no ALL CAPS, no promotional text (e.g. \"free shipping\", \"% off\", \"best price\") baked into the title itself, and the title genuinely matches what's described/offered.\n"
@@ -519,6 +532,14 @@ function wookiee_build_product_audit_prompt( $product_id ) {
 		. "MISSING INFORMATION: anything needed that isn't in the data above\n"
 		. "RECOMMENDATION: a short closing paragraph\n\n"
 		. "Be critical and specific. This is a QA report for a human to act on - do not rewrite the listing, only assess it.";
+
+	return wookiee_maybe_override( 'product_audit', $prompt, array(
+		'title'       => $title,
+		'description' => $description,
+		'price'       => $price,
+		'niche'       => $niche,
+	) );
+
 }
 
 add_action( 'wp_ajax_wookiee_audit_product', 'wookiee_audit_product_handler' );
@@ -581,6 +602,52 @@ function wookiee_remember_concepts( array $titles ) {
 }
 
 /**
+ * Pure prompt builder for product concepts, split out from
+ * wookiee_ai_generate_product_ideas() so the prompt can be captured and
+ * overridden without triggering a real LLM call.
+ */
+function wookiee_build_product_ideas_prompt( $brief, $count, $keyword_data, $recent_concepts ) {
+	$has_keywords = ! is_wp_error( $keyword_data ) && ! empty( $keyword_data );
+
+	if ( $has_keywords ) {
+		$top   = array_slice( $keyword_data, 0, 30 );
+		$lines = array();
+		foreach ( $top as $k ) {
+			$cpc       = ( null !== $k['low_cpc_gbp'] && null !== $k['high_cpc_gbp'] ) ? ( '£' . $k['low_cpc_gbp'] . '-£' . $k['high_cpc_gbp'] . ' CPC' ) : 'CPC unknown';
+			$lines[]   = "- \"{$k['keyword']}\" - {$k['avg_monthly_searches']} avg monthly UK searches, {$k['competition']} competition, {$cpc}";
+		}
+
+		$prompt = "You are helping source real products for a single-niche UK ecommerce store from a wholesale/dropship catalog. The store's niche, in the owner's own words:\n\"" . $brief . "\"\n\n"
+			. "Real UK search-volume and cost-per-click data for this niche, from Google Ads Keyword Planner:\n" . implode( "\n", $lines ) . "\n\n"
+			. "Using ONLY the keywords listed above, pick exactly {$count} of the best ones to build this store's catalog around - prioritise genuine search demand (higher avg monthly searches) balanced against reasonable ad cost (lower CPC), while keeping the set feeling like one coherent niche catalog (2-4 categories total, not {$count} unique ones). Do not invent a keyword that isn't in the list above, and do not alter the wording of the keywords you choose.\n\n"
+			. "Respond with ONLY a raw JSON array containing EXACTLY {$count} element(s) (no markdown fences, no commentary before or after), where each element has exactly these keys:\n"
+			. "- \"title\": one of the exact keywords from the list above\n"
+			. "- \"category\": a short category name; reuse the same category string across concepts that belong together";
+	} else {
+		$exclude_note = '';
+		if ( ! empty( $recent_concepts ) ) {
+			$exclude_note = "\n\nThis store's catalog already includes these concepts - do not repeat any of them:\n- " . implode( "\n- ", array_slice( $recent_concepts, -30 ) ) . "\n";
+		}
+
+		$prompt = "You are helping source real products for a single-niche UK ecommerce store from a wholesale/dropship catalog. The store's niche, in the owner's own words:\n\"" . $brief . "\"\n"
+			. $exclude_note . "\n"
+			. "Generate exactly {$count} distinct product concepts this store's catalog should include - same niche, consistent quality tier, no duplicate concepts, forming 2-4 categories total, not {$count} unique ones. Do not reference or imitate any specific real-world brand or existing product listing.\n\n"
+			. "Each concept's title will be used as a search query against a real product catalog, so phrase it the way you'd search for that item - a few plain, common keywords (e.g. \"ceramic plant pot\"), not a stylized marketing title.\n\n"
+			. "Respond with ONLY a raw JSON array containing EXACTLY {$count} element(s) (no markdown fences, no commentary before or after), where each element has exactly these keys:\n"
+			. "- \"title\": the plain keyword search query for this product concept\n"
+			. "- \"category\": a short category name; reuse the same category string across concepts that belong together";
+	}
+
+	$prompt = wookiee_maybe_override(
+		$has_keywords ? 'product_ideas_keywords' : 'product_ideas',
+		$prompt,
+		array( 'brief' => $brief, 'count' => $count )
+	);
+
+	return $prompt;
+}
+
+/**
  * Calls the LLM and returns a plain array of {title, category} concepts
  * (plus real search-volume/CPC fields when Google Ads is configured),
  * or a WP_Error. Each "title" is deliberately a plain, keyword-style
@@ -622,34 +689,7 @@ function wookiee_ai_generate_product_ideas( $brief, $count ) {
 		$has_keywords = ! empty( $keyword_data );
 	}
 
-	if ( $has_keywords ) {
-		$top   = array_slice( $keyword_data, 0, 30 );
-		$lines = array();
-		foreach ( $top as $k ) {
-			$cpc       = ( null !== $k['low_cpc_gbp'] && null !== $k['high_cpc_gbp'] ) ? ( '£' . $k['low_cpc_gbp'] . '-£' . $k['high_cpc_gbp'] . ' CPC' ) : 'CPC unknown';
-			$lines[]   = "- \"{$k['keyword']}\" - {$k['avg_monthly_searches']} avg monthly UK searches, {$k['competition']} competition, {$cpc}";
-		}
-
-		$prompt = "You are helping source real products for a single-niche UK ecommerce store from a wholesale/dropship catalog. The store's niche, in the owner's own words:\n\"" . $brief . "\"\n\n"
-			. "Real UK search-volume and cost-per-click data for this niche, from Google Ads Keyword Planner:\n" . implode( "\n", $lines ) . "\n\n"
-			. "Using ONLY the keywords listed above, pick exactly {$count} of the best ones to build this store's catalog around - prioritise genuine search demand (higher avg monthly searches) balanced against reasonable ad cost (lower CPC), while keeping the set feeling like one coherent niche catalog (2-4 categories total, not {$count} unique ones). Do not invent a keyword that isn't in the list above, and do not alter the wording of the keywords you choose.\n\n"
-			. "Respond with ONLY a raw JSON array containing EXACTLY {$count} element(s) (no markdown fences, no commentary before or after), where each element has exactly these keys:\n"
-			. "- \"title\": one of the exact keywords from the list above\n"
-			. "- \"category\": a short category name; reuse the same category string across concepts that belong together";
-	} else {
-		$exclude_note = '';
-		if ( ! empty( $recent_concepts ) ) {
-			$exclude_note = "\n\nThis store's catalog already includes these concepts - do not repeat any of them:\n- " . implode( "\n- ", array_slice( $recent_concepts, -30 ) ) . "\n";
-		}
-
-		$prompt = "You are helping source real products for a single-niche UK ecommerce store from a wholesale/dropship catalog. The store's niche, in the owner's own words:\n\"" . $brief . "\"\n"
-			. $exclude_note . "\n"
-			. "Generate exactly {$count} distinct product concepts this store's catalog should include - same niche, consistent quality tier, no duplicate concepts, forming 2-4 categories total, not {$count} unique ones. Do not reference or imitate any specific real-world brand or existing product listing.\n\n"
-			. "Each concept's title will be used as a search query against a real product catalog, so phrase it the way you'd search for that item - a few plain, common keywords (e.g. \"ceramic plant pot\"), not a stylized marketing title.\n\n"
-			. "Respond with ONLY a raw JSON array containing EXACTLY {$count} element(s) (no markdown fences, no commentary before or after), where each element has exactly these keys:\n"
-			. "- \"title\": the plain keyword search query for this product concept\n"
-			. "- \"category\": a short category name; reuse the same category string across concepts that belong together";
-	}
+	$prompt = wookiee_build_product_ideas_prompt( $brief, $count, $keyword_data, $recent_concepts );
 
 	$text = wookiee_call_llm( $prompt, 1024 );
 	if ( is_wp_error( $text ) ) {

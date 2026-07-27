@@ -248,6 +248,46 @@ function wookiee_extract_supplier_specs( $product, $variant ) {
 }
 
 /**
+ * Pure prompt builder, split out from wookiee_ai_clean_supplier_product()
+ * so the prompt can be captured and overridden without an LLM call.
+ */
+function wookiee_build_supplier_import_prompt( $brief, $raw_title, $raw_description, $raw_category, $specs_block, $existing_list, $hint_line = '' ) {
+	$prompt = "Act as a UK ecommerce copywriter preparing a supplier-sourced product for Google Merchant Center and a UK storefront.\n\n"
+		. "Store niche: \"{$brief}\"\n\n"
+		. "Supplier's raw product data (do not invent anything beyond this - only clean up the presentation of this same real product):\n"
+		. "Title: {$raw_title}\n"
+		. "Description: {$raw_description}\n"
+		. "Supplier category: {$raw_category}\n"
+		. "Known specs from the supplier (the ONLY specification values you may state - do not invent any others):\n{$specs_block}\n\n"
+		. "Existing store categories: {$existing_list}\n"
+		. $hint_line . "\n"
+		. "Respond with exactly these six labelled sections, each label on its own line, nothing else:\n"
+		. "FIT: yes or no - does this product genuinely belong in a store with the niche described above?\n"
+		. "REASON: one short sentence explaining the FIT answer\n"
+		. "CLEAN_TITLE: a clear, accurate Google Merchant Center-compliant product title on one line - no keyword stuffing, no supplier/trade jargon (e.g. \"cross-border\"), no ALL CAPS, no promotional symbols\n"
+		. "CATEGORY: one line - prefer an existing store category from the list above if a good match exists, otherwise a short new category name\n"
+		. "SHORT_DESCRIPTION: one line, 1-2 sentences - a hook description for the cart/catalog view\n"
+		. "LONG_DESCRIPTION: the full product page description, written as several plain-text paragraphs separated by blank lines, in this order:\n"
+		. "  1. An overview paragraph - what it is, who it's for, the core benefit, in this niche's voice.\n"
+		. "  2. A \"Key features\" paragraph or list of short lines (one per line, starting with \"- \").\n"
+		. "  3. A \"Specifications\" list (one \"- Label: value\" line per spec) using ONLY the known specs given above - for any specification a real product page would normally list but wasn't provided (e.g. exact dimensions, weight, material), write \"- [Spec name]: Not specified by supplier\" instead of guessing a number.\n"
+		. "  4. A short \"How to use / install\" paragraph with generic, accurate guidance appropriate to this type of product (e.g. general mounting/assembly/care advice) - do not state specific measurements, hardware, or steps that weren't given.\n"
+		. "  5. A brief closing care/maintenance sentence if relevant to this product type.\n"
+		. "Do not invent features, materials, exact measurements, or claims beyond what the supplier's data and the known specs above provide.";
+
+	$prompt = wookiee_maybe_override( 'supplier_import', $prompt, array(
+		'brief'           => $brief,
+		'raw_title'       => $raw_title,
+		'raw_description' => $raw_description,
+		'raw_category'    => $raw_category,
+		'specs_block'     => $specs_block,
+		'existing_list'   => $existing_list,
+	) );
+
+	return $prompt;
+}
+
+/**
  * Runs a supplier's raw title/description through the LLM before import:
  * this is the GMC-compliance piece. Raw CJ listings are written by and
  * for cross-border sellers - keyword-stuffed titles ("Cross-border
@@ -293,28 +333,9 @@ function wookiee_ai_clean_supplier_product( $raw_title, $raw_description, $raw_c
 		$hint_line = "This product was sourced to fill the catalog's intended \"{$category_hint}\" category - use that (or the closest matching existing store category) unless the supplier data clearly makes it a poor fit.\n";
 	}
 
-	$prompt = "Act as a UK ecommerce copywriter preparing a supplier-sourced product for Google Merchant Center and a UK storefront.\n\n"
-		. "Store niche: \"{$brief}\"\n\n"
-		. "Supplier's raw product data (do not invent anything beyond this - only clean up the presentation of this same real product):\n"
-		. "Title: {$raw_title}\n"
-		. "Description: {$raw_description}\n"
-		. "Supplier category: {$raw_category}\n"
-		. "Known specs from the supplier (the ONLY specification values you may state - do not invent any others):\n{$specs_block}\n\n"
-		. "Existing store categories: {$existing_list}\n"
-		. $hint_line . "\n"
-		. "Respond with exactly these six labelled sections, each label on its own line, nothing else:\n"
-		. "FIT: yes or no - does this product genuinely belong in a store with the niche described above?\n"
-		. "REASON: one short sentence explaining the FIT answer\n"
-		. "CLEAN_TITLE: a clear, accurate Google Merchant Center-compliant product title on one line - no keyword stuffing, no supplier/trade jargon (e.g. \"cross-border\"), no ALL CAPS, no promotional symbols\n"
-		. "CATEGORY: one line - prefer an existing store category from the list above if a good match exists, otherwise a short new category name\n"
-		. "SHORT_DESCRIPTION: one line, 1-2 sentences - a hook description for the cart/catalog view\n"
-		. "LONG_DESCRIPTION: the full product page description, written as several plain-text paragraphs separated by blank lines, in this order:\n"
-		. "  1. An overview paragraph - what it is, who it's for, the core benefit, in this niche's voice.\n"
-		. "  2. A \"Key features\" paragraph or list of short lines (one per line, starting with \"- \").\n"
-		. "  3. A \"Specifications\" list (one \"- Label: value\" line per spec) using ONLY the known specs given above - for any specification a real product page would normally list but wasn't provided (e.g. exact dimensions, weight, material), write \"- [Spec name]: Not specified by supplier\" instead of guessing a number.\n"
-		. "  4. A short \"How to use / install\" paragraph with generic, accurate guidance appropriate to this type of product (e.g. general mounting/assembly/care advice) - do not state specific measurements, hardware, or steps that weren't given.\n"
-		. "  5. A brief closing care/maintenance sentence if relevant to this product type.\n"
-		. "Do not invent features, materials, exact measurements, or claims beyond what the supplier's data and the known specs above provide.";
+	$prompt = wookiee_build_supplier_import_prompt(
+		$brief, $raw_title, $raw_description, $raw_category, $specs_block, $existing_list, $hint_line
+	);
 
 	$text = wookiee_call_llm( $prompt, 1400 );
 	if ( is_wp_error( $text ) ) {

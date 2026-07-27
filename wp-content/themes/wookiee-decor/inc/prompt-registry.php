@@ -73,6 +73,42 @@ function wookiee_prompt_registry() {
 		'required'     => array( 'title', 'custom_instruction' ),
 	);
 
+	/*
+	 * Two separate product-idea slots, not one. The generator sends a
+	 * materially different prompt when real Google Ads keyword data is
+	 * available (pick from these exact keywords, ranked by search volume vs
+	 * CPC) than when it isn't (invent concepts for the niche). Merging them
+	 * would force the operator to write one prompt that has to cover both
+	 * situations, which is how you get a prompt that serves neither well.
+	 */
+	$registry['product_ideas_keywords'] = array(
+		'label'        => 'Product ideas (with keyword data)',
+		'description'  => 'Chooses which products to stock from real Google Ads keyword volume and CPC data. Used when keyword research has been run.',
+		'placeholders' => array( 'brief', 'count' ),
+		'required'     => array(),
+	);
+
+	$registry['product_ideas'] = array(
+		'label'        => 'Product ideas (no keyword data)',
+		'description'  => 'Invents coherent product concepts for the niche. Used when no keyword research is available.',
+		'placeholders' => array( 'brief', 'count' ),
+		'required'     => array(),
+	);
+
+	$registry['product_audit'] = array(
+		'label'        => 'Product listing audit',
+		'description'  => 'Reviews one product listing against Google Merchant Center product-data policy before it goes live.',
+		'placeholders' => array( 'title', 'description', 'price', 'niche' ),
+		'required'     => array(),
+	);
+
+	$registry['supplier_import'] = array(
+		'label'        => 'Supplier import rewrite',
+		'description'  => 'Judges whether a supplier product fits the niche, and rewrites its title/description into the store\'s voice without inventing facts.',
+		'placeholders' => array( 'brief', 'raw_title', 'raw_description', 'raw_category', 'specs_block', 'existing_list' ),
+		'required'     => array(),
+	);
+
 	return $registry;
 }
 
@@ -242,5 +278,56 @@ function wookiee_prompt_capture_builders() {
 		'policy_audit'    => function () { return wookiee_build_policy_audit_prompt( '{{title}}', '{{policy_text}}' ); },
 		'policy_fix'      => function () { return wookiee_build_policy_fix_prompt( '{{title}}', '{{current_text}}', '{{audit_report}}' ); },
 		'policy_custom'   => function () { return wookiee_build_custom_policy_prompt( '{{title}}', '{{custom_instruction}}' ); },
+
+		/*
+		 * The two product-idea branches are selected inside the builder by
+		 * whether keyword data is present, so capture drives each one by
+		 * passing a representative value: a single fake keyword row for the
+		 * keyword-led variant, an empty array for the fallback.
+		 */
+		'product_ideas_keywords' => function () {
+			return wookiee_build_product_ideas_prompt(
+				'{{brief}}',
+				'{{count}}',
+				array(
+					array(
+						'keyword'              => '{{keyword}}',
+						'avg_monthly_searches' => '{{searches}}',
+						'competition'          => '{{competition}}',
+						'low_cpc_gbp'          => null,
+						'high_cpc_gbp'         => null,
+					),
+				),
+				array()
+			);
+		},
+		'product_ideas' => function () {
+			return wookiee_build_product_ideas_prompt( '{{brief}}', '{{count}}', array(), array() );
+		},
+
+		'product_audit' => function () {
+			return wookiee_build_product_audit_prompt_from_data(
+				'{{title}}',
+				'{{short_description}}',
+				'{{description}}',
+				'{{price}}',
+				'{{categories}}',
+				true,
+				'{{niche}}'
+			);
+		},
+
+		'supplier_import' => function () {
+			return wookiee_build_supplier_import_prompt(
+				'{{brief}}',
+				'{{raw_title}}',
+				'{{raw_description}}',
+				'{{raw_category}}',
+				'{{specs_block}}',
+				'{{existing_list}}',
+				''
+			);
+		},
 	);
 }
+

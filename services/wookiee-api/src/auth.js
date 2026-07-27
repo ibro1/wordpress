@@ -60,12 +60,22 @@ function requireAdminAuth(req, res, next) {
 
 function requireApiAuth(req, res, next) {
   if (isMasterOrAdmin(req)) {
+    // The operator is not acting on behalf of any one license, so there's no
+    // per-license model allowlist to apply - req.license stays null and
+    // routes/llm.js treats that as unrestricted.
+    req.license = null;
+    req.isOperator = true;
     return next();
   }
 
   const code = (req.get('X-Api-Key') || '').trim().toUpperCase();
   const domain = (req.get('X-Site-Domain') || '').trim().toLowerCase();
   if (code && domain && licenseStore.isActivatedForDomain(code, domain)) {
+    // Attached so downstream routes can enforce whatever this specific
+    // license is entitled to (currently: which LLM models it may use)
+    // without re-reading the store or re-parsing headers.
+    req.license = { code, entry: licenseStore.get(code) };
+    req.isOperator = false;
     return next();
   }
 

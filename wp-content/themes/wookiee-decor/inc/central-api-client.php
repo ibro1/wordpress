@@ -136,6 +136,59 @@ function wookiee_central_api_request( $method, $path, $body = null ) {
 }
 
 /**
+ * The AI models this site's activation code is allowed to use, as
+ * value => label pairs for a settings dropdown.
+ *
+ * The backend decides this per activation code, so the list is whatever the
+ * operator granted this customer - and it only ever contains models whose
+ * provider actually has a key saved centrally, so anything offered here will
+ * really work. Cached in a transient because it's read on every Wookiee
+ * Settings page render and changes only when the operator edits the licence.
+ *
+ * Returns an empty array on any failure (not activated, backend down, older
+ * backend without the endpoint) - callers fall back to letting the backend
+ * pick, which is the pre-existing behaviour.
+ */
+function wookiee_central_api_models( $force_refresh = false ) {
+	if ( ! wookiee_central_api_configured() ) {
+		return array();
+	}
+
+	$cache_key = 'wookiee_llm_models';
+
+	if ( ! $force_refresh ) {
+		$cached = get_transient( $cache_key );
+		if ( is_array( $cached ) ) {
+			return $cached;
+		}
+	}
+
+	$result = wookiee_central_api_request( 'GET', '/llm/models' );
+	if ( is_wp_error( $result ) || ! isset( $result['models'] ) || ! is_array( $result['models'] ) ) {
+		// Cache the empty result briefly too, so a down backend doesn't mean
+		// an HTTP round trip on every single admin page load.
+		set_transient( $cache_key, array(), 5 * MINUTE_IN_SECONDS );
+		return array();
+	}
+
+	$models = array();
+	foreach ( $result['models'] as $model ) {
+		if ( empty( $model['id'] ) ) {
+			continue;
+		}
+		$label = ! empty( $model['label'] ) ? $model['label'] : $model['id'];
+		if ( isset( $model['provider_label'] ) && '' !== $model['provider_label'] ) {
+			$label .= ' (' . $model['provider_label'] . ')';
+		}
+		$models[ (string) $model['id'] ] = $label;
+	}
+
+	set_transient( $cache_key, $models, HOUR_IN_SECONDS );
+
+	return $models;
+}
+
+/**
  * Validates an activation code against the backend's public activate
  * endpoint (no X-Api-Key needed - that's the point of this call) and only
  * saves it locally on success. A code is rejected if it doesn't exist, has
@@ -175,6 +228,11 @@ function wookiee_activate_backend_handler() {
 	}
 
 	update_option( 'wookiee_setting_wookiee_api_shared_secret', $code );
+
+	// The allowed-model list is per activation code, so a newly entered code
+	// almost certainly grants a different set - drop the cache rather than
+	// show the previous code's models for up to an hour.
+	delete_transient( 'wookiee_llm_models' );
 
 	wp_send_json_success();
 }

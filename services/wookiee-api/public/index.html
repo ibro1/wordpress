@@ -30,6 +30,18 @@
   .new-license-row { display: flex; gap: 8px; align-items: flex-end; margin-top: 12px; }
   .new-license-row > div { flex: 1; }
   .new-license-row button { margin-top: 0; }
+  .models-cell { font-size: 12px; color: #646970; }
+  .model-editor { background: #f6f7f7; border: 1px solid #dcdcde; border-radius: 4px; padding: 12px; margin: 4px 0; }
+  .model-editor h4 { margin: 0 0 8px; font-size: 13px; }
+  .model-provider { margin-bottom: 10px; }
+  .model-provider > strong { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: #646970; margin-bottom: 4px; }
+  .model-opt { display: block; font-weight: 400; font-size: 13px; margin: 2px 0; }
+  .model-opt input { margin-right: 6px; }
+  .model-opt.unconfigured { color: #a7aaad; }
+  .model-opt .price { color: #646970; font-size: 11px; margin-left: 6px; }
+  .model-editor .actions { margin-top: 10px; display: flex; gap: 8px; align-items: center; }
+  .model-editor .actions button { margin-top: 0; padding: 6px 14px; font-size: 13px; }
+  .model-editor select { padding: 6px; border: 1px solid #8c8f94; border-radius: 4px; font-size: 13px; }
 </style>
 </head>
 <body>
@@ -50,7 +62,7 @@
     <button type="button" id="new-license-btn">Generate code</button>
   </div>
   <table class="licenses" id="licenses-table">
-    <thead><tr><th>Code</th><th>Label</th><th>Sites</th><th>Status</th><th></th></tr></thead>
+    <thead><tr><th>Code</th><th>Label</th><th>Sites</th><th>AI models</th><th>Status</th><th></th></tr></thead>
     <tbody id="licenses-tbody"></tbody>
   </table>
 
@@ -65,10 +77,17 @@
     { title: 'Companies House', fields: [
       ['companies_house_api_key', 'Companies House API key', 'password'],
     ] },
-    { title: 'LLM (page/product AI generation)', fields: [
-      ['llm_api_key', 'LLM API key', 'password'],
-      ['llm_base_url', 'LLM base URL', 'text'],
-      ['llm_default_model', 'LLM default model', 'text'],
+    { title: 'LLM provider keys', note: 'Save a key for each provider you want available. Models from a provider with no key saved are greyed out in the per-licence model picker above and never offered to a site.', fields: [
+      ['llm_openrouter_api_key', 'OpenRouter API key', 'password'],
+      ['llm_openai_api_key', 'OpenAI API key', 'password'],
+      ['llm_anthropic_api_key', 'Anthropic API key', 'password'],
+      ['llm_google_api_key', 'Google Gemini API key', 'password'],
+      ['llm_deepseek_api_key', 'DeepSeek API key', 'password'],
+    ] },
+    { title: 'LLM fallback (legacy / custom endpoint)', note: 'Used when a site requests generation without naming a model and its licence has no default set. Also the way to point at any other OpenAI-compatible endpoint that is not in the model catalogue (self-hosted vLLM, Groq, etc.).', fields: [
+      ['llm_api_key', 'Fallback LLM API key', 'password'],
+      ['llm_base_url', 'Fallback LLM base URL', 'text'],
+      ['llm_default_model', 'Fallback model name', 'text'],
     ] },
     { title: 'CJ Dropshipping', fields: [
       ['cj_email', 'CJ Dropshipping account email', 'email'],
@@ -101,6 +120,143 @@
   var form = document.getElementById('settings-form');
   var statusEl = document.getElementById('status');
 
+  // Model catalogue, fetched once from /licenses/models and reused by every
+  // per-licence picker. Kept in a module-level cache so opening the editor
+  // on ten different licences doesn't refetch it ten times.
+  var CATALOG = { models: [], providers: [] };
+
+  function loadCatalog() {
+    return fetch('/licenses/models')
+      .then(function (r) { return r.json(); })
+      .then(function (res) {
+        CATALOG = { models: res.models || [], providers: res.providers || [] };
+      })
+      .catch(function () { /* picker degrades to "All models" text; not fatal */ });
+  }
+
+  function providerLabel(key) {
+    for (var i = 0; i < CATALOG.providers.length; i++) {
+      if (CATALOG.providers[i].key === key) { return CATALOG.providers[i].label; }
+    }
+    return key;
+  }
+
+  /**
+   * Builds the checkbox list + default-model select for one licence.
+   * onSave receives { allowed_models, default_model }.
+   */
+  function buildModelEditor(entry, onSave, onCancel) {
+    var wrap = document.createElement('div');
+    wrap.className = 'model-editor';
+
+    var h4 = document.createElement('h4');
+    h4.textContent = 'Models this code may use';
+    wrap.appendChild(h4);
+
+    var hint = document.createElement('p');
+    hint.className = 'description';
+    hint.style.margin = '0 0 10px';
+    hint.textContent = 'Tick none to allow every model. Greyed-out models have no provider key saved yet.';
+    wrap.appendChild(hint);
+
+    var selected = (entry.allowed_models || []).slice();
+    var boxes = [];
+
+    // Group by provider so the operator sees "everything I can reach through
+    // OpenRouter" vs "everything I'm billed for directly" as distinct blocks.
+    var byProvider = {};
+    CATALOG.models.forEach(function (m) {
+      if (!byProvider[m.provider]) { byProvider[m.provider] = []; }
+      byProvider[m.provider].push(m);
+    });
+
+    Object.keys(byProvider).forEach(function (pk) {
+      var group = document.createElement('div');
+      group.className = 'model-provider';
+      var strong = document.createElement('strong');
+      strong.textContent = providerLabel(pk);
+      group.appendChild(strong);
+
+      byProvider[pk].forEach(function (m) {
+        var lab = document.createElement('label');
+        lab.className = 'model-opt' + (m.configured ? '' : ' unconfigured');
+        var cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.value = m.id;
+        cb.checked = selected.indexOf(m.id) !== -1;
+        cb.addEventListener('change', syncDefaults);
+        boxes.push(cb);
+        lab.appendChild(cb);
+        lab.appendChild(document.createTextNode(m.label));
+        var price = document.createElement('span');
+        price.className = 'price';
+        price.textContent = '$' + m.in.toFixed(2) + ' in / $' + m.out.toFixed(2) + ' out per 1M';
+        lab.appendChild(price);
+        if (!m.configured) {
+          lab.title = 'No API key saved for ' + providerLabel(pk) + ' yet.';
+        }
+        group.appendChild(lab);
+      });
+
+      wrap.appendChild(group);
+    });
+
+    var defLabel = document.createElement('label');
+    defLabel.textContent = 'Default model';
+    defLabel.style.marginTop = '10px';
+    wrap.appendChild(defLabel);
+    var defSelect = document.createElement('select');
+    wrap.appendChild(defSelect);
+
+    // The default must always be one of the currently-ticked models (or the
+    // global fallback when nothing is ticked) - rebuilt on every tick so the
+    // two controls can never disagree.
+    function syncDefaults() {
+      var ticked = boxes.filter(function (b) { return b.checked; }).map(function (b) { return b.value; });
+      var previous = defSelect.value;
+      defSelect.innerHTML = '';
+
+      var noneOpt = document.createElement('option');
+      noneOpt.value = '';
+      noneOpt.textContent = ticked.length ? '(first ticked model)' : '(server fallback settings)';
+      defSelect.appendChild(noneOpt);
+
+      ticked.forEach(function (id) {
+        var m = CATALOG.models.filter(function (x) { return x.id === id; })[0];
+        var opt = document.createElement('option');
+        opt.value = id;
+        opt.textContent = m ? m.label : id;
+        defSelect.appendChild(opt);
+      });
+
+      if (ticked.indexOf(previous) !== -1) { defSelect.value = previous; }
+      else if (ticked.indexOf(entry.default_model) !== -1) { defSelect.value = entry.default_model; }
+    }
+    syncDefaults();
+
+    var actions = document.createElement('div');
+    actions.className = 'actions';
+    var saveBtn = document.createElement('button');
+    saveBtn.type = 'button';
+    saveBtn.textContent = 'Save models';
+    saveBtn.addEventListener('click', function () {
+      onSave({
+        allowed_models: boxes.filter(function (b) { return b.checked; }).map(function (b) { return b.value; }),
+        default_model: defSelect.value,
+      });
+    });
+    var cancelBtn = document.createElement('button');
+    cancelBtn.type = 'button';
+    cancelBtn.className = 'secondary';
+    cancelBtn.textContent = 'Cancel';
+    cancelBtn.addEventListener('click', onCancel);
+    actions.appendChild(saveBtn);
+    actions.appendChild(cancelBtn);
+    wrap.appendChild(actions);
+
+    return wrap;
+  }
+
   function fieldId(key) { return 'field-' + key; }
 
   function buildForm(values) {
@@ -109,6 +265,13 @@
       var h2 = document.createElement('h2');
       h2.textContent = section.title;
       form.appendChild(h2);
+
+      if (section.note) {
+        var noteEl = document.createElement('p');
+        noteEl.className = 'description';
+        noteEl.textContent = section.note;
+        form.appendChild(noteEl);
+      }
 
       if (section.title === 'Google Ads') {
         var gaStatusWrap = document.createElement('p');
@@ -188,7 +351,9 @@
     }).catch(function () {
       statusEl.textContent = 'Failed to load settings.';
     });
-    loadLicenses();
+    // Catalogue first - the licence rows' model pickers need it, and
+    // "configured" flags depend on which provider keys are saved.
+    loadCatalog().then(loadLicenses);
   }
 
   function loadLicenses() {
@@ -217,6 +382,17 @@
         }
         tr.appendChild(sitesTd);
 
+        var modelsTd = document.createElement('td');
+        modelsTd.className = 'models-cell';
+        var allowed = entry.allowed_models || [];
+        if (!allowed.length) {
+          modelsTd.textContent = 'All';
+        } else {
+          modelsTd.textContent = allowed.length + ' selected';
+          modelsTd.title = allowed.join('\n');
+        }
+        tr.appendChild(modelsTd);
+
         var statusTd = document.createElement('td');
         var badge = document.createElement('span');
         badge.className = 'license-badge ' + (entry.active ? 'active' : 'revoked');
@@ -226,6 +402,41 @@
 
         var actionTd = document.createElement('td');
         if (entry.active) {
+          var editBtn = document.createElement('button');
+          editBtn.type = 'button';
+          editBtn.className = 'secondary';
+          editBtn.style.marginTop = '0';
+          editBtn.style.marginRight = '6px';
+          editBtn.textContent = 'Models';
+          editBtn.addEventListener('click', function () {
+            // Toggle: a second click on an open editor closes it.
+            var existing = tr.nextSibling;
+            if (existing && existing.getAttribute && existing.getAttribute('data-editor-for') === code) {
+              existing.parentNode.removeChild(existing);
+              return;
+            }
+            var editorRow = document.createElement('tr');
+            editorRow.setAttribute('data-editor-for', code);
+            var editorTd = document.createElement('td');
+            editorTd.colSpan = 6;
+            editorTd.appendChild(buildModelEditor(entry, function (payload) {
+              fetch('/licenses/' + encodeURIComponent(code), {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+              }).then(function (r) { return r.json().then(function (b) { return { ok: r.ok, body: b }; }); })
+                .then(function (res) {
+                  if (!res.ok) { window.alert(res.body.error || 'Could not save models.'); return; }
+                  loadLicenses();
+                });
+            }, function () {
+              editorRow.parentNode.removeChild(editorRow);
+            }));
+            editorRow.appendChild(editorTd);
+            tr.parentNode.insertBefore(editorRow, tr.nextSibling);
+          });
+          actionTd.appendChild(editBtn);
+
           var revokeBtn = document.createElement('button');
           revokeBtn.type = 'button';
           revokeBtn.className = 'secondary';
@@ -277,6 +488,9 @@
     }).then(function (r) { return r.json(); }).then(function (res) {
       statusEl.textContent = 'Saved.';
       buildForm(res.values || {});
+      // Saving a provider key flips that provider's models from greyed-out
+      // to selectable, so both the catalogue and the rows have to re-read.
+      loadCatalog().then(loadLicenses);
     }).catch(function () {
       statusEl.textContent = 'Save failed - could not reach the server.';
     });

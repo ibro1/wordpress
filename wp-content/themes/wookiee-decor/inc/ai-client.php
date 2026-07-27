@@ -22,7 +22,18 @@ defined( 'ABSPATH' ) || exit;
  */
 function wookiee_call_llm( $prompt, $max_tokens = 2048 ) {
 	if ( wookiee_central_api_configured() ) {
-		$result = wookiee_central_api_request( 'POST', '/llm/generate', array( 'prompt' => $prompt, 'max_tokens' => $max_tokens ) );
+		$body = array( 'prompt' => $prompt, 'max_tokens' => $max_tokens );
+
+		// Only sent when the site owner actually picked a model. Omitting it
+		// lets the backend fall back to this activation code's assigned
+		// default, which is what every install did before model selection
+		// existed - so this stays a no-op for anyone who never touches it.
+		$model = trim( (string) wookiee_get_setting( 'llm_model' ) );
+		if ( '' !== $model ) {
+			$body['model'] = $model;
+		}
+
+		$result = wookiee_central_api_request( 'POST', '/llm/generate', $body );
 		if ( is_wp_error( $result ) ) {
 			return $result;
 		}

@@ -21,9 +21,22 @@ const SECRETS_FILE = path.join(DATA_DIR, 'secrets.enc');
 // set of keys this service is meant to centralize away from wp_options.
 const SECRET_KEYS = [
   'companies_house_api_key',
+  // Legacy single-endpoint config. Still fully supported: it's what every
+  // already-activated site uses, and it stays the fallback for any request
+  // that doesn't name a catalog model (see routes/llm.js). Also the escape
+  // hatch for an OpenAI-compatible provider that isn't in modelCatalog.js
+  // (self-hosted vLLM, Groq, etc.).
   'llm_api_key',
   'llm_base_url',
   'llm_default_model',
+  // Per-provider keys for the model catalog (src/modelCatalog.js). Each
+  // provider's base URL is fixed in that registry, so only the key is
+  // stored here.
+  'llm_openrouter_api_key',
+  'llm_openai_api_key',
+  'llm_anthropic_api_key',
+  'llm_google_api_key',
+  'llm_deepseek_api_key',
   'cj_email',
   'cj_api_key',
   'cloudinary_cloud_name',

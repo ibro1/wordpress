@@ -16,9 +16,34 @@
 
 defined( 'ABSPATH' ) || exit;
 
+/**
+ * Options for the "AI model" dropdown: whichever models the backend says
+ * this site's activation code is entitled to, plus a leading "let the
+ * backend choose" entry.
+ *
+ * That first entry is the default and matters for compatibility - picking it
+ * sends no model at all, which is exactly what this theme did before the
+ * multi-model feature existed, so the backend applies the licence's own
+ * default (or its legacy single-endpoint settings). A site that never opens
+ * this dropdown keeps behaving precisely as it used to.
+ */
+function wookiee_llm_model_options() {
+	$options = array( '' => 'Automatic (use the model assigned to this activation code)' );
+
+	if ( function_exists( 'wookiee_central_api_models' ) ) {
+		foreach ( wookiee_central_api_models() as $id => $label ) {
+			$options[ $id ] = $label;
+		}
+	}
+
+	return $options;
+}
+
 function wookiee_settings_fields() {
 	return array(
 		'contact_email'      => array( 'label' => 'Contact email', 'default' => 'info@wookied.com', 'type' => 'email' ),
+		// (llm_model's options are built by wookiee_llm_model_options() below,
+		// from whatever the backend says this activation code may use.)
 		'contact_phone'      => array( 'label' => 'Contact phone', 'default' => '+44 20 8472 6126', 'type' => 'text' ),
 		'support_hours'      => array( 'label' => 'Support hours', 'default' => 'Monday to Friday, 9am - 5pm', 'type' => 'text' ),
 		'business_name'      => array( 'label' => 'Registered company name', 'default' => 'Wookiee Decor Ltd', 'type' => 'text' ),
@@ -27,6 +52,7 @@ function wookiee_settings_fields() {
 		'companies_house_api_key' => array( 'label' => 'Companies House API key', 'default' => '', 'type' => 'password' ),
 		'spaceship_api_key'    => array( 'label' => 'Spaceship API key', 'default' => '', 'type' => 'password' ),
 		'spaceship_api_secret' => array( 'label' => 'Spaceship API secret', 'default' => '', 'type' => 'password' ),
+		'llm_model'          => array( 'label' => 'AI model', 'default' => '', 'type' => 'select', 'options' => wookiee_llm_model_options() ),
 		'llm_api_key'        => array( 'label' => 'LLM API key', 'default' => '', 'type' => 'password' ),
 		'llm_base_url'       => array( 'label' => 'LLM base URL', 'default' => 'https://api.openai.com/v1', 'type' => 'text' ),
 		'llm_default_model'  => array( 'label' => 'LLM default model', 'default' => 'gpt-4o-mini', 'type' => 'text' ),
@@ -161,7 +187,7 @@ function wookiee_settings_tabs() {
 		),
 		'integrations' => array(
 			'label'  => 'Activation',
-			'fields' => array( 'llm_api_key', 'llm_base_url', 'llm_default_model', 'cj_email', 'cj_api_key', 'bg_removal_provider', 'cloudinary_cloud_name', 'cloudinary_api_key', 'cloudinary_api_secret', 'rembg_endpoint_url', 'google_ads_developer_token', 'google_ads_client_id', 'google_ads_client_secret', 'google_ads_refresh_token', 'google_ads_customer_id', 'google_ads_login_customer_id', 'spaceship_api_key', 'spaceship_api_secret' ),
+			'fields' => array( 'llm_model', 'llm_api_key', 'llm_base_url', 'llm_default_model', 'cj_email', 'cj_api_key', 'bg_removal_provider', 'cloudinary_cloud_name', 'cloudinary_api_key', 'cloudinary_api_secret', 'rembg_endpoint_url', 'google_ads_developer_token', 'google_ads_client_id', 'google_ads_client_secret', 'google_ads_refresh_token', 'google_ads_customer_id', 'google_ads_login_customer_id', 'spaceship_api_key', 'spaceship_api_secret' ),
 		),
 	);
 }
@@ -251,6 +277,16 @@ function wookiee_render_settings_field_row( $key, $field ) {
 			<?php endif; ?>
 			<?php if ( 'cj_api_key' === $key ) : ?>
 				<p class="description">From your CJ Dropshipping account: My CJ → API Setting. Used with the email above to authenticate the <a href="<?php echo esc_url( admin_url( 'admin.php?page=wookiee-supplier-catalog' ) ); ?>">Wookiee Supplier Catalog</a> page.</p>
+			<?php endif; ?>
+			<?php if ( 'llm_model' === $key ) : ?>
+				<?php $wookiee_model_count = count( wookiee_llm_model_options() ) - 1; ?>
+				<?php if ( ! wookiee_central_api_configured() ) : ?>
+					<p class="description">Enter an activation code (Settings &rsaquo; Activation) to choose from the AI models included with your plan. Without it, the fallback key/base URL/model below are used instead.</p>
+				<?php elseif ( $wookiee_model_count < 1 ) : ?>
+					<p class="description">No models are currently assigned to your activation code — generation will use whatever default your provider has set for it. Contact support if you expected a choice here.</p>
+				<?php else : ?>
+					<p class="description">Which AI model powers the Product Generator, Content Generator, and policy audit. <?php echo esc_html( $wookiee_model_count ); ?> model<?php echo 1 === $wookiee_model_count ? '' : 's'; ?> available on your activation code. Leave on Automatic unless you have a reason to pin a specific one.</p>
+				<?php endif; ?>
 			<?php endif; ?>
 			<?php if ( 'llm_api_key' === $key ) : ?>
 				<p class="description">Powers the Product Generator, Content Generator, and policy audit. Works with any OpenAI-compatible provider (OpenAI itself, OpenRouter, Groq, a self-hosted vLLM/llama.cpp server, etc.) — just match the base URL and model below to whichever provider this key is for.</p>

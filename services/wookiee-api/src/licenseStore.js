@@ -19,6 +19,7 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const modelCatalog = require('./modelCatalog');
 
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, '..', 'data');
 const LICENSES_FILE = path.join(DATA_DIR, 'licenses.json');
@@ -56,12 +57,30 @@ function list() {
   return readAll();
 }
 
-function create({ maxActivations = 1, label = '' } = {}) {
+/**
+ * Normalizes an allowed-models value to an array of known catalog ids.
+ * Unknown ids are dropped rather than stored, so a typo in the admin UI (or
+ * a model later removed from the catalog) can't silently become a rule that
+ * blocks every request for that license.
+ */
+function sanitizeModels(models) {
+  if (!Array.isArray(models)) {
+    return [];
+  }
+  return models
+    .map((m) => String(m || '').trim())
+    .filter((m) => m && modelCatalog.isKnownModel(m))
+    .filter((m, i, arr) => arr.indexOf(m) === i);
+}
+
+function create({ maxActivations = 1, label = '', allowedModels = [], defaultModel = '' } = {}) {
   const codes = readAll();
   let code;
   do {
     code = generateCode();
   } while (codes[code]); // astronomically unlikely, but don't silently collide
+
+  const allowed = sanitizeModels(allowedModels);
 
   codes[code] = {
     max_activations: Math.max(1, parseInt(maxActivations, 10) || 1),
@@ -69,9 +88,89 @@ function create({ maxActivations = 1, label = '' } = {}) {
     active: true,
     created_at: new Date().toISOString(),
     activations: [],
+    // Empty array means "no restriction" - see isModelAllowed(). New codes
+    // default to unrestricted so generating one without touching the model
+    // picker behaves exactly like it did before this feature existed.
+    allowed_models: allowed,
+    default_model: allowed.includes(defaultModel) ? defaultModel : (allowed[0] || ''),
   };
   writeAll(codes);
   return { code, ...codes[code] };
+}
+
+/**
+ * Partial update - only the fields actually present in $patch are touched,
+ * so the admin UI can save just the model list without having to round-trip
+ * (and risk clobbering) the label/max_activations/activations it didn't edit.
+ */
+function update(code, patch = {}) {
+  const codes = readAll();
+  const entry = codes[code];
+  if (!entry) {
+    return { ok: false, error: 'Unknown activation code.' };
+  }
+
+  if (Object.prototype.hasOwnProperty.call(patch, 'label')) {
+    entry.label = String(patch.label || '');
+  }
+
+  if (Object.prototype.hasOwnProperty.call(patch, 'maxActivations')) {
+    const next = Math.max(1, parseInt(patch.maxActivations, 10) || 1);
+    // Refuse to set a cap below the number of sites already using this code -
+    // silently doing so would leave those sites activated but over quota,
+    // an inconsistent state nothing else in the store expects.
+    if (next < entry.activations.length) {
+      return {
+        ok: false,
+        error: `This code is already activated on ${entry.activations.length} site(s); the maximum cannot be set lower than that.`,
+      };
+    }
+    entry.max_activations = next;
+  }
+
+  if (Object.prototype.hasOwnProperty.call(patch, 'allowedModels')) {
+    entry.allowed_models = sanitizeModels(patch.allowedModels);
+  }
+
+  if (Object.prototype.hasOwnProperty.call(patch, 'defaultModel')) {
+    const wanted = String(patch.defaultModel || '').trim();
+    const allowed = entry.allowed_models || [];
+    entry.default_model = (!allowed.length || allowed.includes(wanted)) ? wanted : '';
+  }
+
+  // A default that's no longer in the allowed list would route requests to a
+  // model the license can't use - re-point it at the first allowed model.
+  if (entry.allowed_models && entry.allowed_models.length && !entry.allowed_models.includes(entry.default_model)) {
+    entry.default_model = entry.allowed_models[0];
+  }
+
+  if (Object.prototype.hasOwnProperty.call(patch, 'active')) {
+    entry.active = Boolean(patch.active);
+  }
+
+  writeAll(codes);
+  return { ok: true, entry: { code, ...entry } };
+}
+
+function get(code) {
+  const codes = readAll();
+  return codes[code] || null;
+}
+
+/**
+ * An empty/absent allowed_models list means unrestricted - that's what every
+ * license created before this feature has, and treating it as "allow all"
+ * (rather than "allow none") is what keeps those sites working untouched.
+ */
+function isModelAllowed(entry, modelId) {
+  if (!entry) {
+    return false;
+  }
+  const allowed = entry.allowed_models || [];
+  if (!allowed.length) {
+    return true;
+  }
+  return allowed.includes(modelId);
 }
 
 function revoke(code) {
@@ -124,4 +223,13 @@ function isActivatedForDomain(code, domain) {
   return entry.activations.some((a) => a.domain === domain);
 }
 
-module.exports = { list, create, revoke, activate, isActivatedForDomain };
+module.exports = {
+  list,
+  create,
+  update,
+  get,
+  revoke,
+  activate,
+  isActivatedForDomain,
+  isModelAllowed,
+};

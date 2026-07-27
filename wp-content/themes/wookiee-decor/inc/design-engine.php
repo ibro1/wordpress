@@ -345,11 +345,25 @@ function wookiee_derive_layout_css( array $p ) {
 	$css .= '@media(min-width:900px){';
 	$css .= '.wookiee-gen .products-grid{grid-template-columns:repeat(' . $cols . ',1fr);}';
 	if ( 'story' === $p['emphasis'] ) {
-		// Visual reorder only - the DOM order, and therefore reading order
-		// for assistive tech and crawlers, is untouched.
-		$css .= '.wookiee-gen .site-main{display:flex;flex-direction:column;}';
-		$css .= '.wookiee-gen .philosophy-section{order:-2;}';
-		$css .= '.wookiee-gen .how-it-works{order:-1;}';
+		/*
+		 * Visual reorder only - the DOM order, and therefore reading order
+		 * for assistive tech and crawlers, is untouched.
+		 *
+		 * The hero needs an explicit order of its own. Every flex child
+		 * defaults to order 0, so the negative orders below were lifting the
+		 * philosophy and how-it-works sections above the HERO, not just above
+		 * the product grid - the store opened on two blocks of prose and the
+		 * first screen was pushed off it entirely. The hero is pinned ahead
+		 * of both.
+		 *
+		 * Scoped to the front page: .site-main is every template's wrapper,
+		 * and turning it into a flex column on the shop, cart and product
+		 * pages changes layouts that have no story sections to reorder.
+		 */
+		$css .= '.wookiee-gen.home .site-main{display:flex;flex-direction:column;}';
+		$css .= '.wookiee-gen.home .hero-section{order:-3;}';
+		$css .= '.wookiee-gen.home .philosophy-section{order:-2;}';
+		$css .= '.wookiee-gen.home .how-it-works{order:-1;}';
 	}
 	$css .= '}';
 

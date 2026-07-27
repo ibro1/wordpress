@@ -108,8 +108,20 @@ dbt-no-texturize { display: contents; }
 		grid-column: 2;
 		grid-row: 1 / -1;
 		position: sticky;
-		top: var( --space-lg );
+		/* .nav is itself position:sticky at top:0, 64px tall + 1px border
+		   (main.css .nav__inner). This rail's own sticky "top" has to clear
+		   that height, or it slides partway underneath the nav while
+		   scrolling instead of stopping below it. */
+		top: calc( 65px + var( --space-md ) );
+		z-index: var( --z-base );
 	}
+}
+/* .nav shifts down for the logged-in WP admin bar (main.css body.admin-bar
+   .nav) - the sticky rail's offset has to shift by the same amount or the
+   overlap comes right back for logged-in admins testing the page. */
+body.admin-bar #wu-step-checkout > #wrapper-field-order_summary { top: calc( 65px + 32px + var( --space-md ) ); }
+@media screen and ( max-width: 782px ) {
+	body.admin-bar #wu-step-checkout > #wrapper-field-order_summary { top: calc( 65px + 46px + var( --space-md ) ); }
 }
 
 /* Numbered section eyebrows - legitimate here because the checkout genuinely

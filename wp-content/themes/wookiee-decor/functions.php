@@ -5,7 +5,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'WOOKIEE_VERSION', '1.0.60' );
+define( 'WOOKIEE_VERSION', '1.0.61' );
 define( 'WOOKIEE_DIR', trailingslashit( get_template_directory() ) );
 define( 'WOOKIEE_URI', trailingslashit( get_template_directory_uri() ) );
 define( 'WOOKIEE_CONTACT_EMAIL', 'info@wookied.com' );
@@ -22,6 +22,7 @@ require_once WOOKIEE_DIR . 'inc/admin-menu.php';
 require_once WOOKIEE_DIR . 'inc/shipping.php';
 require_once WOOKIEE_DIR . 'inc/prompt-registry.php';
 require_once WOOKIEE_DIR . 'inc/design-engine.php';
+require_once WOOKIEE_DIR . 'inc/rebrand.php';
 require_once WOOKIEE_DIR . 'inc/ai-client.php';
 require_once WOOKIEE_DIR . 'inc/setup-wizard.php';
 require_once WOOKIEE_DIR . 'inc/keyword-research.php';

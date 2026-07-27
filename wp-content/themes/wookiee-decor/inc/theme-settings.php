@@ -448,6 +448,21 @@ function wookiee_render_settings_page() {
 		<h1>Wookiee Settings</h1>
 		<p>These values are used across the site (footer, contact form, shipping messaging, policy pages) and update everywhere immediately when saved — including on pages that were already created.</p>
 
+		<?php
+		/*
+		 * These tabs are built for changing one field at a time. Setting up a
+		 * store from scratch that way means visiting Store Design, Homepage
+		 * Copy and About &amp; Contact Copy in an order nobody can guess, so
+		 * point that job at the screen that does all three in one pass.
+		 */
+		?>
+		<div class="notice notice-info" style="margin:16px 0;">
+			<p style="font-size:14px;">
+				<strong>Setting the store up for the first time, or changing what it sells?</strong>
+				Use <a href="<?php echo esc_url( admin_url( 'admin.php?page=wookiee-rebrand' ) ); ?>">Rebrand</a> — it writes the colours, layout and all the page copy together from one description. These tabs are for adjusting individual fields afterwards.
+			</p>
+		</div>
+
 		<?php if ( ! empty( $_GET['wookiee_google_ads_connected'] ) ) : ?>
 			<div class="notice notice-success is-dismissible"><p>Connected to Google Ads — the refresh token was saved automatically.</p></div>
 		<?php elseif ( ! empty( $_GET['wookiee_google_ads_error'] ) ) : ?>

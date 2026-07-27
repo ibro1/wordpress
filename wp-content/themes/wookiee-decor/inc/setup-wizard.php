@@ -120,6 +120,7 @@ function wookiee_render_setup_wizard_page() {
 	?>
 	<div class="wrap">
 		<h1>Wookiee Setup</h1>
+		<?php wookiee_render_model_picker(); ?>
 		<p>The guided path from a blank install to a reviewed, ready-to-launch single-niche store. Every step writes real, live changes for you to review as you go — revisiting this wizard any time is safe, nothing is ever duplicated.</p>
 
 		<div class="wookiee-setup-progress" id="wookiee-setup-steps">

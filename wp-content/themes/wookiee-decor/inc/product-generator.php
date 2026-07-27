@@ -70,6 +70,7 @@ function wookiee_render_product_generator_page() {
 	?>
 	<div class="wrap">
 		<h1>Wookiee Product Generator</h1>
+		<?php wookiee_render_model_picker(); ?>
 		<p>Describe the one niche this store sells in. The AI works out what concepts this catalog needs<?php echo $has_ads ? ', grounded in real UK search-volume and CPC data from Google Ads' : ''; ?>, then sources a <strong>real, fulfillable product</strong> for each one from the CJ Dropshipping catalog - real title and description (cleaned up for Google Merchant Center), real price (with your markup applied), real photo (background automatically replaced with white). Every result lands as a WooCommerce product in <strong>Draft</strong> status by default — nothing appears on the live site, and nothing is orderable, until you review it and publish (below, or in the editor).</p>
 
 		<?php if ( ! $has_woo ) : ?>

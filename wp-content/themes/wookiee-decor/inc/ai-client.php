@@ -20,15 +20,58 @@ defined( 'ABSPATH' ) || exit;
  * text reply, or a WP_Error. Callers decide how to parse the text (plain
  * prose, JSON, etc.) since that varies by use case.
  */
+/**
+ * Per-request model override, set from the model picker on the generator
+ * screens (see wookiee_apply_request_model_override()).
+ *
+ * A request-scoped override rather than a parameter threaded through
+ * wookiee_call_llm() deliberately: there are a dozen call sites across the
+ * product generator, content generator, policy audit and supplier import,
+ * several of them nested, and every one of them would otherwise have to
+ * learn about model selection just to pass a string along. The override is
+ * only ever read on the request that set it.
+ *
+ * Pass a string to set, null to read.
+ */
+function wookiee_llm_model_override( $model = null ) {
+	static $override = '';
+
+	if ( null !== $model ) {
+		$override = trim( (string) $model );
+	}
+
+	return $override;
+}
+
+/**
+ * Picks up a model chosen in the UI for this one request.
+ *
+ * Hooked globally rather than per-handler so every wookiee_* AJAX action
+ * honours the picker without each one needing its own line of plumbing.
+ * No capability/allow-list check here on purpose - the backend enforces the
+ * licence's model allowlist itself and 403s anything not permitted, so this
+ * can't be used to reach a model the activation code isn't entitled to.
+ */
+add_action( 'admin_init', 'wookiee_apply_request_model_override' );
+function wookiee_apply_request_model_override() {
+	if ( isset( $_POST['wookiee_model'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing -- the action's own handler verifies its nonce; this only selects which model that verified action will use.
+		wookiee_llm_model_override( sanitize_text_field( wp_unslash( $_POST['wookiee_model'] ) ) );
+	}
+}
+
 function wookiee_call_llm( $prompt, $max_tokens = 2048 ) {
 	if ( wookiee_central_api_configured() ) {
 		$body = array( 'prompt' => $prompt, 'max_tokens' => $max_tokens );
 
-		// Only sent when the site owner actually picked a model. Omitting it
-		// lets the backend fall back to this activation code's assigned
-		// default, which is what every install did before model selection
-		// existed - so this stays a no-op for anyone who never touches it.
-		$model = trim( (string) wookiee_get_setting( 'llm_model' ) );
+		// Precedence: the model picked for this request (generator screens) >
+		// the site's saved default > nothing, which lets the backend apply
+		// this activation code's own default. Omitting it entirely is what
+		// every install did before model selection existed, so an untouched
+		// site behaves exactly as before.
+		$model = wookiee_llm_model_override();
+		if ( '' === $model ) {
+			$model = trim( (string) wookiee_get_setting( 'llm_model' ) );
+		}
 		if ( '' !== $model ) {
 			$body['model'] = $model;
 		}
@@ -86,6 +129,70 @@ function wookiee_call_llm( $prompt, $max_tokens = 2048 ) {
 	}
 
 	return $text;
+}
+
+/**
+ * Renders the "Generate with" model picker used on the generator screens,
+ * so the model can be switched between runs without going back to Settings.
+ *
+ * Emits nothing when there's no real choice to make (fewer than two models
+ * available) - a dropdown with one entry is noise, and the site still works
+ * exactly as before via the licence's assigned default.
+ *
+ * The accompanying script wraps window.fetch once and appends the current
+ * selection to any wookiee_* admin-ajax call. Every generator on this theme
+ * posts a FormData to ajaxurl, so one interception covers the product
+ * generator, content generator, policy audit/rewrite and setup wizard
+ * without each of them having to thread the value through its own payload.
+ */
+function wookiee_render_model_picker() {
+	if ( ! wookiee_central_api_configured() ) {
+		return;
+	}
+
+	$models = wookiee_central_api_models();
+	if ( count( $models ) < 2 ) {
+		return;
+	}
+
+	$current = trim( (string) wookiee_get_setting( 'llm_model' ) );
+	?>
+	<div class="wookiee-model-picker" style="margin:12px 0;padding:10px 12px;background:#fff;border:1px solid #dcdcde;border-radius:4px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+		<label for="wookiee-model-picker" style="font-weight:600;margin:0;">Generate with</label>
+		<select id="wookiee-model-picker" style="min-width:280px;max-width:100%;">
+			<option value=""<?php selected( '', $current ); ?>>Automatic (this site's assigned model)</option>
+			<?php foreach ( $models as $id => $label ) : ?>
+				<option value="<?php echo esc_attr( $id ); ?>" <?php selected( $id, $current ); ?>><?php echo esc_html( $label ); ?></option>
+			<?php endforeach; ?>
+		</select>
+		<span class="description" style="margin:0;">Applies to generations on this page only. The saved default lives in <a href="<?php echo esc_url( admin_url( 'admin.php?page=wookiee-settings#integrations' ) ); ?>">Settings &rsaquo; Activation</a>.</span>
+	</div>
+	<script>
+	( function () {
+		if ( window.__wookieeModelFetchPatched ) { return; }
+		window.__wookieeModelFetchPatched = true;
+
+		var originalFetch = window.fetch;
+		window.fetch = function ( input, init ) {
+			try {
+				if ( init && init.body instanceof FormData ) {
+					var action = init.body.get( 'action' );
+					if ( action && String( action ).indexOf( 'wookiee_' ) === 0 && ! init.body.has( 'wookiee_model' ) ) {
+						var picker = document.getElementById( 'wookiee-model-picker' );
+						if ( picker && picker.value ) {
+							init.body.append( 'wookiee_model', picker.value );
+						}
+					}
+				}
+			} catch ( e ) {
+				// Never let the picker break a generation request - fall
+				// through and send exactly what the caller built.
+			}
+			return originalFetch.apply( this, arguments );
+		};
+	}() );
+	</script>
+	<?php
 }
 
 /**

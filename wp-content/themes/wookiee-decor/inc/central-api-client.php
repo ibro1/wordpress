@@ -183,7 +183,14 @@ function wookiee_central_api_models( $force_refresh = false ) {
 		$models[ (string) $model['id'] ] = $label;
 	}
 
-	set_transient( $cache_key, $models, HOUR_IN_SECONDS );
+	/*
+	 * An empty-but-successful response is cached only briefly. It usually
+	 * means the operator simply hasn't finished configuring the backend yet
+	 * (no provider key saved, or no models granted to this code) - caching
+	 * that for an hour left sites stuck on "Automatic" long after the
+	 * operator had fixed it, with no way to tell why.
+	 */
+	set_transient( $cache_key, $models, $models ? HOUR_IN_SECONDS : 2 * MINUTE_IN_SECONDS );
 
 	return $models;
 }

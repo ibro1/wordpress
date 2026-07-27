@@ -116,6 +116,13 @@ function wookiee_prompt_registry() {
 		'required'     => array(),
 	);
 
+	$registry['design_pick'] = array(
+		'label'        => 'Design chooser (palette + layout)',
+		'description'  => 'Picks which approved colour palette and layout suit the niche. The model only ever chooses from the built-in lists - it never writes CSS - so an edit here changes how it chooses, not what it can choose.',
+		'placeholders' => array( 'brief' ),
+		'required'     => array( 'brief' ),
+	);
+
 	return $registry;
 }
 
@@ -324,6 +331,8 @@ function wookiee_prompt_capture_builders() {
 				'{{niche}}'
 			);
 		},
+
+		'design_pick' => function () { return wookiee_build_design_pick_prompt( '{{brief}}' ); },
 
 		'supplier_import' => function () {
 			return wookiee_build_supplier_import_prompt(

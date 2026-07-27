@@ -78,7 +78,6 @@ function wookiee_render_content_generator_page() {
 	<div class="wrap">
 		<h1>Wookiee Content Generator</h1>
 		<?php wookiee_render_model_picker(); ?>
-		<?php wookiee_render_design_panel(); ?>
 		<p>Generates UK policy pages from the store's niche and the business details already saved in Wookiee Settings. Generating edits the <strong>real, live page directly</strong> — there's no separate draft copy to review and copy across manually. Every generated page is analysed for compliance automatically, with a chance to fix or tweak each one before you move on.</p>
 		<p class="description">Looking to update the <strong>Homepage</strong> or <strong>About/Contact</strong> pages instead? Those have real visual designs to preserve, so they're regenerated from the <a href="<?php echo esc_url( admin_url( 'admin.php?page=wookiee-settings#homepage' ) ); ?>">Homepage Copy</a> and <a href="<?php echo esc_url( admin_url( 'admin.php?page=wookiee-settings#about_contact' ) ); ?>">About &amp; Contact Copy</a> tabs on Wookiee Settings instead, where you can review the new text right in place before saving.</p>
 

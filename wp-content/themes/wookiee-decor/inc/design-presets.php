@@ -221,24 +221,56 @@ function wookiee_print_design_preset_css() {
  * order for assistive tech and crawlers) untouched.
  */
 function wookiee_design_layout_css( $layout_id ) {
+	// Only ever applied at >=900px. Below that the theme's own responsive
+	// rules already collapse everything to one column, and fighting them
+	// with layout variants is how a "restyle" turns into a broken phone
+	// view - the palette still changes on mobile, the structure doesn't.
+	$mq = '@media(min-width:900px){';
+
 	switch ( $layout_id ) {
 		case 'editorial':
-			return '.wookiee-layout-editorial main{display:flex;flex-direction:column;}'
+			// Story before product grid: the two narrative sections move
+			// above everything else, and the whole page reads left-aligned
+			// and flatter, like a magazine rather than a catalogue.
+			return ':root{--radius-md:2px;--radius-lg:4px;'
+				. '--shadow-sm:0 1px 2px rgba(0,0,0,.05);--shadow-md:0 2px 6px rgba(0,0,0,.06);--shadow-lg:0 4px 12px rgba(0,0,0,.07);}'
+				. $mq
+				. '.wookiee-layout-editorial .site-main{display:flex;flex-direction:column;}'
 				. '.wookiee-layout-editorial .philosophy-section{order:-2;}'
 				. '.wookiee-layout-editorial .how-it-works{order:-1;}'
-				. ':root{--radius-md:4px;--radius-lg:6px;'
-				. '--shadow-sm:0 1px 2px rgba(0,0,0,.05);--shadow-md:0 2px 6px rgba(0,0,0,.06);--shadow-lg:0 4px 12px rgba(0,0,0,.07);}';
+				. '.wookiee-layout-editorial .section-header.text-center{text-align:left;}'
+				. '.wookiee-layout-editorial .section-header .section-subtitle{margin-left:0;}'
+				. '.wookiee-layout-editorial .section-title{font-size:46px;letter-spacing:-1.5px;}'
+				. '.wookiee-layout-editorial .hero-grid{grid-template-columns:1fr;gap:32px;}'
+				. '.wookiee-layout-editorial .products-grid{grid-template-columns:repeat(2,1fr);gap:48px;}'
+				. '}';
 
 		case 'compact':
-			return ':root{--radius-md:8px;--radius-lg:10px;'
+			// More on screen at once: a denser product grid, bordered cards
+			// instead of shadows, and much tighter vertical rhythm.
+			return ':root{--radius-md:6px;--radius-lg:8px;'
 				. '--shadow-sm:none;--shadow-md:none;--shadow-lg:none;}'
-				. '.wookiee-layout-compact .home-section{padding-top:2.5rem;padding-bottom:2.5rem;}'
-				. '.wookiee-layout-compact .product-card,.wookiee-layout-compact .category-card{border:1px solid var(--wookiee-border);}';
+				. '.wookiee-layout-compact .home-section{padding-top:38px;padding-bottom:38px;}'
+				. '.wookiee-layout-compact .section-header{margin-bottom:24px;}'
+				. '.wookiee-layout-compact .section-title{font-size:30px;}'
+				. '.wookiee-layout-compact .product-card,.wookiee-layout-compact .collection-card{border:1px solid var(--wookiee-border);}'
+				. $mq
+				. '.wookiee-layout-compact .products-grid{grid-template-columns:repeat(4,1fr);gap:18px;}'
+				. '.wookiee-layout-compact .hero-grid{gap:32px;}'
+				. '}';
 
 		case 'showcase':
-			return ':root{--radius-md:22px;--radius-lg:28px;'
+			// Fewer, bigger things: a two-up product grid, heavy elevation,
+			// deep rounding and a lot of air.
+			return ':root{--radius-md:24px;--radius-lg:30px;'
 				. '--shadow-sm:0 4px 14px rgba(0,0,0,.08);--shadow-md:0 16px 40px rgba(0,0,0,.12);--shadow-lg:0 28px 60px rgba(0,0,0,.16);}'
-				. '.wookiee-layout-showcase .home-section{padding-top:6rem;padding-bottom:6rem;}';
+				. '.wookiee-layout-showcase .home-section{padding-top:104px;padding-bottom:104px;}'
+				. '.wookiee-layout-showcase .section-header{margin-bottom:60px;}'
+				. '.wookiee-layout-showcase .section-title{font-size:52px;letter-spacing:-1.5px;}'
+				. $mq
+				. '.wookiee-layout-showcase .products-grid{grid-template-columns:repeat(2,1fr);gap:44px;}'
+				. '.wookiee-layout-showcase .hero-grid{grid-template-columns:1fr 1.15fr;gap:72px;}'
+				. '}';
 	}
 
 	return '';
@@ -267,9 +299,8 @@ function wookiee_render_design_panel() {
 	$layout_id  = wookiee_current_layout_id();
 	$previous   = get_option( 'wookiee_design_previous', array() );
 	?>
-	<div class="wookiee-design-panel" style="background:#fff;border:1px solid #dcdcde;border-radius:4px;padding:14px 16px;margin:16px 0;">
-		<h2 style="margin:0 0 4px;font-size:14px;">Store design</h2>
-		<p class="description" style="margin:0 0 12px;">Colour palette and layout. Every option here is pre-built and tested - the AI picks between them, it never writes CSS, so a restyle can't break the storefront.</p>
+	<div class="wookiee-design-panel" style="background:#fff;border:1px solid #dcdcde;border-radius:4px;padding:16px 18px;margin:0 0 16px;">
+		<p class="description" style="margin:0 0 14px;">The colour palette and layout of your <strong>storefront</strong> - homepage, shop, product and About pages. Every option is pre-built and tested; the AI picks between them and never writes CSS, so a restyle cannot break the site. Page <em>wording</em> is separate: see the Homepage Copy and About &amp; Contact Copy tabs.</p>
 
 		<div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;">
 			<div>
@@ -322,15 +353,39 @@ function wookiee_render_design_panel() {
 			} );
 		} );
 
-		document.getElementById( 'wookiee-design-shuffle' ).addEventListener( 'click', function () {
-			status.textContent = 'Asking the AI to pick a design for your niche…';
+		var shuffleBtn = document.getElementById( 'wookiee-design-shuffle' );
+		shuffleBtn.addEventListener( 'click', function () {
+			// Disable + relabel the button itself: the status line sits below
+			// the fold on smaller screens, so a text-only "working…" was easy
+			// to miss entirely and the change appeared to happen with no
+			// feedback at all.
+			var original = shuffleBtn.textContent;
+			shuffleBtn.disabled = true;
+			shuffleBtn.textContent = 'Choosing…';
+			status.textContent = 'Asking the AI to pick a palette and layout for your niche…';
+
 			post( 'wookiee_shuffle_design' ).then( function ( res ) {
+				shuffleBtn.disabled = false;
+				shuffleBtn.textContent = original;
+
 				if ( ! res.success ) {
 					status.textContent = ( res.data && res.data.message ) || 'Could not pick a design.';
 					return;
 				}
-				status.textContent = 'Chose ' + res.data.palette_label + ' + ' + res.data.layout_label + ' — ' + res.data.reason;
-				setTimeout( function () { window.location.reload(); }, 1800 );
+
+				// Show what changed and why, and let the operator trigger the
+				// reload - auto-reloading threw away the explanation before
+				// it could be read.
+				status.innerHTML = '';
+				var msg = document.createElement( 'span' );
+				msg.textContent = 'Chose ' + res.data.palette_label + ' + ' + res.data.layout_label + ' — ' + res.data.reason + ' ';
+				status.appendChild( msg );
+				var apply = document.createElement( 'button' );
+				apply.type = 'button';
+				apply.className = 'button button-primary';
+				apply.textContent = 'Reload to see it';
+				apply.addEventListener( 'click', function () { window.location.reload(); } );
+				status.appendChild( apply );
 			} );
 		} );
 

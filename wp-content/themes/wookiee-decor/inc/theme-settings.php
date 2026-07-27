@@ -195,6 +195,10 @@ function wookiee_settings_tabs() {
 			'label'  => 'Social Media',
 			'fields' => array( 'facebook_url', 'instagram_url', 'linkedin_url', 'pinterest_url' ),
 		),
+		'design' => array(
+			'label'  => 'Store Design',
+			'fields' => array(),
+		),
 		'integrations' => array(
 			'label'  => 'Activation',
 			'fields' => array( 'llm_model', 'llm_api_key', 'llm_base_url', 'llm_default_model', 'cj_email', 'cj_api_key', 'bg_removal_provider', 'cloudinary_cloud_name', 'cloudinary_api_key', 'cloudinary_api_secret', 'rembg_endpoint_url', 'google_ads_developer_token', 'google_ads_client_id', 'google_ads_client_secret', 'google_ads_refresh_token', 'google_ads_customer_id', 'google_ads_login_customer_id', 'spaceship_api_key', 'spaceship_api_secret' ),
@@ -479,6 +483,9 @@ function wookiee_render_settings_page() {
 					<?php wookiee_render_ai_copy_generator_notice( $tab_key ); ?>
 					<?php if ( 'integrations' === $tab_key ) : ?>
 						<?php wookiee_render_activation_section(); ?>
+					<?php endif; ?>
+					<?php if ( 'design' === $tab_key ) : ?>
+						<?php wookiee_render_design_panel(); ?>
 					<?php endif; ?>
 					<?php
 					$fields_to_show = $tab['fields'];

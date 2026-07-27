@@ -136,3 +136,38 @@ jQuery(function($) {
         });
     });
 });
+
+/**
+ * Contact form result banner.
+ *
+ * This lives here rather than in the Contact page's post_content, where it
+ * used to sit inside a <script> tag. Baked-in scripts do not survive the
+ * content filters: KSES strips the <script> wrapper, wpautop then wraps the
+ * bare code in <p>/<br />, and wptexturize turns every " into a curly quote
+ * and the -- in a CSS class name into an en dash. The result was the whole
+ * function rendering as visible text at the bottom of the Contact page.
+ *
+ * main.js is enqueued on every page, so this guards on the banner element
+ * and does nothing anywhere else.
+ */
+(function () {
+    var banner = document.getElementById('wookiee-contact-banner');
+    if (!banner) { return; }
+
+    var status = new URLSearchParams(window.location.search).get('contact');
+    if (!status) { return; }
+
+    var messages = {
+        'sent': ['success', 'Thank you! Your message has been sent successfully.'],
+        'missing': ['error', 'Please fill in all required fields with a valid email address.'],
+        'invalid': ['error', 'Something went wrong. Please try again.'],
+        'mail-error': ['error', 'Sorry, we could not send your message right now. Please email us directly.']
+    };
+
+    var entry = messages[status];
+    if (!entry) { return; }
+
+    banner.className = 'contact-banner contact-banner--' + entry[0] + ' is-visible';
+    banner.textContent = entry[1];
+    banner.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}());

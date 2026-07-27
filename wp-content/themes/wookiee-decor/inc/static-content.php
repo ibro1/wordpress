@@ -184,26 +184,7 @@ function wookiee_starter_pages() {
         </div>
     </div>
 </section>
-<script>
-(function() {
-    var params = new URLSearchParams(window.location.search);
-    var status = params.get("contact");
-    if (!status) { return; }
-    var banner = document.getElementById("wookiee-contact-banner");
-    if (!banner) { return; }
-    var messages = {
-        sent: ["success", "Thank you! Your message has been sent successfully."],
-        missing: ["error", "Please fill in all required fields with a valid email address."],
-        invalid: ["error", "Something went wrong. Please try again."],
-        "mail-error": ["error", "Sorry, we could not send your message right now. Please email us directly."]
-    };
-    var entry = messages[status];
-    if (!entry) { return; }
-    banner.className = "contact-banner contact-banner--" + entry[0] + " is-visible";
-    banner.textContent = entry[1];
-    banner.scrollIntoView({ behavior: "smooth", block: "center" });
-})();
-</script>' ),
+' ),
 		'terms'   => array( 'title' => 'Terms and conditions', 'menu' => '', 'content' => '
 <div style="max-width:860px; margin:0 auto; padding:40px 20px; font-family:inherit; color:#333; line-height:1.7;">
 

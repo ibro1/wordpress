@@ -39,13 +39,25 @@ router.get('/models', async (req, res) => {
 
   const allowed = models.filter((m) => licenseStore.isModelAllowed(entry, m.id));
 
+  /*
+   * This endpoint is consumed by CUSTOMER sites, so it deliberately exposes
+   * only what a customer needs to choose a model: the id and a clean name.
+   *
+   * Everything else the catalogue carries is operator-internal and must not
+   * leak downstream - the provider/host ("Fallback endpoint
+   * (api.openai.com)") reveals which upstream this business is resold from,
+   * and per-token pricing reveals the operator's cost basis and therefore
+   * its margin. Both are visible to the operator on /licenses/models, which
+   * is admin-only; neither belongs on a customer's WordPress screen.
+   */
+  const publicModels = allowed.map((m) => ({ id: m.id, label: m.label }));
+
   res.json({
-    models: allowed,
+    models: publicModels,
     default_model: (entry && entry.default_model) || '',
     // True when this license is pinned to a subset; lets the WP UI explain
     // why the list is short rather than looking arbitrarily incomplete.
     restricted: Boolean(entry && (entry.allowed_models || []).length),
-    legacy_fallback: Boolean(store.get('llm_api_key').trim()),
   });
 });
 

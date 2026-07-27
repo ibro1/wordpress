@@ -176,11 +176,13 @@ function wookiee_central_api_models( $force_refresh = false ) {
 		if ( empty( $model['id'] ) ) {
 			continue;
 		}
-		$label = ! empty( $model['label'] ) ? $model['label'] : $model['id'];
-		if ( isset( $model['provider_label'] ) && '' !== $model['provider_label'] ) {
-			$label .= ' (' . $model['provider_label'] . ')';
-		}
-		$models[ (string) $model['id'] ] = $label;
+		/*
+		 * Model name only. Which upstream provider serves it, and what it
+		 * costs, are the operator's business - the backend already strips
+		 * both from this endpoint, and nothing here should try to
+		 * reconstruct them for display on a customer's screen.
+		 */
+		$models[ (string) $model['id'] ] = ! empty( $model['label'] ) ? $model['label'] : $model['id'];
 	}
 
 	/*

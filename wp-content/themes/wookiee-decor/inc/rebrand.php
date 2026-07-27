@@ -52,6 +52,13 @@ function wookiee_rebrand_tracked_options() {
 		'wookiee_about_contact_ai_generated',
 	);
 
+	// The generated image replaces the slot's attachment id. Undo puts the
+	// previous image back; the attachment itself is never deleted, so the
+	// restored id still resolves.
+	foreach ( array_keys( wookiee_image_slots() ) as $slot ) {
+		$keys[] = wookiee_image_option_key( $slot );
+	}
+
 	foreach ( array_keys( wookiee_homepage_copy_fields() ) as $field ) {
 		$keys[] = 'wookiee_setting_' . $field;
 	}
@@ -100,10 +107,33 @@ function wookiee_restore_before_rebrand() {
  * guess about which step is running.
  */
 function wookiee_rebrand_steps() {
-	return array(
-		'design'   => 'Colours &amp; layout',
-		'homepage' => 'Homepage copy',
-		'about'    => 'About &amp; Contact copy',
+	$steps = array( 'design' => 'Colours &amp; layout' );
+
+	foreach ( wookiee_image_slots() as $slot => $meta ) {
+		$steps[ 'image_' . $slot ] = $meta['label'] . ' image';
+	}
+
+	$steps['homepage'] = 'Homepage copy';
+	$steps['about']    = 'About &amp; Contact copy';
+
+	return $steps;
+}
+
+/**
+ * The image steps, which are opt-in.
+ *
+ * Generating costs real money per image and takes far longer than the text
+ * steps, so a run that only needed the copy adjusted should not silently
+ * spend three image generations. Off by default once a store has its own
+ * images; on by default while it is still showing bundled demo photos,
+ * which is the case where leaving them is clearly wrong.
+ */
+function wookiee_rebrand_image_steps() {
+	return array_map(
+		function ( $slot ) {
+			return 'image_' . $slot;
+		},
+		array_keys( wookiee_image_slots() )
 	);
 }
 
@@ -194,6 +224,17 @@ function wookiee_run_rebrand_step( $step, $brief ) {
 	}
 
 	update_option( 'wookiee_niche_brief', $brief );
+
+	// Image steps are named image_<slot>, so one branch covers every slot and
+	// adding a slot needs no change here.
+	if ( 0 === strpos( $step, 'image_' ) ) {
+		$slot   = substr( $step, strlen( 'image_' ) );
+		$result = wookiee_generate_slot_image( $slot, $brief );
+		if ( is_wp_error( $result ) ) {
+			return $result;
+		}
+		return 'new image generated and applied';
+	}
 
 	switch ( $step ) {
 		case 'design':
@@ -316,6 +357,27 @@ function wookiee_render_rebrand_page() {
 				</div>
 			<?php endif; ?>
 
+			<?php
+			$placeholder_slots = array_filter( array_keys( wookiee_image_slots() ), 'wookiee_image_is_placeholder' );
+			$images_default    = ! empty( $placeholder_slots );
+			?>
+			<div style="margin-top:16px;padding:12px 14px;background:#f6f7f7;border-radius:4px;">
+				<label style="display:flex;gap:8px;align-items:flex-start;cursor:pointer;">
+					<input type="checkbox" id="wookiee-rebrand-images" <?php checked( $images_default ); ?> style="margin-top:3px;">
+					<span>
+						<strong>Also generate new photographs</strong>
+						<span style="display:block;font-size:12px;color:#646970;margin-top:2px;">
+							<?php if ( $images_default ) : ?>
+								<?php echo esc_html( count( $placeholder_slots ) ); ?> of <?php echo esc_html( count( wookiee_image_slots() ) ); ?> images are still the bundled demo photos, which will not match what this store sells.
+							<?php else : ?>
+								This store already has its own images. Generating replaces them - the old ones stay in the media library.
+							<?php endif; ?>
+							Adds about a minute per image, and costs more than the text steps.
+						</span>
+					</span>
+				</label>
+			</div>
+
 			<p style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
 				<button type="button" class="button button-primary button-hero" id="wookiee-rebrand-go">Rebrand my store</button>
 				<?php if ( $has_undo ) : ?>
@@ -331,6 +393,7 @@ function wookiee_render_rebrand_page() {
 	( function () {
 		var NONCE = '<?php echo esc_js( wp_create_nonce( 'wookiee_rebrand' ) ); ?>';
 		var STEPS = <?php echo wp_json_encode( wookiee_rebrand_steps() ); ?>;
+		var IMAGE_STEPS = <?php echo wp_json_encode( array_values( wookiee_rebrand_image_steps() ) ); ?>;
 		var go    = document.getElementById( 'wookiee-rebrand-go' );
 		var out   = document.getElementById( 'wookiee-rebrand-steps' );
 
@@ -360,7 +423,10 @@ function wookiee_render_rebrand_page() {
 				return;
 			}
 
-			var keys = Object.keys( STEPS );
+			var wantImages = document.getElementById( 'wookiee-rebrand-images' ).checked;
+			var keys = Object.keys( STEPS ).filter( function ( k ) {
+				return wantImages || IMAGE_STEPS.indexOf( k ) === -1;
+			} );
 			var html = '<ul style="margin:14px 0 0;padding:0;list-style:none;">';
 			keys.forEach( function ( k ) {
 				html += '<li id="wookiee-step-' + k + '" style="margin:6px 0;display:flex;gap:8px;align-items:baseline;">' +

@@ -135,4 +135,95 @@ router.post('/remove-background', async (req, res) => {
   res.status(502).json({ error: lastError ? lastError.message : 'No background-removal provider is configured with valid credentials.' });
 });
 
+/* -------------------------------------------------------------------------
+ * Image generation
+ * ---------------------------------------------------------------------- */
+
+/**
+ * Landscape by default: every slot this fills (homepage hero, About hero,
+ * About story) sits beside a column of text, so a square image forces the
+ * text column narrow and a portrait one pushes the copy off the screen.
+ */
+const IMAGE_SIZES = ['1536x1024', '1024x1024', '1024x1536'];
+const IMAGE_MODEL_DEFAULT = 'gpt-image-1';
+
+/**
+ * The operator's OpenAI key, falling back to the legacy single-endpoint key.
+ * Most installs configured that one first and it is an OpenAI key in
+ * practice, so requiring the newer per-provider setting would report "not
+ * configured" on sites that are in fact perfectly able to generate.
+ */
+function imageApiKey() {
+  return store.get('llm_openai_api_key').trim() || store.get('llm_api_key').trim();
+}
+
+router.post('/generate', async (req, res) => {
+  const prompt = ((req.body && req.body.prompt) || '').trim();
+  if (!prompt) {
+    return res.status(400).json({ error: 'No prompt given.' });
+  }
+
+  const requestedSize = (req.body && req.body.size) || IMAGE_SIZES[0];
+  const size = IMAGE_SIZES.includes(requestedSize) ? requestedSize : IMAGE_SIZES[0];
+
+  const apiKey = imageApiKey();
+  if (!apiKey) {
+    return res.status(400).json({ error: 'No image-capable API key is configured on the backend.' });
+  }
+
+  const model = store.get('image_model').trim() || IMAGE_MODEL_DEFAULT;
+
+  // Image generation regularly runs past 60s; the default fetch timeout
+  // would abort a request that was going to succeed.
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 180000);
+
+  try {
+    const response = await fetch('https://api.openai.com/v1/images/generations', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ model, prompt, size, n: 1 }),
+      signal: controller.signal,
+    });
+
+    const data = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      const msg = data && data.error && data.error.message ? data.error.message : `HTTP ${response.status}`;
+      return res.status(502).json({ error: `Image generation failed: ${msg}` });
+    }
+
+    const first = data && Array.isArray(data.data) ? data.data[0] : null;
+    if (!first) {
+      return res.status(502).json({ error: 'The image provider returned no image.' });
+    }
+
+    // gpt-image-1 always returns base64; the DALL-E models return a URL
+    // unless asked otherwise. Handling both means changing image_model on
+    // the backend does not need a matching change here.
+    if (first.b64_json) {
+      return res.json({ image_base64: first.b64_json });
+    }
+
+    if (first.url) {
+      const download = await fetch(first.url);
+      if (!download.ok) {
+        return res.status(502).json({ error: 'Could not download the generated image.' });
+      }
+      const buffer = Buffer.from(await download.arrayBuffer());
+      return res.json({ image_base64: buffer.toString('base64') });
+    }
+
+    return res.status(502).json({ error: 'The image provider returned no usable image data.' });
+  } catch (err) {
+    const msg = err.name === 'AbortError' ? 'The image provider timed out.' : err.message;
+    return res.status(502).json({ error: `Image generation failed: ${msg}` });
+  } finally {
+    clearTimeout(timeout);
+  }
+});
+
 module.exports = router;

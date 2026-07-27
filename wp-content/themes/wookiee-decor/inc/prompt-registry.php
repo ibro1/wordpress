@@ -123,6 +123,13 @@ function wookiee_prompt_registry() {
 		'required'     => array( 'brief' ),
 	);
 
+	$registry['slot_image'] = array(
+		'label'        => 'Store image generator',
+		'description'  => 'Generates the photographs that fill the homepage hero and the About page images. {{purpose}} says which slot is being filled, so one prompt covers all of them.',
+		'placeholders' => array( 'brief', 'purpose' ),
+		'required'     => array( 'brief', 'purpose' ),
+	);
+
 	return $registry;
 }
 
@@ -333,6 +340,8 @@ function wookiee_prompt_capture_builders() {
 		},
 
 		'design_params' => function () { return wookiee_build_design_params_prompt( '{{brief}}' ); },
+
+		'slot_image' => function () { return wookiee_build_image_prompt( 'hero', '{{brief}}' ); },
 
 		'supplier_import' => function () {
 			return wookiee_build_supplier_import_prompt(

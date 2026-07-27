@@ -99,7 +99,14 @@ function wookiee_maybe_show_activation_notice() {
  * is_wp_error() exactly like they already do for direct provider calls, so
  * swapping the call site over is a small, mechanical change.
  */
-function wookiee_central_api_request( $method, $path, $body = null ) {
+/**
+ * @param int $timeout Seconds to wait. The 30s default suits the text and
+ *                     lookup endpoints; image generation regularly runs past
+ *                     a minute, and cutting it off there reports a failure
+ *                     for a request the provider is about to complete (and
+ *                     bill for), so those callers pass their own.
+ */
+function wookiee_central_api_request( $method, $path, $body = null, $timeout = 30 ) {
 	if ( ! wookiee_central_api_configured() ) {
 		return new WP_Error( 'wookiee_central_api_not_configured', 'The central backend is not connected yet (Settings > Activation).' );
 	}
@@ -110,7 +117,7 @@ function wookiee_central_api_request( $method, $path, $body = null ) {
 			'X-Api-Key'     => wookiee_central_api_shared_secret(),
 			'X-Site-Domain' => wookiee_current_site_domain(),
 		),
-		'timeout' => 30,
+		'timeout' => (int) $timeout,
 	);
 
 	if ( null !== $body ) {

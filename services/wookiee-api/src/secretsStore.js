@@ -44,6 +44,9 @@ const SECRET_KEYS = [
   'cloudinary_api_secret',
   'rembg_endpoint_url',
   'bg_removal_provider',
+  // Which model /images/generate uses. Empty falls back to gpt-image-1,
+  // so leaving this unset is a working configuration, not a broken one.
+  'image_model',
   'google_ads_developer_token',
   'google_ads_client_id',
   'google_ads_client_secret',

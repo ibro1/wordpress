@@ -157,6 +157,26 @@ function wookiee_central_api_request( $method, $path, $body = null, $timeout = 3
  * pick, which is the pre-existing behaviour.
  */
 function wookiee_central_api_models( $force_refresh = false ) {
+	return wookiee_central_api_model_list( '/llm/models', 'wookiee_llm_models_', $force_refresh );
+}
+
+/**
+ * The image-model equivalent. Separate endpoint and separate cache: the two
+ * catalogues have different providers and different keys, so a licence may
+ * well be granted text models and no image models, or the reverse.
+ */
+function wookiee_central_api_image_models( $force_refresh = false ) {
+	return wookiee_central_api_model_list( '/images/models', 'wookiee_image_models_', $force_refresh );
+}
+
+/**
+ * Shared fetch+cache for both catalogues.
+ *
+ * @param string $path         Backend endpoint.
+ * @param string $cache_prefix Transient prefix; the theme version is appended.
+ * @param bool   $force_refresh Bypass the cache.
+ */
+function wookiee_central_api_model_list( $path, $cache_prefix, $force_refresh = false ) {
 	if ( ! wookiee_central_api_configured() ) {
 		return array();
 	}
@@ -168,7 +188,7 @@ function wookiee_central_api_models( $force_refresh = false ) {
 	 * format from cache for up to an hour after deploying - which is
 	 * exactly what happened when provider names were removed from labels.
 	 */
-	$cache_key = 'wookiee_llm_models_' . WOOKIEE_VERSION;
+	$cache_key = $cache_prefix . WOOKIEE_VERSION;
 
 	if ( ! $force_refresh ) {
 		$cached = get_transient( $cache_key );
@@ -177,7 +197,7 @@ function wookiee_central_api_models( $force_refresh = false ) {
 		}
 	}
 
-	$result = wookiee_central_api_request( 'GET', '/llm/models' );
+	$result = wookiee_central_api_request( 'GET', $path );
 	if ( is_wp_error( $result ) || ! isset( $result['models'] ) || ! is_array( $result['models'] ) ) {
 		// Cache the empty result briefly too, so a down backend doesn't mean
 		// an HTTP round trip on every single admin page load.
@@ -223,7 +243,11 @@ function wookiee_refresh_models_handler() {
 	}
 	check_admin_referer( 'wookiee_refresh_models' );
 
+	// Both catalogues: the button says "check again for models", and an
+	// operator who has just been granted image models would otherwise have to
+	// wait out a separate cache with nothing telling them to.
 	wookiee_central_api_models( true );
+	wookiee_central_api_image_models( true );
 
 	wp_safe_redirect( admin_url( 'admin.php?page=wookiee-settings&wookiee_models_refreshed=1#integrations' ) );
 	exit;

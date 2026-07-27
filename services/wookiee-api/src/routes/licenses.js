@@ -10,6 +10,7 @@
 const express = require('express');
 const licenseStore = require('../licenseStore');
 const modelCatalog = require('../modelCatalog');
+const imageCatalog = require('../imageCatalog');
 const store = require('../secretsStore');
 
 const router = express.Router();
@@ -36,13 +37,33 @@ router.get('/models', async (req, res) => {
   res.json({ models, errors, providers });
 });
 
+/**
+ * The same, for image models. A separate endpoint rather than a flag on
+ * /models because the two catalogues have different providers, different
+ * keys and different failure modes - merging them would mean a Together
+ * outage showing up as an error on the text picker.
+ */
+router.get('/image-models', async (req, res) => {
+  const force = req.query.refresh === '1' || req.query.refresh === 'true';
+  const { models, errors, providers } = await imageCatalog.listConfiguredModels(
+    (k) => store.get(k),
+    { force }
+  );
+  res.json({ models, errors, providers });
+});
+
 router.post('/', (req, res) => {
-  const { max_activations, label, allowed_models, default_model } = req.body || {};
+  const {
+    max_activations, label, allowed_models, default_model,
+    allowed_image_models, default_image_model,
+  } = req.body || {};
   const result = licenseStore.create({
     maxActivations: max_activations,
     label,
     allowedModels: allowed_models,
     defaultModel: default_model,
+    allowedImageModels: allowed_image_models,
+    defaultImageModel: default_image_model,
   });
   res.json(result);
 });
@@ -59,6 +80,8 @@ router.patch('/:code', (req, res) => {
   if (Object.prototype.hasOwnProperty.call(body, 'max_activations')) { patch.maxActivations = body.max_activations; }
   if (Object.prototype.hasOwnProperty.call(body, 'allowed_models')) { patch.allowedModels = body.allowed_models; }
   if (Object.prototype.hasOwnProperty.call(body, 'default_model')) { patch.defaultModel = body.default_model; }
+  if (Object.prototype.hasOwnProperty.call(body, 'allowed_image_models')) { patch.allowedImageModels = body.allowed_image_models; }
+  if (Object.prototype.hasOwnProperty.call(body, 'default_image_model')) { patch.defaultImageModel = body.default_image_model; }
   if (Object.prototype.hasOwnProperty.call(body, 'active')) { patch.active = body.active; }
 
   const result = licenseStore.update(req.params.code, patch);

@@ -44,8 +44,16 @@ const SECRET_KEYS = [
   'cloudinary_api_secret',
   'rembg_endpoint_url',
   'bg_removal_provider',
-  // Which model /images/generate uses. Empty falls back to gpt-image-1,
-  // so leaving this unset is a working configuration, not a broken one.
+  // Image generation (src/imageCatalog.js). OpenAI and Google reuse their
+  // existing llm_* keys - one vendor account covers both text and images, so
+  // asking the operator to paste the same key twice would just be a way to
+  // get them out of sync.
+  'image_together_api_key',
+  'image_xai_api_key',
+  'image_base_url',
+  'image_api_key',
+  // Operator-level default image model, used when a licence has not been
+  // given one of its own. Empty means the first allowed model wins.
   'image_model',
   'google_ads_developer_token',
   'google_ads_client_id',

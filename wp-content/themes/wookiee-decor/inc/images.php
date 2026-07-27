@@ -178,15 +178,19 @@ function wookiee_generate_slot_image( $slot, $brief ) {
 		return new WP_Error( 'wookiee_image_not_activated', 'Image generation needs the activation code (Settings > Activation).' );
 	}
 
-	$result = wookiee_central_api_request(
-		'POST',
-		'/images/generate',
-		array(
-			'prompt' => wookiee_build_image_prompt( $slot, $brief ),
-			'size'   => '1536x1024',
-		),
-		200
+	$body = array(
+		'prompt' => wookiee_build_image_prompt( $slot, $brief ),
+		'size'   => '1536x1024',
 	);
+
+	// Omitted entirely when unset, which lets the backend apply this
+	// activation code's own default - the same precedence the text side uses.
+	$model = trim( (string) wookiee_get_setting( 'image_model' ) );
+	if ( '' !== $model ) {
+		$body['model'] = $model;
+	}
+
+	$result = wookiee_central_api_request( 'POST', '/images/generate', $body, 200 );
 
 	if ( is_wp_error( $result ) ) {
 		return $result;

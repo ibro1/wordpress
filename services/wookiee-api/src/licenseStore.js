@@ -20,6 +20,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const modelCatalog = require('./modelCatalog');
+const imageCatalog = require('./imageCatalog');
 
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, '..', 'data');
 const LICENSES_FILE = path.join(DATA_DIR, 'licenses.json');
@@ -67,17 +68,44 @@ function list() {
  * a saved model the day its provider renamed it. A stale id instead fails
  * loudly at call time with the provider's own error message.
  */
-function sanitizeModels(models) {
+function sanitizeWith(parse, models) {
   if (!Array.isArray(models)) {
     return [];
   }
   return models
     .map((m) => String(m || '').trim())
-    .filter((m) => m && modelCatalog.parseId(m))
+    .filter((m) => m && parse(m))
     .filter((m, i, arr) => arr.indexOf(m) === i);
 }
 
-function create({ maxActivations = 1, label = '', allowedModels = [], defaultModel = '' } = {}) {
+function sanitizeModels(models) {
+  return sanitizeWith(modelCatalog.parseId, models);
+}
+
+/**
+ * The image equivalent, validated against the image catalogue.
+ *
+ * This rejects ids whose PROVIDER is not an image provider - "deepseek:chat"
+ * and "anthropic:claude-haiku-4-5" cannot reach an image list, and
+ * "together:FLUX.1-schnell" cannot reach a text one. It does NOT reject a
+ * wrong-modality model from a provider that does both: "openai:gpt-4o" is
+ * well-formed here and will be stored.
+ *
+ * That is the same deliberate format-only rule as sanitizeModels() above,
+ * and the alternative is worse - checking against the live list would mean a
+ * licence silently losing a saved model the day its provider renamed it. A
+ * wrong-modality id instead fails at call time with OpenAI's own error, and
+ * the admin picker only ever offers image-capable models, so getting one in
+ * here takes a hand-crafted request rather than a mis-click.
+ */
+function sanitizeImageModels(models) {
+  return sanitizeWith(imageCatalog.parseId, models);
+}
+
+function create({
+  maxActivations = 1, label = '', allowedModels = [], defaultModel = '',
+  allowedImageModels = [], defaultImageModel = '',
+} = {}) {
   const codes = readAll();
   let code;
   do {
@@ -85,6 +113,7 @@ function create({ maxActivations = 1, label = '', allowedModels = [], defaultMod
   } while (codes[code]); // astronomically unlikely, but don't silently collide
 
   const allowed = sanitizeModels(allowedModels);
+  const allowedImage = sanitizeImageModels(allowedImageModels);
 
   codes[code] = {
     max_activations: Math.max(1, parseInt(maxActivations, 10) || 1),
@@ -97,6 +126,11 @@ function create({ maxActivations = 1, label = '', allowedModels = [], defaultMod
     // picker behaves exactly like it did before this feature existed.
     allowed_models: allowed,
     default_model: allowed.includes(defaultModel) ? defaultModel : (allowed[0] || ''),
+    // Same "empty means unrestricted" rule as the text models above, for the
+    // same reason: a code created before image generation existed must keep
+    // working without the operator revisiting it.
+    allowed_image_models: allowedImage,
+    default_image_model: allowedImage.includes(defaultImageModel) ? defaultImageModel : (allowedImage[0] || ''),
   };
   writeAll(codes);
   return { code, ...codes[code] };
@@ -142,10 +176,24 @@ function update(code, patch = {}) {
     entry.default_model = (!allowed.length || allowed.includes(wanted)) ? wanted : '';
   }
 
+  if (Object.prototype.hasOwnProperty.call(patch, 'allowedImageModels')) {
+    entry.allowed_image_models = sanitizeImageModels(patch.allowedImageModels);
+  }
+
+  if (Object.prototype.hasOwnProperty.call(patch, 'defaultImageModel')) {
+    const wanted = String(patch.defaultImageModel || '').trim();
+    const allowed = entry.allowed_image_models || [];
+    entry.default_image_model = (!allowed.length || allowed.includes(wanted)) ? wanted : '';
+  }
+
   // A default that's no longer in the allowed list would route requests to a
   // model the license can't use - re-point it at the first allowed model.
   if (entry.allowed_models && entry.allowed_models.length && !entry.allowed_models.includes(entry.default_model)) {
     entry.default_model = entry.allowed_models[0];
+  }
+  if (entry.allowed_image_models && entry.allowed_image_models.length
+      && !entry.allowed_image_models.includes(entry.default_image_model)) {
+    entry.default_image_model = entry.allowed_image_models[0];
   }
 
   if (Object.prototype.hasOwnProperty.call(patch, 'active')) {
@@ -171,6 +219,18 @@ function isModelAllowed(entry, modelId) {
     return false;
   }
   const allowed = entry.allowed_models || [];
+  if (!allowed.length) {
+    return true;
+  }
+  return allowed.includes(modelId);
+}
+
+/** The image equivalent, with the same allow-all-when-empty rule. */
+function isImageModelAllowed(entry, modelId) {
+  if (!entry) {
+    return false;
+  }
+  const allowed = entry.allowed_image_models || [];
   if (!allowed.length) {
     return true;
   }
@@ -236,4 +296,5 @@ module.exports = {
   activate,
   isActivatedForDomain,
   isModelAllowed,
+  isImageModelAllowed,
 };

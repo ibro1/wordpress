@@ -11,6 +11,8 @@
 const express = require('express');
 const crypto = require('crypto');
 const store = require('../secretsStore');
+const licenseStore = require('../licenseStore');
+const imageCatalog = require('../imageCatalog');
 
 const router = express.Router();
 
@@ -135,26 +137,69 @@ router.post('/remove-background', async (req, res) => {
   res.status(502).json({ error: lastError ? lastError.message : 'No background-removal provider is configured with valid credentials.' });
 });
 
+
 /* -------------------------------------------------------------------------
  * Image generation
  * ---------------------------------------------------------------------- */
 
 /**
- * Landscape by default: every slot this fills (homepage hero, About hero,
- * About story) sits beside a column of text, so a square image forces the
- * text column narrow and a portrait one pushes the copy off the screen.
+ * Which image models the caller may use, and which one they get by default.
+ * The WordPress side calls this to build its picker, so it only ever offers
+ * models that will actually be accepted.
+ *
+ * Projected down to { id, label } exactly like /llm/models: the provider
+ * key, base URL and any pricing are operator-internal and have no business
+ * being visible on a customer's site.
  */
-const IMAGE_SIZES = ['1536x1024', '1024x1024', '1024x1536'];
-const IMAGE_MODEL_DEFAULT = 'gpt-image-1';
+router.get('/models', async (req, res) => {
+  const entry = req.license ? req.license.entry : null;
+
+  const { models } = await imageCatalog.listConfiguredModels((k) => store.get(k));
+  const allowed = models.filter((m) => licenseStore.isImageModelAllowed(entry, m.id));
+
+  const fallbackDefault = store.get('image_model').trim();
+  const licenceDefault = entry && entry.default_image_model ? entry.default_image_model : '';
+
+  res.json({
+    models: allowed.map((m) => ({ id: m.id, label: m.label })),
+    default: licenceDefault || fallbackDefault || (allowed[0] ? allowed[0].id : ''),
+  });
+});
 
 /**
- * The operator's OpenAI key, falling back to the legacy single-endpoint key.
- * Most installs configured that one first and it is an OpenAI key in
- * practice, so requiring the newer per-provider setting would report "not
- * configured" on sites that are in fact perfectly able to generate.
+ * Resolves which model a generate request should use.
+ *
+ * Same precedence as the text side: an explicitly requested model (checked
+ * against the licence) beats the licence default, which beats the operator
+ * default, which beats "the first model that is actually available".
  */
-function imageApiKey() {
-  return store.get('llm_openai_api_key').trim() || store.get('llm_api_key').trim();
+function resolveTarget(entry, requested, availableIds) {
+  const wanted = String(requested || '').trim();
+  if (wanted) {
+    if (!imageCatalog.parseId(wanted)) {
+      return { error: `"${wanted}" is not a valid image model id.` };
+    }
+    if (!licenseStore.isImageModelAllowed(entry, wanted)) {
+      return { error: 'This activation code is not allowed to use that image model.' };
+    }
+    return { id: wanted };
+  }
+
+  const licenceDefault = entry && entry.default_image_model ? entry.default_image_model : '';
+  if (licenceDefault) {
+    return { id: licenceDefault };
+  }
+
+  const operatorDefault = store.get('image_model').trim();
+  if (operatorDefault && licenseStore.isImageModelAllowed(entry, operatorDefault)) {
+    return { id: operatorDefault };
+  }
+
+  if (availableIds.length) {
+    return { id: availableIds[0] };
+  }
+
+  return { error: 'No image model is configured on the backend.' };
 }
 
 router.post('/generate', async (req, res) => {
@@ -163,66 +208,32 @@ router.post('/generate', async (req, res) => {
     return res.status(400).json({ error: 'No prompt given.' });
   }
 
-  const requestedSize = (req.body && req.body.size) || IMAGE_SIZES[0];
-  const size = IMAGE_SIZES.includes(requestedSize) ? requestedSize : IMAGE_SIZES[0];
+  const entry = req.license ? req.license.entry : null;
 
-  const apiKey = imageApiKey();
-  if (!apiKey) {
-    return res.status(400).json({ error: 'No image-capable API key is configured on the backend.' });
+  // Needed both to pick a default and to give an honest error when nothing
+  // is configured, rather than failing later inside a provider call.
+  const { models } = await imageCatalog.listConfiguredModels((k) => store.get(k));
+  const available = models
+    .filter((m) => licenseStore.isImageModelAllowed(entry, m.id))
+    .map((m) => m.id);
+
+  const target = resolveTarget(entry, req.body && req.body.model, available);
+  if (target.error) {
+    return res.status(400).json({ error: target.error });
   }
 
-  const model = store.get('image_model').trim() || IMAGE_MODEL_DEFAULT;
-
-  // Image generation regularly runs past 60s; the default fetch timeout
-  // would abort a request that was going to succeed.
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 180000);
-
   try {
-    const response = await fetch('https://api.openai.com/v1/images/generations', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ model, prompt, size, n: 1 }),
-      signal: controller.signal,
+    const result = await imageCatalog.generate({
+      id: target.id,
+      prompt,
+      size: (req.body && req.body.size) || '1536x1024',
+      getSetting: (k) => store.get(k),
     });
-
-    const data = await response.json().catch(() => null);
-
-    if (!response.ok) {
-      const msg = data && data.error && data.error.message ? data.error.message : `HTTP ${response.status}`;
-      return res.status(502).json({ error: `Image generation failed: ${msg}` });
-    }
-
-    const first = data && Array.isArray(data.data) ? data.data[0] : null;
-    if (!first) {
-      return res.status(502).json({ error: 'The image provider returned no image.' });
-    }
-
-    // gpt-image-1 always returns base64; the DALL-E models return a URL
-    // unless asked otherwise. Handling both means changing image_model on
-    // the backend does not need a matching change here.
-    if (first.b64_json) {
-      return res.json({ image_base64: first.b64_json });
-    }
-
-    if (first.url) {
-      const download = await fetch(first.url);
-      if (!download.ok) {
-        return res.status(502).json({ error: 'Could not download the generated image.' });
-      }
-      const buffer = Buffer.from(await download.arrayBuffer());
-      return res.json({ image_base64: buffer.toString('base64') });
-    }
-
-    return res.status(502).json({ error: 'The image provider returned no usable image data.' });
+    // The model id is echoed for the operator's logs; the WordPress side
+    // does not show it to the customer.
+    return res.json({ image_base64: result.base64, model: result.model });
   } catch (err) {
-    const msg = err.name === 'AbortError' ? 'The image provider timed out.' : err.message;
-    return res.status(502).json({ error: `Image generation failed: ${msg}` });
-  } finally {
-    clearTimeout(timeout);
+    return res.status(502).json({ error: `Image generation failed: ${err.message}` });
   }
 });
 

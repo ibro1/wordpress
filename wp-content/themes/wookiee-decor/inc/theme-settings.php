@@ -39,6 +39,23 @@ function wookiee_llm_model_options() {
 	return $options;
 }
 
+/**
+ * The image models this activation code may use. Separate catalogue from the
+ * text models - a licence can be granted one and not the other, since the
+ * providers and keys differ.
+ */
+function wookiee_image_model_options() {
+	$options = array( '' => 'Automatic (use the model assigned to this activation code)' );
+
+	if ( function_exists( 'wookiee_central_api_image_models' ) ) {
+		foreach ( wookiee_central_api_image_models() as $id => $label ) {
+			$options[ $id ] = $label;
+		}
+	}
+
+	return $options;
+}
+
 function wookiee_settings_fields() {
 	return array(
 		'contact_email'      => array( 'label' => 'Contact email', 'default' => 'info@wookied.com', 'type' => 'email' ),
@@ -53,6 +70,7 @@ function wookiee_settings_fields() {
 		'spaceship_api_key'    => array( 'label' => 'Spaceship API key', 'default' => '', 'type' => 'password' ),
 		'spaceship_api_secret' => array( 'label' => 'Spaceship API secret', 'default' => '', 'type' => 'password' ),
 		'llm_model'          => array( 'label' => 'AI model', 'default' => '', 'type' => 'select', 'options' => wookiee_llm_model_options() ),
+		'image_model'        => array( 'label' => 'AI image model', 'default' => '', 'type' => 'select', 'options' => wookiee_image_model_options() ),
 		'llm_api_key'        => array( 'label' => 'LLM API key', 'default' => '', 'type' => 'password' ),
 		'llm_base_url'       => array( 'label' => 'LLM base URL', 'default' => 'https://api.openai.com/v1', 'type' => 'text' ),
 		'llm_default_model'  => array( 'label' => 'LLM default model', 'default' => 'gpt-4o-mini', 'type' => 'text' ),
@@ -201,7 +219,7 @@ function wookiee_settings_tabs() {
 		),
 		'integrations' => array(
 			'label'  => 'Activation',
-			'fields' => array( 'llm_model', 'llm_api_key', 'llm_base_url', 'llm_default_model', 'cj_email', 'cj_api_key', 'bg_removal_provider', 'cloudinary_cloud_name', 'cloudinary_api_key', 'cloudinary_api_secret', 'rembg_endpoint_url', 'google_ads_developer_token', 'google_ads_client_id', 'google_ads_client_secret', 'google_ads_refresh_token', 'google_ads_customer_id', 'google_ads_login_customer_id', 'spaceship_api_key', 'spaceship_api_secret' ),
+			'fields' => array( 'llm_model', 'image_model', 'llm_api_key', 'llm_base_url', 'llm_default_model', 'cj_email', 'cj_api_key', 'bg_removal_provider', 'cloudinary_cloud_name', 'cloudinary_api_key', 'cloudinary_api_secret', 'rembg_endpoint_url', 'google_ads_developer_token', 'google_ads_client_id', 'google_ads_client_secret', 'google_ads_refresh_token', 'google_ads_customer_id', 'google_ads_login_customer_id', 'spaceship_api_key', 'spaceship_api_secret' ),
 		),
 	);
 }

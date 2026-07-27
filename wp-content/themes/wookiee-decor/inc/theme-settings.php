@@ -287,6 +287,12 @@ function wookiee_render_settings_field_row( $key, $field ) {
 				<?php else : ?>
 					<p class="description">Which AI model powers the Product Generator, Content Generator, and policy audit. <?php echo esc_html( $wookiee_model_count ); ?> model<?php echo 1 === $wookiee_model_count ? '' : 's'; ?> available on your activation code. Leave on Automatic unless you have a reason to pin a specific one.</p>
 				<?php endif; ?>
+				<?php if ( wookiee_central_api_configured() ) : ?>
+					<p class="description">
+						<a href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=wookiee_refresh_models' ), 'wookiee_refresh_models' ) ); ?>">Check for new models</a>
+						— the list is cached for an hour; use this after your plan changes.
+					</p>
+				<?php endif; ?>
 			<?php endif; ?>
 			<?php if ( 'llm_api_key' === $key ) : ?>
 				<p class="description">Powers the Product Generator, Content Generator, and policy audit. Works with any OpenAI-compatible provider (OpenAI itself, OpenRouter, Groq, a self-hosted vLLM/llama.cpp server, etc.) — just match the base URL and model below to whichever provider this key is for.</p>
@@ -432,6 +438,19 @@ function wookiee_render_settings_page() {
 			<div class="notice notice-success is-dismissible"><p>Connected to Google Ads — the refresh token was saved automatically.</p></div>
 		<?php elseif ( ! empty( $_GET['wookiee_google_ads_error'] ) ) : ?>
 			<div class="notice notice-error"><p>Google Ads connection failed: <?php echo esc_html( sanitize_text_field( wp_unslash( $_GET['wookiee_google_ads_error'] ) ) ); ?></p></div>
+		<?php endif; ?>
+
+		<?php if ( ! empty( $_GET['wookiee_models_refreshed'] ) ) : ?>
+			<?php $wookiee_refreshed_count = count( wookiee_llm_model_options() ) - 1; ?>
+			<div class="notice notice-success is-dismissible">
+				<p>
+					<?php if ( $wookiee_refreshed_count > 0 ) : ?>
+						Model list refreshed — <?php echo esc_html( $wookiee_refreshed_count ); ?> model<?php echo 1 === $wookiee_refreshed_count ? '' : 's'; ?> available on your activation code.
+					<?php else : ?>
+						Model list refreshed — no models are currently assigned to your activation code.
+					<?php endif; ?>
+				</p>
+			</div>
 		<?php endif; ?>
 
 		<h2 class="nav-tab-wrapper" id="wookiee-settings-tabs" role="tablist">

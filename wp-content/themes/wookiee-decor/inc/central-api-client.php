@@ -154,7 +154,14 @@ function wookiee_central_api_models( $force_refresh = false ) {
 		return array();
 	}
 
-	$cache_key = 'wookiee_llm_models';
+	/*
+	 * Keyed by theme version so a theme update always invalidates it. The
+	 * shape and labelling of this data is decided by theme code, so a
+	 * release that changes either would otherwise keep serving the old
+	 * format from cache for up to an hour after deploying - which is
+	 * exactly what happened when provider names were removed from labels.
+	 */
+	$cache_key = 'wookiee_llm_models_' . WOOKIEE_VERSION;
 
 	if ( ! $force_refresh ) {
 		$cached = get_transient( $cache_key );
@@ -195,6 +202,24 @@ function wookiee_central_api_models( $force_refresh = false ) {
 	set_transient( $cache_key, $models, $models ? HOUR_IN_SECONDS : 2 * MINUTE_IN_SECONDS );
 
 	return $models;
+}
+
+/**
+ * Manual "check again" for the model list, so a site owner is never stuck
+ * waiting out a cache after the operator changes what their code may use.
+ * Redirects straight back to the Activation tab.
+ */
+add_action( 'admin_post_wookiee_refresh_models', 'wookiee_refresh_models_handler' );
+function wookiee_refresh_models_handler() {
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_die( 'You do not have permission to do this.' );
+	}
+	check_admin_referer( 'wookiee_refresh_models' );
+
+	wookiee_central_api_models( true );
+
+	wp_safe_redirect( admin_url( 'admin.php?page=wookiee-settings&wookiee_models_refreshed=1#integrations' ) );
+	exit;
 }
 
 /**
@@ -241,7 +266,7 @@ function wookiee_activate_backend_handler() {
 	// The allowed-model list is per activation code, so a newly entered code
 	// almost certainly grants a different set - drop the cache rather than
 	// show the previous code's models for up to an hour.
-	delete_transient( 'wookiee_llm_models' );
+	delete_transient( 'wookiee_llm_models_' . WOOKIEE_VERSION );
 
 	wp_send_json_success();
 }

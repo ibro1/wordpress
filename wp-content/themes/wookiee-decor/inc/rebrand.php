@@ -101,9 +101,79 @@ function wookiee_restore_before_rebrand() {
  */
 function wookiee_rebrand_steps() {
 	return array(
-		'design'   => 'Design',
+		'design'   => 'Colours &amp; layout',
 		'homepage' => 'Homepage copy',
 		'about'    => 'About &amp; Contact copy',
+	);
+}
+
+/**
+ * The design parameters in plain English, split into what changed about the
+ * colours and what changed about the layout.
+ *
+ * Both come from a single generation, but reporting them as one line made
+ * the layout work invisible: the hero treatment, section rhythm and section
+ * ORDER all change on a regenerate, and an operator reading "hue 210, image-
+ * left hero, 3 columns" has no way to know the philosophy section just moved
+ * above the fold. Saying so is the difference between "nothing happened" and
+ * "here is what happened".
+ */
+function wookiee_describe_design( array $p ) {
+	$hue_names = array(
+		15 => 'red', 45 => 'amber', 70 => 'olive', 150 => 'green', 190 => 'teal',
+		240 => 'blue', 280 => 'indigo', 320 => 'purple', 350 => 'pink', 360 => 'red',
+	);
+	$hue_name = 'red';
+	foreach ( $hue_names as $ceiling => $name ) {
+		if ( (float) $p['hue'] < $ceiling ) {
+			$hue_name = $name;
+			break;
+		}
+	}
+
+	$colours = sprintf(
+		'%s (hue %d&deg;), %s saturation, %s paper',
+		$hue_name,
+		round( $p['hue'] ),
+		$p['chroma'],
+		$p['paper']
+	);
+
+	$hero_bg = array(
+		'page'  => 'on the page background',
+		'white' => 'on a white band',
+		'tint'  => 'on a tinted brand band',
+	);
+	$hero = array(
+		'image-right' => 'image right',
+		'image-left'  => 'image left',
+		'centered'    => 'centered, full width',
+	);
+
+	$layout = array(
+		sprintf(
+			'%s hero (%s)',
+			isset( $hero[ $p['hero'] ] ) ? $hero[ $p['hero'] ] : $p['hero'],
+			isset( $hero_bg[ $p['hero_bg'] ] ) ? $hero_bg[ $p['hero_bg'] ] : $p['hero_bg']
+		),
+		$p['density'] . ' section spacing',
+		$p['corners'] . ' corners',
+		'flat' === $p['elevation'] ? 'no card shadows' : $p['elevation'] . ' card shadows',
+		(int) $p['columns'] . ' products per row',
+		'left' === $p['align'] ? 'left-aligned section headings' : 'centred section headings',
+	);
+
+	// The single most visible structural change, and the one most likely to
+	// be mistaken for "nothing happened" if it goes unmentioned.
+	if ( 'story' === $p['emphasis'] ) {
+		$layout[] = '<strong>story order</strong> - the philosophy and how-it-works sections move above the product grid';
+	} else {
+		$layout[] = '<strong>shop order</strong> - products lead, story sections follow';
+	}
+
+	return array(
+		'Colours' => $colours,
+		'Layout'  => implode( '; ', $layout ),
 	);
 }
 
@@ -131,15 +201,7 @@ function wookiee_run_rebrand_step( $step, $brief ) {
 			if ( is_wp_error( $design ) ) {
 				return $design;
 			}
-			$p = $design['params'];
-			return sprintf(
-				'hue %d&deg;, %s saturation, %s spacing, %s hero, %d columns',
-				round( $p['hue'] ),
-				$p['chroma'],
-				$p['density'],
-				$p['hero'],
-				$p['columns']
-			);
+			return wookiee_describe_design( $design['params'] );
 
 		case 'homepage':
 			$text = wookiee_call_llm( wookiee_build_content_prompt( 'homepage_copy', $brief ), 3072 );
@@ -200,6 +262,11 @@ function wookiee_rebrand_handler() {
 	if ( is_wp_error( $result ) ) {
 		wp_send_json_error( array( 'message' => $result->get_error_message() ) );
 	}
+	// A step reports either one line or a set of labelled lines (the design
+	// step splits into Colours and Layout so neither hides behind the other).
+	if ( is_array( $result ) ) {
+		wp_send_json_success( array( 'parts' => $result ) );
+	}
 	wp_send_json_success( array( 'detail' => $result ) );
 }
 
@@ -233,12 +300,19 @@ function wookiee_render_rebrand_page() {
 			<textarea id="wookiee-rebrand-brief" rows="3" style="width:100%;" placeholder="e.g. Portable outdoor cooking gear - compact grills, camp stoves and cookware for British campers and van-lifers."><?php echo esc_textarea( $brief ); ?></textarea>
 
 			<?php if ( $params && $tokens ) : ?>
-				<div style="display:flex;gap:6px;align-items:center;margin-top:14px;flex-wrap:wrap;">
-					<span style="font-size:12px;color:#646970;">Current look:</span>
-					<?php foreach ( array( 'wookiee-bg', 'wookiee-ink', 'wookiee-text', 'wookiee-accent', 'wookiee-border' ) as $tok ) : ?>
-						<span style="width:20px;height:20px;border-radius:4px;border:1px solid #dcdcde;background:<?php echo esc_attr( $tokens[ $tok ] ); ?>;display:inline-block;"></span>
-					<?php endforeach; ?>
-					<span style="font-size:12px;color:#646970;">hue <?php echo esc_html( round( $params['hue'] ) ); ?>°, <?php echo esc_html( $params['hero'] ); ?> hero</span>
+				<?php $described = wookiee_describe_design( $params ); ?>
+				<div style="margin-top:16px;border-top:1px solid #f0f0f1;padding-top:14px;">
+					<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+						<span style="font-size:12px;color:#646970;width:64px;flex:none;">Colours</span>
+						<?php foreach ( array( 'wookiee-bg', 'wookiee-ink', 'wookiee-text', 'wookiee-accent', 'wookiee-border' ) as $tok ) : ?>
+							<span style="width:20px;height:20px;border-radius:4px;border:1px solid #dcdcde;background:<?php echo esc_attr( $tokens[ $tok ] ); ?>;display:inline-block;"></span>
+						<?php endforeach; ?>
+						<span style="font-size:12px;color:#646970;"><?php echo wp_kses( $described['Colours'], array( 'strong' => array() ) ); ?></span>
+					</div>
+					<div style="display:flex;gap:6px;margin-top:8px;">
+						<span style="font-size:12px;color:#646970;width:64px;flex:none;">Layout</span>
+						<span style="font-size:12px;color:#646970;line-height:1.5;"><?php echo wp_kses( $described['Layout'], array( 'strong' => array() ) ); ?></span>
+					</div>
 				</div>
 			<?php endif; ?>
 
@@ -311,7 +385,19 @@ function wookiee_render_rebrand_page() {
 
 					return post( 'wookiee_rebrand', { brief: brief, step: key } ).then( function ( res ) {
 						if ( res && res.success ) {
-							mark( key, '&#10003;', '#00622e', res.data.detail );
+							var detail = res.data.detail;
+							if ( res.data.parts ) {
+								// Labelled sub-lines, so the layout change is
+								// readable on its own rather than buried in a
+								// comma-separated run of parameter names.
+								detail = '<span style="display:block;margin-top:2px;">';
+								Object.keys( res.data.parts ).forEach( function ( label ) {
+									detail += '<span style="display:block;"><em>' + label + ':</em> ' +
+										res.data.parts[ label ] + '</span>';
+								} );
+								detail += '</span>';
+							}
+							mark( key, '&#10003;', '#00622e', detail );
 						} else {
 							failed = true;
 							mark( key, '&#10007;', '#a3272a', ( res && res.data && res.data.message ) || 'Failed.' );

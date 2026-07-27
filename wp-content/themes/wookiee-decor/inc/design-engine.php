@@ -147,6 +147,11 @@ function wookiee_design_param_defaults() {
 		'emphasis'        => 'products',  // products | story
 		'heading_scale'   => 1.0,         // 0.85-1.35
 		'align'           => 'center',    // center | left
+		// The hero is the whole first screen. Earlier versions varied only
+		// the product grid and section padding - all of it below the fold -
+		// so a regenerated design looked identical until you scrolled.
+		'hero'            => 'image-right', // image-right | image-left | centered
+		'hero_bg'         => 'page',        // page | white | tint
 	);
 }
 
@@ -221,7 +226,7 @@ function wookiee_derive_palette( array $p ) {
  * re-measured here; anything short is reported rather than shipped, which
  * is what makes "guaranteed readable" a checkable claim instead of a hope.
  */
-function wookiee_audit_palette_contrast( array $tokens ) {
+function wookiee_audit_palette_contrast( array $tokens, array $params = array() ) {
 	$checks = array(
 		array( 'body text on page',      $tokens['wookiee-text'],        $tokens['wookiee-bg'],    7.0 ),
 		array( 'headings on page',       $tokens['wookiee-ink'],         $tokens['wookiee-bg'],    7.0 ),
@@ -230,6 +235,14 @@ function wookiee_audit_palette_contrast( array $tokens ) {
 		array( 'muted text on cards',    $tokens['wookiee-text-muted'],  '#ffffff',                4.5 ),
 		array( 'white text on accent',   '#ffffff',                      $tokens['wookiee-accent'], 4.5 ),
 	);
+
+	// The tinted hero is a second background that real text sits on, so it
+	// has to be audited too, not just the page.
+	if ( $params && isset( $params['hero_bg'] ) && 'tint' === $params['hero_bg'] ) {
+		$hero = wookiee_hero_tint( $params );
+		$checks[] = array( 'body text on hero band', $tokens['wookiee-text'], $hero, 4.5 );
+		$checks[] = array( 'headings on hero band', $tokens['wookiee-ink'], $hero, 4.5 );
+	}
 
 	$failures = array();
 	foreach ( $checks as $c ) {
@@ -245,6 +258,20 @@ function wookiee_audit_palette_contrast( array $tokens ) {
 /* -------------------------------------------------------------------------
  * Parameters -> layout CSS
  * ---------------------------------------------------------------------- */
+
+/**
+ * A deeper wash of the brand hue for the hero band - darker and more
+ * saturated than the page, but still light enough that the same solved text
+ * colours remain readable on it (verified alongside the page background in
+ * the contrast audit).
+ */
+function wookiee_hero_tint( array $p ) {
+	$chroma      = wookiee_chroma_value( $p['chroma'] );
+	$paper_shift = array( 'warm' => 18, 'neutral' => 0, 'cool' => -18 );
+	$ph          = (float) $p['hue'] + ( isset( $paper_shift[ $p['paper'] ] ) ? $paper_shift[ $p['paper'] ] : 0 );
+
+	return wookiee_hsl_to_hex( $ph, max( 0.22, min( 0.62, $chroma * 1.35 ) ), 0.88 );
+}
 
 function wookiee_derive_layout_css( array $p ) {
 	$density = array( 'dense' => 40, 'balanced' => 70, 'airy' => 104 );
@@ -271,6 +298,37 @@ function wookiee_derive_layout_css( array $p ) {
 
 	$css .= '.wookiee-gen .home-section{padding-top:' . $pad . 'px;padding-bottom:' . $pad . 'px;}';
 	$css .= '.wookiee-gen .section-title{font-size:' . $title . 'px;}';
+
+	/*
+	 * Hero treatment. This is the entire first screen, so it is where a
+	 * regenerated design has to be visibly different - varying only the
+	 * product grid and section padding (all below the fold) is what made
+	 * earlier versions look like nothing had happened.
+	 */
+	$hero_pad = (int) round( $pad * 0.85 );
+	$css .= '.wookiee-gen .hero-section{padding-top:' . $hero_pad . 'px;padding-bottom:' . ( $hero_pad + 8 ) . 'px;}';
+
+	if ( 'white' === $p['hero_bg'] ) {
+		$css .= '.wookiee-gen .hero-section{background:var(--wookiee-white);}';
+	} elseif ( 'tint' === $p['hero_bg'] ) {
+		// A deeper wash of the brand hue than the page itself, so the hero
+		// reads as a distinct band rather than merging into the page.
+		$tint = wookiee_hero_tint( $p );
+		$css .= '.wookiee-gen .hero-section{background:' . $tint . ';}';
+	}
+
+	if ( 'centered' === $p['hero'] ) {
+		$css .= '@media(min-width:900px){'
+			. '.wookiee-gen .hero-grid{grid-template-columns:1fr;text-align:center;gap:36px;max-width:900px;}'
+			. '.wookiee-gen .hero-cta-row{justify-content:center;}'
+			. '.wookiee-gen .hero-lead{margin-left:auto;margin-right:auto;}'
+			. '}';
+	} elseif ( 'image-left' === $p['hero'] ) {
+		$css .= '@media(min-width:900px){'
+			. '.wookiee-gen .hero-text-col{order:2;}'
+			. '.wookiee-gen .hero-image-col{order:1;}'
+			. '}';
+	}
 
 	if ( 'left' === $p['align'] ) {
 		$css .= '.wookiee-gen .section-header.text-center{text-align:left;}';
@@ -329,6 +387,8 @@ function wookiee_sanitize_design_params( $raw ) {
 		'elevation' => array( 'flat', 'subtle', 'strong' ),
 		'emphasis'  => array( 'products', 'story' ),
 		'align'     => array( 'center', 'left' ),
+		'hero'      => array( 'image-right', 'image-left', 'centered' ),
+		'hero_bg'   => array( 'page', 'white', 'tint' ),
 	) as $key => $allowed ) {
 		if ( isset( $raw[ $key ] ) && in_array( (string) $raw[ $key ], $allowed, true ) ) {
 			$out[ $key ] = (string) $raw[ $key ];
@@ -355,7 +415,7 @@ function wookiee_save_design_params( array $params, $note = '' ) {
 	// Verify before storing. A palette that somehow fails is rejected rather
 	// than published - the loop should make this unreachable, but a silent
 	// contrast failure on a live store is not something to leave to trust.
-	$failures = wookiee_audit_palette_contrast( wookiee_derive_palette( $clean ) );
+	$failures = wookiee_audit_palette_contrast( wookiee_derive_palette( $clean ), $clean );
 	if ( $failures ) {
 		return new WP_Error( 'wookiee_design_contrast', 'Generated palette failed contrast checks: ' . implode( '; ', $failures ) );
 	}
@@ -418,7 +478,7 @@ function wookiee_render_design_panel() {
 	$params = wookiee_current_design_params();
 	$note   = (string) get_option( 'wookiee_design_note', '' );
 	$tokens = $params ? wookiee_derive_palette( $params ) : array();
-	$audit  = $tokens ? wookiee_audit_palette_contrast( $tokens ) : array();
+	$audit  = $tokens ? wookiee_audit_palette_contrast( $tokens, $params ) : array();
 	?>
 	<div class="wookiee-design-panel" style="background:#fff;border:1px solid #dcdcde;border-radius:4px;padding:16px 18px;margin:0 0 16px;">
 		<p class="description" style="margin:0 0 14px;">
@@ -557,9 +617,22 @@ function wookiee_render_design_panel() {
  * never asked for a hex value, because the readable version of that hue is
  * something this code computes, not something a model can reliably judge.
  */
-function wookiee_build_design_params_prompt( $brief ) {
+function wookiee_build_design_params_prompt( $brief, $avoid = array() ) {
 	$prompt = "You are art-directing the storefront of a UK single-niche ecommerce store.\n\n"
-		. "Store niche, in the owner's own words: \"{$brief}\"\n\n"
+		. "Store niche, in the owner's own words: \"{$brief}\"\n\n";
+
+	/*
+	 * Without this, a niche with an obvious colour association ("outdoor
+	 * cooking" -> green) returns the same hue on every regeneration, so
+	 * "generate a different design" produced the same design. Telling it
+	 * what is already live, and requiring real distance from it, is what
+	 * makes the button mean what it says.
+	 */
+	if ( ! empty( $avoid['hue'] ) || ( isset( $avoid['hue'] ) && 0 === (int) $avoid['hue'] ) ) {
+		$prompt .= "The store currently uses hue {$avoid['hue']} with a {$avoid['hero']} hero. This is a request for a DIFFERENT design: choose a hue at least 60 degrees away from that one, and change the hero treatment and at least two other parameters. The obvious colour for a niche is not the only defensible one - a considered, less literal choice is usually the better brand decision.\n\n";
+	}
+
+	$prompt .= ''
 		. "Choose design parameters that suit this specific niche and the customer who buys from it.\n\n"
 		. "Commit to a real point of view. The middle option on every scale produces a storefront indistinguishable from every other one, which is the outcome to avoid: prefer a definite choice - dense or airy rather than balanced, sharp or round rather than soft, 2 or 4 columns rather than 3 - unless the middle genuinely is right for this niche and you can say why. Two different niches must not end up with the same answer.\n\n"
 		. "Respond with exactly these labelled lines, nothing else:\n"
@@ -574,6 +647,8 @@ function wookiee_build_design_params_prompt( $brief ) {
 		. "EMPHASIS: products or story. 'story' puts the philosophy and how-it-works sections above the product grid.\n"
 		. "HEADING_SCALE: a number 0.85-1.35. Section heading size relative to default.\n"
 		. "ALIGN: center or left. Section heading alignment.\n"
+		. "HERO: image-right, image-left or centered. The hero is the first screen a customer sees - image-right and image-left put the photo on that side, centered stacks the text above it.\n"
+		. "HERO_BG: page, white or tint. Whether the hero sits on the page colour, on white, or on a deeper band of the brand hue.\n"
 		. "REASON: one sentence, plain English, on why this suits this niche.\n\n"
 		. "Do not output colour codes, CSS, or any value outside the ranges above.";
 
@@ -590,7 +665,7 @@ function wookiee_ai_generate_design( $brief ) {
 		return new WP_Error( 'wookiee_design_no_brief', 'Set a niche brief first - the design is generated from it.' );
 	}
 
-	$text = wookiee_call_llm( wookiee_build_design_params_prompt( $brief ), 400 );
+	$text = wookiee_call_llm( wookiee_build_design_params_prompt( $brief, wookiee_current_design_params() ), 500 );
 	if ( is_wp_error( $text ) ) {
 		return $text;
 	}
@@ -607,6 +682,8 @@ function wookiee_ai_generate_design( $brief ) {
 		'EMPHASIS'      => 'emphasis',
 		'HEADING_SCALE' => 'heading_scale',
 		'ALIGN'         => 'align',
+		'HERO'          => 'hero',
+		'HERO_BG'       => 'hero_bg',
 		'REASON'        => 'reason',
 	) );
 

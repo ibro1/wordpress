@@ -89,7 +89,7 @@
     <button type="button" id="new-license-btn">Generate code</button>
   </div>
   <table class="licenses" id="licenses-table">
-    <thead><tr><th>Code</th><th>Label</th><th>Sites</th><th>AI models</th><th>Status</th><th></th></tr></thead>
+    <thead><tr><th>Code</th><th>Label</th><th>Sites</th><th>Allowed models</th><th>Status</th><th></th></tr></thead>
     <tbody id="licenses-tbody"></tbody>
   </table>
 
@@ -151,16 +151,44 @@
   var form = document.getElementById('settings-form');
   var statusEl = document.getElementById('status');
 
-  // Live model catalogue from /licenses/models - fetched from each provider
-  // that has a key saved, never hardcoded. Cached module-level so opening
-  // the editor on ten licences doesn't refetch ten times.
-  var CATALOG = { models: [], providers: [], errors: {} };
+  /**
+   * The two live catalogues - text from /licenses/models, images from
+   * /licenses/image-models. Kept separate rather than merged because they
+   * have different providers, different keys and different failure modes:
+   * a Together outage must not surface as an error on the text picker.
+   *
+   * Each KIND carries everything that differs between the two, so one
+   * editor implementation serves both instead of a near-duplicate.
+   */
+  var KINDS = {
+    text: {
+      title: 'Models this code may use',
+      noun: 'models',
+      path: '/licenses/models',
+      allowedField: 'allowed_models',
+      defaultField: 'default_model',
+    },
+    image: {
+      title: 'Image models this code may use',
+      noun: 'image models',
+      path: '/licenses/image-models',
+      allowedField: 'allowed_image_models',
+      defaultField: 'default_image_model',
+    },
+  };
 
-  function loadCatalog(force) {
-    return fetch('/licenses/models' + (force ? '?refresh=1' : ''))
+  // Cached module-level so opening the editor on ten licences doesn't
+  // refetch ten times.
+  var CATALOGS = {
+    text: { models: [], providers: [], errors: {} },
+    image: { models: [], providers: [], errors: {} },
+  };
+
+  function loadCatalog(kind, force) {
+    return fetch(KINDS[kind].path + (force ? '?refresh=1' : ''))
       .then(function (r) { return r.json(); })
       .then(function (res) {
-        CATALOG = {
+        CATALOGS[kind] = {
           models: res.models || [],
           providers: res.providers || [],
           errors: res.errors || {},
@@ -169,16 +197,18 @@
       .catch(function () { /* picker degrades to a message; not fatal */ });
   }
 
-  function providerLabel(key) {
-    for (var i = 0; i < CATALOG.providers.length; i++) {
-      if (CATALOG.providers[i].key === key) { return CATALOG.providers[i].label; }
+  function providerLabel(kind, key) {
+    var providers = CATALOGS[kind].providers;
+    for (var i = 0; i < providers.length; i++) {
+      if (providers[i].key === key) { return providers[i].label; }
     }
     return key;
   }
 
-  function modelById(id) {
-    for (var i = 0; i < CATALOG.models.length; i++) {
-      if (CATALOG.models[i].id === id) { return CATALOG.models[i]; }
+  function modelById(kind, id) {
+    var models = CATALOGS[kind].models;
+    for (var i = 0; i < models.length; i++) {
+      if (models[i].id === id) { return models[i]; }
     }
     return null;
   }
@@ -188,6 +218,12 @@
   // on their models endpoint, so showing nothing beats inventing a number.
   function modelMeta(m) {
     var bits = [];
+    // Image models report the sizes they accept rather than token pricing -
+    // no image provider publishes per-image cost on its models endpoint, and
+    // inventing one would be worse than showing nothing.
+    if (m.sizes && m.sizes.length) {
+      bits.push(m.sizes.join(', '));
+    }
     if (m.in !== null && m.in !== undefined && m.out !== null && m.out !== undefined) {
       bits.push('$' + m.in + ' in / $' + m.out + ' out per 1M');
     }
@@ -200,21 +236,25 @@
   }
 
   /**
-   * Searchable multi-select of models for one licence.
-   * onSave receives { allowed_models, default_model }.
+   * Searchable multi-select of models for one licence, for either catalogue.
+   * onSave receives the payload keyed for that catalogue, e.g.
+   * { allowed_image_models, default_image_model } when kind is 'image'.
    */
-  function buildModelEditor(entry, onSave, onCancel) {
+  function buildModelEditor(kind, entry, onSave, onCancel) {
+    var KIND = KINDS[kind];
+    var CATALOG = CATALOGS[kind];
+
     var wrap = document.createElement('div');
     wrap.className = 'model-editor';
 
     var h4 = document.createElement('h4');
-    h4.textContent = 'Models this code may use';
+    h4.textContent = KIND.title;
     wrap.appendChild(h4);
 
     var hint = document.createElement('p');
     hint.className = 'description';
     hint.style.margin = '0 0 10px';
-    hint.textContent = 'Tick none to allow every model. The list is pulled live from each provider you have saved a key for.';
+    hint.textContent = 'Tick none to allow every ' + KIND.noun.replace(/s$/, '') + '. The list is pulled live from each provider you have saved a key for.';
     wrap.appendChild(hint);
 
     // Surface per-provider trouble explicitly: a saved-but-rejected key and
@@ -237,7 +277,7 @@
       wrap.appendChild(warn);
     }
 
-    var selected = (entry.allowed_models || []).slice();
+    var selected = (entry[KIND.allowedField] || []).slice();
 
     var chips = document.createElement('div');
     chips.className = 'model-selected-chips';
@@ -246,7 +286,7 @@
     var search = document.createElement('input');
     search.type = 'search';
     search.className = 'model-search';
-    search.placeholder = 'Search ' + CATALOG.models.length + ' models by name, provider or id...';
+    search.placeholder = 'Search ' + CATALOG.models.length + ' ' + KIND.noun + ' by name, provider or id...';
     wrap.appendChild(search);
 
     var countEl = document.createElement('p');
@@ -258,7 +298,7 @@
     wrap.appendChild(list);
 
     var defLabel = document.createElement('label');
-    defLabel.textContent = 'Default model';
+    defLabel.textContent = 'image' === kind ? 'Default image model' : 'Default model';
     defLabel.style.marginTop = '10px';
     wrap.appendChild(defLabel);
     var defSelect = document.createElement('select');
@@ -270,12 +310,12 @@
         var none = document.createElement('span');
         none.className = 'model-count';
         none.style.margin = '0';
-        none.textContent = 'Nothing selected - this code may use any available model.';
+        none.textContent = 'Nothing selected - this code may use any available ' + KIND.noun.replace(/s$/, '') + '.';
         chips.appendChild(none);
         return;
       }
       selected.forEach(function (id) {
-        var m = modelById(id);
+        var m = modelById(kind, id);
         var chip = document.createElement('span');
         chip.className = 'chip';
         chip.appendChild(document.createTextNode(m ? m.label : id));
@@ -300,22 +340,22 @@
       });
 
       countEl.textContent = q
-        ? matches.length + ' of ' + CATALOG.models.length + ' models match "' + search.value.trim() + '"'
-        : CATALOG.models.length + ' models available across ' + CATALOG.providers.filter(function (p) { return p.configured && !p.error; }).length + ' provider(s)';
+        ? matches.length + ' of ' + CATALOG.models.length + ' ' + KIND.noun + ' match "' + search.value.trim() + '"'
+        : CATALOG.models.length + ' ' + KIND.noun + ' available across ' + CATALOG.providers.filter(function (p) { return p.configured && !p.error; }).length + ' provider(s)';
 
       list.innerHTML = '';
 
       if (!CATALOG.models.length) {
         var empty = document.createElement('p');
         empty.className = 'model-empty';
-        empty.textContent = 'No models available - save at least one provider API key below, then click Refresh models.';
+        empty.textContent = 'No ' + KIND.noun + ' available - save at least one provider API key below, then click Refresh.';
         list.appendChild(empty);
         return;
       }
       if (!matches.length) {
         var noMatch = document.createElement('p');
         noMatch.className = 'model-empty';
-        noMatch.textContent = 'No models match that search.';
+        noMatch.textContent = 'No ' + KIND.noun + ' match that search.';
         list.appendChild(noMatch);
         return;
       }
@@ -332,7 +372,7 @@
         var group = document.createElement('div');
         group.className = 'model-provider';
         var strong = document.createElement('strong');
-        strong.textContent = providerLabel(pk) + ' (' + byProvider[pk].length + ')';
+        strong.textContent = providerLabel(kind, pk) + ' (' + byProvider[pk].length + ')';
         group.appendChild(strong);
 
         byProvider[pk].forEach(function (m) {
@@ -376,11 +416,11 @@
 
       var noneOpt = document.createElement('option');
       noneOpt.value = '';
-      noneOpt.textContent = selected.length ? '(first selected model)' : '(server fallback settings)';
+      noneOpt.textContent = selected.length ? '(first selected)' : '(server fallback settings)';
       defSelect.appendChild(noneOpt);
 
       selected.forEach(function (id) {
-        var m = modelById(id);
+        var m = modelById(kind, id);
         var opt = document.createElement('option');
         opt.value = id;
         opt.textContent = m ? m.label : id;
@@ -388,7 +428,7 @@
       });
 
       if (selected.indexOf(previous) !== -1) { defSelect.value = previous; }
-      else if (selected.indexOf(entry.default_model) !== -1) { defSelect.value = entry.default_model; }
+      else if (selected.indexOf(entry[KIND.defaultField]) !== -1) { defSelect.value = entry[KIND.defaultField]; }
     }
 
     function renderAll() { renderChips(); renderList(); syncDefaults(); }
@@ -400,9 +440,12 @@
     actions.className = 'actions';
     var saveBtn = document.createElement('button');
     saveBtn.type = 'button';
-    saveBtn.textContent = 'Save models';
+    saveBtn.textContent = 'Save';
     saveBtn.addEventListener('click', function () {
-      onSave({ allowed_models: selected, default_model: defSelect.value });
+      var payload = {};
+      payload[KIND.allowedField] = selected;
+      payload[KIND.defaultField] = defSelect.value;
+      onSave(payload);
     });
     var cancelBtn = document.createElement('button');
     cancelBtn.type = 'button';
@@ -412,15 +455,16 @@
     var refreshBtn = document.createElement('button');
     refreshBtn.type = 'button';
     refreshBtn.className = 'secondary';
-    refreshBtn.textContent = 'Refresh models';
-    refreshBtn.title = 'Re-fetch the model list from every configured provider';
+    refreshBtn.textContent = 'Refresh';
+    refreshBtn.title = 'Re-fetch the list from every configured provider';
     refreshBtn.addEventListener('click', function () {
       refreshBtn.disabled = true;
       refreshBtn.textContent = 'Refreshing...';
-      loadCatalog(true).then(function () {
+      loadCatalog(kind, true).then(function () {
         refreshBtn.disabled = false;
-        refreshBtn.textContent = 'Refresh models';
-        search.placeholder = 'Search ' + CATALOG.models.length + ' models by name, provider or id...';
+        refreshBtn.textContent = 'Refresh';
+        CATALOG = CATALOGS[kind];
+        search.placeholder = 'Search ' + CATALOG.models.length + ' ' + KIND.noun + ' by name, provider or id...';
         renderAll();
       });
     });
@@ -528,7 +572,7 @@
     });
     // Catalogue first - the licence rows' model pickers need it, and
     // "configured" flags depend on which provider keys are saved.
-    loadCatalog().then(loadLicenses);
+    loadCatalog('text').then(loadLicenses);
     loadPrompts();
   }
 
@@ -561,12 +605,11 @@
         var modelsTd = document.createElement('td');
         modelsTd.className = 'models-cell';
         var allowed = entry.allowed_models || [];
-        if (!allowed.length) {
-          modelsTd.textContent = 'All';
-        } else {
-          modelsTd.textContent = allowed.length + ' selected';
-          modelsTd.title = allowed.join('\n');
-        }
+        var allowedImages = entry.allowed_image_models || [];
+        modelsTd.textContent = (allowed.length ? allowed.length + ' text' : 'All text')
+          + ' \u00b7 ' + (allowedImages.length ? allowedImages.length + ' image' : 'All image');
+        modelsTd.title = 'Text:\n' + (allowed.length ? allowed.join('\n') : '(unrestricted)')
+          + '\n\nImage:\n' + (allowedImages.length ? allowedImages.join('\n') : '(unrestricted)');
         tr.appendChild(modelsTd);
 
         var statusTd = document.createElement('td');
@@ -578,40 +621,62 @@
 
         var actionTd = document.createElement('td');
         if (entry.active) {
-          var editBtn = document.createElement('button');
-          editBtn.type = 'button';
-          editBtn.className = 'secondary';
-          editBtn.style.marginTop = '0';
-          editBtn.style.marginRight = '6px';
-          editBtn.textContent = 'Models';
-          editBtn.addEventListener('click', function () {
-            // Toggle: a second click on an open editor closes it.
-            var existing = tr.nextSibling;
-            if (existing && existing.getAttribute && existing.getAttribute('data-editor-for') === code) {
-              existing.parentNode.removeChild(existing);
-              return;
-            }
-            var editorRow = document.createElement('tr');
-            editorRow.setAttribute('data-editor-for', code);
-            var editorTd = document.createElement('td');
-            editorTd.colSpan = 6;
-            editorTd.appendChild(buildModelEditor(entry, function (payload) {
-              fetch('/licenses/' + encodeURIComponent(code), {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload),
-              }).then(function (r) { return r.json().then(function (b) { return { ok: r.ok, body: b }; }); })
-                .then(function (res) {
-                  if (!res.ok) { window.alert(res.body.error || 'Could not save models.'); return; }
-                  loadLicenses();
-                });
-            }, function () {
-              editorRow.parentNode.removeChild(editorRow);
-            }));
-            editorRow.appendChild(editorTd);
-            tr.parentNode.insertBefore(editorRow, tr.nextSibling);
+          // One button per catalogue. The open editor is tagged with its
+          // kind as well as its code, so clicking Image models while the
+          // text editor is open swaps it rather than stacking two rows.
+          ['text', 'image'].forEach(function (kind) {
+            var editBtn = document.createElement('button');
+            editBtn.type = 'button';
+            editBtn.className = 'secondary';
+            editBtn.style.marginTop = '0';
+            editBtn.style.marginRight = '6px';
+            editBtn.textContent = 'text' === kind ? 'Models' : 'Image models';
+            editBtn.addEventListener('click', function () {
+              var existing = tr.nextSibling;
+              var isEditor = existing && existing.getAttribute
+                && existing.getAttribute('data-editor-for') === code;
+
+              if (isEditor) {
+                var wasKind = existing.getAttribute('data-editor-kind');
+                existing.parentNode.removeChild(existing);
+                // Same button again = close. A different one = reopen below.
+                if (wasKind === kind) { return; }
+              }
+
+              var editorRow = document.createElement('tr');
+              editorRow.setAttribute('data-editor-for', code);
+              editorRow.setAttribute('data-editor-kind', kind);
+              var editorTd = document.createElement('td');
+              editorTd.colSpan = 6;
+
+              // Only the text catalogue is fetched on page load - pulling
+              // both up front doubles the provider round-trips for an
+              // operator who never opens the image picker.
+              var ready = CATALOGS[kind].models.length || CATALOGS[kind].providers.length
+                ? Promise.resolve()
+                : loadCatalog(kind);
+
+              ready.then(function () {
+                editorTd.appendChild(buildModelEditor(kind, entry, function (payload) {
+                  fetch('/licenses/' + encodeURIComponent(code), {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                  }).then(function (r) { return r.json().then(function (b) { return { ok: r.ok, body: b }; }); })
+                    .then(function (res) {
+                      if (!res.ok) { window.alert(res.body.error || 'Could not save.'); return; }
+                      loadLicenses();
+                    });
+                }, function () {
+                  editorRow.parentNode.removeChild(editorRow);
+                }));
+              });
+
+              editorRow.appendChild(editorTd);
+              tr.parentNode.insertBefore(editorRow, tr.nextSibling);
+            });
+            actionTd.appendChild(editBtn);
           });
-          actionTd.appendChild(editBtn);
 
           var revokeBtn = document.createElement('button');
           revokeBtn.type = 'button';
@@ -666,7 +731,7 @@
       buildForm(res.values || {});
       // Saving a provider key flips that provider's models from greyed-out
       // to selectable, so both the catalogue and the rows have to re-read.
-      loadCatalog().then(loadLicenses);
+      loadCatalog('text').then(loadLicenses);
     }).catch(function () {
       statusEl.textContent = 'Save failed - could not reach the server.';
     });

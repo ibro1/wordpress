@@ -62,9 +62,26 @@ $dbt_dc_selected = function_exists( 'dual_currency_get_selected_currency' ) ? du
 
 		<input v-else v-on:click="$parent.open_url('<?php echo esc_url( $product->get_contact_us_link() ); ?>', '_blank');" type="checkbox" name="products[]" value="<?php echo esc_attr( $product->get_id() ); ?>" class="screen-reader-text wu-hidden">
 
+		<?php
+		/*
+		 * The product "description" is a single wp-admin textarea, so we
+		 * treat its first non-empty line as the one-line tagline and every
+		 * line after that as a feature to list with a checkmark - lets the
+		 * merchant write a real feature list without needing a dedicated
+		 * repeater field the plugin doesn't expose in wp-admin anyway
+		 * (Product::get_feature_list()/set_feature_list() exist on the
+		 * model but have no admin UI - REST-API-only).
+		 */
+		$dbt_desc_lines    = array_values( array_filter( array_map( 'trim', explode( "\n", (string) $product->get_description() ) ) ) );
+		$dbt_tagline       = $dbt_desc_lines ? array_shift( $dbt_desc_lines ) : '';
+		$dbt_feature_lines = $dbt_desc_lines;
+		?>
+
 		<div class="dbt-plan__body">
 			<div class="dbt-plan__name"><?php echo esc_html( $product->get_name() ); ?></div>
-			<div class="dbt-plan__desc"><?php echo wp_kses( $product->get_description(), wu_kses_allowed_html() ); ?></div>
+			<?php if ( $dbt_tagline ) : ?>
+				<div class="dbt-plan__desc"><?php echo wp_kses( $dbt_tagline, wu_kses_allowed_html() ); ?></div>
+			<?php endif; ?>
 
 			<?php if ( ! $product->is_pay_what_you_want() ) : ?>
 				<div class="dbt-plan__price">
@@ -81,6 +98,14 @@ $dbt_dc_selected = function_exists( 'dual_currency_get_selected_currency' ) ? du
 					?>
 				</div>
 				<div class="dbt-plan__period"><?php echo esc_html( $product->get_recurring_description() ); ?></div>
+			<?php endif; ?>
+
+			<?php if ( $dbt_feature_lines ) : ?>
+				<ul class="dbt-plan__features">
+					<?php foreach ( $dbt_feature_lines as $dbt_feature_line ) : ?>
+						<li><?php echo wp_kses( $dbt_feature_line, wu_kses_allowed_html() ); ?></li>
+					<?php endforeach; ?>
+				</ul>
 			<?php endif; ?>
 		</div>
 

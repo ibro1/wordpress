@@ -141,6 +141,43 @@ img {
 .site-logo-link {
 	display: flex;
 	align-items: center;
+	gap: 10px;
+	text-decoration: none;
+	/* The header is a fixed-width column; without this a long store name
+	   pushes the navigation off the row instead of shortening itself. */
+	min-width: 0;
+}
+.site-logo-mark {
+	display: flex;
+	flex: none;
+	line-height: 0;
+}
+.site-logo-name {
+	font-family: var(--font-secondary, inherit);
+	font-weight: 800;
+	font-size: 22px;
+	letter-spacing: -0.5px;
+	color: var(--wookiee-ink);
+	/* Was <text> inside a 160x38 SVG viewBox, which clipped anything past
+	   about eleven characters with no indication it had done so. As HTML it
+	   simply lays out; only a genuinely long name is ellipsised, and the full
+	   name stays in the link's aria-label either way. */
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	max-width: 22ch;
+}
+
+@media (max-width: 900px) {
+	.site-logo-name {
+		font-size: 19px;
+		max-width: 14ch;
+	}
+}
+@media (max-width: 480px) {
+	.site-logo-name {
+		max-width: 9ch;
+	}
 }
 .site-logo-custom img {
 	max-height: 44px;

@@ -121,7 +121,6 @@ function wookiee_render_setup_wizard_page() {
 	$steps         = wookiee_setup_steps();
 
 	$settings_url = admin_url( 'admin.php?page=wookiee-settings' );
-	$catalog_url  = admin_url( 'admin.php?page=wookiee-supplier-catalog' );
 
 	$policy_live_count = 0;
 	foreach ( $policy_pieces as $piece ) {
@@ -311,11 +310,6 @@ function wookiee_render_setup_wizard_page() {
 			<?php else : ?>
 				<?php wookiee_render_product_generator_page(); ?>
 			<?php endif; ?>
-			<hr>
-			<p>
-				Or browse and hand-pick from the full catalog:
-				<a href="<?php echo esc_url( $catalog_url ); ?>" class="button" <?php disabled( ! $has_cj_creds || ! $has_woo ); ?>>Open CJ Supplier Catalog</a>
-			</p>
 			<p class="description">
 				<?php if ( $display_cat_count > 0 ) : ?>
 					<?php echo intval( $display_cat_count ); ?> product categor<?php echo 1 === $display_cat_count ? 'y currently has' : 'ies currently have'; ?> products — these drive the homepage's category sections and footer Shop links automatically.

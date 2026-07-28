@@ -652,6 +652,21 @@ function wookiee_rebrand_start_handler() {
 	}
 	check_ajax_referer( 'wookiee_rebrand', 'nonce' );
 
+	/*
+	 * Refuse before anything is touched.
+	 *
+	 * 'Clear old products' runs first, and it succeeded on an unactivated
+	 * install - trashing the catalogue - before the design step failed for
+	 * want of an API key and took every remaining step with it. The operator
+	 * was left with an emptied store and nothing rebranded. Undo would put it
+	 * back, but nothing should have started in the first place.
+	 */
+	if ( ! wookiee_generation_available() ) {
+		wp_send_json_error( array(
+			'message' => 'Nothing can be generated yet - add an activation code on Wookiee Settings first. Nothing has been changed.',
+		) );
+	}
+
 	$brief = isset( $_POST['brief'] ) ? sanitize_textarea_field( wp_unslash( $_POST['brief'] ) ) : '';
 	if ( '' === trim( $brief ) ) {
 		wp_send_json_error( array( 'message' => 'Describe your store in a sentence first.' ) );
@@ -784,6 +799,19 @@ function wookiee_render_rebrand_page() {
 		endif;
 		?>
 
+		<?php $wookiee_can_generate = ! function_exists( 'wookiee_generation_available' ) || wookiee_generation_available(); ?>
+		<?php if ( ! $wookiee_can_generate ) : ?>
+			<div class="notice notice-warning" style="margin:16px 0;padding:14px 16px;">
+				<p style="font-size:14px;margin:0 0 6px;">
+					<strong>This store cannot generate anything yet.</strong>
+					Rebranding needs an activation code, or your own LLM key, before it can write copy or make images.
+				</p>
+				<p style="margin:0;">
+					<a href="<?php echo esc_url( admin_url( 'admin.php?page=wookiee-settings#integrations' ) ); ?>" class="button button-primary">Add an activation code</a>
+				</p>
+			</div>
+		<?php endif; ?>
+
 		<div style="background:#fff;border:1px solid #dcdcde;border-radius:4px;padding:18px;max-width:760px;margin-top:16px;">
 			<label for="wookiee-rebrand-brief" style="display:block;font-weight:600;margin-bottom:6px;">What does this store sell?</label>
 			<textarea id="wookiee-rebrand-brief" rows="3" style="width:100%;" placeholder="e.g. Portable outdoor cooking gear - compact grills, camp stoves and cookware for British campers and van-lifers."><?php echo esc_textarea( $brief ); ?></textarea>
@@ -846,7 +874,7 @@ function wookiee_render_rebrand_page() {
 			</div>
 
 			<p style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
-				<button type="button" class="button button-primary button-hero" id="wookiee-rebrand-go">Rebrand my store</button>
+				<button type="button" class="button button-primary button-hero" id="wookiee-rebrand-go" <?php disabled( ! $wookiee_can_generate ); ?>>Rebrand my store</button>
 				<button type="button" class="button" id="wookiee-rebrand-stop" style="display:none;">Stop</button>
 				<?php if ( $has_undo ) : ?>
 					<button type="button" class="button" id="wookiee-rebrand-undo">Undo last rebrand</button>

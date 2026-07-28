@@ -80,9 +80,19 @@ function wookiee_brand_mark_svg( $size = 34, $standalone = false ) {
 	// clears 4.5:1 - the same guarantee the buttons rely on.
 	$accent = '#1a1614';
 	if ( function_exists( 'wookiee_current_design_params' ) && function_exists( 'wookiee_derive_palette' ) ) {
-		$tokens = wookiee_derive_palette( wookiee_current_design_params() );
-		if ( ! empty( $tokens['wookiee-accent'] ) ) {
-			$accent = $tokens['wookiee-accent'];
+		/*
+		 * wookiee_current_design_params() returns an EMPTY array until a design
+		 * has been generated - not a set of defaults. Passing that straight to
+		 * wookiee_derive_palette() reads $p['hue'] off nothing, which warns on
+		 * every page load of a store that has not been rebranded yet, since the
+		 * header logo and the favicon both come through here.
+		 */
+		$design = wookiee_current_design_params();
+		if ( $design ) {
+			$tokens = wookiee_derive_palette( $design );
+			if ( ! empty( $tokens['wookiee-accent'] ) ) {
+				$accent = $tokens['wookiee-accent'];
+			}
 		}
 	}
 

@@ -75,6 +75,22 @@ function wookiee_apply_request_model_override() {
 	// phpcs:enable
 }
 
+/**
+ * Whether text generation can work at all right now.
+ *
+ * Either the central backend is activated, or the site has its own
+ * OpenAI-compatible key. With neither, every generate call returns the same
+ * error - so callers that are about to do something destructive first should
+ * ask here rather than find out halfway through.
+ */
+function wookiee_generation_available() {
+	if ( wookiee_central_api_configured() ) {
+		return true;
+	}
+
+	return '' !== trim( (string) wookiee_get_setting( 'llm_api_key' ) );
+}
+
 function wookiee_call_llm( $prompt, $max_tokens = 2048 ) {
 	if ( wookiee_central_api_configured() ) {
 		$body = array( 'prompt' => $prompt, 'max_tokens' => $max_tokens );

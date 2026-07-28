@@ -95,7 +95,7 @@ function wookiee_enqueue_niche_suggest_assets( $hook ) {
 			border-color: #00a32a; background: #f0f8f1;
 		}
 		.wookiee-domain-suggestion-row.is-chosen .wookiee-domain-name::before {
-			content: '\2713 '; color: #00a32a; font-weight: 700;
+			content: "\2713 "; color: #00a32a; font-weight: 700;
 		}
 		.wookiee-register-domain-modal {
 			position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 100000;

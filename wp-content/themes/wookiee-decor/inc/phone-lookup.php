@@ -54,7 +54,9 @@ function wookiee_lookup_business_phone( $business, $address = '' ) {
 		'POST',
 		'/web/search',
 		array( 'query' => trim( $query ), 'limit' => 5 ),
-		25
+		// Longer than the search alone: the backend scrapes each result now,
+		// because meta descriptions almost never carry a phone number.
+		60
 	);
 
 	if ( is_wp_error( $search ) || empty( $search['results'] ) ) {
@@ -68,7 +70,7 @@ function wookiee_lookup_business_phone( $business, $address = '' ) {
 			. ( isset( $result['snippet'] ) ? $result['snippet'] : '' );
 	}
 
-	$answer = wookiee_call_llm( wookiee_build_phone_lookup_prompt( $business, $address, implode( "\n", $lines ) ), 120 );
+	$answer = wookiee_call_llm( wookiee_build_phone_lookup_prompt( $business, $address, implode( "\n\n", $lines ) ), 120 );
 	if ( is_wp_error( $answer ) ) {
 		return '';
 	}

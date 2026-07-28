@@ -232,7 +232,27 @@ function wookiee_render_setup_wizard_page() {
 			</p>
 		</div>
 
-		<?php // ---------------- Step 3: Generate page content ---------------- ?>
+		<?php
+		/*
+		 * These feed the Page content panel below. They sat just after the old
+		 * standalone niche step, and removing that step took them with it -
+		 * leaving the accordion looping over an undefined variable, so the
+		 * whole step rendered as a heading and two buttons with nothing in
+		 * between.
+		 */
+		$about_fields          = array_values( array_filter( $tabs['about_contact']['fields'], function ( $k ) { return 0 === strpos( $k, 'about_' ); } ) );
+		$contact_fields        = array_values( array_filter( $tabs['about_contact']['fields'], function ( $k ) { return 0 === strpos( $k, 'contact_' ); } ) );
+		$policy_ai_count       = wookiee_count_policy_pages_ai_generated();
+		$homepage_ai_generated = (bool) get_option( 'wookiee_homepage_ai_generated', false );
+		$about_ai_generated    = (bool) get_option( 'wookiee_about_contact_ai_generated', false );
+		$accordion_sections    = array(
+			'policy'  => array( 'label' => 'Policy Pages', 'status' => $policy_ai_count . ' of 7 generated' ),
+			'home'    => array( 'label' => 'Home', 'status' => $homepage_ai_generated ? 'AI-generated' : 'Using defaults' ),
+			'about'   => array( 'label' => 'About', 'status' => $about_ai_generated ? 'AI-generated' : 'Using defaults' ),
+			'contact' => array( 'label' => 'Contact', 'status' => $about_ai_generated ? 'AI-generated' : 'Using defaults' ),
+		);
+		?>
+		<?php // ---------------- Step 4: Generate page content ---------------- ?>
 		<div class="wookiee-setup-step" data-step-panel="content" hidden>
 			<h2>Page content</h2>
 

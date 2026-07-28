@@ -40,10 +40,26 @@ router.post('/search', async (req, res) => {
         Authorization: `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ query, limit }),
+      /*
+       * Scrape the results, do not just list them.
+       *
+       * Without this Firecrawl returns each result's meta description, which
+       * is a summary of the page and almost never contains a phone number -
+       * the number lives in a contact block partway down. Verified against a
+       * real company: the descriptions came back with a Companies House
+       * registered address and no number at all, so the lookup could only
+       * ever report "not found".
+       */
+      body: JSON.stringify({
+        query,
+        limit,
+        scrapeOptions: { formats: ['markdown'], onlyMainContent: true },
+      }),
       // Short on purpose. A slow lookup must not hold up a setup step, and
       // the caller treats a timeout exactly like "nothing found".
-      signal: AbortSignal.timeout(20000),
+      // Scraping several pages takes longer than listing them. Still bounded,
+      // and the caller treats a timeout exactly like "nothing found".
+      signal: AbortSignal.timeout(45000),
     });
 
     const body = await response.json().catch(() => null);
@@ -59,7 +75,9 @@ router.post('/search', async (req, res) => {
       url: String(r.url || '').slice(0, 500),
       // description is what Firecrawl returns without a scrape; markdown
       // appears when one was requested. Either may hold the number.
-      snippet: String(r.description || r.markdown || '').slice(0, 1500),
+      // Markdown first now that it is requested - the description is the
+      // fallback for a page that could not be scraped.
+      snippet: String(r.markdown || r.description || '').slice(0, 4000),
     }));
 
     return res.json({ configured: true, results });

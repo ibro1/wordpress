@@ -240,7 +240,8 @@ function wookiee_source_real_product_for_idea( $query, $max_attempts = 3, $categ
 		);
 	}
 
-	$attempts = 0;
+	$attempts   = 0;
+	$rejections = array();
 	foreach ( $results as $result ) {
 		if ( $attempts >= $max_attempts ) {
 			break;
@@ -251,11 +252,19 @@ function wookiee_source_real_product_for_idea( $query, $max_attempts = 3, $categ
 		if ( ! is_wp_error( $imported ) ) {
 			return $imported;
 		}
+
+		// Keep what was rejected and why. "Three were a poor fit" gives the
+		// operator nothing to act on; the supplier's own product name plus the
+		// AI's reason shows whether the fit-check is being too strict or the
+		// catalog genuinely has nothing suitable.
+		$name         = '' !== trim( (string) $result['name'] ) ? trim( $result['name'] ) : $result['pid'];
+		$rejections[] = wp_html_excerpt( $name, 60, '...' ) . ' (' . $imported->get_error_message() . ')';
 	}
 
 	return new WP_Error(
 		'wookiee_no_suitable_match',
-		'CJ had ' . count( $results ) . ' result(s) for "' . $query . '" but the first ' . $attempts . ' were judged a poor fit for this niche.'
+		'CJ had ' . count( $results ) . ' result(s); the first ' . $attempts . ' were rejected. '
+			. implode( ' | ', $rejections )
 	);
 }
 
@@ -322,7 +331,8 @@ function wookiee_build_supplier_import_prompt( $brief, $raw_title, $raw_descript
 		. "Existing store categories: {$existing_list}\n"
 		. $hint_line . "\n"
 		. "Respond with exactly these six labelled sections, each label on its own line, nothing else:\n"
-		. "FIT: yes or no - does this product genuinely belong in a store with the niche described above?\n"
+		. "FIT: yes or no. Answer YES if a customer shopping this store would plausibly buy this - it belongs in the same catalog. It does NOT have to be one of the specific examples named in the niche; those are illustrations of the range, not the whole of it. Answer NO only for a clear mismatch: a different product category altogether, or something that would look out of place beside the niche described.\n"
+		. "Judge the PRODUCT, not the listing. Supplier titles are routinely keyword-stuffed, mistranslated and badly punctuated; that says nothing about whether the item belongs here, and cleaning it up is your job in the next field.\n"
 		. "REASON: one short sentence explaining the FIT answer\n"
 		. "CLEAN_TITLE: a clear, accurate Google Merchant Center-compliant product title on one line - no keyword stuffing, no supplier/trade jargon (e.g. \"cross-border\"), no ALL CAPS, no promotional symbols\n"
 		. "CATEGORY: one line - prefer an existing store category from the list above if a good match exists, otherwise a short new category name\n"

@@ -483,9 +483,12 @@ function wookiee_generate_products_handler() {
 		 * down sends them off rewriting a brief that was never the problem.
 		 */
 		if ( is_wp_error( $sourced ) ) {
+			// Not esc_html'd: these are rendered with createTextNode, which
+			// escapes already. Escaping here as well is what put a literal
+			// &quot; in front of the operator instead of a quotation mark.
 			$skipped[] = array(
-				'title'  => esc_html( $idea['title'] ),
-				'reason' => esc_html( $sourced->get_error_message() ),
+				'title'  => $idea['title'],
+				'reason' => $sourced->get_error_message(),
 			);
 			continue;
 		}

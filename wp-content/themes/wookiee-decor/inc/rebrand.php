@@ -207,6 +207,75 @@ function wookiee_describe_design( array $p ) {
 	);
 }
 
+/* -------------------------------------------------------------------------
+ * Run state
+ *
+ * The step chain is driven by the browser, so before this existed a refresh
+ * mid-rebrand abandoned it: the design was applied, the copy was not, and
+ * nothing anywhere recorded how far it got. The operator was left with a
+ * half-rebranded store and no way to tell which half.
+ *
+ * The run is now recorded server-side as each step completes, so reloading
+ * the page picks the chain back up from the first step that has not
+ * finished rather than starting over or stopping.
+ * ---------------------------------------------------------------------- */
+
+function wookiee_rebrand_run() {
+	$run = get_option( 'wookiee_rebrand_run', array() );
+	return is_array( $run ) ? $run : array();
+}
+
+/**
+ * Opens a run: records the chosen steps as pending and takes the rollback
+ * snapshot once, here, rather than inside the first step - a resumed run
+ * must not re-snapshot, or Undo would restore to the middle of the run
+ * instead of to before it.
+ */
+function wookiee_rebrand_begin_run( $brief, array $step_keys ) {
+	wookiee_snapshot_before_rebrand();
+
+	$steps = array();
+	foreach ( $step_keys as $key ) {
+		$steps[ $key ] = array( 'status' => 'pending', 'detail' => '' );
+	}
+
+	$run = array(
+		'brief'   => $brief,
+		'steps'   => $steps,
+		'started' => time(),
+		'updated' => time(),
+	);
+
+	update_option( 'wookiee_rebrand_run', $run );
+	return $run;
+}
+
+function wookiee_rebrand_mark_step( $step, $status, $detail = '' ) {
+	$run = wookiee_rebrand_run();
+	if ( ! $run || ! isset( $run['steps'][ $step ] ) ) {
+		return;
+	}
+	$run['steps'][ $step ] = array( 'status' => $status, 'detail' => $detail );
+	$run['updated']        = time();
+	update_option( 'wookiee_rebrand_run', $run );
+}
+
+/**
+ * True once no step is left to attempt. A failed step counts as finished -
+ * the chain stops there and the operator decides whether to run again.
+ */
+function wookiee_rebrand_run_is_finished( array $run ) {
+	if ( empty( $run['steps'] ) ) {
+		return true;
+	}
+	foreach ( $run['steps'] as $step ) {
+		if ( 'pending' === $step['status'] || 'running' === $step['status'] ) {
+			return false;
+		}
+	}
+	return true;
+}
+
 /**
  * Runs one step and applies it. Each step reports its own outcome so a
  * failure doesn't discard the steps that already succeeded - a design that
@@ -215,12 +284,6 @@ function wookiee_describe_design( array $p ) {
 function wookiee_run_rebrand_step( $step, $brief ) {
 	if ( '' === trim( (string) $brief ) ) {
 		return new WP_Error( 'wookiee_rebrand_no_brief', 'Describe your store in a sentence first.' );
-	}
-
-	// The snapshot is taken once, before the first step, so Undo restores
-	// the state from before the whole run rather than from mid-run.
-	if ( 'design' === $step ) {
-		wookiee_snapshot_before_rebrand();
 	}
 
 	update_option( 'wookiee_niche_brief', $brief );
@@ -298,17 +361,78 @@ function wookiee_rebrand_handler() {
 		wp_send_json_error( array( 'message' => 'Unknown rebrand step.' ) );
 	}
 
+	wookiee_rebrand_mark_step( $step, 'running' );
+
 	$result = wookiee_run_rebrand_step( $step, $brief );
 
 	if ( is_wp_error( $result ) ) {
+		wookiee_rebrand_mark_step( $step, 'failed', $result->get_error_message() );
 		wp_send_json_error( array( 'message' => $result->get_error_message() ) );
 	}
 	// A step reports either one line or a set of labelled lines (the design
 	// step splits into Colours and Layout so neither hides behind the other).
 	if ( is_array( $result ) ) {
+		// Stored as one string so a resumed page can redisplay it without
+		// needing to know a step's reporting shape.
+		$flat = array();
+		foreach ( $result as $label => $line ) {
+			$flat[] = '<em>' . $label . ':</em> ' . $line;
+		}
+		wookiee_rebrand_mark_step( $step, 'done', implode( '<br>', $flat ) );
 		wp_send_json_success( array( 'parts' => $result ) );
 	}
+	wookiee_rebrand_mark_step( $step, 'done', (string) $result );
 	wp_send_json_success( array( 'detail' => $result ) );
+}
+
+/**
+ * Opens a run. Separate from the step endpoint so the snapshot is taken
+ * exactly once per rebrand, no matter how many times the page is reloaded
+ * while it is going.
+ */
+add_action( 'wp_ajax_wookiee_rebrand_start', 'wookiee_rebrand_start_handler' );
+function wookiee_rebrand_start_handler() {
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_send_json_error( array( 'message' => 'Not allowed.' ), 403 );
+	}
+	check_ajax_referer( 'wookiee_rebrand', 'nonce' );
+
+	$brief = isset( $_POST['brief'] ) ? sanitize_textarea_field( wp_unslash( $_POST['brief'] ) ) : '';
+	if ( '' === trim( $brief ) ) {
+		wp_send_json_error( array( 'message' => 'Describe your store in a sentence first.' ) );
+	}
+
+	$want_images = ! empty( $_POST['images'] );
+	$image_steps = wookiee_rebrand_image_steps();
+
+	$keys = array();
+	foreach ( array_keys( wookiee_rebrand_steps() ) as $key ) {
+		if ( ! $want_images && in_array( $key, $image_steps, true ) ) {
+			continue;
+		}
+		$keys[] = $key;
+	}
+
+	update_option( 'wookiee_niche_brief', $brief );
+	wp_send_json_success( wookiee_rebrand_begin_run( $brief, $keys ) );
+}
+
+/**
+ * The current run, so a page that has just loaded can tell whether one is
+ * still going and carry on driving it.
+ */
+add_action( 'wp_ajax_wookiee_rebrand_status', 'wookiee_rebrand_status_handler' );
+function wookiee_rebrand_status_handler() {
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_send_json_error( array( 'message' => 'Not allowed.' ), 403 );
+	}
+	check_ajax_referer( 'wookiee_rebrand', 'nonce' );
+
+	$run = wookiee_rebrand_run();
+	wp_send_json_success( array(
+		'run'      => $run ? $run : null,
+		'finished' => $run ? wookiee_rebrand_run_is_finished( $run ) : true,
+	) );
 }
 
 add_action( 'wp_ajax_wookiee_rebrand_undo', 'wookiee_rebrand_undo_handler' );
@@ -321,6 +445,9 @@ function wookiee_rebrand_undo_handler() {
 	if ( ! wookiee_restore_before_rebrand() ) {
 		wp_send_json_error( array( 'message' => 'There is no previous version to restore.' ) );
 	}
+
+	// The run record describes a rebrand that no longer applies to anything.
+	delete_option( 'wookiee_rebrand_run' );
 	wp_send_json_success();
 }
 
@@ -416,61 +543,69 @@ function wookiee_render_rebrand_page() {
 			el.querySelector( '.wookiee-step-detail' ).innerHTML = detail;
 		}
 
-		go.addEventListener( 'click', function () {
-			var brief = document.getElementById( 'wookiee-rebrand-brief' ).value.trim();
-			if ( ! brief ) {
-				out.innerHTML = '<p style="color:#a3272a;">Describe the store first.</p>';
-				return;
-			}
-
-			var wantImages = document.getElementById( 'wookiee-rebrand-images' ).checked;
-			var keys = Object.keys( STEPS ).filter( function ( k ) {
-				return wantImages || IMAGE_STEPS.indexOf( k ) === -1;
-			} );
+		function renderSteps( keys, statuses ) {
 			var html = '<ul style="margin:14px 0 0;padding:0;list-style:none;">';
 			keys.forEach( function ( k ) {
 				html += '<li id="wookiee-step-' + k + '" style="margin:6px 0;display:flex;gap:8px;align-items:baseline;">' +
-					'<span class="wookiee-step-icon" style="width:14px;color:#8c8f94;">·</span>' +
+					'<span class="wookiee-step-icon" style="width:14px;color:#8c8f94;">\u00b7</span>' +
 					'<span><strong>' + STEPS[ k ] + '</strong> ' +
 					'<span class="wookiee-step-detail" style="color:#646970;">waiting</span></span></li>';
 			} );
 			out.innerHTML = html + '</ul>';
 
-			go.disabled = true;
-			go.textContent = 'Rebranding…';
+			// Repaint whatever the server already recorded, so a reloaded
+			// page shows the steps that finished before the refresh instead
+			// of pretending the run is starting from scratch.
+			Object.keys( statuses || {} ).forEach( function ( k ) {
+				var st = statuses[ k ];
+				if ( 'done' === st.status ) {
+					mark( k, '&#10003;', '#00622e', st.detail || 'done' );
+				} else if ( 'failed' === st.status ) {
+					mark( k, '&#10007;', '#a3272a', st.detail || 'Failed.' );
+				}
+			} );
+		}
 
+		function detailFrom( data ) {
+			if ( ! data.parts ) { return data.detail; }
+			// Labelled sub-lines, so the layout change is readable on its own
+			// rather than buried in a comma-separated run of parameter names.
+			var detail = '<span style="display:block;margin-top:2px;">';
+			Object.keys( data.parts ).forEach( function ( label ) {
+				detail += '<span style="display:block;"><em>' + label + ':</em> ' + data.parts[ label ] + '</span>';
+			} );
+			return detail + '</span>';
+		}
+
+		/**
+		 * Drives the steps that are not already done, one request each.
+		 * Sequential rather than parallel: the steps write overlapping
+		 * settings, and running them at once would race.
+		 */
+		function drive( brief, keys, statuses ) {
 			var failed = false;
+			var pending = keys.filter( function ( k ) {
+				return ! statuses[ k ] || 'done' !== statuses[ k ].status;
+			} );
 
-			// Sequential, not parallel: the design step takes the rollback
-			// snapshot, and the copy steps must not overwrite settings before
-			// it has been captured.
-			var chain = keys.reduce( function ( prev, key ) {
+			go.disabled = true;
+			go.textContent = 'Rebranding\u2026';
+
+			var chain = pending.reduce( function ( prev, key ) {
 				return prev.then( function () {
 					if ( failed ) { return null; }
-					mark( key, '<span class="spinner is-active" style="float:none;margin:0;"></span>', '', 'working…' );
+					mark( key, '<span class="spinner is-active" style="float:none;margin:0;"></span>', '', 'working\u2026' );
 
 					return post( 'wookiee_rebrand', { brief: brief, step: key } ).then( function ( res ) {
 						if ( res && res.success ) {
-							var detail = res.data.detail;
-							if ( res.data.parts ) {
-								// Labelled sub-lines, so the layout change is
-								// readable on its own rather than buried in a
-								// comma-separated run of parameter names.
-								detail = '<span style="display:block;margin-top:2px;">';
-								Object.keys( res.data.parts ).forEach( function ( label ) {
-									detail += '<span style="display:block;"><em>' + label + ':</em> ' +
-										res.data.parts[ label ] + '</span>';
-								} );
-								detail += '</span>';
-							}
-							mark( key, '&#10003;', '#00622e', detail );
+							mark( key, '&#10003;', '#00622e', detailFrom( res.data ) );
 						} else {
 							failed = true;
 							mark( key, '&#10007;', '#a3272a', ( res && res.data && res.data.message ) || 'Failed.' );
 						}
 					} ).catch( function () {
 						failed = true;
-						mark( key, '&#10007;', '#a3272a', 'The request did not complete. Try this step again.' );
+						mark( key, '&#10007;', '#a3272a', 'The request did not complete. Reload this page to carry on where it stopped.' );
 					} );
 				} );
 			}, Promise.resolve() );
@@ -478,7 +613,7 @@ function wookiee_render_rebrand_page() {
 			chain.then( function () {
 				go.disabled = false;
 				go.textContent = failed ? 'Try again' : 'Rebrand my store';
-				keys.forEach( function ( k ) {
+				pending.forEach( function ( k ) {
 					var d = row( k ) && row( k ).querySelector( '.wookiee-step-detail' );
 					if ( d && 'waiting' === d.textContent ) { d.textContent = 'skipped'; }
 				} );
@@ -488,6 +623,82 @@ function wookiee_render_rebrand_page() {
 					setTimeout( function () { window.location.reload(); }, 1500 );
 				}
 			} );
+		}
+
+		go.addEventListener( 'click', function () {
+			var brief = document.getElementById( 'wookiee-rebrand-brief' ).value.trim();
+			if ( ! brief ) {
+				out.innerHTML = '<p style="color:#a3272a;">Describe the store first.</p>';
+				return;
+			}
+
+			go.disabled = true;
+			go.textContent = 'Starting\u2026';
+
+			post( 'wookiee_rebrand_start', {
+				brief: brief,
+				images: document.getElementById( 'wookiee-rebrand-images' ).checked ? '1' : '',
+			} ).then( function ( res ) {
+				if ( ! res || ! res.success ) {
+					go.disabled = false;
+					go.textContent = 'Rebrand my store';
+					out.innerHTML = '<p style="color:#a3272a;">' + ( ( res && res.data && res.data.message ) || 'Could not start.' ) + '</p>';
+					return;
+				}
+				var keys = Object.keys( res.data.steps );
+				renderSteps( keys, res.data.steps );
+				drive( brief, keys, res.data.steps );
+			} );
+		} );
+
+		/*
+		 * Resume on load. A rebrand is several minutes of provider calls, and
+		 * a refresh - or a closed laptop - used to abandon it silently
+		 * part-applied. The run lives on the server now, so the page picks it
+		 * back up from the first step that has not finished.
+		 */
+		post( 'wookiee_rebrand_status' ).then( function ( res ) {
+			if ( ! res || ! res.success || ! res.data.run ) { return; }
+
+			var run = res.data.run;
+			var keys = Object.keys( run.steps );
+
+			var incomplete = keys.filter( function ( k ) { return 'done' !== run.steps[ k ].status; } );
+			if ( ! incomplete.length ) { return; }
+
+			var anyFailed = keys.some( function ( k ) { return 'failed' === run.steps[ k ].status; } );
+
+			if ( run.brief ) { document.getElementById( 'wookiee-rebrand-brief' ).value = run.brief; }
+			renderSteps( keys, run.steps );
+
+			var note = document.createElement( 'p' );
+			note.className = 'description';
+			note.style.marginTop = '10px';
+			out.appendChild( note );
+
+			if ( anyFailed ) {
+				/*
+				 * Deliberately NOT auto-resumed. A failure that is not
+				 * transient - no API key, no credit - would otherwise retry
+				 * on every single visit to this screen, billing each time.
+				 * The operator decides.
+				 */
+				note.textContent = 'The last rebrand stopped part-way. The finished steps have been applied.';
+				var cont = document.createElement( 'button' );
+				cont.type = 'button';
+				cont.className = 'button';
+				cont.style.marginTop = '8px';
+				cont.textContent = 'Continue from where it stopped';
+				cont.addEventListener( 'click', function () {
+					cont.remove();
+					drive( run.brief, keys, run.steps );
+				} );
+				out.appendChild( cont );
+				return;
+			}
+
+			note.textContent = 'A rebrand was already running - carrying on from where it stopped.';
+			drive( run.brief, keys, run.steps );
 		} );
 
 		var undo = document.getElementById( 'wookiee-rebrand-undo' );

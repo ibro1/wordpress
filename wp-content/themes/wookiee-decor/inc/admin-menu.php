@@ -89,6 +89,14 @@ function wookiee_enqueue_niche_suggest_assets( $hook ) {
 			padding: 6px 10px; border: 1px solid #dcdcde; border-radius: 4px; margin-bottom: 6px; background: #fff;
 		}
 		.wookiee-domain-suggestion-row .button { flex-shrink: 0; }
+		/* The chosen domain has to be obvious at a glance - a class with no
+		   styling behind it looked exactly like nothing had happened. */
+		.wookiee-domain-suggestion-row.is-chosen {
+			border-color: #00a32a; background: #f0f8f1;
+		}
+		.wookiee-domain-suggestion-row.is-chosen .wookiee-domain-name::before {
+			content: '\2713 '; color: #00a32a; font-weight: 700;
+		}
 		.wookiee-register-domain-modal {
 			position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 100000;
 			display: flex; align-items: center; justify-content: center;
@@ -112,6 +120,10 @@ function wookiee_enqueue_niche_suggest_assets( $hook ) {
 	$js = "
 	( function() {
 		var NONCE = " . wp_json_encode( wp_create_nonce( 'wookiee_suggest_niche' ) ) . ";
+
+		// Seeded from the stored choice so a reload, or a re-check that
+		// rebuilds the suggestion list, still shows which domain is in use.
+		var CHOSEN_DOMAIN = " . wp_json_encode( function_exists( 'wookiee_chosen_domain' ) ? wookiee_chosen_domain() : '' ) . ";
 
 		// Errors here used to only set the button's hover tooltip, which
 		// looks exactly like \"nothing happened\" if you don't hover over
@@ -326,13 +338,19 @@ function wookiee_enqueue_niche_suggest_assets( $hook ) {
 				noneCouk.textContent = 'None found available nearby.';
 				ukWrap.appendChild( noneCouk );
 			}
+			// After appending, not during: a row is not in the document while
+			// it is still being built, so marking from inside the builder
+			// would always skip the row it was building.
+			markChosenRows();
 			suggestWrap.hidden = false;
 		}
 
 		function buildDomainSuggestionRow( item ) {
 			var row = document.createElement( 'div' );
 			row.className = 'wookiee-domain-suggestion-row';
+			row.setAttribute( 'data-domain', item.domain );
 			var label = document.createElement( 'span' );
+			label.className = 'wookiee-domain-name';
 			label.textContent = item.domain;
 
 			/*
@@ -344,10 +362,12 @@ function wookiee_enqueue_niche_suggest_assets( $hook ) {
 			 */
 			var useBtn = document.createElement( 'button' );
 			useBtn.type = 'button';
-			useBtn.className = 'button button-small button-primary';
+			useBtn.className = 'button button-small button-primary wookiee-use-domain';
 			useBtn.textContent = 'Use this';
 			useBtn.title = 'Set this as the store\u2019s domain, site title and contact address. Does not register it.';
 			useBtn.addEventListener( 'click', function() { chooseDomain( item.domain, useBtn ); } );
+			row.appendChild( label );
+			row.appendChild( useBtn );
 
 			var btn = document.createElement( 'button' );
 			btn.type = 'button';
@@ -355,10 +375,29 @@ function wookiee_enqueue_niche_suggest_assets( $hook ) {
 			btn.textContent = 'Register';
 			btn.addEventListener( 'click', function() { openRegisterDomainModal( item.domain ); } );
 
-			row.appendChild( label );
-			row.appendChild( useBtn );
 			row.appendChild( btn );
 			return row;
+		}
+
+		/*
+		 * Reflects the stored choice on every row: the chosen one is ticked and
+		 * its button disabled, the rest are offered.
+		 *
+		 * Called after rendering as well as after choosing, because the
+		 * suggestion list is rebuilt whenever the company or site name changes
+		 * - without this, a reload or a re-check silently dropped the marking
+		 * and the choice looked lost even though it was saved.
+		 */
+		function markChosenRows() {
+			document.querySelectorAll( '.wookiee-domain-suggestion-row' ).forEach( function( r ) {
+				var isChosen = CHOSEN_DOMAIN && r.getAttribute( 'data-domain' ) === CHOSEN_DOMAIN;
+				r.classList.toggle( 'is-chosen', !! isChosen );
+				var use = r.querySelector( '.wookiee-use-domain' );
+				if ( use ) {
+					use.disabled = !! isChosen;
+					use.textContent = isChosen ? 'In use' : 'Use this';
+				}
+			} );
 		}
 
 		function chooseDomain( domain, btn ) {
@@ -392,9 +431,8 @@ function wookiee_enqueue_niche_suggest_assets( $hook ) {
 					if ( status ) {
 						status.textContent = 'Using ' + res.data.domain + ' \u2014 contact address set to ' + res.data.email + '.';
 					}
-					document.querySelectorAll( '.wookiee-domain-suggestion-row' ).forEach( function( r ) {
-						r.classList.toggle( 'is-chosen', r.firstChild && r.firstChild.textContent === domain );
-					} );
+					CHOSEN_DOMAIN = res.data.domain;
+					markChosenRows();
 				} )
 				.catch( function() {
 					btn.disabled = false;

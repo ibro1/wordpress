@@ -169,8 +169,10 @@ get_header(); ?>
 	<!-- How it works Section -->
 	<section class="container home-section wookiee-content-grid-2 how-it-works">
 		<?php
-		$feature_id   = get_option( 'wookiee_feature_image_id' );
-		$feature_url  = $feature_id ? wp_get_attachment_url( $feature_id ) : '';
+		// Through the slot helper so the rebrand regenerates this alongside
+		// the hero; it was the last homepage image still pinned to whatever
+		// was uploaded at install time.
+		$feature_url = wookiee_image_url( 'feature' );
 		?>
 		<div class="how-it-works-media" <?php echo $feature_url ? 'style="background-image:url(' . esc_url( $feature_url ) . ');"' : ''; ?>>
 			<?php if ( ! $feature_url ) : ?>

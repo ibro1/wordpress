@@ -5,7 +5,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'WOOKIEE_VERSION', '1.0.78' );
+define( 'WOOKIEE_VERSION', '1.0.79' );
 define( 'WOOKIEE_DIR', trailingslashit( get_template_directory() ) );
 define( 'WOOKIEE_URI', trailingslashit( get_template_directory_uri() ) );
 define( 'WOOKIEE_CONTACT_EMAIL', 'info@wookied.com' );
@@ -240,6 +240,26 @@ function wookiee_ensure_theme_images() {
 function wookiee_sync_primary_menu( $page_ids = null, $pages = null ) {
 	if ( wp_installing() ) {
 		return;
+	}
+
+	/*
+	 * do_action( 'init' ) does not call this with no arguments - core does
+	 * `if ( empty( $arg ) ) { $arg[] = ''; }` before dispatching, so a hooked
+	 * function with one parameter receives the empty STRING, not its default
+	 * null.
+	 *
+	 * The `null === $page_ids` check below therefore never fired on the init
+	 * path, $page_ids stayed '', and `$page_ids[ $slug ]` indexed a string -
+	 * empty for every slug, so the loop skipped every page and the sync added
+	 * nothing at all. Only the activation-time call, which passes real
+	 * arguments, ever worked. That is why a Contact item missing from the menu
+	 * never came back on its own.
+	 */
+	if ( ! is_array( $page_ids ) ) {
+		$page_ids = null;
+	}
+	if ( ! is_array( $pages ) ) {
+		$pages = null;
 	}
 
 	if ( null === $pages ) {

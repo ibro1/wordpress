@@ -31,6 +31,13 @@ function wookiee_image_slots() {
 			'label'    => 'Homepage hero',
 			'brief'    => 'the main homepage hero image - the single most important photo on the site',
 		),
+		// The "how it works" band on the homepage. Predates slots and has its
+		// own option name already in use on live sites, same as the hero.
+		'feature'     => array(
+			'fallback' => 'lifestyle.png',
+			'label'    => 'Homepage how-it-works',
+			'brief'    => 'the wide band beside the "how it works" steps on the homepage, showing the products in the setting they are used in',
+		),
 		'about_hero'  => array(
 			'fallback' => 'drawer-organizer.png',
 			'label'    => 'About page hero',
@@ -47,7 +54,11 @@ function wookiee_image_slots() {
 function wookiee_image_option_key( $slot ) {
 	// The homepage hero predates slots and already has its own option name in
 	// use on live sites; renaming it would silently blank existing heroes.
-	return 'hero' === $slot ? 'wookiee_hero_image_id' : 'wookiee_image_' . $slot . '_id';
+	$legacy = array(
+		'hero'    => 'wookiee_hero_image_id',
+		'feature' => 'wookiee_feature_image_id',
+	);
+	return isset( $legacy[ $slot ] ) ? $legacy[ $slot ] : 'wookiee_image_' . $slot . '_id';
 }
 
 function wookiee_image_attachment_id( $slot ) {

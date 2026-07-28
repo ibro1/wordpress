@@ -213,6 +213,60 @@ function wookiee_cj_search_variants( $query ) {
 	return array_values( array_unique( array_filter( $variants ) ) );
 }
 
+/**
+ * Orders CJ results by how well the product NAME matches the concept.
+ *
+ * CJ's productName filter matches loosely - it appears to OR the terms rather
+ * than AND them - so a search for "silicone face scrubber" comes back with a
+ * silicone alarm clock and a floor scrubbing brush alongside anything
+ * relevant, in no useful order. Only the first few results are ever tried,
+ * and each one costs an AI call, so trying CJ's arbitrary order means paying
+ * to reject noise while a genuine match sits at position nine.
+ *
+ * Scoring on term overlap is crude, but it only has to beat "whatever order
+ * the API returned", which carries no relevance signal at all. Ties keep the
+ * original order so CJ's own ranking still decides between equals.
+ */
+function wookiee_rank_cj_results( array $results, $query ) {
+	// Words too generic to indicate relevance - they appear in half the
+	// catalog and would flatten the scores.
+	$stop  = array( 'set', 'kit', 'pack', 'new', 'the', 'and', 'with', 'for', 'pcs', 'style', 'pro' );
+	$terms = array();
+	foreach ( preg_split( '/\W+/', strtolower( (string) $query ) ) as $word ) {
+		if ( strlen( $word ) > 2 && ! in_array( $word, $stop, true ) ) {
+			$terms[] = $word;
+		}
+	}
+
+	if ( ! $terms ) {
+		return $results;
+	}
+
+	$scored = array();
+	foreach ( $results as $i => $result ) {
+		$name  = strtolower( (string) $result['name'] );
+		$score = 0;
+		foreach ( $terms as $term ) {
+			if ( false !== strpos( $name, $term ) ) {
+				$score++;
+			}
+		}
+		$scored[] = array( 'score' => $score, 'order' => $i, 'result' => $result );
+	}
+
+	usort(
+		$scored,
+		function ( $a, $b ) {
+			if ( $a['score'] === $b['score'] ) {
+				return $a['order'] - $b['order'];
+			}
+			return $b['score'] - $a['score'];
+		}
+	);
+
+	return wp_list_pluck( $scored, 'result' );
+}
+
 function wookiee_source_real_product_for_idea( $query, $max_attempts = 3, $category_hint = '' ) {
 	$results = array();
 	$tried   = array();
@@ -239,6 +293,10 @@ function wookiee_source_real_product_for_idea( $query, $max_attempts = 3, $categ
 			'CJ Dropshipping has nothing for "' . $query . '" (also tried: ' . implode( ', ', array_slice( $tried, 1 ) ) . ').'
 		);
 	}
+
+	// Best matches first - see wookiee_rank_cj_results(). Without this the
+	// three attempts below are spent on whatever CJ happened to return first.
+	$results = wookiee_rank_cj_results( $results, $query );
 
 	$attempts   = 0;
 	$rejections = array();

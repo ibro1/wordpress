@@ -59,6 +59,10 @@ const SECRET_KEYS = [
   // Operator-level default image model, used when a licence has not been
   // given one of its own. Empty means the first allowed model wins.
   'image_model',
+  // Web search, used to look up a business's public phone number. Optional
+  // by design: everything that uses it degrades to "not found" rather than
+  // failing, so an operator who never sets this notices nothing missing.
+  'firecrawl_api_key',
   'google_ads_developer_token',
   'google_ads_client_id',
   'google_ads_client_secret',

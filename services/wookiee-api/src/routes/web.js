@@ -1,0 +1,72 @@
+/**
+ * Web search, via Firecrawl.
+ *
+ * Exists so the WordPress side can find a business's own published phone
+ * number instead of asking the operator to type one they may not have to
+ * hand. Deliberately thin: this returns search results and nothing more, and
+ * the interpretation - which of these numbers belongs to this business -
+ * happens on the WordPress side, where the LLM plumbing, model selection and
+ * per-licence limits already live.
+ *
+ * OPTIONAL BY DESIGN. With no key saved this answers 200 with an empty result
+ * set and `configured: false`, not an error. Nothing that calls it should
+ * fail, retry, or show a problem because web search was never set up - it is
+ * an enrichment, and the field it fills can always be typed by hand.
+ */
+
+const express = require('express');
+const store = require('../secretsStore');
+
+const router = express.Router();
+
+router.post('/search', async (req, res) => {
+  const query = ((req.body && req.body.query) || '').trim();
+  if (!query) {
+    return res.status(400).json({ error: 'No query given.' });
+  }
+
+  const apiKey = store.get('firecrawl_api_key').trim();
+  if (!apiKey) {
+    // Not an error: see the note above.
+    return res.json({ configured: false, results: [] });
+  }
+
+  const limit = Math.max(1, Math.min(10, parseInt(req.body.limit, 10) || 5));
+
+  try {
+    const response = await fetch('https://api.firecrawl.dev/v1/search', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ query, limit }),
+      // Short on purpose. A slow lookup must not hold up a setup step, and
+      // the caller treats a timeout exactly like "nothing found".
+      signal: AbortSignal.timeout(20000),
+    });
+
+    const body = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      const msg = body && body.error ? body.error : `HTTP ${response.status}`;
+      return res.json({ configured: true, results: [], error: `Firecrawl: ${msg}` });
+    }
+
+    const raw = body && Array.isArray(body.data) ? body.data : [];
+    const results = raw.slice(0, limit).map((r) => ({
+      title: String(r.title || '').slice(0, 300),
+      url: String(r.url || '').slice(0, 500),
+      // description is what Firecrawl returns without a scrape; markdown
+      // appears when one was requested. Either may hold the number.
+      snippet: String(r.description || r.markdown || '').slice(0, 1500),
+    }));
+
+    return res.json({ configured: true, results });
+  } catch (err) {
+    // Including AbortError. Reported, never thrown: the caller carries on.
+    return res.json({ configured: true, results: [], error: `Firecrawl: ${err.message}` });
+  }
+});
+
+module.exports = router;

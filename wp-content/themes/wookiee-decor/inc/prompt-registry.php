@@ -137,6 +137,13 @@ function wookiee_prompt_registry() {
 		'required'     => array( 'brief' ),
 	);
 
+	$registry['phone_lookup'] = array(
+		'label'        => 'Phone number lookup',
+		'description'  => 'Reads web search results and decides which telephone number, if any, belongs to the business being set up. Answers NONE rather than guessing - a wrong number on a live storefront is worse than an empty field.',
+		'placeholders' => array( 'business', 'address', 'results' ),
+		'required'     => array( 'business', 'results' ),
+	);
+
 	return $registry;
 }
 
@@ -351,6 +358,8 @@ function wookiee_prompt_capture_builders() {
 		'slot_image' => function () { return wookiee_build_image_prompt( 'hero', '{{brief}}' ); },
 
 		'logo_mark' => function () { return wookiee_build_image_prompt( 'logo_mark', '{{brief}}' ); },
+
+		'phone_lookup' => function () { return wookiee_build_phone_lookup_prompt( '{{business}}', '{{address}}', '{{results}}' ); },
 
 		'supplier_import' => function () {
 			return wookiee_build_supplier_import_prompt(

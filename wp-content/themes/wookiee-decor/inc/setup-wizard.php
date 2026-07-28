@@ -203,6 +203,13 @@ function wookiee_render_setup_wizard_page() {
 			<h3>Contact details</h3>
 			<p class="description">The address and number customers actually use. The email is set for you when a domain is chosen above; overwrite it if you use a different mailbox.</p>
 			<?php wookiee_render_settings_fields_table( array( 'contact_email', 'contact_phone', 'support_hours' ) ); ?>
+			<p>
+				<button type="button" class="button" id="wookiee-phone-lookup">Find the phone number for me</button>
+				<span id="wookiee-phone-lookup-status" class="description" style="margin-left:8px;"></span>
+			</p>
+			<p class="description">
+				Searches for the number this business already publishes and fills the field above. Optional &mdash; if it finds nothing, type one in. Needs a Firecrawl key on the backend; without one it simply reports nothing found.
+			</p>
 
 			<h3>Social media</h3>
 			<p class="description">Shown in the footer. Leave any blank and its icon is hidden rather than linking nowhere.</p>
@@ -519,6 +526,52 @@ function wookiee_render_setup_wizard_page() {
 		try { storedKey = window.localStorage.getItem( STORAGE_KEY ) || ''; } catch ( e ) {}
 
 		var targetKey = '';
+		/*
+		 * Phone lookup. Every failure path here ends in the same place - a
+		 * message and an untouched field - because this is an enrichment, not
+		 * a step. Nothing waits for it and nothing is blocked by it.
+		 */
+		var phoneBtn = document.getElementById( 'wookiee-phone-lookup' );
+		if ( phoneBtn ) {
+			phoneBtn.addEventListener( 'click', function() {
+				var status  = document.getElementById( 'wookiee-phone-lookup-status' );
+				var nameEl  = document.getElementById( 'wookiee_setting_business_name' );
+				var addrEl  = document.getElementById( 'wookiee_setting_registered_address' );
+				var phoneEl = document.getElementById( 'wookiee_setting_contact_phone' );
+
+				if ( ! nameEl || ! nameEl.value.trim() ) {
+					status.textContent = 'Fill in the registered company name first.';
+					return;
+				}
+
+				phoneBtn.disabled = true;
+				status.textContent = 'Searching\u2026';
+
+				var data = new FormData();
+				data.append( 'action', 'wookiee_lookup_phone' );
+				data.append( 'nonce', <?php echo wp_json_encode( wp_create_nonce( 'wookiee_lookup_phone' ) ); ?> );
+				data.append( 'business', nameEl.value );
+				data.append( 'address', addrEl ? addrEl.value : '' );
+
+				fetch( ajaxurl, { method: 'POST', credentials: 'same-origin', body: data } )
+					.then( function( r ) { return r.json(); } )
+					.then( function( res ) {
+						phoneBtn.disabled = false;
+						var phone = res && res.success ? res.data.phone : '';
+						if ( phone ) {
+							if ( phoneEl ) { phoneEl.value = phone; }
+							status.textContent = 'Found ' + phone + ' \u2014 check it before saving.';
+						} else {
+							status.textContent = ( res && res.data && res.data.message ) || 'Nothing found - type one in.';
+						}
+					} )
+					.catch( function() {
+						phoneBtn.disabled = false;
+						status.textContent = 'Could not search right now - type one in.';
+					} );
+			} );
+		}
+
 		if ( hashKey && document.querySelector( '.wookiee-setup-step[data-step-panel="' + hashKey + '"]' ) ) {
 			targetKey = hashKey;
 		} else if ( storedKey && document.querySelector( '.wookiee-setup-step[data-step-panel="' + storedKey + '"]' ) ) {

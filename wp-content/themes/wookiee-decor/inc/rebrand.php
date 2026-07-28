@@ -623,6 +623,15 @@ function wookiee_rebrand_cancel_handler() {
 	foreach ( $run['steps'] as $key => $step ) {
 		if ( 'pending' === $step['status'] ) {
 			$run['steps'][ $key ] = array( 'status' => 'cancelled', 'detail' => 'stopped before this step started' );
+		} elseif ( 'running' === $step['status'] ) {
+			/*
+			 * PHP already working on this cannot be called back, so the work
+			 * may still land - and if it does, mark_step() will record it as
+			 * done, which is the honest outcome. What must not happen is the
+			 * screen waiting indefinitely on a step it can no longer see the
+			 * end of, which is what "stop" is being asked to prevent.
+			 */
+			$run['steps'][ $key ] = array( 'status' => 'cancelled', 'detail' => 'stopped while running - any work already in flight may still finish' );
 		}
 	}
 	$run['updated'] = time();
@@ -731,7 +740,7 @@ function wookiee_render_rebrand_page() {
 		<?php if ( $wookiee_finished ) : ?>
 			<div class="notice notice-success" style="margin:16px 0;padding:14px 16px;">
 				<p style="font-size:14px;margin:0 0 6px;">
-					<strong>Rebrand finished.</strong>
+					<strong><?php echo empty( $wookiee_run['cancelled'] ) ? 'Rebrand finished.' : 'Rebrand stopped.'; ?></strong>
 					<?php if ( $wookiee_cleared ) : ?>
 						The colours, layout and copy now describe your new niche, and the old products are in the Trash &mdash; so the store has nothing to sell yet.
 					<?php else : ?>
@@ -857,7 +866,7 @@ function wookiee_render_rebrand_page() {
 			$wookiee_incomplete = array();
 			if ( $wookiee_run && ! empty( $wookiee_run['steps'] ) ) {
 				foreach ( $wookiee_run['steps'] as $wookiee_key => $wookiee_step ) {
-					if ( 'done' !== $wookiee_step['status'] ) {
+					if ( ! in_array( $wookiee_step['status'], array( 'done', 'cancelled' ), true ) ) {
 						$wookiee_incomplete[] = $wookiee_key;
 					}
 				}
@@ -1054,7 +1063,10 @@ function wookiee_render_rebrand_page() {
 		function drive( brief, keys, statuses ) {
 			var failed = false;
 			var pending = keys.filter( function ( k ) {
-				return ! statuses[ k ] || 'done' !== statuses[ k ].status;
+				if ( ! statuses[ k ] ) { return true; }
+				// 'failed' still counts as outstanding so Continue can retry
+				// it; 'cancelled' does not, or Stop would undo itself.
+				return 'done' !== statuses[ k ].status && 'cancelled' !== statuses[ k ].status;
 			} );
 
 			setRunning( true );
@@ -1171,9 +1183,17 @@ function wookiee_render_rebrand_page() {
 
 			var keys = Object.keys( INITIAL_RUN.steps );
 			var incomplete = keys.filter( function ( k ) {
-				return 'done' !== INITIAL_RUN.steps[ k ].status;
+				var st = INITIAL_RUN.steps[ k ].status;
+				return 'done' !== st && 'cancelled' !== st;
 			} );
 			if ( ! incomplete.length ) { return; }
+
+			/*
+			 * A stopped run is shown, never restarted. Without this the reload
+			 * that follows Stop resumed the very queue it had just cancelled,
+			 * so the button appeared to do nothing at all.
+			 */
+			if ( INITIAL_RUN.cancelled ) { return; }
 
 			if ( INITIAL_RUN.brief ) {
 				document.getElementById( 'wookiee-rebrand-brief' ).value = INITIAL_RUN.brief;

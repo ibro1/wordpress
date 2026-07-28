@@ -693,13 +693,65 @@ function wookiee_render_rebrand_page() {
 				<a href="<?php echo esc_url( home_url( '/' ) ); ?>" target="_blank" class="button">View store</a>
 			</p>
 
-			<div id="wookiee-rebrand-steps" style="margin-top:8px;"></div>
+			<?php
+			/*
+			 * The in-progress run is painted server-side, not fetched.
+			 * Resuming used to depend entirely on an AJAX round trip whose
+			 * every failure path returned silently - so a status call that
+			 * errored looked exactly like the feature not existing. Rendering
+			 * it here means a reload shows the run immediately, and the JS
+			 * only has to decide whether to carry on driving it.
+			 */
+			$wookiee_incomplete = array();
+			if ( $wookiee_run && ! empty( $wookiee_run['steps'] ) ) {
+				foreach ( $wookiee_run['steps'] as $wookiee_key => $wookiee_step ) {
+					if ( 'done' !== $wookiee_step['status'] ) {
+						$wookiee_incomplete[] = $wookiee_key;
+					}
+				}
+			}
+			$wookiee_all_steps = wookiee_rebrand_steps();
+			?>
+			<div id="wookiee-rebrand-steps" style="margin-top:8px;">
+				<?php if ( $wookiee_incomplete ) : ?>
+					<ul style="margin:14px 0 0;padding:0;list-style:none;">
+						<?php foreach ( $wookiee_run['steps'] as $wookiee_key => $wookiee_step ) : ?>
+							<?php
+							$wookiee_icon   = '&middot;';
+							$wookiee_colour = '#8c8f94';
+							$wookiee_detail = 'waiting';
+							if ( 'done' === $wookiee_step['status'] ) {
+								$wookiee_icon   = '&#10003;';
+								$wookiee_colour = '#00622e';
+								$wookiee_detail = $wookiee_step['detail'] ? $wookiee_step['detail'] : 'done';
+							} elseif ( 'failed' === $wookiee_step['status'] ) {
+								$wookiee_icon   = '&#10007;';
+								$wookiee_colour = '#a3272a';
+								$wookiee_detail = $wookiee_step['detail'] ? $wookiee_step['detail'] : 'Failed.';
+							} elseif ( 'running' === $wookiee_step['status'] ) {
+								$wookiee_detail = 'interrupted - will be retried';
+							}
+							?>
+							<li id="wookiee-step-<?php echo esc_attr( $wookiee_key ); ?>" style="margin:6px 0;display:flex;gap:8px;align-items:baseline;">
+								<span class="wookiee-step-icon" style="width:14px;color:<?php echo esc_attr( $wookiee_colour ); ?>;"><?php echo wp_kses_post( $wookiee_icon ); ?></span>
+								<span>
+									<strong><?php echo wp_kses_post( isset( $wookiee_all_steps[ $wookiee_key ] ) ? $wookiee_all_steps[ $wookiee_key ] : $wookiee_key ); ?></strong>
+									<span class="wookiee-step-detail" style="color:#646970;"><?php echo wp_kses_post( $wookiee_detail ); ?></span>
+								</span>
+							</li>
+						<?php endforeach; ?>
+					</ul>
+				<?php endif; ?>
+			</div>
 		</div>
 	</div>
 	<script>
 	( function () {
 		var NONCE = '<?php echo esc_js( wp_create_nonce( 'wookiee_rebrand' ) ); ?>';
 		var STEPS = <?php echo wp_json_encode( wookiee_rebrand_steps() ); ?>;
+		// The run as the server already rendered it above - no round trip, so
+		// there is no failure path here that can silently show nothing.
+		var INITIAL_RUN = <?php echo wp_json_encode( $wookiee_run ? $wookiee_run : null ); ?>;
 		var IMAGE_STEPS = <?php echo wp_json_encode( array_values( wookiee_rebrand_image_steps() ) ); ?>;
 		var go    = document.getElementById( 'wookiee-rebrand-go' );
 		var out   = document.getElementById( 'wookiee-rebrand-steps' );
@@ -840,31 +892,39 @@ function wookiee_render_rebrand_page() {
 		 * part-applied. The run lives on the server now, so the page picks it
 		 * back up from the first step that has not finished.
 		 */
-		post( 'wookiee_rebrand_status' ).then( function ( res ) {
-			if ( ! res || ! res.success || ! res.data.run ) { return; }
+		/*
+		 * Resume on load. A rebrand is minutes of provider calls, and a
+		 * refresh used to abandon it part-applied. The step list above is
+		 * already painted from the server's record; this only decides
+		 * whether to carry on driving it.
+		 */
+		( function resume() {
+			if ( ! INITIAL_RUN || ! INITIAL_RUN.steps ) { return; }
 
-			var run = res.data.run;
-			var keys = Object.keys( run.steps );
-
-			var incomplete = keys.filter( function ( k ) { return 'done' !== run.steps[ k ].status; } );
+			var keys = Object.keys( INITIAL_RUN.steps );
+			var incomplete = keys.filter( function ( k ) {
+				return 'done' !== INITIAL_RUN.steps[ k ].status;
+			} );
 			if ( ! incomplete.length ) { return; }
 
-			var anyFailed = keys.some( function ( k ) { return 'failed' === run.steps[ k ].status; } );
-
-			if ( run.brief ) { document.getElementById( 'wookiee-rebrand-brief' ).value = run.brief; }
-			renderSteps( keys, run.steps );
+			if ( INITIAL_RUN.brief ) {
+				document.getElementById( 'wookiee-rebrand-brief' ).value = INITIAL_RUN.brief;
+			}
 
 			var note = document.createElement( 'p' );
 			note.className = 'description';
 			note.style.marginTop = '10px';
 			out.appendChild( note );
 
+			var anyFailed = keys.some( function ( k ) {
+				return 'failed' === INITIAL_RUN.steps[ k ].status;
+			} );
+
 			if ( anyFailed ) {
 				/*
 				 * Deliberately NOT auto-resumed. A failure that is not
 				 * transient - no API key, no credit - would otherwise retry
-				 * on every single visit to this screen, billing each time.
-				 * The operator decides.
+				 * on every visit to this screen, billing each time.
 				 */
 				note.textContent = 'The last rebrand stopped part-way. The finished steps have been applied.';
 				var cont = document.createElement( 'button' );
@@ -874,15 +934,16 @@ function wookiee_render_rebrand_page() {
 				cont.textContent = 'Continue from where it stopped';
 				cont.addEventListener( 'click', function () {
 					cont.remove();
-					drive( run.brief, keys, run.steps );
+					note.textContent = 'Carrying on from where it stopped\u2026';
+					drive( INITIAL_RUN.brief, keys, INITIAL_RUN.steps );
 				} );
 				out.appendChild( cont );
 				return;
 			}
 
-			note.textContent = 'A rebrand was already running - carrying on from where it stopped.';
-			drive( run.brief, keys, run.steps );
-		} );
+			note.textContent = 'A rebrand was already running \u2014 carrying on from where it stopped.';
+			drive( INITIAL_RUN.brief, keys, INITIAL_RUN.steps );
+		}() );
 
 		var undo = document.getElementById( 'wookiee-rebrand-undo' );
 		if ( undo ) {

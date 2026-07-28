@@ -80,14 +80,27 @@ function wookiee_get_pending_draft_products() {
  * hardcoded HTML) so the nav and the JS step-order stay in sync from a
  * single source.
  */
+/**
+ * The onboarding path, in order.
+ *
+ * Activation comes first because nothing after it can work without it: every
+ * later step either generates text, generates images, or sources products,
+ * and all three go through the backend. Putting it anywhere else meant a new
+ * operator filled in three screens before discovering the fourth was inert.
+ *
+ * The niche brief moved into Business identity - it is a fact about the
+ * business, it belongs with the others, and a step containing one textarea
+ * was a step for its own sake. The old standalone "Review & publish" is gone
+ * for the same reason: Rebrand now ends the run and shows what it did.
+ */
 function wookiee_setup_steps() {
 	return array(
-		'business' => '1. Business identity',
-		'niche'    => '2. Niche brief',
-		'content'  => '3. Page content',
-		'products' => '4. Source products',
-		'shipping' => '5. Shipping',
-		'review'   => '6. Review & publish',
+		'activate' => '1. Activate',
+		'business' => '2. Business identity',
+		'shipping' => '3. Shipping & returns',
+		'content'  => '4. Page content',
+		'products' => '5. Products',
+		'rebrand'  => '6. Rebrand',
 	);
 }
 
@@ -120,8 +133,7 @@ function wookiee_render_setup_wizard_page() {
 	?>
 	<div class="wrap">
 		<h1>Wookiee Setup</h1>
-		<?php wookiee_render_model_picker(); ?>
-		<p>The guided path from a blank install to a reviewed, ready-to-launch single-niche store. Every step writes real, live changes for you to review as you go — revisiting this wizard any time is safe, nothing is ever duplicated.</p>
+		<p>The guided path from a blank install to a ready-to-launch single-niche store. Every step writes real, live changes for you to review as you go — revisiting this wizard any time is safe, nothing is ever duplicated.</p>
 
 		<div class="wookiee-setup-progress" id="wookiee-setup-steps">
 			<?php $i = 0; foreach ( $steps as $step_key => $label ) : $i++; ?>
@@ -132,10 +144,32 @@ function wookiee_render_setup_wizard_page() {
 			<?php endforeach; ?>
 		</div>
 
-		<?php // ---------------- Step 1: Business identity ---------------- ?>
-		<div class="wookiee-setup-step" data-step-panel="business">
+		<?php // ---------------- Step 1: Activate ---------------- ?>
+		<div class="wookiee-setup-step" data-step-panel="activate">
+			<h2>Activate</h2>
+			<p class="description" style="font-size:14px;max-width:760px;">
+				Your activation code connects this store to the AI models, product sourcing and domain search included with your plan. Nothing in the steps that follow can run without it.
+			</p>
+
+			<?php wookiee_render_activation_section(); ?>
+
+			<?php if ( wookiee_central_api_configured() ) : ?>
+				<h3>Default models</h3>
+				<p class="description">Which models this store uses when nothing else is specified. Both can be changed per-run from the screens that generate things.</p>
+				<?php wookiee_render_settings_fields_table( array( 'llm_model', 'image_model' ) ); ?>
+				<p>
+					<button type="button" class="button button-primary wookiee-setup-save-continue" data-next="business">Save &amp; continue &rarr;</button>
+					<span class="wookiee-setup-save-status" style="margin-left:8px;"></span>
+				</p>
+			<?php else : ?>
+				<p class="description">Once a valid code is saved, the AI model and image model choices appear here.</p>
+			<?php endif; ?>
+		</div>
+
+		<?php // ---------------- Step 2: Business identity ---------------- ?>
+		<div class="wookiee-setup-step" data-step-panel="business" hidden>
 			<h2>Business identity</h2>
-			<?php wookiee_render_settings_fields_table( array( 'company_number', 'business_name', 'registered_address', 'countries_served' ) ); ?>
+			<?php wookiee_render_settings_fields_table( array( 'company_number', 'business_name', 'registered_address', 'countries_served', 'product_markup_percent' ) ); ?>
 			<?php if ( ! $has_ch_key ) : ?>
 				<p class="description">Want the company name/address above auto-filled instead of typing them? Add a free Companies House API key on the <a href="<?php echo esc_url( $settings_url . '#business' ); ?>">Wookiee Settings</a> page, then come back here.</p>
 			<?php endif; ?>
@@ -166,40 +200,31 @@ function wookiee_render_setup_wizard_page() {
 				</tr>
 			</table>
 
+			<h3>Contact details</h3>
+			<p class="description">The address and number customers actually use. The email is set for you when a domain is chosen above; overwrite it if you use a different mailbox.</p>
+			<?php wookiee_render_settings_fields_table( array( 'contact_email', 'contact_phone', 'support_hours' ) ); ?>
+
+			<h3>Social media</h3>
+			<p class="description">Shown in the footer. Leave any blank and its icon is hidden rather than linking nowhere.</p>
+			<?php wookiee_render_settings_fields_table( array( 'facebook_url', 'instagram_url', 'linkedin_url', 'pinterest_url' ) ); ?>
+
+			<h3>What this store sells</h3>
+			<p class="description">One sentence. Every generator downstream reads it - the policy pages, the product sourcing, the copy and the design all start here, so it is worth being specific.</p>
+			<span class="wookiee-niche-input-wrap is-textarea">
+				<textarea id="wookiee-setup-niche-brief" name="wookiee_niche_brief" rows="3" class="large-text" placeholder="e.g. Portable outdoor cooking gear - compact grills, camping cookware and lightweight utensils for campers and picnics"><?php echo esc_textarea( $brief ); ?></textarea>
+				<?php wookiee_niche_suggest_button( 'wookiee-setup-niche-brief' ); ?>
+			</span>
+
+			<h3>Store design</h3>
+			<p class="description">Colours, spacing, hero treatment and section order, generated from the description above. Regenerate until it suits you - nothing else on this page is affected.</p>
+			<?php wookiee_render_design_panel(); ?>
+
 			<p class="wookiee-setup-nav">
-				<button type="button" class="button button-primary wookiee-setup-save-continue" data-next="niche">Save &amp; continue &rarr;</button>
+				<button type="button" class="button button-primary wookiee-setup-save-continue" data-next="shipping">Save &amp; continue &rarr;</button>
 				<span class="wookiee-setup-save-status" style="margin-left:8px;"></span>
 			</p>
 		</div>
 
-		<?php // ---------------- Step 2: Niche brief ---------------- ?>
-		<div class="wookiee-setup-step" data-step-panel="niche" hidden>
-			<h2>Niche brief</h2>
-			<p class="description">Shared by the Content Generator, Product Generator, and Supplier Catalog search — one niche for the whole site.</p>
-			<span class="wookiee-niche-input-wrap is-textarea">
-				<textarea id="wookiee-setup-niche-brief" rows="3" class="large-text" placeholder="e.g. UK home-storage and organisation products - baskets, shelving, drawer organisers, aimed at small flats"><?php echo esc_textarea( $brief ); ?></textarea>
-				<?php wookiee_niche_suggest_button( 'wookiee-setup-niche-brief' ); ?>
-			</span>
-			<p class="wookiee-setup-nav">
-				<button type="button" class="button wookiee-setup-nav-prev" data-prev="business">&larr; Back</button>
-				<button type="button" class="button button-primary" id="wookiee-setup-niche-save-btn">Save &amp; continue &rarr;</button>
-				<span id="wookiee-setup-niche-status" style="margin-left:8px;"></span>
-			</p>
-		</div>
-
-		<?php
-		$about_fields          = array_values( array_filter( $tabs['about_contact']['fields'], function ( $k ) { return 0 === strpos( $k, 'about_' ); } ) );
-		$contact_fields        = array_values( array_filter( $tabs['about_contact']['fields'], function ( $k ) { return 0 === strpos( $k, 'contact_' ); } ) );
-		$policy_ai_count       = wookiee_count_policy_pages_ai_generated();
-		$homepage_ai_generated = (bool) get_option( 'wookiee_homepage_ai_generated', false );
-		$about_ai_generated    = (bool) get_option( 'wookiee_about_contact_ai_generated', false );
-		$accordion_sections    = array(
-			'policy'  => array( 'label' => 'Policy Pages', 'status' => $policy_ai_count . ' of 7 generated' ),
-			'home'    => array( 'label' => 'Home', 'status' => $homepage_ai_generated ? 'AI-generated' : 'Using defaults' ),
-			'about'   => array( 'label' => 'About', 'status' => $about_ai_generated ? 'AI-generated' : 'Using defaults' ),
-			'contact' => array( 'label' => 'Contact', 'status' => $about_ai_generated ? 'AI-generated' : 'Using defaults' ),
-		);
-		?>
 		<?php // ---------------- Step 3: Generate page content ---------------- ?>
 		<div class="wookiee-setup-step" data-step-panel="content" hidden>
 			<h2>Page content</h2>
@@ -249,7 +274,7 @@ function wookiee_render_setup_wizard_page() {
 			</div>
 
 			<p class="wookiee-setup-nav">
-				<button type="button" class="button wookiee-setup-nav-prev" data-prev="niche">&larr; Back</button>
+				<button type="button" class="button wookiee-setup-nav-prev" data-prev="shipping">&larr; Back</button>
 				<?php if ( $has_ai_key ) : ?>
 					<button type="button" class="button button-primary wookiee-setup-save-continue" data-next="products">Save &amp; continue &rarr;</button>
 					<span class="wookiee-setup-save-status" style="margin-left:8px;"></span>
@@ -283,13 +308,13 @@ function wookiee_render_setup_wizard_page() {
 			</p>
 			<p class="wookiee-setup-nav">
 				<button type="button" class="button wookiee-setup-nav-prev" data-prev="content">&larr; Back</button>
-				<button type="button" class="button button-primary wookiee-setup-nav-next" data-next="shipping">Continue to Shipping &rarr;</button>
+				<button type="button" class="button button-primary wookiee-setup-nav-next" data-next="rebrand">Continue to Rebrand &rarr;</button>
 			</p>
 		</div>
 
 		<?php // ---------------- Step 5: Shipping ---------------- ?>
 		<div class="wookiee-setup-step" data-step-panel="shipping" hidden>
-			<h2>Shipping</h2>
+			<h2>Shipping &amp; returns</h2>
 			<?php wookiee_render_settings_fields_table( array( 'shipping_rate', 'shipping_dispatch', 'handling_time', 'transit_time', 'estimated_delivery', 'returns_address', 'returns_period_days', 'cancellation_period', 'restocking_fee' ) ); ?>
 			<p>
 				<?php if ( $shipping_zone ) : ?>
@@ -299,52 +324,22 @@ function wookiee_render_setup_wizard_page() {
 				<?php endif; ?>
 			</p>
 			<p class="wookiee-setup-nav">
-				<button type="button" class="button wookiee-setup-nav-prev" data-prev="products">&larr; Back</button>
-				<button type="button" class="button button-primary wookiee-setup-save-continue" data-next="review">Save &amp; continue &rarr;</button>
+				<button type="button" class="button wookiee-setup-nav-prev" data-prev="business">&larr; Back</button>
+				<button type="button" class="button button-primary wookiee-setup-save-continue" data-next="content">Save &amp; continue &rarr;</button>
 				<span class="wookiee-setup-save-status" style="margin-left:8px;"></span>
 			</p>
 		</div>
 
-		<?php // ---------------- Step 6: Review & publish ---------------- ?>
-		<div class="wookiee-setup-step" data-step-panel="review" hidden>
-			<h2>Review &amp; publish</h2>
-			<p>Nothing below is live until you open each draft, check it against what's actually true for this business (real product photos, verified policy details, on-brand copy), and click Publish yourself. That review step is deliberate, not a placeholder to be automated away later — see <code>docs/workflow/v2/spec.md</code> §2c for why auto-publishing AI-sourced listings is a real consumer-protection risk.</p>
-
-			<table class="widefat" style="max-width:700px;">
-				<tr><td>Business identity</td><td><?php echo wookiee_get_setting( 'business_name' ) ? '&#10003; Set' : 'Not set'; ?></td></tr>
-				<tr><td>Niche brief</td><td><?php echo $brief ? '&#10003; Set' : 'Not set'; ?></td></tr>
-				<tr><td>Policy pages</td><td><?php echo intval( $policy_live_count ); ?> of 7 live</td></tr>
-				<tr><td>Draft products awaiting review</td><td><?php echo intval( count( $pending['draft_ids'] ) ); ?></td></tr>
-				<tr><td>Product categories with products</td><td><?php echo intval( $display_cat_count ); ?></td></tr>
-				<tr><td>Shipping</td><td><?php echo $shipping_zone ? '&#10003; Active' : 'Not active yet'; ?></td></tr>
-			</table>
-
-			<h3>Draft products</h3>
-			<?php if ( empty( $pending['draft_ids'] ) ) : ?>
-				<p class="description">No draft products waiting right now.</p>
-			<?php else : ?>
-				<p>
-					<label><input type="checkbox" id="wookiee-review-select-all"> Select all</label>
-					<button type="button" class="button button-primary" id="wookiee-review-publish-btn" disabled>Publish selected</button>
-					<span id="wookiee-review-publish-status" style="margin-left:8px;"></span>
-				</p>
-				<table class="widefat">
-					<thead><tr><th style="width:24px;"></th><th>Product</th><th></th></tr></thead>
-					<tbody>
-						<?php foreach ( $pending['draft_ids'] as $draft_id ) : ?>
-							<tr>
-								<td><input type="checkbox" class="wookiee-review-product-check" value="<?php echo esc_attr( $draft_id ); ?>"></td>
-								<td><?php echo esc_html( get_the_title( $draft_id ) ); ?></td>
-								<td><a href="<?php echo esc_url( get_edit_post_link( $draft_id, 'raw' ) ); ?>" class="button" target="_blank" rel="noopener">Review</a></td>
-							</tr>
-						<?php endforeach; ?>
-					</tbody>
-				</table>
-			<?php endif; ?>
-
+		<?php // ---------------- Step 6: Rebrand ---------------- ?>
+		<div class="wookiee-setup-step" data-step-panel="rebrand" hidden>
+			<h2>Rebrand</h2>
+			<p class="description" style="font-size:14px;max-width:760px;">
+				The last step writes the storefront itself from the description you gave: colours, layout, photographs, and the copy on the homepage, About and Contact. Everything before this was facts about the business - this is where it becomes a shop.
+			</p>
+			<?php wookiee_render_rebrand_panel(); ?>
 			<p class="wookiee-setup-nav">
-				<button type="button" class="button wookiee-setup-nav-prev" data-prev="shipping">&larr; Back</button>
-				<a href="<?php echo esc_url( home_url( '/' ) ); ?>" class="button button-primary" target="_blank" rel="noopener">View your store &rarr;</a>
+				<button type="button" class="button wookiee-setup-nav-prev" data-prev="products">&larr; Back</button>
+				<a href="<?php echo esc_url( home_url( '/' ) ); ?>" class="button" target="_blank" rel="noopener">View your store</a>
 			</p>
 		</div>
 	</div>
@@ -492,7 +487,10 @@ function wookiee_render_setup_wizard_page() {
 				var data   = new FormData();
 				data.append( 'action', 'wookiee_save_setup_step' );
 				data.append( 'nonce', SAVE_STEP_NONCE );
-				panel.querySelectorAll( '[name^="wookiee_setting_"], #blogname' ).forEach( function( field ) {
+				// wookiee_niche_brief is not a wookiee_setting_* option - it has
+				// its own key, read by every generator - so it has to be named
+				// explicitly or the brief typed on this step is silently lost.
+				panel.querySelectorAll( '[name^="wookiee_setting_"], #blogname, [name="wookiee_niche_brief"]' ).forEach( function( field ) {
 					data.append( field.name, field.value );
 				} );
 

@@ -45,6 +45,12 @@
 					if ( '' === $wookiee_page['menu'] ) {
 						continue;
 					}
+					// A fresh install has no pages until onboarding creates
+					// them; linking to slugs that do not exist yet would put
+					// four 404s in the header of every new site.
+					if ( 'home' !== $wookiee_slug && ! get_page_by_path( $wookiee_slug, OBJECT, 'page' ) ) {
+						continue;
+					}
 					$wookiee_url = 'home' === $wookiee_slug ? home_url( '/' ) : home_url( '/' . $wookiee_slug . '/' );
 					printf(
 						'<li><a href="%s">%s</a></li>',

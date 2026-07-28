@@ -5,7 +5,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'WOOKIEE_VERSION', '1.0.84' );
+define( 'WOOKIEE_VERSION', '1.0.85' );
 define( 'WOOKIEE_DIR', trailingslashit( get_template_directory() ) );
 define( 'WOOKIEE_URI', trailingslashit( get_template_directory_uri() ) );
 define( 'WOOKIEE_CONTACT_EMAIL', 'info@wookied.com' );
@@ -186,8 +186,45 @@ function wookiee_enqueue_assets() {
 	wp_enqueue_script( 'wookiee-main', WOOKIEE_URI . 'assets/js/main.js', array( 'jquery' ), WOOKIEE_VERSION, true );
 }
 
-add_action( 'after_switch_theme', 'wookiee_create_starter_content' );
+/*
+ * Activation no longer builds a store. A brand-new site is a plain WordPress
+ * install with the theme on it - no homepage, no About, no Contact, no policy
+ * pages - and the operator is sent straight to Setup instead. Pages arrive as
+ * the onboarding steps produce them, so nobody is deleting demo content that
+ * describes somebody else's shop before they can start.
+ */
+add_action( 'after_switch_theme', 'wookiee_redirect_to_setup_on_activation' );
 add_action( 'init', 'wookiee_maybe_create_starter_content', 20 );
+
+function wookiee_redirect_to_setup_on_activation() {
+	if ( ! current_user_can( 'manage_options' ) ) {
+		return;
+	}
+	// Mark the install so the wizard can tell a fresh one from a site that
+	// simply has not finished, and land the operator on step one.
+	add_option( 'wookiee_activated_at', time() );
+	wp_safe_redirect( admin_url( 'admin.php?page=wookiee-setup' ) );
+	exit;
+}
+
+/**
+ * Whether this store is far enough along to have pages at all.
+ *
+ * The business name and the niche brief are the two facts every starter page
+ * depends on - the About copy, the policy pages and the footer all read them.
+ * Creating pages before they exist produces a shop describing a company that
+ * has not been named yet, which is exactly the demo content this change
+ * removes.
+ *
+ * Reads the raw options rather than wookiee_get_setting(), which falls back
+ * to plausible-looking demo defaults and would report ready immediately.
+ */
+function wookiee_starter_content_ready() {
+	$business = trim( (string) get_option( 'wookiee_setting_business_name', '' ) );
+	$brief    = trim( (string) get_option( 'wookiee_niche_brief', '' ) );
+
+	return '' !== $business && '' !== $brief;
+}
 
 /**
  * Keep the primary menu in sync with whichever starter pages currently
@@ -409,6 +446,11 @@ function wookiee_sync_primary_menu( $page_ids = null, $pages = null ) {
 
 function wookiee_maybe_create_starter_content() {
 	if ( wp_installing() ) {
+		return;
+	}
+
+	// Nothing to build yet - see wookiee_starter_content_ready().
+	if ( ! wookiee_starter_content_ready() ) {
 		return;
 	}
 

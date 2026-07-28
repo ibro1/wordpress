@@ -728,7 +728,18 @@ function wookiee_rebrand_undo_handler() {
 	wp_send_json_success( array( 'products_restored' => $restored ) );
 }
 
+/**
+ * The Rebrand page. A thin wrapper so the same UI can be the last step of the
+ * setup wizard without either copy drifting from the other.
+ */
 function wookiee_render_rebrand_page() {
+	echo '<div class="wrap">';
+	echo '<h1>Rebrand store</h1>';
+	wookiee_render_rebrand_panel();
+	echo '</div>';
+}
+
+function wookiee_render_rebrand_panel() {
 	$brief    = (string) get_option( 'wookiee_niche_brief', '' );
 	$params   = function_exists( 'wookiee_current_design_params' ) ? wookiee_current_design_params() : array();
 	$tokens   = $params ? wookiee_derive_palette( $params ) : array();
@@ -749,9 +760,7 @@ function wookiee_render_rebrand_page() {
 		&& isset( $wookiee_run['steps']['products'] )
 		&& 'done' === $wookiee_run['steps']['products']['status'];
 	?>
-	<div class="wrap">
-		<h1>Rebrand store</h1>
-
+	<div>
 		<?php if ( $wookiee_finished ) : ?>
 			<div class="notice notice-success" style="margin:16px 0;padding:14px 16px;">
 				<p style="font-size:14px;margin:0 0 6px;">

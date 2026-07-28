@@ -1474,5 +1474,11 @@ function wookiee_save_setup_step_handler() {
 		update_option( 'blogname', sanitize_text_field( wp_unslash( $_POST['blogname'] ) ) );
 	}
 
+	// Its own option, not a wookiee_setting_* one, because every generator
+	// reads it directly - so it needs handling explicitly here.
+	if ( isset( $_POST['wookiee_niche_brief'] ) ) {
+		update_option( 'wookiee_niche_brief', sanitize_textarea_field( wp_unslash( $_POST['wookiee_niche_brief'] ) ) );
+	}
+
 	wp_send_json_success( array( 'message' => 'Saved.' ) );
 }

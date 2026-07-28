@@ -28,6 +28,30 @@ defined( 'ABSPATH' ) || exit;
  * line if the backend ever moves to a different domain.
  */
 function wookiee_central_api_base_url() {
+	/*
+	 * Prefer the container-to-container address when one is configured.
+	 *
+	 * The public hostname is behind Cloudflare, which cuts any proxied request
+	 * at 100 seconds - so a WordPress -> API call for a 109-second image render
+	 * came back as HTTP 524 even though the image had been generated and
+	 * returned successfully. Both containers sit on the same Docker network;
+	 * that hop has no business leaving the machine.
+	 *
+	 * Set WOOKIEE_API_INTERNAL_URL in wp-config (the compose file does this
+	 * from an env var). Unset, everything behaves exactly as before.
+	 */
+	if ( defined( 'WOOKIEE_API_INTERNAL_URL' ) && WOOKIEE_API_INTERNAL_URL ) {
+		return rtrim( (string) WOOKIEE_API_INTERNAL_URL, '/' );
+	}
+
+	return wookiee_central_api_public_url();
+}
+
+/**
+ * The internet-facing address, and the fallback whenever the internal one
+ * cannot be reached.
+ */
+function wookiee_central_api_public_url() {
 	return 'https://api.davebukartechnologies.com';
 }
 
@@ -126,6 +150,17 @@ function wookiee_central_api_request( $method, $path, $body = null, $timeout = 3
 	}
 
 	$response = wp_remote_request( wookiee_central_api_base_url() . $path, $args );
+
+	/*
+	 * A WP_Error here is a connection-level failure - DNS, refused, no route -
+	 * not an API error, which comes back as an HTTP status. If the internal
+	 * address is the one that failed, the container name is probably wrong or
+	 * the API is on a different network, so try the public route once rather
+	 * than taking the whole site's AI features down over a misconfiguration.
+	 */
+	if ( is_wp_error( $response ) && wookiee_central_api_base_url() !== wookiee_central_api_public_url() ) {
+		$response = wp_remote_request( wookiee_central_api_public_url() . $path, $args );
+	}
 
 	if ( is_wp_error( $response ) ) {
 		return $response;

@@ -21,6 +21,7 @@ services:
       WORDPRESS_DB_PASSWORD: ${DB_PASSWORD}
       WORDPRESS_DB_NAME: ${DB_NAME}
       WORDPRESS_DEBUG: ${WORDPRESS_DEBUG}
+      WOOKIEE_API_INTERNAL_URL: ${WOOKIEE_API_INTERNAL_URL:-http://wookiee_api:3000}
       # Using $$ for PHP variables inside the Docker env string
       # ${MAIN_DOMAIN} here is substituted at compose-parse time by Dokploy
       WORDPRESS_CONFIG_EXTRA: |
@@ -47,6 +48,16 @@ services:
         # Essential for logging into mapped domains like odehexecutive.com
         if (isset($$_SERVER['HTTP_HOST'])) {
             define('COOKIE_DOMAIN', $$_SERVER['HTTP_HOST']);
+        }
+
+        # --- INTERNAL API ROUTE ---
+        # Reach the API container directly instead of out through Cloudflare,
+        # whose 100s proxy ceiling turned a 109s image render into an HTTP 524
+        # even though the image had generated fine. Both containers are on the
+        # same network. The theme falls back to the public URL if this address
+        # cannot be reached, so a wrong value degrades rather than breaks.
+        if (getenv('WOOKIEE_API_INTERNAL_URL')) {
+            define('WOOKIEE_API_INTERNAL_URL', getenv('WOOKIEE_API_INTERNAL_URL'));
         }
 
         # --- FORCE SSL ---

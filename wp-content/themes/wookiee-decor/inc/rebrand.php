@@ -334,6 +334,10 @@ function wookiee_rebrand_begin_run( $brief, array $step_keys ) {
 		'steps'   => $steps,
 		'started' => time(),
 		'updated' => time(),
+		// Authenticates the background worker below. The worker runs as a
+		// nopriv action - it has no logged-in user - so this is what stands
+		// between it and anyone who can reach admin-ajax.php.
+		'token'   => wp_generate_password( 32, false ),
 	);
 
 	update_option( 'wookiee_rebrand_run', $run );
@@ -458,28 +462,105 @@ function wookiee_rebrand_handler() {
 		wp_send_json_error( array( 'message' => 'Unknown rebrand step.' ) );
 	}
 
-	wookiee_rebrand_mark_step( $step, 'running' );
+	/*
+	 * Dispatch, don't execute.
+	 *
+	 * This site is behind Cloudflare, which cuts any proxied request at 100
+	 * seconds. A CPU image render takes ~110s for DreamShaper and minutes for
+	 * Realistic Vision, so holding the browser's connection open for the work
+	 * guaranteed a 524 - and the failure was a lie: the image generated fine,
+	 * was billed for, and was saved. Only the answer was lost.
+	 *
+	 * So the work happens in a detached loopback request and this returns
+	 * immediately; the browser polls wookiee_rebrand_status for the outcome.
+	 * No step is bounded by a proxy timeout any more.
+	 */
+	$run = wookiee_rebrand_run();
+	if ( ! $run || ! isset( $run['steps'][ $step ] ) ) {
+		wp_send_json_error( array( 'message' => 'No rebrand is in progress. Start one first.' ) );
+	}
 
-	$result = wookiee_run_rebrand_step( $step, $brief );
+	wookiee_rebrand_mark_step( $step, 'running' );
+	wookiee_rebrand_dispatch_worker( $step );
+
+	wp_send_json_success( array( 'queued' => true ) );
+}
+
+/**
+ * Fires the detached request that actually runs a step.
+ *
+ * blocking => false means WordPress sends the request and returns without
+ * waiting, so this call costs milliseconds regardless of how long the step
+ * takes.
+ */
+function wookiee_rebrand_dispatch_worker( $step ) {
+	$run = wookiee_rebrand_run();
+	if ( ! $run || empty( $run['token'] ) ) {
+		return;
+	}
+
+	wp_remote_post(
+		admin_url( 'admin-ajax.php' ),
+		array(
+			'blocking'  => false,
+			'timeout'   => 0.01,
+			// The loopback hits this site's own public hostname; a self-signed
+			// or mid-renewal certificate must not silently stop the worker.
+			'sslverify' => false,
+			'body'      => array(
+				'action' => 'wookiee_rebrand_worker',
+				'token'  => $run['token'],
+				'step'   => $step,
+			),
+		)
+	);
+}
+
+/**
+ * Runs one step with no browser attached.
+ *
+ * Registered for nopriv as well: the dispatching request carries no cookies,
+ * so this arrives logged-out. The run's one-time token is the authentication,
+ * compared with hash_equals so a wrong guess cannot be timed.
+ */
+add_action( 'wp_ajax_nopriv_wookiee_rebrand_worker', 'wookiee_rebrand_worker' );
+add_action( 'wp_ajax_wookiee_rebrand_worker', 'wookiee_rebrand_worker' );
+function wookiee_rebrand_worker() {
+	$run   = wookiee_rebrand_run();
+	$token = isset( $_POST['token'] ) ? sanitize_text_field( wp_unslash( $_POST['token'] ) ) : '';
+
+	if ( ! $run || empty( $run['token'] ) || ! hash_equals( (string) $run['token'], $token ) ) {
+		wp_die( '', '', array( 'response' => 403 ) );
+	}
+
+	$step = isset( $_POST['step'] ) ? sanitize_key( wp_unslash( $_POST['step'] ) ) : '';
+	if ( ! isset( $run['steps'][ $step ] ) ) {
+		wp_die( '', '', array( 'response' => 400 ) );
+	}
+
+	// The dispatcher hung up the moment it sent this, and Cloudflare will cut
+	// the connection at 100s regardless. Neither must stop the work.
+	ignore_user_abort( true );
+	@set_time_limit( 0 ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- disabled on some hosts.
+
+	$result = wookiee_run_rebrand_step( $step, $run['brief'] );
 
 	if ( is_wp_error( $result ) ) {
 		wookiee_rebrand_mark_step( $step, 'failed', $result->get_error_message() );
-		wp_send_json_error( array( 'message' => $result->get_error_message() ) );
+		wp_die( '', '', array( 'response' => 200 ) );
 	}
-	// A step reports either one line or a set of labelled lines (the design
-	// step splits into Colours and Layout so neither hides behind the other).
+
 	if ( is_array( $result ) ) {
-		// Stored as one string so a resumed page can redisplay it without
-		// needing to know a step's reporting shape.
 		$flat = array();
 		foreach ( $result as $label => $line ) {
 			$flat[] = '<em>' . $label . ':</em> ' . $line;
 		}
 		wookiee_rebrand_mark_step( $step, 'done', implode( '<br>', $flat ) );
-		wp_send_json_success( array( 'parts' => $result ) );
+		wp_die( '', '', array( 'response' => 200 ) );
 	}
+
 	wookiee_rebrand_mark_step( $step, 'done', (string) $result );
-	wp_send_json_success( array( 'detail' => $result ) );
+	wp_die( '', '', array( 'response' => 200 ) );
 }
 
 /**
@@ -729,7 +810,10 @@ function wookiee_render_rebrand_page() {
 								$wookiee_colour = '#a3272a';
 								$wookiee_detail = $wookiee_step['detail'] ? $wookiee_step['detail'] : 'Failed.';
 							} elseif ( 'running' === $wookiee_step['status'] ) {
-								$wookiee_detail = 'interrupted - will be retried';
+								// Steps run detached now, so this may still be
+								// working rather than abandoned - the page
+								// reconnects to it rather than restarting it.
+								$wookiee_detail = 'still running - reconnecting&hellip;';
 							}
 							?>
 							<li id="wookiee-step-<?php echo esc_attr( $wookiee_key ); ?>" style="margin:6px 0;display:flex;gap:8px;align-items:baseline;">
@@ -810,6 +894,54 @@ function wookiee_render_rebrand_page() {
 		}
 
 		/**
+		 * Waits for a detached step to finish, by polling the run record.
+		 *
+		 * Every request here is short, so nothing is exposed to the 100s
+		 * Cloudflare ceiling that made long steps report false failures. A
+		 * network blip during the wait is retried rather than treated as a
+		 * failure - the work is running on the server either way.
+		 */
+		function await_step( key ) {
+			var POLL_MS = 3000;
+			var GIVE_UP_MS = 25 * 60 * 1000;
+			var started = Date.now();
+
+			return new Promise( function ( resolve ) {
+				function tick() {
+					if ( Date.now() - started > GIVE_UP_MS ) {
+						resolve( { ok: false, detail: 'Still running after 25 minutes - reload to check on it.' } );
+						return;
+					}
+
+					post( 'wookiee_rebrand_status' ).then( function ( res ) {
+						var st = res && res.success && res.data.run && res.data.run.steps
+							? res.data.run.steps[ key ]
+							: null;
+
+						if ( ! st ) {
+							resolve( { ok: false, detail: 'Lost track of this step. Reload to see where it got to.' } );
+							return;
+						}
+						if ( 'done' === st.status ) {
+							resolve( { ok: true, detail: st.detail || 'done' } );
+							return;
+						}
+						if ( 'failed' === st.status ) {
+							resolve( { ok: false, detail: st.detail || 'Failed.' } );
+							return;
+						}
+						setTimeout( tick, POLL_MS );
+					} ).catch( function () {
+						// Transient - keep waiting rather than declaring a
+						// failure for work that is still going.
+						setTimeout( tick, POLL_MS * 2 );
+					} );
+				}
+				setTimeout( tick, POLL_MS );
+			} );
+		}
+
+		/**
 		 * Drives the steps that are not already done, one request each.
 		 * Sequential rather than parallel: the steps write overlapping
 		 * settings, and running them at once would race.
@@ -828,16 +960,38 @@ function wookiee_render_rebrand_page() {
 					if ( failed ) { return null; }
 					mark( key, '<span class="spinner is-active" style="float:none;margin:0;"></span>', '', 'working\u2026' );
 
+					/*
+					 * Already running on the server - from before a reload, say.
+					 * Dispatching again would run it a second time in parallel
+					 * and pay for it twice, so just wait for the one in flight.
+					 */
+					if ( statuses[ key ] && 'running' === statuses[ key ].status ) {
+						return await_step( key ).then( function ( outcome ) {
+							if ( outcome.ok ) {
+								mark( key, '&#10003;', '#00622e', outcome.detail );
+							} else {
+								failed = true;
+								mark( key, '&#10007;', '#a3272a', outcome.detail );
+							}
+						} );
+					}
+
 					return post( 'wookiee_rebrand', { brief: brief, step: key } ).then( function ( res ) {
-						if ( res && res.success ) {
-							mark( key, '&#10003;', '#00622e', detailFrom( res.data ) );
+						if ( ! res || ! res.success ) {
+							return { ok: false, detail: ( res && res.data && res.data.message ) || 'Failed.' };
+						}
+						// The step now runs detached; the reply only confirms
+						// it was queued. Its outcome comes from polling.
+						return res.data.queued ? await_step( key ) : { ok: true, detail: detailFrom( res.data ) };
+					} ).catch( function () {
+						return { ok: false, detail: 'Could not start this step. Reload to carry on where it stopped.' };
+					} ).then( function ( outcome ) {
+						if ( outcome.ok ) {
+							mark( key, '&#10003;', '#00622e', outcome.detail );
 						} else {
 							failed = true;
-							mark( key, '&#10007;', '#a3272a', ( res && res.data && res.data.message ) || 'Failed.' );
+							mark( key, '&#10007;', '#a3272a', outcome.detail );
 						}
-					} ).catch( function () {
-						failed = true;
-						mark( key, '&#10007;', '#a3272a', 'The request did not complete. Reload this page to carry on where it stopped.' );
 					} );
 				} );
 			}, Promise.resolve() );

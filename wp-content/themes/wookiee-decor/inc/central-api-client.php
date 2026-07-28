@@ -249,8 +249,46 @@ function wookiee_refresh_models_handler() {
 	wookiee_central_api_models( true );
 	wookiee_central_api_image_models( true );
 
-	wp_safe_redirect( admin_url( 'admin.php?page=wookiee-settings&wookiee_models_refreshed=1#integrations' ) );
+	/*
+	 * Return to whichever screen the link was clicked on. Allowlisted rather
+	 * than echoed back: an arbitrary page slug from the query string is a
+	 * redirect someone else gets to choose.
+	 */
+	$allowed = array( 'wookiee-settings', 'wookiee-rebrand' );
+	$return  = isset( $_GET['return'] ) ? sanitize_key( wp_unslash( $_GET['return'] ) ) : '';
+	$page    = in_array( $return, $allowed, true ) ? $return : 'wookiee-settings';
+
+	$url = admin_url( 'admin.php?page=' . $page . '&wookiee_models_refreshed=1' );
+	if ( 'wookiee-settings' === $page ) {
+		$url .= '#integrations';
+	}
+
+	wp_safe_redirect( $url );
 	exit;
+}
+
+/**
+ * The "check again" link, for anywhere a model list is shown.
+ *
+ * Both catalogues are cached for an hour, so a licence that gains models
+ * shows a stale list until it expires - with nothing on screen explaining
+ * why. This lived only under the text model field, which is not where an
+ * operator looks when the IMAGE list is wrong.
+ *
+ * Returns markup rather than echoing so callers can place it inside their
+ * own <p class="description">.
+ */
+function wookiee_refresh_models_link( $return_page = 'wookiee-settings' ) {
+	if ( ! wookiee_central_api_configured() ) {
+		return '';
+	}
+
+	$url = wp_nonce_url(
+		admin_url( 'admin-post.php?action=wookiee_refresh_models&return=' . rawurlencode( $return_page ) ),
+		'wookiee_refresh_models'
+	);
+
+	return '<a href="' . esc_url( $url ) . '">Check for new models</a>';
 }
 
 /**

@@ -321,8 +321,25 @@ function wookiee_render_settings_field_row( $key, $field ) {
 				<?php endif; ?>
 				<?php if ( wookiee_central_api_configured() ) : ?>
 					<p class="description">
-						<a href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=wookiee_refresh_models' ), 'wookiee_refresh_models' ) ); ?>">Check for new models</a>
+						<?php echo wp_kses_post( wookiee_refresh_models_link() ); ?>
 						— the list is cached for an hour; use this after your plan changes.
+					</p>
+				<?php endif; ?>
+			<?php endif; ?>
+
+			<?php if ( 'image_model' === $key ) : ?>
+				<?php $wookiee_image_count = count( wookiee_image_model_options() ) - 1; ?>
+				<?php if ( ! wookiee_central_api_configured() ) : ?>
+					<p class="description">Enter an activation code (Settings &rsaquo; Activation) to choose from the image models included with your plan.</p>
+				<?php elseif ( $wookiee_image_count < 1 ) : ?>
+					<p class="description">No image models are currently assigned to your activation code. Contact support if you expected a choice here.</p>
+				<?php else : ?>
+					<p class="description">Which model generates the store photographs on the <a href="<?php echo esc_url( admin_url( 'admin.php?page=wookiee-rebrand' ) ); ?>">Rebrand</a> screen. <?php echo esc_html( $wookiee_image_count ); ?> model<?php echo 1 === $wookiee_image_count ? '' : 's'; ?> available on your activation code.</p>
+				<?php endif; ?>
+				<?php if ( wookiee_central_api_configured() ) : ?>
+					<p class="description">
+						<?php echo wp_kses_post( wookiee_refresh_models_link() ); ?>
+						— image models are cached for an hour too, separately from the text ones above.
 					</p>
 				<?php endif; ?>
 			<?php endif; ?>

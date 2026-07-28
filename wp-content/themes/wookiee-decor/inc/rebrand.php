@@ -608,6 +608,20 @@ function wookiee_render_rebrand_page() {
 		 */
 		wookiee_render_model_picker();
 		wookiee_render_image_model_picker();
+
+		// Both pickers read an hour-long cache. A licence that has just been
+		// granted a model shows a stale list with nothing on screen saying
+		// why, which is exactly the dead end this link exists to break.
+		$wookiee_refresh = wookiee_refresh_models_link( 'wookiee-rebrand' );
+		if ( '' !== $wookiee_refresh ) :
+			?>
+			<p class="description" style="margin:-4px 0 12px;">
+				Model missing from either list?
+				<?php echo wp_kses_post( $wookiee_refresh ); ?>
+				— both are cached for an hour after your plan changes.
+			</p>
+			<?php
+		endif;
 		?>
 
 		<div style="background:#fff;border:1px solid #dcdcde;border-radius:4px;padding:18px;max-width:760px;margin-top:16px;">

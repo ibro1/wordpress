@@ -98,7 +98,7 @@ function wookiee_setup_steps() {
 		'activate' => '1. Activate',
 		'business' => '2. Business identity',
 		'shipping' => '3. Shipping & returns',
-		'content'  => '4. Page content',
+		'content'  => '4. Policy pages',
 		'products' => '5. Products',
 		'rebrand'  => '6. Rebrand',
 	);
@@ -240,21 +240,33 @@ function wookiee_render_setup_wizard_page() {
 		 * whole step rendered as a heading and two buttons with nothing in
 		 * between.
 		 */
-		$about_fields          = array_values( array_filter( $tabs['about_contact']['fields'], function ( $k ) { return 0 === strpos( $k, 'about_' ); } ) );
-		$contact_fields        = array_values( array_filter( $tabs['about_contact']['fields'], function ( $k ) { return 0 === strpos( $k, 'contact_' ); } ) );
-		$policy_ai_count       = wookiee_count_policy_pages_ai_generated();
-		$homepage_ai_generated = (bool) get_option( 'wookiee_homepage_ai_generated', false );
-		$about_ai_generated    = (bool) get_option( 'wookiee_about_contact_ai_generated', false );
+		$policy_ai_count = wookiee_count_policy_pages_ai_generated();
+		/*
+		 * Policy pages only.
+		 *
+		 * Home, About and Contact copy used to be generated here as well - and
+		 * then generated AGAIN by Rebrand two steps later, which overwrites it.
+		 * That is the same copy paid for twice, with the first pass discarded.
+		 *
+		 * The split that holds: Rebrand owns the storefront - design, images and
+		 * the words on Home/About/Contact, all from one description so they
+		 * match. The legal pages are the one thing Rebrand deliberately does not
+		 * touch, because they come from business facts rather than the niche and
+		 * need reviewing against an audit score before anyone relies on them.
+		 */
 		$accordion_sections    = array(
-			'policy'  => array( 'label' => 'Policy Pages', 'status' => $policy_ai_count . ' of 7 generated' ),
-			'home'    => array( 'label' => 'Home', 'status' => $homepage_ai_generated ? 'AI-generated' : 'Using defaults' ),
-			'about'   => array( 'label' => 'About', 'status' => $about_ai_generated ? 'AI-generated' : 'Using defaults' ),
-			'contact' => array( 'label' => 'Contact', 'status' => $about_ai_generated ? 'AI-generated' : 'Using defaults' ),
+			'policy' => array( 'label' => 'Policy Pages', 'status' => $policy_ai_count . ' of 7 generated' ),
 		);
 		?>
 		<?php // ---------------- Step 4: Generate page content ---------------- ?>
 		<div class="wookiee-setup-step" data-step-panel="content" hidden>
-			<h2>Page content</h2>
+			<h2>Policy pages</h2>
+			<p class="description" style="font-size:14px;max-width:760px;">
+				The legal pages a UK store needs, written from your business details and scored against a compliance audit. Generate them, read the score, and fix anything it flags.
+			</p>
+			<p class="description" style="max-width:760px;">
+				The wording on Home, About and Contact is not set here &mdash; <strong>Rebrand</strong> writes all of it in one pass at step 6, so it matches the design. Individual fields can be adjusted afterwards on <a href="<?php echo esc_url( $settings_url ); ?>">Settings</a>.
+			</p>
 
 			<div class="wookiee-setup-accordion">
 				<?php $first = true; foreach ( $accordion_sections as $section_key => $section ) : ?>
@@ -270,28 +282,6 @@ function wookiee_render_setup_wizard_page() {
 									<p class="description">Needs an LLM API key on <a href="<?php echo esc_url( $settings_url . '#integrations' ); ?>">Wookiee Settings</a> first.</p>
 								<?php else : ?>
 									<?php wookiee_render_content_generator_page(); ?>
-								<?php endif; ?>
-							<?php elseif ( 'home' === $section_key ) : ?>
-								<?php if ( ! $has_ai_key ) : ?>
-									<p class="description">Needs an LLM API key on <a href="<?php echo esc_url( $settings_url . '#integrations' ); ?>">Wookiee Settings</a> first.</p>
-								<?php else : ?>
-									<?php wookiee_render_ai_copy_generator_notice( 'homepage' ); ?>
-									<?php wookiee_render_settings_fields_table( $tabs['homepage']['fields'] ); ?>
-								<?php endif; ?>
-							<?php elseif ( 'about' === $section_key ) : ?>
-								<?php if ( ! $has_ai_key ) : ?>
-									<p class="description">Needs an LLM API key on <a href="<?php echo esc_url( $settings_url . '#integrations' ); ?>">Wookiee Settings</a> first.</p>
-								<?php else : ?>
-									<?php wookiee_render_ai_copy_generator_notice( 'about_contact' ); ?>
-									<?php wookiee_render_settings_fields_table( $about_fields ); ?>
-								<?php endif; ?>
-							<?php else : ?>
-								<?php if ( ! $has_ai_key ) : ?>
-									<p class="description">Needs an LLM API key on <a href="<?php echo esc_url( $settings_url . '#integrations' ); ?>">Wookiee Settings</a> first.</p>
-								<?php else : ?>
-									<p class="description">Generated together with the About section's copy (same AI call fills both) - generating here updates both too.</p>
-									<?php wookiee_render_ai_copy_generator_notice( 'about_contact', '-contact' ); ?>
-									<?php wookiee_render_settings_fields_table( $contact_fields ); ?>
 								<?php endif; ?>
 							<?php endif; ?>
 						</div>
@@ -311,7 +301,7 @@ function wookiee_render_setup_wizard_page() {
 			</p>
 		</div>
 
-		<?php // ---------------- Step 4: Source products ---------------- ?>
+		<?php // ---------------- Step 5: Source products ---------------- ?>
 		<div class="wookiee-setup-step" data-step-panel="products" hidden>
 			<h2>Source products</h2>
 			<?php if ( ! $has_woo ) : ?>
@@ -339,7 +329,7 @@ function wookiee_render_setup_wizard_page() {
 			</p>
 		</div>
 
-		<?php // ---------------- Step 5: Shipping ---------------- ?>
+		<?php // ---------------- Step 3: Shipping & returns ---------------- ?>
 		<div class="wookiee-setup-step" data-step-panel="shipping" hidden>
 			<h2>Shipping &amp; returns</h2>
 			<?php wookiee_render_settings_fields_table( array( 'shipping_rate', 'shipping_dispatch', 'handling_time', 'transit_time', 'estimated_delivery', 'returns_address', 'returns_period_days', 'cancellation_period', 'restocking_fee' ) ); ?>

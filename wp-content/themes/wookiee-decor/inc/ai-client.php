@@ -52,11 +52,27 @@ function wookiee_llm_model_override( $model = null ) {
  * licence's model allowlist itself and 403s anything not permitted, so this
  * can't be used to reach a model the activation code isn't entitled to.
  */
+/** The same, for image generation. Separate catalogue, separate override. */
+function wookiee_image_model_override( $model = null ) {
+	static $override = '';
+
+	if ( null !== $model ) {
+		$override = trim( (string) $model );
+	}
+
+	return $override;
+}
+
 add_action( 'admin_init', 'wookiee_apply_request_model_override' );
 function wookiee_apply_request_model_override() {
-	if ( isset( $_POST['wookiee_model'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing -- the action's own handler verifies its nonce; this only selects which model that verified action will use.
+	// phpcs:disable WordPress.Security.NonceVerification.Missing -- the action's own handler verifies its nonce; this only selects which model that verified action will use.
+	if ( isset( $_POST['wookiee_model'] ) ) {
 		wookiee_llm_model_override( sanitize_text_field( wp_unslash( $_POST['wookiee_model'] ) ) );
 	}
+	if ( isset( $_POST['wookiee_image_model'] ) ) {
+		wookiee_image_model_override( sanitize_text_field( wp_unslash( $_POST['wookiee_image_model'] ) ) );
+	}
+	// phpcs:enable
 }
 
 function wookiee_call_llm( $prompt, $max_tokens = 2048 ) {
@@ -167,25 +183,48 @@ function wookiee_render_model_picker() {
 		</select>
 		<span class="description" style="margin:0;">Applies to generations on this page only. The saved default lives in <a href="<?php echo esc_url( admin_url( 'admin.php?page=wookiee-settings#integrations' ) ); ?>">Settings &rsaquo; Activation</a>.</span>
 	</div>
+	<?php
+	wookiee_print_model_picker_script();
+}
+
+/**
+ * Wraps window.fetch once and appends whichever picker is on the page to any
+ * wookiee_* admin-ajax call.
+ *
+ * Handles the text and image pickers together, and is printed by both
+ * renderers, because a page may carry either or both - the Rebrand screen
+ * generates copy AND photographs, so it has one of each. Guarded so two
+ * pickers on one page still only patch fetch once.
+ */
+function wookiee_print_model_picker_script() {
+	?>
 	<script>
 	( function () {
 		if ( window.__wookieeModelFetchPatched ) { return; }
 		window.__wookieeModelFetchPatched = true;
+
+		var FIELDS = [
+			[ 'wookiee_model', 'wookiee-model-picker' ],
+			[ 'wookiee_image_model', 'wookiee-image-model-picker' ]
+		];
 
 		var originalFetch = window.fetch;
 		window.fetch = function ( input, init ) {
 			try {
 				if ( init && init.body instanceof FormData ) {
 					var action = init.body.get( 'action' );
-					if ( action && String( action ).indexOf( 'wookiee_' ) === 0 && ! init.body.has( 'wookiee_model' ) ) {
-						var picker = document.getElementById( 'wookiee-model-picker' );
-						if ( picker && picker.value ) {
-							init.body.append( 'wookiee_model', picker.value );
-						}
+					if ( action && String( action ).indexOf( 'wookiee_' ) === 0 ) {
+						FIELDS.forEach( function ( f ) {
+							if ( init.body.has( f[0] ) ) { return; }
+							var picker = document.getElementById( f[1] );
+							if ( picker && picker.value ) {
+								init.body.append( f[0], picker.value );
+							}
+						} );
 					}
 				}
 			} catch ( e ) {
-				// Never let the picker break a generation request - fall
+				// Never let a picker break a generation request - fall
 				// through and send exactly what the caller built.
 			}
 			return originalFetch.apply( this, arguments );
@@ -193,6 +232,39 @@ function wookiee_render_model_picker() {
 	}() );
 	</script>
 	<?php
+}
+
+/**
+ * The image-model equivalent of wookiee_render_model_picker().
+ *
+ * Same "this page only" semantics, separate catalogue: a licence can be
+ * granted text models and no image models, or the reverse, so this emits
+ * independently of whether the text picker did.
+ */
+function wookiee_render_image_model_picker() {
+	if ( ! wookiee_central_api_configured() ) {
+		return;
+	}
+
+	$models = wookiee_central_api_image_models();
+	if ( count( $models ) < 2 ) {
+		return;
+	}
+
+	$current = trim( (string) wookiee_get_setting( 'image_model' ) );
+	?>
+	<div class="wookiee-model-picker" style="margin:12px 0;padding:10px 12px;background:#fff;border:1px solid #dcdcde;border-radius:4px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+		<label for="wookiee-image-model-picker" style="font-weight:600;margin:0;">Generate images with</label>
+		<select id="wookiee-image-model-picker" style="min-width:280px;max-width:100%;">
+			<option value=""<?php selected( '', $current ); ?>>Automatic (this site's assigned model)</option>
+			<?php foreach ( $models as $id => $label ) : ?>
+				<option value="<?php echo esc_attr( $id ); ?>" <?php selected( $id, $current ); ?>><?php echo esc_html( $label ); ?></option>
+			<?php endforeach; ?>
+		</select>
+		<span class="description" style="margin:0;">Applies to this page only. The saved default lives in <a href="<?php echo esc_url( admin_url( 'admin.php?page=wookiee-settings#integrations' ) ); ?>">Settings &rsaquo; Activation</a>.</span>
+	</div>
+	<?php
+	wookiee_print_model_picker_script();
 }
 
 /**

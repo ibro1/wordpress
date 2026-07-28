@@ -195,9 +195,17 @@ function wookiee_generate_slot_image( $slot, $brief ) {
 		'size'   => '1536x1024',
 	);
 
-	// Omitted entirely when unset, which lets the backend apply this
-	// activation code's own default - the same precedence the text side uses.
-	$model = trim( (string) wookiee_get_setting( 'image_model' ) );
+	/*
+	 * Precedence, matching wookiee_call_llm(): the model picked for this
+	 * request (the picker on the Rebrand screen) > the site's saved default >
+	 * nothing, which lets the backend apply this activation code's own
+	 * default. Omitting it entirely is what every install did before image
+	 * model selection existed, so an untouched site behaves as before.
+	 */
+	$model = wookiee_image_model_override();
+	if ( '' === $model ) {
+		$model = trim( (string) wookiee_get_setting( 'image_model' ) );
+	}
 	if ( '' !== $model ) {
 		$body['model'] = $model;
 	}

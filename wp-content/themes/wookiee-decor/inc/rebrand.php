@@ -599,6 +599,17 @@ function wookiee_render_rebrand_page() {
 			Describe the store in a sentence. This rewrites the <strong>look</strong> (colours, spacing, hero and layout) and the <strong>words</strong> (homepage, About and Contact) together, in one pass, so they match each other. Individual fields can still be adjusted afterwards on <a href="<?php echo esc_url( admin_url( 'admin.php?page=wookiee-settings' ) ); ?>">Settings</a>.
 		</p>
 
+		<?php
+		/*
+		 * Both pickers: a rebrand generates copy AND photographs, and the
+		 * image model in particular is worth changing between runs - image
+		 * models differ far more in style and cost than text models do.
+		 * Each renders only when the licence actually offers a choice.
+		 */
+		wookiee_render_model_picker();
+		wookiee_render_image_model_picker();
+		?>
+
 		<div style="background:#fff;border:1px solid #dcdcde;border-radius:4px;padding:18px;max-width:760px;margin-top:16px;">
 			<label for="wookiee-rebrand-brief" style="display:block;font-weight:600;margin-bottom:6px;">What does this store sell?</label>
 			<textarea id="wookiee-rebrand-brief" rows="3" style="width:100%;" placeholder="e.g. Portable outdoor cooking gear - compact grills, camp stoves and cookware for British campers and van-lifers."><?php echo esc_textarea( $brief ); ?></textarea>

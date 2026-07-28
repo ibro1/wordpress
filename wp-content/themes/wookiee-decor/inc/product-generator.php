@@ -137,6 +137,9 @@ function wookiee_render_product_generator_page() {
 		var bulkBtn       = document.getElementById( 'wookiee-bulk-publish-btn' );
 		var bulkStatus    = document.getElementById( 'wookiee-bulk-publish-status' );
 		var results       = document.getElementById( 'wookiee-generate-results' );
+		// Shared, not local to the click handler: the per-concept sourcing
+		// loop reports progress through it too.
+		var status        = document.getElementById( 'wookiee-generate-status' );
 		if ( ! btn ) {
 			return;
 		}
@@ -265,42 +268,66 @@ function wookiee_render_product_generator_page() {
 		// Renders a full results table from a plain array of product-like
 		// objects - used both for a freshly-generated batch and for
 		// rehydrating already-sourced products on page load.
-		function renderProductsTable( products ) {
-			var html = '<table class="widefat"><thead><tr><th></th><th>Concept</th><th>Est. demand</th><th>Status</th><th>GMC compliance</th><th></th><th colspan="2"></th></tr></thead><tbody>';
-			products.forEach( function( p ) { html += buildRowHtml( p ); } );
-			html += '</tbody></table>';
-			results.innerHTML = html;
+		// Creates the results table if it is not there yet and returns its
+		// tbody. Products arrive one at a time now, so the table cannot be
+		// built from a complete list up front.
+		function ensureProductsTbody() {
+			var table = results.querySelector( 'table.wookiee-products-table' );
+			if ( ! table ) {
+				var wrap = document.createElement( 'div' );
+				wrap.innerHTML = '<table class="widefat wookiee-products-table"><thead><tr><th></th><th>Concept</th><th>Est. demand</th><th>Status</th><th>GMC compliance</th><th></th><th colspan="2"></th></tr></thead><tbody></tbody></table>';
+				table = wrap.firstChild;
+				results.appendChild( table );
+			}
+			return table.querySelector( 'tbody' );
+		}
 
-			results.querySelectorAll( '.wookiee-product-select' ).forEach( function( cb ) {
-				cb.addEventListener( 'change', updateBulkButton );
-			} );
-			results.querySelectorAll( '.wookiee-publish-one-btn' ).forEach( function( pubBtn ) {
-				pubBtn.addEventListener( 'click', function() {
-					var row    = pubBtn.closest( 'tr' );
-					var postId = row.getAttribute( 'data-post-id' );
-					pubBtn.disabled = true;
-					pubBtn.textContent = 'Publishing…';
-					publishOne( postId, row ).then( function( res ) {
-						if ( res.success && res.data.results[0] ) {
-							row.querySelector( '.wookiee-row-status' ).textContent = res.data.results[0].status;
-							pubBtn.outerHTML = '<span>&#10003;</span>';
-						} else {
-							pubBtn.disabled = false;
-							pubBtn.textContent = 'Publish failed — retry';
-						}
-					} ).catch( function() {
+		// Per-row wiring. Was done per-table, which only works when every row
+		// exists before anything is wired.
+		function wireRowControls( row ) {
+			var cb = row.querySelector( '.wookiee-product-select' );
+			if ( cb ) { cb.addEventListener( 'change', updateBulkButton ); }
+
+			var pubBtn = row.querySelector( '.wookiee-publish-one-btn' );
+			if ( ! pubBtn ) { return; }
+			pubBtn.addEventListener( 'click', function() {
+				var postId = row.getAttribute( 'data-post-id' );
+				pubBtn.disabled = true;
+				pubBtn.textContent = 'Publishing…';
+				publishOne( postId, row ).then( function( res ) {
+					if ( res.success && res.data.results[0] ) {
+						row.querySelector( '.wookiee-row-status' ).textContent = res.data.results[0].status;
+						pubBtn.outerHTML = '<span>&#10003;</span>';
+					} else {
 						pubBtn.disabled = false;
 						pubBtn.textContent = 'Publish failed — retry';
-					} );
+					}
+				} ).catch( function() {
+					pubBtn.disabled = false;
+					pubBtn.textContent = 'Publish failed — retry';
 				} );
 			} );
+		}
 
-			var rows = results.querySelectorAll( 'tr[data-post-id]' );
-			products.forEach( function( p, i ) { wireRow( rows[ i ], p ); } );
+		function appendProductRow( p ) {
+			var tbody = ensureProductsTbody();
+			var tmp   = document.createElement( 'tbody' );
+			tmp.innerHTML = buildRowHtml( p );
+
+			var added = [];
+			while ( tmp.firstChild ) { added.push( tbody.appendChild( tmp.firstChild ) ); }
+
+			var row = added[0];
+			wireRowControls( row );
+			wireRow( row, p );
+		}
+
+		function renderProductsTable( products ) {
+			results.innerHTML = '';
+			products.forEach( appendProductRow );
 		}
 
 		btn.addEventListener( 'click', function() {
-			var status  = document.getElementById( 'wookiee-generate-status' );
 			var brief   = document.getElementById( 'wookiee-niche-brief' ).value.trim();
 			var count   = document.getElementById( 'wookiee-product-count' ).value;
 
@@ -328,46 +355,105 @@ function wookiee_render_product_generator_page() {
 						status.textContent = res.data && res.data.message ? res.data.message : 'Generation failed.';
 						return;
 					}
-					var products = res.data.products;
-					var skipped  = res.data.skipped || [];
-
-					status.textContent = products.length + ' of ' + res.data.total + ' concept(s) sourced'
-						+ ( skipped.length ? ', ' + skipped.length + ' not found' : '' )
-						+ ( products.length ? '. Review each before publishing.' : '.' );
+					var ideas = res.data.ideas || [];
+					if ( ! ideas.length ) {
+						status.textContent = 'No concepts were generated - try a more specific niche.';
+						btn.disabled = false;
+						return;
+					}
 
 					results.innerHTML = '';
-					if ( products.length ) { renderProductsTable( products ); }
-
-					// Name each concept and why it produced nothing. "Skipped"
-					// on its own tells the operator to change something without
-					// saying what, and the causes need different responses.
-					if ( skipped.length ) {
-						var box = document.createElement( 'div' );
-						box.style.cssText = 'margin-top:14px;padding:12px 14px;background:#fcf9e8;border:1px solid #dba617;border-radius:4px;';
-						var h = document.createElement( 'p' );
-                        h.style.cssText = 'margin:0 0 8px;font-weight:600;';
-						h.textContent = 'Not sourced (' + skipped.length + ')';
-						box.appendChild( h );
-						var ul = document.createElement( 'ul' );
-						ul.style.cssText = 'margin:0;padding-left:18px;';
-						skipped.forEach( function( item ) {
-							var li = document.createElement( 'li' );
-							li.style.margin = '4px 0';
-							var strong = document.createElement( 'strong' );
-							strong.textContent = item.title;
-							li.appendChild( strong );
-							li.appendChild( document.createTextNode( ' — ' + item.reason ) );
-							ul.appendChild( li );
-						} );
-						box.appendChild( ul );
-						results.appendChild( box );
-					}
+					sourceIdeasInTurn( ideas );
 				} )
 				.catch( function() {
 					btn.disabled = false;
 					status.textContent = 'Generation failed — could not reach the server.';
 				} );
 		} );
+
+		/**
+		 * Sources the concepts one at a time, showing each as it lands.
+		 *
+		 * Sequential rather than parallel: each one runs a catalog search and
+		 * up to three AI calls, and firing them together would multiply the
+		 * load on both without arriving meaningfully sooner.
+		 */
+		function sourceIdeasInTurn( ideas ) {
+			var done = 0, sourced = 0;
+			var skipped = [];
+
+			function report() {
+				status.textContent = sourced + ' of ' + ideas.length + ' sourced'
+					+ ( skipped.length ? ', ' + skipped.length + ' not found' : '' )
+					+ ( done < ideas.length ? ' — working on ' + ( done + 1 ) + ' of ' + ideas.length + '…' : '. Review each before publishing.' );
+			}
+			report();
+
+			var chain = ideas.reduce( function( prev, idea ) {
+				return prev.then( function() {
+					var d = new FormData();
+					d.append( 'action', 'wookiee_source_product' );
+					// Same action nonce as the concept request - the sourcing
+					// endpoint verifies wookiee_generate_products too.
+					d.append( 'nonce', nonce );
+					d.append( 'title', idea.title );
+					d.append( 'category', idea.category || '' );
+					d.append( 'demand', idea.demand || '' );
+
+					return fetch( ajaxurl, { method: 'POST', credentials: 'same-origin', body: d } )
+						.then( function( r ) { return r.json(); } )
+						.then( function( res ) {
+							if ( res && res.success && res.data.sourced ) {
+								sourced++;
+								appendProductRow( res.data.product );
+							} else if ( res && res.success ) {
+								skipped.push( { title: res.data.title, reason: res.data.reason } );
+							} else {
+								skipped.push( { title: idea.title, reason: ( res && res.data && res.data.message ) || 'Failed.' } );
+							}
+						} )
+						.catch( function() {
+							skipped.push( { title: idea.title, reason: 'The request did not complete.' } );
+						} )
+						.then( function() { done++; report(); } );
+				} );
+			}, Promise.resolve() );
+
+			chain.then( function() {
+				btn.disabled = false;
+				renderSkipped( skipped );
+			} );
+		}
+
+		/*
+		 * Names each concept that produced nothing, and why. "Skipped" alone
+		 * tells the operator to change something without saying what, and the
+		 * causes - catalog has nothing, results were rejected, API failed -
+		 * each need a different response.
+		 */
+		function renderSkipped( skipped ) {
+			if ( ! skipped.length ) { return; }
+
+			var box = document.createElement( 'div' );
+			box.style.cssText = 'margin-top:14px;padding:12px 14px;background:#fcf9e8;border:1px solid #dba617;border-radius:4px;';
+			var h = document.createElement( 'p' );
+			h.style.cssText = 'margin:0 0 8px;font-weight:600;';
+			h.textContent = 'Not sourced (' + skipped.length + ')';
+			box.appendChild( h );
+			var ul = document.createElement( 'ul' );
+			ul.style.cssText = 'margin:0;padding-left:18px;';
+			skipped.forEach( function( item ) {
+				var li = document.createElement( 'li' );
+				li.style.margin = '4px 0';
+				var strong = document.createElement( 'strong' );
+				strong.textContent = item.title;
+				li.appendChild( strong );
+				li.appendChild( document.createTextNode( ' — ' + item.reason ) );
+				ul.appendChild( li );
+			} );
+			box.appendChild( ul );
+			results.appendChild( box );
+		}
 
 		bulkBtn.addEventListener( 'click', function() {
 			var checked = Array.prototype.slice.call( document.querySelectorAll( '.wookiee-product-select:checked' ) );
@@ -461,60 +547,84 @@ function wookiee_generate_products_handler() {
 	// concept with nothing telling it "already covered."
 	wookiee_remember_concepts( wp_list_pluck( $ideas, 'title' ) );
 
-	$created = array();
-	$skipped = array();
+	/*
+	 * Return the concepts and stop. Sourcing happens one concept per request
+	 * (see below).
+	 *
+	 * Doing all of them here meant a single HTTP request performing N catalog
+	 * searches and up to 3N AI calls. At the 8-product cap that reliably
+	 * exceeds Cloudflare's 100-second proxy ceiling, and the browser is told
+	 * the generation failed while the products are quietly created anyway -
+	 * the same fault that had to be fixed in Rebrand. Per-concept requests are
+	 * each short, so no batch size can outgrow the proxy.
+	 *
+	 * It also means the first product appears in seconds instead of after the
+	 * whole batch, and one unsourceable concept no longer delays the rest.
+	 */
+	// Format the demand figure here rather than in the browser - it is the
+	// same number the results table used to show, and number_format_i18n()
+	// respects the site's locale in a way a JS join would not.
+	$payload = array();
 	foreach ( $ideas as $idea ) {
-		$sourced = wookiee_source_real_product_for_idea( $idea['title'], 3, $idea['category'] );
-
-		/*
-		 * A concept that sourced nothing stays out of the results table -
-		 * that table is for what is ready to review. But the REASON is
-		 * reported, because the three ways this fails need three different
-		 * responses and they were all being shown as "didn't fit the niche":
-		 *
-		 *   - CJ returned nothing for the query: the niche may be too narrow,
-		 *     or CJ genuinely does not carry it.
-		 *   - CJ returned results and the fit-check rejected them all: the
-		 *     search terms are landing on the wrong products.
-		 *   - The CJ call itself failed: credentials or the API, and nothing
-		 *     to do with the niche at all.
-		 *
-		 * Telling an operator their niche is wrong when the supplier API is
-		 * down sends them off rewriting a brief that was never the problem.
-		 */
-		if ( is_wp_error( $sourced ) ) {
-			// Not esc_html'd: these are rendered with createTextNode, which
-			// escapes already. Escaping here as well is what put a literal
-			// &quot; in front of the operator instead of a quotation mark.
-			$skipped[] = array(
-				'title'  => $idea['title'],
-				'reason' => $sourced->get_error_message(),
-			);
-			continue;
-		}
-
 		$demand = '';
 		if ( isset( $idea['avg_monthly_searches'] ) ) {
 			$demand = number_format_i18n( $idea['avg_monthly_searches'] ) . '/mo';
 			if ( isset( $idea['low_cpc_gbp'], $idea['high_cpc_gbp'] ) && null !== $idea['low_cpc_gbp'] ) {
-				$demand .= ' · £' . esc_html( $idea['low_cpc_gbp'] ) . '-£' . esc_html( $idea['high_cpc_gbp'] ) . ' CPC';
+				$demand .= ' · £' . $idea['low_cpc_gbp'] . '-£' . $idea['high_cpc_gbp'] . ' CPC';
 			}
 		}
 
-		$created[] = array(
-			'post_id'      => $sourced['post_id'],
-			'title'        => esc_html( $idea['title'] ),
-			'demand'       => esc_html( $demand ),
-			'status'       => esc_html( $sourced['note'] ? $sourced['note'] : 'Sourced from CJ Dropshipping' ),
-			'edit_link'    => get_edit_post_link( $sourced['post_id'], 'raw' ),
-			'preview_link' => get_preview_post_link( $sourced['post_id'] ),
+		$payload[] = array(
+			'title'    => $idea['title'],
+			'category' => isset( $idea['category'] ) ? $idea['category'] : '',
+			'demand'   => $demand,
 		);
 	}
 
+	wp_send_json_success( array( 'ideas' => $payload ) );
+}
+
+/**
+ * Sources one concept. Called once per idea by the browser.
+ */
+add_action( 'wp_ajax_wookiee_source_product', 'wookiee_source_product_handler' );
+function wookiee_source_product_handler() {
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_send_json_error( array( 'message' => 'Not allowed.' ), 403 );
+	}
+	check_ajax_referer( 'wookiee_generate_products', 'nonce' );
+
+	$title    = isset( $_POST['title'] ) ? sanitize_text_field( wp_unslash( $_POST['title'] ) ) : '';
+	$category = isset( $_POST['category'] ) ? sanitize_text_field( wp_unslash( $_POST['category'] ) ) : '';
+	$demand   = isset( $_POST['demand'] ) ? sanitize_text_field( wp_unslash( $_POST['demand'] ) ) : '';
+
+	if ( '' === trim( $title ) ) {
+		wp_send_json_error( array( 'message' => 'No concept given.' ) );
+	}
+
+	$sourced = wookiee_source_real_product_for_idea( $title, 3, $category );
+
+	if ( is_wp_error( $sourced ) ) {
+		// Success with a reason, not an error: a concept the catalog cannot
+		// fill is an ordinary outcome, and the browser needs to carry on to
+		// the next one rather than treat the batch as broken.
+		wp_send_json_success( array(
+			'sourced' => false,
+			'title'   => $title,
+			'reason'  => $sourced->get_error_message(),
+		) );
+	}
+
 	wp_send_json_success( array(
-		'products' => $created,
-		'total'    => count( $ideas ),
-		'skipped'  => $skipped,
+		'sourced' => true,
+		'product' => array(
+			'post_id'      => $sourced['post_id'],
+			'title'        => $title,
+			'demand'       => $demand,
+			'status'       => $sourced['note'] ? $sourced['note'] : 'Sourced from CJ Dropshipping',
+			'edit_link'    => get_edit_post_link( $sourced['post_id'], 'raw' ),
+			'preview_link' => get_preview_post_link( $sourced['post_id'] ),
+		),
 	) );
 }
 

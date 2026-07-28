@@ -38,6 +38,18 @@ function wookiee_image_slots() {
 			'label'    => 'Homepage how-it-works',
 			'brief'    => 'the wide band beside the "how it works" steps on the homepage, showing the products in the setting they are used in',
 		),
+		/*
+		 * The logo emblem. Icon only, deliberately: image models render a
+		 * specific brand name unreliably - misspelt or malformed lettering on
+		 * a logo is worse than no logo - so the mark is generated and the store
+		 * name is set beside it as real text. That is how logo lockups are
+		 * built anyway, and the wordmark stays crisp at every size.
+		 */
+		'logo_mark'   => array(
+			'fallback' => '',
+			'label'    => 'Logo mark',
+			'brief'    => 'a logo emblem for the brand - an icon only',
+		),
 		'about_hero'  => array(
 			'fallback' => 'drawer-organizer.png',
 			'label'    => 'About page hero',
@@ -83,6 +95,14 @@ function wookiee_image_url( $slot ) {
 		if ( $url ) {
 			return $url;
 		}
+	}
+
+	// A slot may have no bundled fallback (the logo mark has none - there is
+	// no generic logo worth shipping). Returning a path to a file that does
+	// not exist would render a broken image; returning nothing lets the
+	// caller fall back to its own default.
+	if ( '' === $slots[ $slot ]['fallback'] ) {
+		return '';
 	}
 
 	return WOOKIEE_URI . 'assets/images/' . $slots[ $slot ]['fallback'];
@@ -161,6 +181,19 @@ function wookiee_build_image_prompt( $slot, $brief ) {
 	 * Every other builder in the registry already interpolates first and
 	 * passes $vars only so an operator's override can use the tokens.
 	 */
+	if ( 'logo_mark' === $slot ) {
+		$logo = 'A flat vector logo mark for a UK online store that sells: ' . trim( (string) $brief ) . '.'
+			. "\n\nRequirements:"
+			. "\n- ICON ONLY. Absolutely no text, no letters, no words, no numbers, no monogram."
+			. "\n- A single simple emblem: one clear symbol drawn from what the store sells."
+			. "\n- Flat vector style, solid shapes, two or three colours at most, no gradients, no photorealism, no 3D."
+			. "\n- Centered, generous even margin, filling roughly two thirds of the frame."
+			. "\n- Plain solid white background. No shadow, no reflection, no mockup, no business card, no packaging."
+			. "\n- Clean enough to still read at 32 pixels.";
+
+		return wookiee_maybe_override( 'logo_mark', $logo, array( 'brief' => $brief ) );
+	}
+
 	$default = 'Photograph for a UK online store. The store sells: ' . trim( (string) $brief ) . '.'
 		. "\n\nThis image is " . $slots[ $slot ]['brief'] . '.'
 		. "\n\nRequirements:"

@@ -34,7 +34,20 @@ $wookiee_link_class = isset( $args['link_class'] ) ? $args['link_class'] : 'site
 	<div class="<?php echo esc_attr( $wookiee_link_class ); ?> site-logo-custom"><?php the_custom_logo(); ?></div>
 <?php else : ?>
 	<a href="<?php echo esc_url( home_url( '/' ) ); ?>" class="<?php echo esc_attr( $wookiee_link_class ); ?>" aria-label="<?php echo esc_attr( get_bloginfo( 'name' ) ); ?>">
-		<span class="site-logo-mark"><?php echo wookiee_brand_mark_svg( 34 ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- built and escaped in wookiee_brand_mark_svg(). ?></span>
+		<?php
+		/*
+		 * Generated emblem when the store has one, drawn monogram otherwise.
+		 * The monogram is a placeholder that always works rather than a design
+		 * anyone would choose - it exists so a store is never showing the
+		 * theme author's mark while waiting for a real one.
+		 */
+		$wookiee_logo = function_exists( 'wookiee_image_url' ) ? wookiee_image_url( 'logo_mark' ) : '';
+		?>
+		<?php if ( $wookiee_logo ) : ?>
+			<span class="site-logo-mark"><img src="<?php echo esc_url( $wookiee_logo ); ?>" alt="" width="34" height="34" class="site-logo-mark-img"></span>
+		<?php else : ?>
+			<span class="site-logo-mark"><?php echo wookiee_brand_mark_svg( 34 ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- built and escaped in wookiee_brand_mark_svg(). ?></span>
+		<?php endif; ?>
 		<span class="site-logo-name"><?php echo esc_html( get_bloginfo( 'name' ) ); ?></span>
 	</a>
 <?php endif; ?>

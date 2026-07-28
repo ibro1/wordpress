@@ -334,14 +334,73 @@ function wookiee_enqueue_niche_suggest_assets( $hook ) {
 			row.className = 'wookiee-domain-suggestion-row';
 			var label = document.createElement( 'span' );
 			label.textContent = item.domain;
+
+			/*
+			 * 'Use this' is separate from 'Register' on purpose. An operator may
+			 * already own the domain, register it elsewhere, or point one here
+			 * later - the store still needs to know the name it trades under in
+			 * every one of those cases, and tying that to a completed purchase
+			 * meant it was only ever recorded on one path out of four.
+			 */
+			var useBtn = document.createElement( 'button' );
+			useBtn.type = 'button';
+			useBtn.className = 'button button-small button-primary';
+			useBtn.textContent = 'Use this';
+			useBtn.title = 'Set this as the store\u2019s domain, site title and contact address. Does not register it.';
+			useBtn.addEventListener( 'click', function() { chooseDomain( item.domain, useBtn ); } );
+
 			var btn = document.createElement( 'button' );
 			btn.type = 'button';
 			btn.className = 'button button-small';
 			btn.textContent = 'Register';
 			btn.addEventListener( 'click', function() { openRegisterDomainModal( item.domain ); } );
+
 			row.appendChild( label );
+			row.appendChild( useBtn );
 			row.appendChild( btn );
 			return row;
+		}
+
+		function chooseDomain( domain, btn ) {
+			var titleField = document.getElementById( 'blogname' );
+			var original   = btn.textContent;
+			btn.disabled = true;
+			btn.textContent = 'Saving\u2026';
+
+			var body = new FormData();
+			body.append( 'action', 'wookiee_choose_domain' );
+			body.append( 'nonce', " . wp_json_encode( wp_create_nonce( 'wookiee_choose_domain' ) ) . " );
+			body.append( 'domain', domain );
+			// The suggested title reads properly; one reconstructed from the
+			// domain cannot split 'highlandaccounts' back into words.
+			body.append( 'site_title', titleField ? titleField.value : '' );
+
+			fetch( ajaxurl, { method: 'POST', credentials: 'same-origin', body: body } )
+				.then( function( r ) { return r.json(); } )
+				.then( function( res ) {
+					btn.disabled = false;
+					btn.textContent = original;
+					if ( ! res || ! res.success ) {
+						window.alert( ( res && res.data && res.data.message ) || 'Could not save that domain.' );
+						return;
+					}
+					if ( titleField && res.data.site_title ) { titleField.value = res.data.site_title; }
+					var emailField = document.getElementById( 'wookiee_setting_contact_email' );
+					if ( emailField ) { emailField.value = res.data.email; }
+
+					var status = document.getElementById( 'wookiee-site-name-status' );
+					if ( status ) {
+						status.textContent = 'Using ' + res.data.domain + ' \u2014 contact address set to ' + res.data.email + '.';
+					}
+					document.querySelectorAll( '.wookiee-domain-suggestion-row' ).forEach( function( r ) {
+						r.classList.toggle( 'is-chosen', r.firstChild && r.firstChild.textContent === domain );
+					} );
+				} )
+				.catch( function() {
+					btn.disabled = false;
+					btn.textContent = original;
+					window.alert( 'Could not save that domain.' );
+				} );
 		}
 
 		function makeRegField( labelText, inputType, id, value, placeholder, optional ) {

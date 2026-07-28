@@ -130,6 +130,13 @@ function wookiee_prompt_registry() {
 		'required'     => array( 'brief', 'purpose' ),
 	);
 
+	$registry['logo_mark'] = array(
+		'label'        => 'Logo mark generator',
+		'description'  => 'Generates the logo emblem shown beside the store name. Icon only - the name itself is set as text, because image models render specific words unreliably.',
+		'placeholders' => array( 'brief' ),
+		'required'     => array( 'brief' ),
+	);
+
 	return $registry;
 }
 
@@ -342,6 +349,8 @@ function wookiee_prompt_capture_builders() {
 		'design_params' => function () { return wookiee_build_design_params_prompt( '{{brief}}' ); },
 
 		'slot_image' => function () { return wookiee_build_image_prompt( 'hero', '{{brief}}' ); },
+
+		'logo_mark' => function () { return wookiee_build_image_prompt( 'logo_mark', '{{brief}}' ); },
 
 		'supplier_import' => function () {
 			return wookiee_build_supplier_import_prompt(

@@ -1098,6 +1098,88 @@ function wookiee_ch_create_spaceship_contact( array $contact ) {
  * Auto-renew defaults to off client-side so a click here can't quietly
  * turn into a recurring charge unless the admin explicitly opts in.
  */
+/**
+ * Records the domain the store has decided to trade under.
+ *
+ * Deliberately separate from registering it. An operator may already own the
+ * domain, may register it elsewhere, or may point an existing one here later -
+ * in every one of those cases the store still needs to know its own name, and
+ * tying that to a successful Spaceship purchase meant it only ever got set on
+ * one of the four paths.
+ *
+ * Choosing a domain settles three things that were previously set by hand and
+ * drifted apart: the domain of record, the site title shown in the header and
+ * browser tab, and the contact address customers write to.
+ */
+add_action( 'wp_ajax_wookiee_choose_domain', 'wookiee_choose_domain_handler' );
+function wookiee_choose_domain_handler() {
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_send_json_error( array( 'message' => 'Not allowed.' ), 403 );
+	}
+	check_ajax_referer( 'wookiee_choose_domain', 'nonce' );
+
+	$domain = isset( $_POST['domain'] ) ? sanitize_text_field( wp_unslash( $_POST['domain'] ) ) : '';
+	$title  = isset( $_POST['site_title'] ) ? sanitize_text_field( wp_unslash( $_POST['site_title'] ) ) : '';
+
+	$applied = wookiee_apply_chosen_domain( $domain, $title );
+	if ( is_wp_error( $applied ) ) {
+		wp_send_json_error( array( 'message' => $applied->get_error_message() ) );
+	}
+
+	wp_send_json_success( $applied );
+}
+
+/**
+ * @param string $domain Chosen domain, e.g. "highlandaccounts.co.uk".
+ * @param string $title  Human-readable brand name. Falls back to one derived
+ *                       from the domain when empty.
+ */
+function wookiee_apply_chosen_domain( $domain, $title = '' ) {
+	$domain = strtolower( trim( $domain ) );
+	$domain = preg_replace( '#^https?://#', '', $domain );
+	$domain = trim( $domain, "/ \t\n\r" );
+
+	// Deliberately permissive on the TLD - .co.uk, .store and friends are all
+	// valid, and the registrar is the real authority on what exists.
+	if ( ! preg_match( '/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9-]+)+$/', $domain ) ) {
+		return new WP_Error( 'wookiee_bad_domain', 'That does not look like a domain name.' );
+	}
+
+	update_option( 'wookiee_chosen_domain', $domain );
+
+	/*
+	 * The title the suggestion was generated FROM is preferred over anything
+	 * derived from the domain: "Highland Accounts" reads properly where
+	 * "highlandaccounts" cannot be split back into words reliably. Only when
+	 * no title is supplied is one reconstructed, and then only from the
+	 * separators the domain actually contains.
+	 */
+	if ( '' === $title ) {
+		$sld   = strtok( $domain, '.' );
+		$title = ucwords( trim( str_replace( array( '-', '_' ), ' ', $sld ) ) );
+	}
+	if ( '' !== $title ) {
+		update_option( 'blogname', $title );
+	}
+
+	// A shop address on the shop's own domain. Kept as a mailbox the operator
+	// would plausibly create, rather than something with a random suffix
+	// nobody could receive mail at.
+	$email = 'hello@' . $domain;
+	update_option( 'wookiee_setting_contact_email', $email );
+
+	return array(
+		'domain'     => $domain,
+		'site_title' => $title,
+		'email'      => $email,
+	);
+}
+
+/** The domain this store trades under, if one has been chosen. */
+function wookiee_chosen_domain() {
+	return (string) get_option( 'wookiee_chosen_domain', '' );
+}
+
 add_action( 'wp_ajax_wookiee_register_domain', 'wookiee_register_domain_handler' );
 function wookiee_register_domain_handler() {
 	if ( ! current_user_can( 'manage_options' ) ) {
@@ -1131,6 +1213,10 @@ function wookiee_register_domain_handler() {
 			wp_send_json_error( array( 'message' => 'Fill in every required registrant field (first/last name, email, address, city, country, phone).' ) );
 		}
 	}
+
+	// Registering is also choosing - otherwise a store could own a domain and
+	// still be titled "My Site" with a contact address on someone else's.
+	wookiee_apply_chosen_domain( $domain );
 
 	if ( wookiee_central_api_configured() ) {
 		$result = wookiee_central_api_request( 'POST', '/domains/register', array_merge( $raw_contact, array(

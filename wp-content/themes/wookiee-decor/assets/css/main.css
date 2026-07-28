@@ -2818,3 +2818,28 @@ a.added_to_cart:hover,
 		margin-top: 32px;
 	}
 }
+
+/* Generated logo emblem. Square, cropped to the same footprint as the drawn
+   monogram it replaces, so swapping one for the other does not move the
+   header around. The radius follows the design's corner style. */
+.site-logo-mark-img {
+	width: 34px;
+	height: 34px;
+	object-fit: cover;
+	border-radius: var(--radius-md, 8px);
+	display: block;
+}
+
+/* The footer sits on a dark band, so the name needs the inverse treatment -
+   it shares the partial with the header, which is on paper. */
+.footer-logo-link {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	text-decoration: none;
+	min-width: 0;
+}
+.footer-logo-link .site-logo-name {
+	color: #ffffff;
+	max-width: 26ch;
+}

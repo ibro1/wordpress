@@ -1099,11 +1099,47 @@ function wookiee_apply_audit_fixes_handler() {
 
 	wp_update_post( array(
 		'ID'           => $post->ID,
-		'post_content' => wpautop( esc_html( $text ) ),
+		'post_content' => wookiee_policy_text_to_html( $text ),
 	) );
 	wookiee_clear_audit_result( $post->ID );
 
 	wp_send_json_success( array( 'edit_link' => get_edit_post_link( $post->ID, 'raw' ) ) );
+}
+
+/**
+ * Turns a generated policy into page HTML.
+ *
+ * esc_html() + wpautop() alone left two visible faults on the live pages:
+ *
+ *  - Markdown reached the reader literally. The prompt asks for no markdown,
+ *    but models emit "**Pricing**" anyway, and escaping it means the asterisks
+ *    are shown rather than rendered. Handling it here is reliable in a way
+ *    that asking more firmly is not.
+ *  - Nothing carried the page's own indentation. The original baked policy
+ *    pages wrapped themselves in a max-width container; regenerating replaced
+ *    that with bare paragraphs, so the text ran edge to edge. The CSS for
+ *    .entry-content now constrains plain text children, which fixes pages
+ *    already saved as well as new ones.
+ *
+ * Escaping still happens first, so the model cannot inject markup - only the
+ * two markdown forms below are promoted back to tags, from already-escaped
+ * text.
+ */
+function wookiee_policy_text_to_html( $text ) {
+	$escaped = esc_html( trim( (string) $text ) );
+
+	// ## Heading  ->  <h2>
+	$escaped = preg_replace( '/^#{2,3}\s*(.+)$/m', '<h2>$1</h2>', $escaped );
+
+	// **bold** -> <strong>. Non-greedy and single-line so an unmatched pair
+	// cannot swallow the rest of the document.
+	$escaped = preg_replace( '/\*\*(?!\s)([^*\n]+?)\*\*/', '<strong>$1</strong>', $escaped );
+
+	// A numbered heading like "1. **Pricing**" is a heading, not a list item -
+	// promote the whole line so it does not sit mid-paragraph.
+	$escaped = preg_replace( '/^(\d+\.\s*)<strong>(.+?)<\/strong>\s*$/m', '<h2>$1$2</h2>', $escaped );
+
+	return wpautop( $escaped );
 }
 
 function wookiee_build_policy_fix_prompt( $title, $current_text, $audit_report ) {
@@ -1208,7 +1244,7 @@ function wookiee_apply_custom_policy_prompt_handler() {
 
 	wp_update_post( array(
 		'ID'           => $post->ID,
-		'post_content' => wpautop( esc_html( $text ) ),
+		'post_content' => wookiee_policy_text_to_html( $text ),
 	) );
 	update_post_meta( $post->ID, '_wookiee_ai_generated', 1 );
 	wookiee_clear_audit_result( $post->ID );
@@ -1227,7 +1263,7 @@ function wookiee_apply_custom_policy_prompt_handler() {
  * whole point.
  */
 function wookiee_update_real_static_page( $slug, $title, $raw_text ) {
-	$content  = wpautop( esc_html( $raw_text ) );
+	$content  = wookiee_policy_text_to_html( $raw_text );
 	$existing = get_page_by_path( $slug, OBJECT, 'page' );
 
 	if ( $existing ) {

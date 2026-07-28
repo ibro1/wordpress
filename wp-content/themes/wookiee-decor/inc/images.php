@@ -139,9 +139,21 @@ function wookiee_build_image_prompt( $slot, $brief ) {
 		return '';
 	}
 
-	$default = 'Photograph for a UK online store. The store sells: {{brief}}.'
-		. "\n\nThis image is {{purpose}}."
+	/*
+	 * The brief and purpose are interpolated into the DEFAULT here, not left
+	 * as {{tokens}} for wookiee_maybe_override() to fill in. That function
+	 * only substitutes on the override path - with no override saved it
+	 * returns the default verbatim, so tokens left in it reach the model as
+	 * the literal text "{{brief}}". An image model given that writes a
+	 * generic lifestyle stock photo, which is exactly what shipped.
+	 *
+	 * Every other builder in the registry already interpolates first and
+	 * passes $vars only so an operator's override can use the tokens.
+	 */
+	$default = 'Photograph for a UK online store. The store sells: ' . trim( (string) $brief ) . '.'
+		. "\n\nThis image is " . $slots[ $slot ]['brief'] . '.'
 		. "\n\nRequirements:"
+		. "\n- The image MUST show what this store actually sells, as described above. Do not substitute a generic lifestyle, home-interior or technology scene."
 		. "\n- A real photographic scene of the products in use, or styled in a setting that suits them. Not an illustration, not a 3D render, not a flat-lay of icons."
 		. "\n- Natural light, shallow depth of field, plenty of clean empty space on one side where headline text will be placed over it."
 		. "\n- No text, no lettering, no logos, no watermarks, no signage, no packaging with brand names."

@@ -344,6 +344,44 @@ function wookiee_rebrand_begin_run( $brief, array $step_keys ) {
 	return $run;
 }
 
+/**
+ * Frees steps stuck in 'running'.
+ *
+ * A step is marked running before the work starts, so if the process doing it
+ * dies - or, as happened here, never started because a loopback dispatch
+ * silently failed - the step sits running forever and the page waits on it
+ * with infinite patience.
+ *
+ * 15 minutes is comfortably longer than the slowest real step (Realistic
+ * Vision on CPU, ~8 minutes), so this only ever catches genuinely dead work
+ * rather than interrupting something still going.
+ */
+function wookiee_rebrand_reap_stale_steps() {
+	$run = wookiee_rebrand_run();
+	if ( ! $run || empty( $run['steps'] ) || ! empty( $run['cancelled'] ) ) {
+		return;
+	}
+
+	$stale_after = 15 * MINUTE_IN_SECONDS;
+	$updated     = isset( $run['updated'] ) ? (int) $run['updated'] : 0;
+	if ( ! $updated || ( time() - $updated ) < $stale_after ) {
+		return;
+	}
+
+	$changed = false;
+	foreach ( $run['steps'] as $key => $step ) {
+		if ( 'running' === $step['status'] ) {
+			$run['steps'][ $key ] = array( 'status' => 'pending', 'detail' => '' );
+			$changed              = true;
+		}
+	}
+
+	if ( $changed ) {
+		$run['updated'] = time();
+		update_option( 'wookiee_rebrand_run', $run );
+	}
+}
+
 function wookiee_rebrand_mark_step( $step, $status, $detail = '' ) {
 	$run = wookiee_rebrand_run();
 	if ( ! $run || ! isset( $run['steps'][ $step ] ) ) {
@@ -360,6 +398,9 @@ function wookiee_rebrand_mark_step( $step, $status, $detail = '' ) {
  */
 function wookiee_rebrand_run_is_finished( array $run ) {
 	if ( empty( $run['steps'] ) ) {
+		return true;
+	}
+	if ( ! empty( $run['cancelled'] ) ) {
 		return true;
 	}
 	foreach ( $run['steps'] as $step ) {
@@ -481,73 +522,15 @@ function wookiee_rebrand_handler() {
 	}
 
 	wookiee_rebrand_mark_step( $step, 'running' );
-	wookiee_rebrand_dispatch_worker( $step );
 
-	wp_send_json_success( array( 'queued' => true ) );
-}
-
-/**
- * Fires the detached request that actually runs a step.
- *
- * blocking => false means WordPress sends the request and returns without
- * waiting, so this call costs milliseconds regardless of how long the step
- * takes.
- */
-function wookiee_rebrand_dispatch_worker( $step ) {
-	$run = wookiee_rebrand_run();
-	if ( ! $run || empty( $run['token'] ) ) {
-		return;
-	}
-
-	wp_remote_post(
-		admin_url( 'admin-ajax.php' ),
-		array(
-			'blocking'  => false,
-			'timeout'   => 0.01,
-			// The loopback hits this site's own public hostname; a self-signed
-			// or mid-renewal certificate must not silently stop the worker.
-			'sslverify' => false,
-			'body'      => array(
-				'action' => 'wookiee_rebrand_worker',
-				'token'  => $run['token'],
-				'step'   => $step,
-			),
-		)
-	);
-}
-
-/**
- * Runs one step with no browser attached.
- *
- * Registered for nopriv as well: the dispatching request carries no cookies,
- * so this arrives logged-out. The run's one-time token is the authentication,
- * compared with hash_equals so a wrong guess cannot be timed.
- */
-add_action( 'wp_ajax_nopriv_wookiee_rebrand_worker', 'wookiee_rebrand_worker' );
-add_action( 'wp_ajax_wookiee_rebrand_worker', 'wookiee_rebrand_worker' );
-function wookiee_rebrand_worker() {
-	$run   = wookiee_rebrand_run();
-	$token = isset( $_POST['token'] ) ? sanitize_text_field( wp_unslash( $_POST['token'] ) ) : '';
-
-	if ( ! $run || empty( $run['token'] ) || ! hash_equals( (string) $run['token'], $token ) ) {
-		wp_die( '', '', array( 'response' => 403 ) );
-	}
-
-	$step = isset( $_POST['step'] ) ? sanitize_key( wp_unslash( $_POST['step'] ) ) : '';
-	if ( ! isset( $run['steps'][ $step ] ) ) {
-		wp_die( '', '', array( 'response' => 400 ) );
-	}
-
-	// The dispatcher hung up the moment it sent this, and Cloudflare will cut
-	// the connection at 100s regardless. Neither must stop the work.
-	ignore_user_abort( true );
-	@set_time_limit( 0 ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- disabled on some hosts.
+	// Answer the browser NOW, then keep working with no one listening.
+	wookiee_rebrand_respond_and_continue( array( 'queued' => true ) );
 
 	$result = wookiee_run_rebrand_step( $step, $run['brief'] );
 
 	if ( is_wp_error( $result ) ) {
 		wookiee_rebrand_mark_step( $step, 'failed', $result->get_error_message() );
-		wp_die( '', '', array( 'response' => 200 ) );
+		exit;
 	}
 
 	if ( is_array( $result ) ) {
@@ -556,11 +539,96 @@ function wookiee_rebrand_worker() {
 			$flat[] = '<em>' . $label . ':</em> ' . $line;
 		}
 		wookiee_rebrand_mark_step( $step, 'done', implode( '<br>', $flat ) );
-		wp_die( '', '', array( 'response' => 200 ) );
+		exit;
 	}
 
 	wookiee_rebrand_mark_step( $step, 'done', (string) $result );
-	wp_die( '', '', array( 'response' => 200 ) );
+	exit;
+}
+
+/**
+ * Sends a JSON reply, closes the connection, and returns so the caller can
+ * carry on working unobserved.
+ *
+ * Replaces a loopback dispatch that never arrived. wp_remote_post() to this
+ * site's own admin-ajax.php has to leave the container, cross Cloudflare and
+ * come back; that round trip was failing silently, so every step was marked
+ * running and then simply never ran. The access log made it obvious - every
+ * POST came from a Cloudflare address, i.e. the browser, and not one came
+ * from the container itself.
+ *
+ * Doing the work here instead removes that hop entirely. Content-Length plus
+ * Connection: close lets the browser finish reading immediately; the PHP
+ * process keeps going because of ignore_user_abort.
+ *
+ * If a host refuses to flush early, this degrades safely rather than
+ * breaking: the request stays open, Cloudflare cuts it at 100s, and the work
+ * still completes because of ignore_user_abort - the browser just falls back
+ * to polling, which is what it does anyway.
+ */
+function wookiee_rebrand_respond_and_continue( $data ) {
+	ignore_user_abort( true );
+	@set_time_limit( 0 ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- disabled on some hosts.
+
+	$payload = wp_json_encode( array( 'success' => true, 'data' => $data ) );
+
+	// Compression would make the Content-Length below wrong, and a wrong
+	// Content-Length is worse than none: the client waits for bytes that
+	// never come.
+	@ini_set( 'zlib.output_compression', '0' ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+	while ( ob_get_level() > 0 ) {
+		ob_end_clean();
+	}
+
+	if ( ! headers_sent() ) {
+		header( 'Content-Type: application/json; charset=' . get_option( 'blog_charset' ) );
+		header( 'Content-Length: ' . strlen( $payload ) );
+		header( 'Connection: close' );
+	}
+
+	echo $payload; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_json_encode output.
+
+	if ( function_exists( 'fastcgi_finish_request' ) ) {
+		fastcgi_finish_request();
+	} else {
+		flush();
+	}
+}
+
+/**
+ * Stops a run without unwinding it.
+ *
+ * Anything already applied stays applied - Undo is the button for putting
+ * things back, and conflating "stop" with "revert" would mean an operator who
+ * just wants the queue to end loses work they were happy with. Steps that had
+ * not started are marked cancelled so the screen says so rather than leaving
+ * them looking stuck forever.
+ *
+ * A step already running finishes: it is mid-provider-call, and abandoning it
+ * would pay for work and then throw it away.
+ */
+add_action( 'wp_ajax_wookiee_rebrand_cancel', 'wookiee_rebrand_cancel_handler' );
+function wookiee_rebrand_cancel_handler() {
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_send_json_error( array( 'message' => 'Not allowed.' ), 403 );
+	}
+	check_ajax_referer( 'wookiee_rebrand', 'nonce' );
+
+	$run = wookiee_rebrand_run();
+	if ( ! $run ) {
+		wp_send_json_error( array( 'message' => 'There is no rebrand to stop.' ) );
+	}
+
+	$run['cancelled'] = true;
+	foreach ( $run['steps'] as $key => $step ) {
+		if ( 'pending' === $step['status'] ) {
+			$run['steps'][ $key ] = array( 'status' => 'cancelled', 'detail' => 'stopped before this step started' );
+		}
+	}
+	$run['updated'] = time();
+	update_option( 'wookiee_rebrand_run', $run );
+
+	wp_send_json_success();
 }
 
 /**
@@ -649,6 +717,8 @@ function wookiee_render_rebrand_page() {
 	 * is named. This points at it rather than leaving the operator to find
 	 * the Product Generator on their own.
 	 */
+	wookiee_rebrand_reap_stale_steps();
+
 	$wookiee_run      = wookiee_rebrand_run();
 	$wookiee_finished = $wookiee_run && wookiee_rebrand_run_is_finished( $wookiee_run );
 	$wookiee_cleared  = $wookiee_finished
@@ -768,6 +838,7 @@ function wookiee_render_rebrand_page() {
 
 			<p style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
 				<button type="button" class="button button-primary button-hero" id="wookiee-rebrand-go">Rebrand my store</button>
+				<button type="button" class="button" id="wookiee-rebrand-stop" style="display:none;">Stop</button>
 				<?php if ( $has_undo ) : ?>
 					<button type="button" class="button" id="wookiee-rebrand-undo">Undo last rebrand</button>
 				<?php endif; ?>
@@ -809,6 +880,9 @@ function wookiee_render_rebrand_page() {
 								$wookiee_icon   = '&#10007;';
 								$wookiee_colour = '#a3272a';
 								$wookiee_detail = $wookiee_step['detail'] ? $wookiee_step['detail'] : 'Failed.';
+							} elseif ( 'cancelled' === $wookiee_step['status'] ) {
+								$wookiee_icon   = '&ndash;';
+								$wookiee_detail = $wookiee_step['detail'] ? $wookiee_step['detail'] : 'stopped';
 							} elseif ( 'running' === $wookiee_step['status'] ) {
 								// Steps run detached now, so this may still be
 								// working rather than abandoned - the page
@@ -849,7 +923,26 @@ function wookiee_render_rebrand_page() {
 				.then( function ( r ) { return r.json(); } );
 		}
 
+		var stopBtn = document.getElementById( 'wookiee-rebrand-stop' );
+		var stopped = false;
+
 		function row( key ) { return document.getElementById( 'wookiee-step-' + key ); }
+
+		function setRunning( on ) {
+			go.disabled = on;
+			go.textContent = on ? 'Rebranding\u2026' : 'Rebrand my store';
+			stopBtn.style.display = on ? '' : 'none';
+		}
+
+		stopBtn.addEventListener( 'click', function () {
+			if ( ! window.confirm( 'Stop the rebrand? Steps already finished stay applied - use Undo to put everything back.' ) ) { return; }
+			stopped = true;
+			stopBtn.disabled = true;
+			stopBtn.textContent = 'Stopping\u2026';
+			post( 'wookiee_rebrand_cancel' ).then( function () {
+				window.location.reload();
+			} );
+		} );
 
 		/*
 		 * The last line of defence against a step reading '<label> undefined'.
@@ -938,6 +1031,10 @@ function wookiee_render_rebrand_page() {
 							resolve( { ok: false, detail: st.detail || 'Failed.' } );
 							return;
 						}
+						if ( 'cancelled' === st.status || stopped ) {
+							resolve( { ok: false, detail: 'stopped' } );
+							return;
+						}
 						setTimeout( tick, POLL_MS );
 					} ).catch( function () {
 						// Transient - keep waiting rather than declaring a
@@ -960,12 +1057,11 @@ function wookiee_render_rebrand_page() {
 				return ! statuses[ k ] || 'done' !== statuses[ k ].status;
 			} );
 
-			go.disabled = true;
-			go.textContent = 'Rebranding\u2026';
+			setRunning( true );
 
 			var chain = pending.reduce( function ( prev, key ) {
 				return prev.then( function () {
-					if ( failed ) { return null; }
+					if ( failed || stopped ) { return null; }
 					mark( key, '<span class="spinner is-active" style="float:none;margin:0;"></span>', '', 'working\u2026' );
 
 					/*
@@ -995,7 +1091,13 @@ function wookiee_render_rebrand_page() {
 						// backend is answering. Its detail may be absent.
 						return { ok: true, detail: detailFrom( res.data ) || 'done' };
 					} ).catch( function () {
-						return { ok: false, detail: 'Could not start this step. Reload to carry on where it stopped.' };
+						/*
+						 * The dispatch request failed - but the step may be
+						 * running regardless: it is marked running before any
+						 * reply is sent, and a proxy cutting the connection
+						 * does not stop PHP. Poll rather than assume the worst.
+						 */
+						return await_step( key );
 					} ).then( function ( outcome ) {
 						if ( outcome.ok ) {
 							mark( key, '&#10003;', '#00622e', outcome.detail );
@@ -1008,8 +1110,9 @@ function wookiee_render_rebrand_page() {
 			}, Promise.resolve() );
 
 			chain.then( function () {
-				go.disabled = false;
-				go.textContent = failed ? 'Try again' : 'Rebrand my store';
+				setRunning( false );
+				if ( failed ) { go.textContent = 'Try again'; }
+				if ( stopped ) { return; }
 				pending.forEach( function ( k ) {
 					var d = row( k ) && row( k ).querySelector( '.wookiee-step-detail' );
 					if ( d && 'waiting' === d.textContent ) { d.textContent = 'skipped'; }

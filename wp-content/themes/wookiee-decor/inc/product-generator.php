@@ -329,15 +329,39 @@ function wookiee_render_product_generator_page() {
 						return;
 					}
 					var products = res.data.products;
-					var skipped  = res.data.total - products.length;
-					status.textContent = products.length + ' of ' + res.data.total + ' concept(s) sourced' + ( skipped ? ' (' + skipped + " didn't fit the niche and " + ( skipped === 1 ? 'was' : 'were' ) + ' skipped)' : '' ) + '. Review each before publishing.';
+					var skipped  = res.data.skipped || [];
 
-					if ( ! products.length ) {
-						results.innerHTML = '';
-						return;
+					status.textContent = products.length + ' of ' + res.data.total + ' concept(s) sourced'
+						+ ( skipped.length ? ', ' + skipped.length + ' not found' : '' )
+						+ ( products.length ? '. Review each before publishing.' : '.' );
+
+					results.innerHTML = '';
+					if ( products.length ) { renderProductsTable( products ); }
+
+					// Name each concept and why it produced nothing. "Skipped"
+					// on its own tells the operator to change something without
+					// saying what, and the causes need different responses.
+					if ( skipped.length ) {
+						var box = document.createElement( 'div' );
+						box.style.cssText = 'margin-top:14px;padding:12px 14px;background:#fcf9e8;border:1px solid #dba617;border-radius:4px;';
+						var h = document.createElement( 'p' );
+                        h.style.cssText = 'margin:0 0 8px;font-weight:600;';
+						h.textContent = 'Not sourced (' + skipped.length + ')';
+						box.appendChild( h );
+						var ul = document.createElement( 'ul' );
+						ul.style.cssText = 'margin:0;padding-left:18px;';
+						skipped.forEach( function( item ) {
+							var li = document.createElement( 'li' );
+							li.style.margin = '4px 0';
+							var strong = document.createElement( 'strong' );
+							strong.textContent = item.title;
+							li.appendChild( strong );
+							li.appendChild( document.createTextNode( ' — ' + item.reason ) );
+							ul.appendChild( li );
+						} );
+						box.appendChild( ul );
+						results.appendChild( box );
 					}
-
-					renderProductsTable( products );
 				} )
 				.catch( function() {
 					btn.disabled = false;
@@ -438,14 +462,31 @@ function wookiee_generate_products_handler() {
 	wookiee_remember_concepts( wp_list_pluck( $ideas, 'title' ) );
 
 	$created = array();
+	$skipped = array();
 	foreach ( $ideas as $idea ) {
 		$sourced = wookiee_source_real_product_for_idea( $idea['title'], 3, $idea['category'] );
 
-		// Concepts that didn't source a real product (no CJ match, or no
-		// good niche fit) are intentionally left out of the results the
-		// admin sees - a results table isn't the place to list what
-		// wasn't found, only what's actually ready to review.
+		/*
+		 * A concept that sourced nothing stays out of the results table -
+		 * that table is for what is ready to review. But the REASON is
+		 * reported, because the three ways this fails need three different
+		 * responses and they were all being shown as "didn't fit the niche":
+		 *
+		 *   - CJ returned nothing for the query: the niche may be too narrow,
+		 *     or CJ genuinely does not carry it.
+		 *   - CJ returned results and the fit-check rejected them all: the
+		 *     search terms are landing on the wrong products.
+		 *   - The CJ call itself failed: credentials or the API, and nothing
+		 *     to do with the niche at all.
+		 *
+		 * Telling an operator their niche is wrong when the supplier API is
+		 * down sends them off rewriting a brief that was never the problem.
+		 */
 		if ( is_wp_error( $sourced ) ) {
+			$skipped[] = array(
+				'title'  => esc_html( $idea['title'] ),
+				'reason' => esc_html( $sourced->get_error_message() ),
+			);
 			continue;
 		}
 
@@ -467,7 +508,11 @@ function wookiee_generate_products_handler() {
 		);
 	}
 
-	wp_send_json_success( array( 'products' => $created, 'total' => count( $ideas ) ) );
+	wp_send_json_success( array(
+		'products' => $created,
+		'total'    => count( $ideas ),
+		'skipped'  => $skipped,
+	) );
 }
 
 /**

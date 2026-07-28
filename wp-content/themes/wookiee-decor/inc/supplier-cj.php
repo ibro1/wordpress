@@ -174,13 +174,70 @@ function wookiee_cj_search_products( $keyword, $page = 1 ) {
  * to the next result). Bounded to control LLM cost/time per idea - each
  * attempt runs its own AI cleanup call.
  */
-function wookiee_source_real_product_for_idea( $query, $max_attempts = 3, $category_hint = '' ) {
-	$results = wookiee_cj_search_products( $query );
-	if ( is_wp_error( $results ) ) {
-		return $results;
+/**
+ * Progressively shorter CJ search terms for one product concept.
+ *
+ * CJ's productName filter is a keyword match against supplier listings, and
+ * the concepts fed to it are full marketing titles - "Reusable Bamboo
+ * Charcoal Facial Cleansing Pads Set". Nothing in the catalog is named that,
+ * so the search returns nothing and the concept is reported as unsourceable
+ * when the catalog may well stock the item.
+ *
+ * The head of such a title is adjectives and the tail is the actual noun, so
+ * the tail variants matter more than the head ones - "cleansing pads" finds
+ * stock that "reusable bamboo charcoal" never will.
+ */
+function wookiee_cj_search_variants( $query ) {
+	$query = trim( preg_replace( '/\s+/', ' ', (string) $query ) );
+	$words = array_values( array_filter( explode( ' ', $query ) ) );
+	$count = count( $words );
+
+	$variants = array( $query );
+
+	if ( $count > 2 ) {
+		$variants[] = implode( ' ', array_slice( $words, -2 ) );
 	}
+	if ( $count > 3 ) {
+		$variants[] = implode( ' ', array_slice( $words, -3 ) );
+		$variants[] = implode( ' ', array_slice( $words, 0, 3 ) );
+	}
+	/*
+	 * Deliberately no single-word fallback. The last word of these titles is
+	 * usually "Set", "Kit" or "Brush", which matches thousands of unrelated
+	 * listings - and every one that comes back costs an AI fit-check call to
+	 * reject. A two-word tail is the useful floor.
+	 */
+
+	// Order matters - the most specific term is tried first - so de-duplicate
+	// without reordering.
+	return array_values( array_unique( array_filter( $variants ) ) );
+}
+
+function wookiee_source_real_product_for_idea( $query, $max_attempts = 3, $category_hint = '' ) {
+	$results = array();
+	$tried   = array();
+
+	foreach ( wookiee_cj_search_variants( $query ) as $variant ) {
+		$found = wookiee_cj_search_products( $variant );
+
+		// A hard failure is the API, not the query - shortening the search
+		// will not fix credentials, so report it rather than looping.
+		if ( is_wp_error( $found ) ) {
+			return $found;
+		}
+
+		$tried[] = $variant;
+		if ( ! empty( $found ) ) {
+			$results = $found;
+			break;
+		}
+	}
+
 	if ( empty( $results ) ) {
-		return new WP_Error( 'wookiee_no_cj_match', 'No matching product found on CJ Dropshipping for "' . $query . '".' );
+		return new WP_Error(
+			'wookiee_no_cj_match',
+			'CJ Dropshipping has nothing for "' . $query . '" (also tried: ' . implode( ', ', array_slice( $tried, 1 ) ) . ').'
+		);
 	}
 
 	$attempts = 0;
@@ -196,7 +253,10 @@ function wookiee_source_real_product_for_idea( $query, $max_attempts = 3, $categ
 		}
 	}
 
-	return new WP_Error( 'wookiee_no_suitable_match', 'Found results on CJ for "' . $query . '" but none were a good fit for the niche.' );
+	return new WP_Error(
+		'wookiee_no_suitable_match',
+		'CJ had ' . count( $results ) . ' result(s) for "' . $query . '" but the first ' . $attempts . ' were judged a poor fit for this niche.'
+	);
 }
 
 /**

@@ -5,7 +5,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'WOOKIEE_VERSION', '1.0.80' );
+define( 'WOOKIEE_VERSION', '1.0.81' );
 define( 'WOOKIEE_DIR', trailingslashit( get_template_directory() ) );
 define( 'WOOKIEE_URI', trailingslashit( get_template_directory_uri() ) );
 define( 'WOOKIEE_CONTACT_EMAIL', 'info@wookied.com' );
@@ -262,6 +262,36 @@ function wookiee_sync_primary_menu( $page_ids = null, $pages = null ) {
 		$pages = null;
 	}
 
+	/*
+	 * The init path is throttled; the activation path (which passes real
+	 * arguments) is not. Without this, every single page load would take the
+	 * lock, re-read the menu and release it again - two wp_options writes per
+	 * request to discover there was nothing to do. Fifteen minutes still means
+	 * a menu that loses an item repairs itself without anyone noticing.
+	 */
+	$throttled = ( null === $page_ids && null === $pages );
+	if ( $throttled && get_transient( 'wookiee_menu_synced' ) ) {
+		return;
+	}
+
+	/*
+	 * One runner at a time. This fires on init, so any two overlapping
+	 * requests - and the Rebrand screen polls every few seconds - would each
+	 * read the menu, both find a page missing, and both add it. That is where
+	 * the duplicated Home/Shop/About/Contact items came from.
+	 *
+	 * add_option() is atomic in a way that get+update is not: it fails rather
+	 * than overwrites when the row already exists, so exactly one caller wins.
+	 */
+	if ( ! add_option( 'wookiee_menu_sync_lock', time(), '', 'no' ) ) {
+		$lock_age = time() - (int) get_option( 'wookiee_menu_sync_lock', 0 );
+		if ( $lock_age < 30 ) {
+			return;
+		}
+		// Stale - a previous run died mid-way. Take it over.
+		update_option( 'wookiee_menu_sync_lock', time(), 'no' );
+	}
+
 	if ( null === $pages ) {
 		$pages = wookiee_starter_pages();
 	}
@@ -280,11 +310,28 @@ function wookiee_sync_primary_menu( $page_ids = null, $pages = null ) {
 		$locations = get_nav_menu_locations();
 		$menu_id   = isset( $locations['primary'] ) ? (int) $locations['primary'] : 0;
 	}
+
+	/*
+	 * Adopt the existing menu by name before creating one.
+	 *
+	 * wp_create_nav_menu() returns a 'menu_exists' WP_Error when a menu of
+	 * that name is already there, which left $menu_id at 0 and returned early -
+	 * so once the location came unassigned, every later run bailed before
+	 * reaching the set_theme_mod() at the end and could never reattach it.
+	 * The menu was sitting right there, just not wired to the location.
+	 */
+	if ( ! $menu_id ) {
+		$existing_menu = wp_get_nav_menu_object( 'Wookiee Main Menu' );
+		if ( $existing_menu ) {
+			$menu_id = (int) $existing_menu->term_id;
+		}
+	}
 	if ( ! $menu_id ) {
 		$created = wp_create_nav_menu( 'Wookiee Main Menu' );
 		$menu_id = is_wp_error( $created ) ? 0 : (int) $created;
 	}
 	if ( ! $menu_id ) {
+		delete_option( 'wookiee_menu_sync_lock' );
 		return;
 	}
 
@@ -299,13 +346,35 @@ function wookiee_sync_primary_menu( $page_ids = null, $pages = null ) {
 	// that no longer exists is unambiguously dead, regardless of title, so
 	// it's always safe to remove.
 	if ( $existing_items ) {
+		$seen_object_ids = array();
 		foreach ( $existing_items as $item ) {
 			if ( 'post_type' !== $item->type || 'page' !== $item->object ) {
 				continue;
 			}
-			if ( ! get_post( $item->object_id ) ) {
+
+			$target = get_post( $item->object_id );
+
+			// Dead: the page it points at is gone, or is in the trash. WordPress
+			// hides such items from the frontend rather than erroring, which is
+			// what silently dropped Contact from the nav in the first place.
+			if ( ! $target || 'trash' === $target->post_status ) {
 				wp_delete_post( $item->ID, true );
+				continue;
 			}
+
+			/*
+			 * Duplicate: a second item pointing at a page already in this menu.
+			 * These appeared once the init-time sync started actually running -
+			 * concurrent requests (the Rebrand screen polls every few seconds)
+			 * each read the item list before any of them had written, so each
+			 * decided the page was missing and added it. Removing extras here
+			 * is idempotent and repairs menus that already doubled up.
+			 */
+			if ( in_array( (int) $item->object_id, $seen_object_ids, true ) ) {
+				wp_delete_post( $item->ID, true );
+				continue;
+			}
+			$seen_object_ids[] = (int) $item->object_id;
 		}
 		$existing_items = wp_get_nav_menu_items( $menu_id );
 	}
@@ -329,9 +398,12 @@ function wookiee_sync_primary_menu( $page_ids = null, $pages = null ) {
 		) );
 	}
 
-	$locations             = (array) get_theme_mod( 'nav_menu_locations', array() );
+	$locations            = (array) get_theme_mod( 'nav_menu_locations', array() );
 	$locations['primary'] = $menu_id;
 	set_theme_mod( 'nav_menu_locations', $locations );
+
+	set_transient( 'wookiee_menu_synced', 1, 15 * MINUTE_IN_SECONDS );
+	delete_option( 'wookiee_menu_sync_lock' );
 }
 
 function wookiee_maybe_create_starter_content() {
@@ -433,6 +505,7 @@ function wookiee_create_starter_content() {
     }
 
 	// 3. Setup Menu
+	delete_transient( 'wookiee_menu_synced' );
 	wookiee_sync_primary_menu( $page_ids, $pages );
 
     // 4. Create Dummy Products

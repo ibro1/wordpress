@@ -33,7 +33,26 @@
 					'fallback_cb'    => false,
 				) );
 			} else {
-				echo '<ul><li><a href="' . esc_url( home_url( '/' ) ) . '">Home</a></li><li><a href="' . esc_url( home_url( '/shop/' ) ) . '">Shop</a></li><li><a href="' . esc_url( home_url( '/about/' ) ) . '">About</a></li></ul>';
+				/*
+				 * No menu assigned to the location yet. This fallback was a
+				 * hardcoded Home/Shop/About - which is why Contact was missing
+				 * from the nav even when the menu itself had it: the frontend
+				 * was never reading the menu at all. Built from the starter
+				 * pages now, so it cannot drift from them again.
+				 */
+				echo '<ul>';
+				foreach ( wookiee_starter_pages() as $wookiee_slug => $wookiee_page ) {
+					if ( '' === $wookiee_page['menu'] ) {
+						continue;
+					}
+					$wookiee_url = 'home' === $wookiee_slug ? home_url( '/' ) : home_url( '/' . $wookiee_slug . '/' );
+					printf(
+						'<li><a href="%s">%s</a></li>',
+						esc_url( $wookiee_url ),
+						esc_html( $wookiee_page['menu'] )
+					);
+				}
+				echo '</ul>';
 			}
 			?>
 		</nav>

@@ -172,6 +172,39 @@ services:
     networks:
       - default
 
+  # Self-hosted Stable Diffusion, for licences whose package includes local
+  # image models. CPU-only: see services/wookiee-sd/README.md for what that
+  # costs in wall-clock time before promising it to a customer.
+  wookiee_sd:
+    build:
+      context: ../../services/wookiee-sd
+    container_name: wookiee_sd
+    restart: unless-stopped
+    volumes:
+      # ~2GB per checkpoint, fetched on first use. On a named volume so a
+      # rebuild of the image does not re-download 4GB of weights.
+      - wookiee_sd_models:/models
+    networks:
+      # `default` only - never dokploy-network. This has no authentication of
+      # its own; it must stay reachable from wookiee_api and nowhere else.
+      - default
+    environment:
+      PORT: 7860
+      HF_HOME: /models
+      # Leave headroom on a shared box: inference will otherwise take every
+      # core and starve PHP and MySQL while a rebrand is running.
+      TORCH_THREADS: ${SD_TORCH_THREADS:-4}
+      DREAMSHAPER_STEPS: ${SD_DREAMSHAPER_STEPS:-6}
+      REALISTIC_VISION_STEPS: ${SD_REALISTIC_VISION_STEPS:-25}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:7860/healthz')"]
+      interval: 30s
+      timeout: 10s
+      # Generous: the first request loads ~2GB of weights from disk, and a
+      # restart loop during that would mean it never finishes.
+      start_period: 300s
+      retries: 3
+
   wookiee_api:
     build:
       # Relative to this compose file's own location (docs/workflow/), not
@@ -203,6 +236,9 @@ services:
       CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY}
       CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET}
       REMBG_ENDPOINT_URL: ${REMBG_ENDPOINT_URL}
+      # Points the image catalogue's `local` provider at the service above.
+      # Unset it to hide the self-hosted models from the picker entirely.
+      IMAGE_LOCAL_BASE_URL: ${IMAGE_LOCAL_BASE_URL:-http://wookiee_sd:7860/v1}
       GOOGLE_ADS_DEVELOPER_TOKEN: ${GOOGLE_ADS_DEVELOPER_TOKEN}
       GOOGLE_ADS_CLIENT_ID: ${GOOGLE_ADS_CLIENT_ID}
       GOOGLE_ADS_CLIENT_SECRET: ${GOOGLE_ADS_CLIENT_SECRET}
@@ -250,6 +286,7 @@ volumes:
   wp_app:
   wp_data:
   wookiee_api_data:
+  wookiee_sd_models:
 
 networks:
   dokploy-network:

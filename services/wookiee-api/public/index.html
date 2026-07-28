@@ -125,6 +125,9 @@
       ['image_xai_api_key', 'xAI (Grok) API key', 'password'],
       ['image_model', 'Default image model (e.g. openai:gpt-image-1)', 'text'],
     ] },
+    { title: 'Self-hosted image models', note: 'The DreamShaper / Realistic Vision service running alongside this API (services/wookiee-sd). On the compose network the URL is http://wookiee_sd:7860/v1 and needs no key. Leave blank if you are not running it. NOTE: this is CPU inference - DreamShaper 8 LCM takes tens of seconds per image and Realistic Vision V5.1 takes minutes, so grant it to licences accordingly.', fields: [
+      ['image_local_base_url', 'Self-hosted image base URL', 'text'],
+    ] },
     { title: 'Image generation fallback (custom endpoint)', note: 'Any other OpenAI-compatible /images/generations endpoint - a self-hosted shim, Fireworks, DeepInfra. Leave blank unless you are using one.', fields: [
       ['image_api_key', 'Custom image API key', 'password'],
       ['image_base_url', 'Custom image base URL', 'text'],

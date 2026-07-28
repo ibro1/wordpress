@@ -210,7 +210,15 @@ function wookiee_generate_slot_image( $slot, $brief ) {
 		$body['model'] = $model;
 	}
 
-	$result = wookiee_central_api_request( 'POST', '/images/generate', $body, 200 );
+	/*
+	 * 600s, not the 200 this used to allow. A hosted provider answers in
+	 * well under a minute, but a self-hosted CPU model runs into minutes -
+	 * cutting it off there reports a failure for work that was going to
+	 * finish. 600 matches the WordPress container's own max_execution_time,
+	 * so this is the longest wait that can actually complete; anything
+	 * slower than that needs a GPU rather than a bigger number here.
+	 */
+	$result = wookiee_central_api_request( 'POST', '/images/generate', $body, 600 );
 
 	if ( is_wp_error( $result ) ) {
 		return $result;

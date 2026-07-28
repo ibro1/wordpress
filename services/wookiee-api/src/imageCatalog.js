@@ -195,6 +195,32 @@ const PROVIDERS = {
       }),
   },
 
+  /*
+   * The self-hosted service in services/wookiee-sd, reachable on the compose
+   * network. No API key: it is not exposed publicly and has no credential to
+   * present, which is why `no_auth` exists rather than making the operator
+   * invent a fake key to satisfy the configured check.
+   *
+   * Long timeout because this is CPU inference - see the note on timeoutMs
+   * below. Only the sizes SD1.5 renders coherently are declared.
+   */
+  local: {
+    label: 'Self-hosted (this server)',
+    base_url_setting: 'image_local_base_url',
+    no_auth: true,
+    generatePath: '/images/generations',
+    listPath: '/models',
+    authStyle: 'none',
+    sizes: ['1536x1024', '1024x1024', '1024x1536'],
+    // CPU generation runs into minutes, not seconds. A cloud provider's
+    // 3-minute ceiling would cut off a run that was going to succeed.
+    timeoutMs: 900000,
+    buildBody: (model, prompt, size) => ({ model, prompt, size, n: 1, response_format: 'b64_json' }),
+    readImage: readOpenAIStyle,
+    normalize: (body) => (body && Array.isArray(body.data) ? body.data : [])
+      .map((m) => ({ model: m.id, label: m.display_name || m.id })),
+  },
+
   // Any other OpenAI-compatible images endpoint the operator wants to point
   // at - a self-hosted ComfyUI shim, Fireworks, DeepInfra, and so on. Same
   // reasoning as the text catalogue's `custom`: without it, a perfectly good
@@ -221,6 +247,9 @@ const PROVIDERS = {
 function providerKey_key(providerKey, getSetting) {
   const provider = PROVIDERS[providerKey];
   if (!provider) {
+    return '';
+  }
+  if (provider.no_auth) {
     return '';
   }
   if (provider.resolveKey) {
@@ -259,6 +288,9 @@ function parseId(id) {
 }
 
 function buildHeaders(provider, apiKey) {
+  if (provider.no_auth) {
+    return {};
+  }
   if (provider.authStyle === 'google') {
     // Google takes the key on the query string, not a header.
     return {};
@@ -283,7 +315,7 @@ async function fetchProviderModels(providerKey, apiKey, { force = false, baseUrl
   if (!provider) {
     return { error: 'Unknown provider.' };
   }
-  if (!apiKey) {
+  if (!apiKey && !provider.no_auth) {
     return { models: [], unconfigured: true };
   }
 
@@ -367,7 +399,9 @@ async function listConfiguredModels(getSetting, { force = false } = {}) {
     providers.push({
       key: providerKey,
       label,
-      configured: apiKey,
+      // A keyless provider counts as configured once it has somewhere to
+      // point; asking for a key it does not use would be nonsense.
+      configured: PROVIDERS[providerKey].no_auth ? Boolean(baseUrl) : apiKey,
       count: result.models ? result.models.length : 0,
       error: result.error || null,
     });
@@ -386,7 +420,7 @@ async function listConfiguredModels(getSetting, { force = false } = {}) {
  * Generates one image. Returns { base64 } or throws with a provider-worded
  * message. `getSetting` is injected for the same reason as above.
  */
-async function generate({ id, prompt, size, getSetting, timeoutMs = 180000 }) {
+async function generate({ id, prompt, size, getSetting, timeoutMs = 0 }) {
   const parsed = parseId(id);
   if (!parsed) {
     throw new Error(`"${id}" is not a valid image model id.`);
@@ -394,7 +428,7 @@ async function generate({ id, prompt, size, getSetting, timeoutMs = 180000 }) {
 
   const provider = PROVIDERS[parsed.provider];
   const apiKey = providerKey_key(parsed.provider, getSetting);
-  if (!apiKey) {
+  if (!apiKey && !provider.no_auth) {
     throw new Error(`No API key saved for ${provider.label}.`);
   }
 
@@ -414,8 +448,12 @@ async function generate({ id, prompt, size, getSetting, timeoutMs = 180000 }) {
 
   const headers = { 'Content-Type': 'application/json', ...buildHeaders(provider, apiKey) };
 
+  // A provider may declare its own ceiling - the self-hosted CPU service
+  // needs far longer than a cloud API would.
+  const effectiveTimeout = timeoutMs || provider.timeoutMs || 180000;
+
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  const timeout = setTimeout(() => controller.abort(), effectiveTimeout);
 
   try {
     const response = await fetch(url, {

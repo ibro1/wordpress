@@ -1,0 +1,11 @@
+# CPU-only torch. The default PyPI torch wheel pulls the full CUDA runtime
+# (~2GB of nvidia-* packages) that a CPU box can never use - see the
+# --extra-index-url in the Dockerfile, which resolves these to the CPU build.
+torch==2.4.1
+diffusers==0.31.0
+transformers==4.44.2
+accelerate==0.34.2
+safetensors==0.4.5
+fastapi==0.115.0
+uvicorn==0.30.6
+pillow==10.4.0

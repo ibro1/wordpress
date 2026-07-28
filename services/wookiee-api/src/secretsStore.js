@@ -52,6 +52,10 @@ const SECRET_KEYS = [
   'image_xai_api_key',
   'image_base_url',
   'image_api_key',
+  // Where the self-hosted generator lives. On the compose network that is
+  // http://wookiee_sd:7860/v1 - it is never exposed publicly, so there is
+  // no key to go with it.
+  'image_local_base_url',
   // Operator-level default image model, used when a licence has not been
   // given one of its own. Empty means the first allowed model wins.
   'image_model',

@@ -600,10 +600,20 @@ function wookiee_render_design_panel() {
 	$note   = (string) get_option( 'wookiee_design_note', '' );
 	$tokens = $params ? wookiee_derive_palette( $params ) : array();
 	$audit  = $tokens ? wookiee_audit_palette_contrast( $tokens, $params ) : array();
+
+	/*
+	 * On a first-time setup there is no store yet - activation creates no
+	 * pages - so "View store" pointed at a bare WordPress index, and "Undo
+	 * last change" offered to undo something that had never happened. Both
+	 * are shown only when they lead somewhere.
+	 */
+	$has_storefront = (int) get_option( 'page_on_front', 0 ) > 0;
+	$previous       = get_option( 'wookiee_design_params_previous', array() );
+	$has_previous   = is_array( $previous ) && $previous;
 	?>
 	<div class="wookiee-design-panel" style="background:#fff;border:1px solid #dcdcde;border-radius:4px;padding:16px 18px;margin:0 0 16px;">
 		<p class="description" style="margin:0 0 14px;">
-			The look of your <strong>storefront</strong> - homepage, shop, product and About pages. The AI designs it from your niche: it chooses a hue anywhere on the colour wheel plus spacing, density and layout, and the theme works out the actual colours from that, checking every text/background pair against WCAG contrast rules before anything goes live. Page <em>wording</em> is separate: see the Homepage Copy and About &amp; Contact Copy tabs.
+			The look of your <strong>storefront</strong> - homepage, shop, product and About pages. The AI designs it from your niche: it chooses a hue anywhere on the colour wheel plus spacing, density and layout, and the theme works out the actual colours from that, checking every text/background pair against WCAG contrast rules before anything goes live. Page <em>wording</em> is generated separately.
 		</p>
 
 		<?php if ( $params ) : ?>
@@ -644,10 +654,12 @@ function wookiee_render_design_panel() {
 			<button type="button" class="button button-primary" id="wookiee-design-generate">
 				<?php echo $params ? 'Generate a different design' : 'Design my store with AI'; ?>
 			</button>
-			<?php if ( $params ) : ?>
+			<?php if ( $params && $has_previous ) : ?>
 				<button type="button" class="button" id="wookiee-design-revert">Undo last change</button>
 			<?php endif; ?>
-			<a href="<?php echo esc_url( home_url( '/' ) ); ?>" target="_blank" class="button">View store</a>
+			<?php if ( $has_storefront ) : ?>
+				<a href="<?php echo esc_url( home_url( '/' ) ); ?>" target="_blank" class="button">View store</a>
+			<?php endif; ?>
 		</div>
 		<p id="wookiee-design-status" class="description" style="margin-top:10px;"></p>
 	</div>

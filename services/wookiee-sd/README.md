@@ -9,14 +9,21 @@ licence the same way you grant `openai:*` ones.
 
 **This host has no GPU, and that is the dominant fact about this service.**
 
-| Model | Steps | Rough time per image, CPU | Verdict |
-| --- | --- | --- | --- |
-| DreamShaper 8 LCM | 6 | tens of seconds | usable |
-| Realistic Vision V5.1 | 25 | several minutes | marginal |
+**Measured on the production box** at 768x512 with `TORCH_THREADS=4`:
+**~18 seconds per denoising step.**
 
-Those are estimates from the step counts and the fact that this is float32
-CPU inference — they have not been measured on your box. Measure before you
-put numbers in front of a customer:
+| Model | Steps | Time per image | A 3-image rebrand | Verdict |
+| --- | --- | --- | --- | --- |
+| DreamShaper 8 LCM | 6 | **~1m 48s** | ~6 minutes | usable |
+| Realistic Vision V5.1 | 25 | **~7-8 min** | ~25 minutes | too slow to sell as-is |
+
+Realistic Vision at 25 steps lands near the 600s ceiling the WordPress end
+allows, with little margin — under load it will start failing steps. Before
+offering it, either drop `SD_REALISTIC_VISION_STEPS` to ~15 (≈4.5 min) or
+raise `SD_TORCH_THREADS`, which is the bigger lever: 4 is deliberately
+conservative and this box has cores to spare.
+
+Re-measure after changing either:
 
 ```bash
 docker compose exec wookiee_sd python -c "
@@ -28,6 +35,17 @@ t=time.time(); urllib.request.urlopen(r,timeout=1800).read(); print(f'{time.time
 
 Run it twice. The first call also downloads ~2GB of weights and loads them,
 so only the second is representative.
+
+### Prompt length
+
+SD1.5's CLIP encoder caps at **77 tokens** and silently discards the rest.
+The theme's image prompt is ~205 tokens, so two thirds of it — every quality
+requirement — reached the model as nothing at all. `_prepare_prompt()` now
+drops the instruction-style requirements block (Stable Diffusion is not
+instruction-following, and a negation in a positive prompt reliably summons
+what it forbids), keeps the description, and appends compact photographic
+tags. The response reports `prompt_tokens` and `prompt_sent` so this stays
+visible rather than living in a log warning.
 
 The timeout chain is 600s at the WordPress end and 900s in the backend. A
 Realistic Vision render that exceeds 600s fails the step — the Rebrand screen

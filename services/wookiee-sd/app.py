@@ -6,11 +6,12 @@ Speaks the OpenAI images wire format (`GET /v1/models`,
 plugs into the existing image catalogue without the backend needing a bespoke
 adapter for it.
 
-CPU REALITY, stated plainly because it drives every decision below: SD1.5 on
-a CPU is slow. DreamShaper 8 LCM runs in 4-8 denoising steps and lands in the
-tens of seconds; Realistic Vision V5.1 wants 25-30 steps and takes multiple
-minutes. Neither is going to feel like calling OpenAI. The mitigations here
-are the ones that actually matter without a GPU:
+CPU REALITY, stated plainly because it drives every decision below. Measured
+on the production box at 768x512 with TORCH_THREADS=4: roughly 18 SECONDS PER
+DENOISING STEP. So DreamShaper 8 LCM at 6 steps is about 1m48s per image, and
+Realistic Vision V5.1 at 25 steps is around 7-8 minutes. Nothing here is going
+to feel like calling OpenAI. The mitigations that actually matter without a
+GPU:
 
   * Generate at SD1.5's trained resolution (512 on the short edge) and
     upscale to the requested size. Asking SD1.5 for 1536x1024 directly is
@@ -25,6 +26,7 @@ are the ones that actually matter without a GPU:
 import base64
 import io
 import os
+import re
 import threading
 import time
 
@@ -61,6 +63,14 @@ CACHE_DIR = os.getenv("HF_HOME", "/models")
 # Quality floor for a store photograph. Applied to every request so the
 # operator does not have to remember it, and so the two checkpoints produce
 # comparably clean output.
+# Appended to every positive prompt. Compact on purpose: CLIP has 77 tokens
+# to spend and the subject deserves most of them.
+STYLE_SUFFIX = os.getenv(
+    "STYLE_SUFFIX",
+    "product photography, natural light, shallow depth of field, "
+    "uncluttered composition, empty space to one side",
+)
+
 NEGATIVE_PROMPT = os.getenv(
     "NEGATIVE_PROMPT",
     "text, watermark, signature, logo, lettering, caption, username, "
@@ -156,6 +166,47 @@ def _generation_size(size):
     return (gen_w, gen_h), (out_w, out_h)
 
 
+def _prepare_prompt(pipe, prompt):
+    """
+    Fits a prompt written for a hosted model into what SD1.5 can actually read.
+
+    Two separate problems, both silent before this existed:
+
+    1. CLIP hard-caps at 77 tokens and DROPS the remainder without failing.
+       The theme's prompt runs to ~205 tokens, so roughly two thirds of it -
+       every one of the quality requirements - never reached the model at all.
+
+    2. Those requirements are instruction-style prose ("do not substitute a
+       generic lifestyle scene"). Stable Diffusion is not instruction
+       following; it matches CLIP similarity. A negation in a POSITIVE prompt
+       reliably summons the thing it forbids, because the tokens are present
+       either way. Those constraints belong in the negative prompt, which
+       already carries them.
+
+    So: keep the descriptive lead, drop the requirements block, append compact
+    photographic tags, and truncate on a real token boundary if it is still
+    long - deliberately rather than letting CLIP do it silently.
+    """
+    lead = re.split(r"\n\s*(?:Requirements?|Rules?)\s*:", prompt, maxsplit=1)[0]
+    lead = re.sub(r"\s+", " ", lead).strip()
+
+    tokenizer = pipe.tokenizer
+    limit = tokenizer.model_max_length
+
+    suffix_len = len(tokenizer(STYLE_SUFFIX, truncation=False).input_ids)
+    # -2 for the BOS/EOS the tokenizer adds around the whole thing.
+    budget = max(16, limit - suffix_len - 2)
+
+    words = lead.split()
+    while words and len(tokenizer(" ".join(words), truncation=False).input_ids) > budget:
+        words.pop()
+    lead = " ".join(words)
+
+    composed = f"{lead}, {STYLE_SUFFIX}" if lead else STYLE_SUFFIX
+    used = len(tokenizer(composed, truncation=False).input_ids)
+    return composed, used
+
+
 class GenerateRequest(BaseModel):
     prompt: str
     model: str = "dreamshaper-8-lcm"
@@ -211,8 +262,9 @@ def generate(req: GenerateRequest):
     with _lock:
         try:
             pipe = _load(key)
+            prompt, prompt_tokens = _prepare_prompt(pipe, req.prompt)
             result = pipe(
-                prompt=req.prompt,
+                prompt=prompt,
                 negative_prompt=NEGATIVE_PROMPT,
                 num_inference_steps=spec["steps"],
                 guidance_scale=spec["guidance"],
@@ -241,5 +293,9 @@ def generate(req: GenerateRequest):
             "upscaled_to": f"{out_w}x{out_h}",
             "steps": spec["steps"],
             "seconds": round(time.time() - started, 1),
+            # Surfaced so a prompt silently losing its tail is visible in the
+            # response rather than only in a warning buried in the logs.
+            "prompt_tokens": prompt_tokens,
+            "prompt_sent": prompt,
         },
     }

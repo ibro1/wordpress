@@ -107,7 +107,16 @@ function wookiee_restore_before_rebrand() {
  * guess about which step is running.
  */
 function wookiee_rebrand_steps() {
-	$steps = array( 'design' => 'Colours &amp; layout' );
+	$steps = array();
+
+	// First: an old catalogue is the loudest thing contradicting a new
+	// niche, and clearing it before the copy is written means the store is
+	// never briefly showing camping gear copy over bathroom shelves.
+	if ( post_type_exists( 'product' ) ) {
+		$steps['products'] = 'Clear old products';
+	}
+
+	$steps['design'] = 'Colours &amp; layout';
 
 	foreach ( wookiee_image_slots() as $slot => $meta ) {
 		$steps[ 'image_' . $slot ] = $meta['label'] . ' image';
@@ -208,6 +217,80 @@ function wookiee_describe_design( array $p ) {
 }
 
 /* -------------------------------------------------------------------------
+ * Products
+ * ---------------------------------------------------------------------- */
+
+/**
+ * How many products a rebrand would clear. Shown on the button's label so
+ * the operator sees the real number before agreeing to it, rather than
+ * finding out afterwards.
+ */
+function wookiee_rebrand_product_count() {
+	if ( ! post_type_exists( 'product' ) ) {
+		return 0;
+	}
+	$counts = wp_count_posts( 'product' );
+	return (int) $counts->publish + (int) $counts->draft + (int) $counts->pending + (int) $counts->private;
+}
+
+/**
+ * Moves every product to the Trash and records which ones, so Undo can put
+ * them back.
+ *
+ * Trash rather than wp_delete_post(): a rebrand is reversible in every other
+ * respect, and permanently destroying a catalogue - which may have order
+ * history pointing at it - is not something a colours-and-copy action should
+ * do irreversibly. They stay in Products > Trash either way.
+ */
+function wookiee_rebrand_trash_products() {
+	if ( ! post_type_exists( 'product' ) ) {
+		return 0;
+	}
+
+	// 'any' already excludes trashed posts, so re-running this does not
+	// re-trash what a previous run cleared.
+	$ids = get_posts( array(
+		'post_type'      => 'product',
+		'post_status'    => 'any',
+		'numberposts'    => -1,
+		'fields'         => 'ids',
+		'suppress_filters' => false,
+	) );
+
+	$trashed = array();
+	foreach ( $ids as $id ) {
+		if ( wp_trash_post( $id ) ) {
+			$trashed[] = (int) $id;
+		}
+	}
+
+	update_option( 'wookiee_rebrand_trashed_products', $trashed );
+	return count( $trashed );
+}
+
+/**
+ * Puts back what the last rebrand trashed. wp_untrash_post() restores each
+ * product to the status it had before, not a blanket draft, so a published
+ * catalogue comes back published.
+ */
+function wookiee_rebrand_restore_products() {
+	$ids = get_option( 'wookiee_rebrand_trashed_products', array() );
+	if ( ! is_array( $ids ) || ! $ids ) {
+		return 0;
+	}
+
+	$restored = 0;
+	foreach ( $ids as $id ) {
+		if ( wp_untrash_post( (int) $id ) ) {
+			$restored++;
+		}
+	}
+
+	delete_option( 'wookiee_rebrand_trashed_products' );
+	return $restored;
+}
+
+/* -------------------------------------------------------------------------
  * Run state
  *
  * The step chain is driven by the browser, so before this existed a refresh
@@ -233,6 +316,13 @@ function wookiee_rebrand_run() {
  */
 function wookiee_rebrand_begin_run( $brief, array $step_keys ) {
 	wookiee_snapshot_before_rebrand();
+
+	/*
+	 * Drop the previous run's trashed-product list. Without this, a second
+	 * rebrand that does NOT clear products would leave the first run's list
+	 * in place, and Undo would resurrect a catalogue from two rebrands ago.
+	 */
+	delete_option( 'wookiee_rebrand_trashed_products' );
 
 	$steps = array();
 	foreach ( $step_keys as $key ) {
@@ -287,6 +377,13 @@ function wookiee_run_rebrand_step( $step, $brief ) {
 	}
 
 	update_option( 'wookiee_niche_brief', $brief );
+
+	if ( 'products' === $step ) {
+		$n = wookiee_rebrand_trash_products();
+		return $n
+			? $n . ' product' . ( 1 === $n ? '' : 's' ) . ' moved to Trash'
+			: 'no products to clear';
+	}
 
 	// Image steps are named image_<slot>, so one branch covers every slot and
 	// adding a slot needs no change here.
@@ -402,12 +499,16 @@ function wookiee_rebrand_start_handler() {
 		wp_send_json_error( array( 'message' => 'Describe your store in a sentence first.' ) );
 	}
 
-	$want_images = ! empty( $_POST['images'] );
-	$image_steps = wookiee_rebrand_image_steps();
+	$want_images   = ! empty( $_POST['images'] );
+	$want_products = ! empty( $_POST['products'] );
+	$image_steps   = wookiee_rebrand_image_steps();
 
 	$keys = array();
 	foreach ( array_keys( wookiee_rebrand_steps() ) as $key ) {
 		if ( ! $want_images && in_array( $key, $image_steps, true ) ) {
+			continue;
+		}
+		if ( ! $want_products && 'products' === $key ) {
 			continue;
 		}
 		$keys[] = $key;
@@ -446,9 +547,12 @@ function wookiee_rebrand_undo_handler() {
 		wp_send_json_error( array( 'message' => 'There is no previous version to restore.' ) );
 	}
 
+	$restored = wookiee_rebrand_restore_products();
+
 	// The run record describes a rebrand that no longer applies to anything.
 	delete_option( 'wookiee_rebrand_run' );
-	wp_send_json_success();
+
+	wp_send_json_success( array( 'products_restored' => $restored ) );
 }
 
 function wookiee_render_rebrand_page() {
@@ -457,8 +561,40 @@ function wookiee_render_rebrand_page() {
 	$tokens   = $params ? wookiee_derive_palette( $params ) : array();
 	$has_undo = (bool) get_option( 'wookiee_rebrand_snapshot', array() );
 	?>
+	<?php
+	/*
+	 * After a finished run the store has new branding and, if products were
+	 * cleared, an empty catalogue - which is a dead end unless the next step
+	 * is named. This points at it rather than leaving the operator to find
+	 * the Product Generator on their own.
+	 */
+	$wookiee_run      = wookiee_rebrand_run();
+	$wookiee_finished = $wookiee_run && wookiee_rebrand_run_is_finished( $wookiee_run );
+	$wookiee_cleared  = $wookiee_finished
+		&& isset( $wookiee_run['steps']['products'] )
+		&& 'done' === $wookiee_run['steps']['products']['status'];
+	?>
 	<div class="wrap">
 		<h1>Rebrand store</h1>
+
+		<?php if ( $wookiee_finished ) : ?>
+			<div class="notice notice-success" style="margin:16px 0;padding:14px 16px;">
+				<p style="font-size:14px;margin:0 0 6px;">
+					<strong>Rebrand finished.</strong>
+					<?php if ( $wookiee_cleared ) : ?>
+						The colours, layout and copy now describe your new niche, and the old products are in the Trash &mdash; so the store has nothing to sell yet.
+					<?php else : ?>
+						The colours, layout and copy now describe your new niche.
+					<?php endif; ?>
+				</p>
+				<p style="margin:0;">
+					<a href="<?php echo esc_url( admin_url( 'admin.php?page=wookiee-product-generator' ) ); ?>" class="button button-primary">
+						<?php echo $wookiee_cleared ? 'Add products &rarr;' : 'Go to Product Generator &rarr;'; ?>
+					</a>
+					<a href="<?php echo esc_url( home_url( '/' ) ); ?>" target="_blank" class="button" style="margin-left:6px;">View store</a>
+				</p>
+			</div>
+		<?php endif; ?>
 		<p class="description" style="max-width:760px;font-size:14px;">
 			Describe the store in a sentence. This rewrites the <strong>look</strong> (colours, spacing, hero and layout) and the <strong>words</strong> (homepage, About and Contact) together, in one pass, so they match each other. Individual fields can still be adjusted afterwards on <a href="<?php echo esc_url( admin_url( 'admin.php?page=wookiee-settings' ) ); ?>">Settings</a>.
 		</p>
@@ -487,7 +623,26 @@ function wookiee_render_rebrand_page() {
 			<?php
 			$placeholder_slots = array_filter( array_keys( wookiee_image_slots() ), 'wookiee_image_is_placeholder' );
 			$images_default    = ! empty( $placeholder_slots );
+			$product_count     = wookiee_rebrand_product_count();
 			?>
+
+			<?php if ( post_type_exists( 'product' ) ) : ?>
+				<div style="margin-top:16px;padding:12px 14px;background:#f6f7f7;border-radius:4px;">
+					<label style="display:flex;gap:8px;align-items:flex-start;cursor:pointer;">
+						<input type="checkbox" id="wookiee-rebrand-products" checked style="margin-top:3px;">
+						<span>
+							<strong>Clear the old products</strong>
+							<span style="display:block;font-size:12px;color:#646970;margin-top:2px;">
+								<?php if ( $product_count ) : ?>
+									Moves all <?php echo esc_html( $product_count ); ?> current product<?php echo 1 === $product_count ? '' : 's'; ?> to the Trash, so the store is not selling the old niche under the new branding. Undo puts them back, and they stay in <a href="<?php echo esc_url( admin_url( 'edit.php?post_status=trash&post_type=product' ) ); ?>">Products &rsaquo; Trash</a> either way.
+								<?php else : ?>
+									There are no products to clear right now.
+								<?php endif; ?>
+							</span>
+						</span>
+					</label>
+				</div>
+			<?php endif; ?>
 			<div style="margin-top:16px;padding:12px 14px;background:#f6f7f7;border-radius:4px;">
 				<label style="display:flex;gap:8px;align-items:flex-start;cursor:pointer;">
 					<input type="checkbox" id="wookiee-rebrand-images" <?php checked( $images_default ); ?> style="margin-top:3px;">
@@ -635,9 +790,12 @@ function wookiee_render_rebrand_page() {
 			go.disabled = true;
 			go.textContent = 'Starting\u2026';
 
+			var productsBox = document.getElementById( 'wookiee-rebrand-products' );
+
 			post( 'wookiee_rebrand_start', {
 				brief: brief,
 				images: document.getElementById( 'wookiee-rebrand-images' ).checked ? '1' : '',
+				products: ( productsBox && productsBox.checked ) ? '1' : '',
 			} ).then( function ( res ) {
 				if ( ! res || ! res.success ) {
 					go.disabled = false;
@@ -704,7 +862,7 @@ function wookiee_render_rebrand_page() {
 		var undo = document.getElementById( 'wookiee-rebrand-undo' );
 		if ( undo ) {
 			undo.addEventListener( 'click', function () {
-				if ( ! window.confirm( 'Put back the design and copy from before the last rebrand?' ) ) { return; }
+				if ( ! window.confirm( 'Put back the design, copy, images and any trashed products from before the last rebrand?' ) ) { return; }
 				undo.disabled = true;
 				post( 'wookiee_rebrand_undo' ).then( function () { window.location.reload(); } );
 			} );

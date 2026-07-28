@@ -62,7 +62,11 @@ function wookiee_settings_fields() {
 		// (llm_model's options are built by wookiee_llm_model_options() below,
 		// from whatever the backend says this activation code may use.)
 		'contact_phone'      => array( 'label' => 'Contact phone', 'default' => '+44 20 8472 6126', 'type' => 'text' ),
-		'support_hours'      => array( 'label' => 'Support hours', 'default' => 'Monday to Friday, 9am - 5pm', 'type' => 'text' ),
+		// A full sentence, not a fragment, because it is printed verbatim on the
+		// Contact page and fed verbatim into the policy prompts. It names the
+		// timezone and the public-holiday exclusion, both of which a UK
+		// customer needs and neither of which "9am - 5pm" conveys.
+		'support_hours'      => array( 'label' => 'Support hours', 'default' => 'Customer-support hours are Monday to Friday, 9:00am to 5:00pm UK local time, excluding public holidays.', 'type' => 'textarea', 'prefill' => true ),
 		'business_name'      => array( 'label' => 'Registered company name', 'default' => 'Wookiee Decor Ltd', 'type' => 'text' ),
 		'registered_address'  => array( 'label' => 'Registered office address', 'default' => "Wookiee Decor Ltd\n28 Johnston Park, Cowdenbeath\nKY4 9AZ, United Kingdom", 'type' => 'textarea' ),
 		'company_number'     => array( 'label' => 'Company number or name', 'default' => 'SC769264 or Netlinko Ltd', 'type' => 'text' ),
@@ -281,8 +285,22 @@ function wookiee_render_settings_field_row( $key, $field ) {
 	<tr>
 		<th scope="row"><label for="wookiee_setting_<?php echo esc_attr( $key ); ?>"><?php echo esc_html( $field['label'] ); ?></label></th>
 		<td>
+			<?php
+			/*
+			 * A field marked 'prefill' shows its default as a real, editable
+			 * value rather than as grey placeholder text.
+			 *
+			 * Only for defaults that are genuinely right for any store - the
+			 * support-hours sentence, for example. Emphatically NOT for the
+			 * business-identity fields, whose defaults are demo data (a made-up
+			 * company, a made-up address); prefilling those would put somebody
+			 * else's details into a real shop and make them look confirmed.
+			 */
+			$wookiee_stored  = get_option( 'wookiee_setting_' . $key, '' );
+			$wookiee_prefill = ( '' === $wookiee_stored && ! empty( $field['prefill'] ) ) ? $field['default'] : $wookiee_stored;
+			?>
 			<?php if ( 'textarea' === $field['type'] ) : ?>
-				<textarea name="wookiee_setting_<?php echo esc_attr( $key ); ?>" id="wookiee_setting_<?php echo esc_attr( $key ); ?>" rows="3" class="large-text" placeholder="<?php echo esc_attr( $field['default'] ); ?>"><?php echo esc_textarea( get_option( 'wookiee_setting_' . $key, '' ) ); ?></textarea>
+				<textarea name="wookiee_setting_<?php echo esc_attr( $key ); ?>" id="wookiee_setting_<?php echo esc_attr( $key ); ?>" rows="3" class="large-text" placeholder="<?php echo esc_attr( $field['default'] ); ?>"><?php echo esc_textarea( $wookiee_prefill ); ?></textarea>
 			<?php elseif ( 'select' === $field['type'] ) : ?>
 				<?php $current = get_option( 'wookiee_setting_' . $key, '' ); $current = '' !== $current ? $current : $field['default']; ?>
 				<select name="wookiee_setting_<?php echo esc_attr( $key ); ?>" id="wookiee_setting_<?php echo esc_attr( $key ); ?>">
@@ -294,7 +312,7 @@ function wookiee_render_settings_field_row( $key, $field ) {
 				<input type="password" name="wookiee_setting_<?php echo esc_attr( $key ); ?>" id="wookiee_setting_<?php echo esc_attr( $key ); ?>" value="<?php echo esc_attr( get_option( 'wookiee_setting_' . $key, '' ) ); ?>" placeholder="<?php echo esc_attr( $field['default'] ); ?>" class="regular-text wookiee-reveal-input" autocomplete="off">
 				<button type="button" class="button wookiee-reveal-btn" data-target="wookiee_setting_<?php echo esc_attr( $key ); ?>">Show</button>
 			<?php else : ?>
-				<input type="<?php echo 'url' === $field['type'] ? 'url' : ( 'email' === $field['type'] ? 'email' : 'text' ); ?>" name="wookiee_setting_<?php echo esc_attr( $key ); ?>" id="wookiee_setting_<?php echo esc_attr( $key ); ?>" value="<?php echo esc_attr( get_option( 'wookiee_setting_' . $key, '' ) ); ?>" placeholder="<?php echo esc_attr( $field['default'] ); ?>" class="regular-text" autocomplete="off">
+				<input type="<?php echo 'url' === $field['type'] ? 'url' : ( 'email' === $field['type'] ? 'email' : 'text' ); ?>" name="wookiee_setting_<?php echo esc_attr( $key ); ?>" id="wookiee_setting_<?php echo esc_attr( $key ); ?>" value="<?php echo esc_attr( $wookiee_prefill ); ?>" placeholder="<?php echo esc_attr( $field['default'] ); ?>" class="regular-text" autocomplete="off">
 			<?php endif; ?>
 			<?php if ( 'company_number' === $key ) : ?>
 				<p>

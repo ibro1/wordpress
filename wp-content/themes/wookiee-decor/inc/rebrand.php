@@ -851,12 +851,20 @@ function wookiee_render_rebrand_page() {
 
 		function row( key ) { return document.getElementById( 'wookiee-step-' + key ); }
 
+		/*
+		 * The last line of defence against a step reading '<label> undefined'.
+		 * Every caller is supposed to pass a string, and each has its own
+		 * fallback, but a missing detail is a cosmetic problem on a step that
+		 * actually succeeded - it must never be shown as if something is
+		 * wrong. Coerced here so no future caller can reintroduce it.
+		 */
 		function mark( key, icon, colour, detail ) {
 			var el = row( key );
 			if ( ! el ) { return; }
 			el.querySelector( '.wookiee-step-icon' ).innerHTML = icon;
 			el.querySelector( '.wookiee-step-icon' ).style.color = colour;
-			el.querySelector( '.wookiee-step-detail' ).innerHTML = detail;
+			el.querySelector( '.wookiee-step-detail' ).innerHTML =
+				( detail === undefined || detail === null || '' === detail ) ? 'done' : detail;
 		}
 
 		function renderSteps( keys, statuses ) {
@@ -982,7 +990,10 @@ function wookiee_render_rebrand_page() {
 						}
 						// The step now runs detached; the reply only confirms
 						// it was queued. Its outcome comes from polling.
-						return res.data.queued ? await_step( key ) : { ok: true, detail: detailFrom( res.data ) };
+						if ( res.data.queued ) { return await_step( key ); }
+						// Synchronous reply - only reachable if an older
+						// backend is answering. Its detail may be absent.
+						return { ok: true, detail: detailFrom( res.data ) || 'done' };
 					} ).catch( function () {
 						return { ok: false, detail: 'Could not start this step. Reload to carry on where it stopped.' };
 					} ).then( function ( outcome ) {

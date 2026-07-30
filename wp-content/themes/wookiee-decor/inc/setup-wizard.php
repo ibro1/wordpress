@@ -326,7 +326,7 @@ function wookiee_render_setup_wizard_page() {
 		<?php // ---------------- Step 3: Shipping & returns ---------------- ?>
 		<div class="wookiee-setup-step" data-step-panel="shipping" hidden>
 			<h2>Shipping &amp; returns</h2>
-			<?php wookiee_render_settings_fields_table( array( 'shipping_rate', 'shipping_dispatch', 'handling_time', 'transit_time', 'estimated_delivery', 'returns_address', 'returns_period_days', 'cancellation_period', 'restocking_fee' ) ); ?>
+			<?php wookiee_render_settings_fields_table( array( 'shipping_rate', 'shipping_dispatch', 'handling_time', 'transit_time', 'estimated_delivery', 'dispatch_origin', 'returns_address', 'returns_period_days', 'cancellation_period', 'restocking_fee' ) ); ?>
 			<p>
 				<?php if ( $shipping_zone ) : ?>
 					Live checkout shipping is active: £<?php echo esc_html( wookiee_get_setting( 'shipping_rate' ) ); ?> flat rate for United Kingdom, kept in sync with the rate above.

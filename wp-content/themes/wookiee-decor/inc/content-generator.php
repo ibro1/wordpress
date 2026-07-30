@@ -767,6 +767,10 @@ function wookiee_build_content_prompt( $key, $brief, $previous_audit = '' ) {
 			. "- Where genuinely relevant, refer to the store's other policies by name (e.g. mention the Privacy Policy when discussing personal data, the Returns Policy when discussing refunds) rather than repeating their content.\n"
 			. "- State the business's full legal/trading name and company registration number explicitly within the body text itself (not only implied) - UK company law expects this on formal business documents, and it must appear even if it feels repetitive with other sections.\n"
 			. "- Do NOT tell the reader to consult a solicitor, and do NOT state that this is not legal advice. This page is the shop speaking to its customers; advice about having it reviewed is for the shop owner, not for the person reading it, and printing it undermines the document in front of the very people it is written for.\n"
+			. "- Open with a SCOPE paragraph: what this policy covers, which goods it applies to, and which country's customers. Then a DEFINITIONS line fixing the ambiguous terms it uses - that 'we', 'us' and 'our' mean the named legal entity, and that 'UK local time' means Greenwich Mean Time or British Summer Time as applicable.\n"
+			. "- Include a statutory-rights savings clause, in substance: nothing in this policy excludes, restricts or replaces any statutory consumer right or remedy that cannot lawfully be excluded or restricted. A policy that reads as if it overrides consumer law is worse than no policy.\n"
+			. "- State amounts in pounds sterling and say so. State time periods in CALENDAR days (or working days) and say which - 'within 14 days' is ambiguous and ambiguity is what disputes are made of.\n"
+			. "- Be concrete wherever a real value exists in the business details above. A number, a place name or a named provider is worth a paragraph of careful phrasing; 'promptly', 'as soon as possible' and 'a reasonable period' tell the reader nothing and commit the business to nothing.\n"
 			. "- Structure it with SECTION HEADINGS. Start with the page title on its own line, then break the body into clearly-labelled sections, each heading on its own line prefixed with '## ' (e.g. '## How long delivery takes'). A wall of undifferentiated paragraphs is unreadable, and a customer looking for one specific answer will not find it.\n"
 			. "- Name the sections after what a customer is actually looking for, in their words, rather than legal register: 'How long delivery takes', not 'Delivery Timeframes Provision'.\n"
 			. "- Be thorough. Aim for 700-1100 words. Cover the ordinary awkward cases as well as the happy path - what happens when something is late, damaged, undeliverable, or the customer changes their mind - because those are the situations that send someone to this page in the first place.\n"
@@ -788,14 +792,24 @@ function wookiee_build_content_prompt( $key, $brief, $previous_audit = '' ) {
 		}
 
 		if ( 'privacy' === $key ) {
-			$prompt .= "\n\nInclude a full postal address for privacy-related enquiries and complaints, not just the contact email - use the registered address given above.\n"
+			$prompt .= "\n\nName the data controller explicitly - the registered legal entity, not the trading name alone.\n"
+				. "Be accurate about payment data: the payment provider collects card details directly through its own secure interface, and the shop itself does not receive or store complete card numbers or security codes. Claiming to hold less data than you do is as wrong as claiming to hold more, so describe what the shop genuinely receives - typically a masked card reference, an amount, and an authorisation result.\n"
+				. "Say that creating an account is optional where guest checkout is offered, and list what is additionally processed for account holders.\n"
+				. "Cover the evidence customers send in support of a claim - photographs or video of damage or incorrect delivery - since that is personal data the shop asks for and rarely mentions.\n"
+				. "Include a full postal address for privacy-related enquiries and complaints, not just the contact email - use the registered address given above.\n"
 				. "Describe HOW consent is obtained for anything that requires it (e.g. a checkbox at checkout or on a sign-up form) and explicitly how a customer can withdraw that consent at any time - do not just state that consent is a legal basis without explaining the mechanism.\n"
 				. "Include a brief, specific summary of what cookies are used for (not just a reference), and provide the actual page path to the full Cookie Policy (/cookie/) so it reads as a real link.\n"
 				. "Avoid generic filler phrases like \"we value your privacy\" with nothing concrete behind them - every sentence should state a specific, real practice.";
 		}
 
 		if ( 'shipping' === $key ) {
-			$prompt .= "\n\nState the delivery timings EXPLICITLY and separately, using the real values given in the business details above: how long before an order is dispatched (handling time), how long it then takes in transit, and the total a customer should expect from order to doorstep. This is the single thing most people open a shipping page to find, and a policy that describes dispatch without ever saying when the parcel arrives has not answered it.\n"
+			$prompt .= "\n\nFULFILMENT TRANSPARENCY. State plainly where stock is held and where orders are dispatched from, using the 'Orders are dispatched from' value in the business details. This is the disclosure a payment provider or Google Merchant Center review looks for first, and its absence is what makes a store look like it is hiding a supply chain.\n"
+				. "If that value is empty or unclear, say honestly that dispatch locations vary by product and are confirmed on dispatch - do NOT claim UK-based fulfilment, a UK warehouse, or that nothing ships from overseas. Those are specific factual claims; stating them without knowing them is misrepresentation, and it is the kind that gets a merchant account suspended rather than warned.\n"
+				. "Say who fulfils orders - the business itself or a third party - and name the delivery providers in general or specific terms, making clear that a carrier transports parcels and does not select, store or pack them.\n"
+				. "Address the United Kingdom's edges explicitly: whether the Crown Dependencies (Jersey, Guernsey, the Isle of Man) and the offshore islands are covered, since they are commonly assumed to be included and are not part of the UK for delivery purposes.\n"
+				. "State whether the delivery charge is per order or per item, and whether collection in person is available - a registered office is not a shop, and customers do turn up.\n"
+				. "Commit to updating this page if the fulfilment arrangements materially change.\n\n"
+				. "State the delivery timings EXPLICITLY and separately, using the real values given in the business details above: how long before an order is dispatched (handling time), how long it then takes in transit, and the total a customer should expect from order to doorstep. This is the single thing most people open a shipping page to find, and a policy that describes dispatch without ever saying when the parcel arrives has not answered it.\n"
 				. "Also cover what happens when delivery goes wrong - a parcel that is late, lost, damaged in transit, or returned as undeliverable because nobody was in or the address was wrong - and say what the customer should do in each case.\n"
 				. "Name the delivery service/carrier used in general terms (e.g. \"a tracked UK courier service\") and confirm that tracking information is provided once an order is dispatched - do not invent a specific named carrier if none was given, but do not omit the topic either.\n"
 				. "If shipping costs are non-refundable in some circumstances, state clearly that this does not apply where the goods are faulty, not as described, or the order was cancelled under the customer's statutory rights - do not state a blanket non-refundable shipping rule without that carve-out.\n"
@@ -811,6 +825,14 @@ function wookiee_build_content_prompt( $key, $brief, $previous_audit = '' ) {
 		}
 
 		if ( 'returns' === $key ) {
+			$prompt .= "\n\nBe precise about the mechanics, because this is the policy customers argue over:\n"
+				. "- Say what the return window is counted FROM (the delivery date, not the order date), in calendar days, and that it is not extended for weekends or public holidays.\n"
+				. "- Say that where items in one order are delivered separately, each has its own window.\n"
+				. "- Define what condition a change-of-mind return must be in, concretely - unopened in original packaging, or unused - and state that this voluntary condition does not restrict statutory cancellation or faulty-goods rights.\n"
+				. "- Say WHO PAYS return postage in each case: the customer for change of mind, the business for goods that are faulty, damaged, unsafe, misdescribed, incomplete or wrongly supplied.\n"
+				. "- State the refund deadline in calendar days and that refunds go to the original payment method.\n"
+				. "- Cover the self-service cancellation window for an order not yet dispatched, using the cancellation period in the business details.\n";
+
 			$prompt .= "\n\nThis policy covers TWO distinct return rights, and a compliance audit has repeatedly flagged when these get conflated - keep them clearly separate:\n"
 				. "1. The UK statutory 14-day cancellation right under the Consumer Contracts Regulations (a cooling-off period counted from the day the customer receives the goods), which applies regardless of the store's own policy.\n"
 				. "2. This store's own voluntary returns period (the number of days given in the business details above), which EXTENDS the statutory minimum rather than replacing or shortening it.\n"
@@ -1333,13 +1355,52 @@ function wookiee_count_policy_pages_ai_generated() {
  * a plain LLM brainstorm otherwise, same fail-safe pattern as everywhere
  * else this integration is used.
  */
+/**
+ * Categories that are off-limits for a suggested niche.
+ *
+ * Skincare, cosmetics and anything health- or medical-adjacent are excluded
+ * deliberately. Two reasons, both learned the hard way:
+ *
+ *   - Google Merchant Center treats health and beauty claims as a high-risk
+ *     area. A small store selling them attracts scrutiny it cannot easily
+ *     answer, and a suspension takes the whole account, not one product.
+ *   - The supplier catalogs behind these stores carry very little genuine
+ *     skincare, so a skincare niche produces concepts nothing can fill - a
+ *     store with no products, which is worse than a duller niche with stock.
+ *
+ * Generic physical goods - clothing, furniture, pet, homeware - have neither
+ * problem.
+ */
+function wookiee_excluded_niche_terms() {
+	return array(
+		'skincare', 'skin care', 'cosmetic', 'makeup', 'make-up', 'beauty',
+		'medical', 'medicine', 'health', 'wellness', 'supplement', 'vitamin',
+		'pharmac', 'therapeutic', 'treatment', 'serum', 'cream', 'lotion',
+		'dermat', 'cbd', 'essential oil', 'slimming', 'detox',
+	);
+}
+
 function wookiee_niche_suggestion_seed_categories() {
+	// No beauty/skincare/wellness entries - see wookiee_excluded_niche_terms().
 	return array(
 		'home decor', 'kitchen gadgets', 'pet supplies', 'baby products', 'fitness equipment',
-		'garden tools', 'phone accessories', 'car accessories', 'beauty tools', 'office supplies',
-		'camping gear', 'craft supplies', 'health and wellness gadgets', 'jewellery', 'travel accessories',
-		'cleaning supplies', 'sports equipment', 'baking supplies', 'gaming accessories', 'skincare tools',
+		'garden tools', 'phone accessories', 'car accessories', 'office supplies',
+		'camping gear', 'craft supplies', 'jewellery', 'travel accessories',
+		'cleaning supplies', 'sports equipment', 'baking supplies', 'gaming accessories',
+		'clothing and accessories', 'home furniture', 'stationery', 'kids toys',
+		'bags and luggage', 'lighting', 'bedding and linens', 'tools and DIY',
 	);
+}
+
+/** True when a suggested brief strays into the excluded territory. */
+function wookiee_niche_is_excluded( $brief ) {
+	$haystack = strtolower( (string) $brief );
+	foreach ( wookiee_excluded_niche_terms() as $term ) {
+		if ( false !== strpos( $haystack, $term ) ) {
+			return true;
+		}
+	}
+	return false;
 }
 
 function wookiee_get_recent_niche_suggestions() {
@@ -1391,29 +1452,47 @@ function wookiee_suggest_niche_handler() {
 
 	$example = 'UK home-storage and organisation products - baskets, shelving, drawer organisers, aimed at small flats';
 
+	// Stated in the prompt as well as filtered afterwards. The filter is what
+	// guarantees it; the instruction is what stops most attempts wasting a
+	// retry.
+	$avoid_note = "\n\nHARD CONSTRAINT: do not suggest anything in skincare, cosmetics, beauty, personal care, health, wellness, supplements or any medical or therapeutic category, however lightly. These attract Google Merchant Center scrutiny a small store cannot answer, and the supplier catalogs behind these stores barely stock them. Suggest ordinary physical goods instead - clothing, homeware, furniture, pet, garden, hobby, kids, tools.\n";
+
 	if ( $grounded ) {
 		$prompt = "You are helping a UK dropshipping ecommerce store owner pick a promising single-niche to build a store around.\n\n"
 			. "Real UK search-volume and CPC data for several candidate categories, from Google Ads Keyword Planner:\n" . implode( "\n", $keyword_lines ) . "\n"
-			. $exclude_note . "\n"
+			. $exclude_note . $avoid_note . "\n"
 			. "Pick the ONE candidate niche from the data above with the best combination of genuine search demand (higher avg monthly searches) and reasonable ad cost (lower CPC/competition) for a small dropshipping store to realistically compete in.\n\n"
 			. "Respond with ONLY a single, concise niche brief in the same style as this example (one sentence, plain and specific, no markdown, no preamble/commentary): \"{$example}\"";
 	} else {
 		$prompt = "You are helping a UK dropshipping ecommerce store owner pick a promising single-niche to build a store around - one they might not have thought of themselves, but with genuine, steady consumer demand and realistic to source/ship as a small operation (lightweight, not fragile, not heavily regulated).\n"
-			. $exclude_note . "\n"
+			. $exclude_note . $avoid_note . "\n"
 			. "Suggest ONE such niche, favouring evergreen demand over fleeting trends.\n\n"
 			. "Respond with ONLY a single, concise niche brief in the same style as this example (one sentence, plain and specific, no markdown, no preamble/commentary): \"{$example}\"";
 	}
 
-	$text = wookiee_call_llm( $prompt, 200 );
-	if ( is_wp_error( $text ) ) {
-		wp_send_json_error( array( 'message' => $text->get_error_message() ) );
+	/*
+	 * Ask, check, ask again. A prompt constraint is a request, not a
+	 * guarantee - and "no skincare" is exactly the kind of rule a model
+	 * satisfies loosely ("natural beauty accessories"). The filter is what
+	 * actually holds the line; the retry gives it a second chance with the
+	 * refusal spelt out before giving up.
+	 */
+	$brief = '';
+	for ( $try = 0; $try < 2; $try++ ) {
+		$text = wookiee_call_llm( $try ? $prompt . "\n\nYour previous answer was in an excluded category. Suggest something entirely different - ordinary physical goods, nothing to do with skin, beauty, health or wellbeing." : $prompt, 200 );
+		if ( is_wp_error( $text ) ) {
+			wp_send_json_error( array( 'message' => $text->get_error_message() ) );
+		}
+
+		$candidate = trim( trim( wookiee_strip_code_fence( $text ) ), "\"' \t\n" );
+		if ( '' !== $candidate && ! wookiee_niche_is_excluded( $candidate ) ) {
+			$brief = $candidate;
+			break;
+		}
 	}
 
-	$brief = trim( wookiee_strip_code_fence( $text ) );
-	$brief = trim( $brief, "\"' \t\n" );
-
 	if ( '' === $brief ) {
-		wp_send_json_error( array( 'message' => 'Could not come up with a suggestion - try again.' ) );
+		wp_send_json_error( array( 'message' => 'Could not come up with a suggestion outside the excluded categories - try again.' ) );
 	}
 
 	wookiee_remember_niche_suggestion( $brief );

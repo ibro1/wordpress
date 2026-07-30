@@ -157,6 +157,12 @@ function wookiee_settings_fields() {
 		'handling_time'      => array( 'label' => 'Handling time (before dispatch)', 'default' => '1-2 business days', 'type' => 'text' , 'prefill' => true),
 		'transit_time'       => array( 'label' => 'Transit time (with the carrier)', 'default' => '2-3 business days', 'type' => 'text' , 'prefill' => true),
 		'estimated_delivery' => array( 'label' => 'Estimated delivery time (total)', 'default' => '3-5 business days', 'type' => 'text' , 'prefill' => true),
+		// Where stock actually ships from. There was no field for this, so the
+		// policies could not state it - and it is the disclosure Google
+		// Merchant Center cares most about for a dropshipping store. Left
+		// deliberately blank-by-default: an unanswered question is safer than
+		// a confident wrong answer about fulfilment.
+		'dispatch_origin'    => array( 'label' => 'Orders are dispatched from', 'default' => '', 'type' => 'textarea' ),
 		'restocking_fee'     => array( 'label' => 'Restocking fee policy', 'default' => 'We do not charge restocking fees', 'type' => 'text' , 'prefill' => true),
 		'cancellation_period' => array( 'label' => 'Cancellation period (after ordering)', 'default' => '24 hours', 'type' => 'text' , 'prefill' => true),
 		'facebook_url'       => array( 'label' => 'Facebook URL (leave blank to hide the icon)', 'default' => '', 'type' => 'url' ),
@@ -186,7 +192,7 @@ function wookiee_settings_tabs() {
 		),
 		'shipping' => array(
 			'label'  => 'Shipping & Returns',
-			'fields' => array( 'shipping_rate', 'shipping_dispatch', 'handling_time', 'transit_time', 'estimated_delivery', 'returns_address', 'returns_period_days', 'cancellation_period', 'restocking_fee' ),
+			'fields' => array( 'shipping_rate', 'shipping_dispatch', 'handling_time', 'transit_time', 'estimated_delivery', 'dispatch_origin', 'returns_address', 'returns_period_days', 'cancellation_period', 'restocking_fee' ),
 		),
 		'homepage' => array(
 			'label'  => 'Homepage Copy',

@@ -9,7 +9,17 @@
 <?php wp_body_open(); ?>
 
 <div class="announcement-bar">
-	<p>&pound;<?php echo esc_html( wookiee_get_setting( 'shipping_rate' ) ); ?> UK shipping &nbsp;&middot;&nbsp; 30-day hassle-free returns &nbsp;&middot;&nbsp; Secure checkout</p>
+	<?php
+	/*
+	 * No shipping price here. It was in this bar, in the hero stat badge and
+	 * in the trust bar - the same figure three times above the fold, which a
+	 * reviewer picked up immediately. The hero badge keeps the price, since it
+	 * is the element built to carry a number; this bar carries the returns
+	 * window and the checkout reassurance instead, and the trust bar carries
+	 * dispatch time. One fact, one place.
+	 */
+	?>
+	<p><?php echo esc_html( wookiee_get_setting( 'returns_period_days' ) ); ?>-day returns &nbsp;&middot;&nbsp; UK customer support &nbsp;&middot;&nbsp; Secure checkout</p>
 </div>
 
 <header class="site-header">

@@ -20,7 +20,26 @@
 		<div class="footer-col footer-col-brand">
 			<?php get_template_part( 'template-parts/site-logo', null, array( 'link_class' => 'footer-logo-link' ) ); ?>
 			<p class="footer-about-copy">
-				UK private-label home-storage brand operated by <?php echo esc_html( wookiee_get_setting( 'business_name' ) ); ?>.
+				<?php
+				/*
+				 * Was hardcoded to "UK private-label home-storage brand" - so a
+				 * skincare shop introduced itself as a storage brand in its own
+				 * footer, on every page. Uses the About page's lead sentence,
+				 * which is generated per store and says what this one actually
+				 * sells; the plain operator line is the fallback until that
+				 * exists.
+				 */
+				$wookiee_footer_about = trim( (string) get_option( 'wookiee_setting_about_hero_lead', '' ) );
+				if ( '' !== $wookiee_footer_about ) {
+					echo esc_html( $wookiee_footer_about );
+				} else {
+					printf(
+						/* translators: %s: registered business name. */
+						esc_html__( 'Operated by %s.', 'wookiee-commerce' ),
+						esc_html( wookiee_get_setting( 'business_name' ) )
+					);
+				}
+				?>
 			</p>
 			<?php
 			$wookiee_socials = array(

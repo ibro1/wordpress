@@ -767,13 +767,17 @@ function wookiee_build_content_prompt( $key, $brief, $previous_audit = '' ) {
 			. "- Where genuinely relevant, refer to the store's other policies by name (e.g. mention the Privacy Policy when discussing personal data, the Returns Policy when discussing refunds) rather than repeating their content.\n"
 			. "- State the business's full legal/trading name and company registration number explicitly within the body text itself (not only implied) - UK company law expects this on formal business documents, and it must appear even if it feels repetitive with other sections.\n"
 			. "- Do NOT tell the reader to consult a solicitor, and do NOT state that this is not legal advice. This page is the shop speaking to its customers; advice about having it reviewed is for the shop owner, not for the person reading it, and printing it undermines the document in front of the very people it is written for.\n"
+			. "- Open with a short PLAIN-ENGLISH SUMMARY headed '## The short version': three to five bullet-style sentences giving the answers most readers came for, before any formal wording. State that it is a summary and the detail below governs. Almost no store does this; it is the single thing that makes a policy page usable rather than merely present.\n"
+			. "- Give an effective date line ('Last updated: <month year>') using the current date, and say the current version is the one that applies to orders placed while it is published.\n"
+			. "- Name the actual legislation where it is relied on, in full and correctly: the Consumer Rights Act 2015, the Consumer Contracts (Information, Cancellation and Additional Charges) Regulations 2013, the Electronic Commerce (EC Directive) Regulations 2002, UK GDPR and the Data Protection Act 2018, the Privacy and Electronic Communications Regulations 2003. A named instrument is checkable; 'consumer law' is not.\n"
+			. "- Include a pricing and availability error clause: what happens if an item is listed at the wrong price or is unavailable after an order is placed - that the business may cancel and refund in full before dispatch, and that a customer is never charged more than the price shown at checkout without agreeing to it.\n"
 			. "- Open with a SCOPE paragraph: what this policy covers, which goods it applies to, and which country's customers. Then a DEFINITIONS line fixing the ambiguous terms it uses - that 'we', 'us' and 'our' mean the named legal entity, and that 'UK local time' means Greenwich Mean Time or British Summer Time as applicable.\n"
 			. "- Include a statutory-rights savings clause, in substance: nothing in this policy excludes, restricts or replaces any statutory consumer right or remedy that cannot lawfully be excluded or restricted. A policy that reads as if it overrides consumer law is worse than no policy.\n"
 			. "- State amounts in pounds sterling and say so. State time periods in CALENDAR days (or working days) and say which - 'within 14 days' is ambiguous and ambiguity is what disputes are made of.\n"
 			. "- Be concrete wherever a real value exists in the business details above. A number, a place name or a named provider is worth a paragraph of careful phrasing; 'promptly', 'as soon as possible' and 'a reasonable period' tell the reader nothing and commit the business to nothing.\n"
 			. "- Structure it with SECTION HEADINGS. Start with the page title on its own line, then break the body into clearly-labelled sections, each heading on its own line prefixed with '## ' (e.g. '## How long delivery takes'). A wall of undifferentiated paragraphs is unreadable, and a customer looking for one specific answer will not find it.\n"
 			. "- Name the sections after what a customer is actually looking for, in their words, rather than legal register: 'How long delivery takes', not 'Delivery Timeframes Provision'.\n"
-			. "- Be thorough. Aim for 700-1100 words. Cover the ordinary awkward cases as well as the happy path - what happens when something is late, damaged, undeliverable, or the customer changes their mind - because those are the situations that send someone to this page in the first place.\n"
+			. "- Be thorough. Aim for 1000-1500 words. Cover the ordinary awkward cases as well as the happy path - what happens when something is late, damaged, undeliverable, or the customer changes their mind - because those are the situations that send someone to this page in the first place.\n"
 			. "- Output ONLY the finished policy text. Plain paragraphs separated by blank lines, with '## ' section headings as described. No other markdown, no HTML, no commentary, no A/B/C-style breakdown - just the finished, publishable page.";
 
 		if ( in_array( $key, array( 'privacy', 'cookies' ), true ) ) {
@@ -792,7 +796,10 @@ function wookiee_build_content_prompt( $key, $brief, $previous_audit = '' ) {
 		}
 
 		if ( 'privacy' === $key ) {
-			$prompt .= "\n\nName the data controller explicitly - the registered legal entity, not the trading name alone.\n"
+			$prompt .= "\n\nGive RETENTION PERIODS as actual durations against each category of data - order and transaction records kept for six years to meet UK tax and accounting obligations, support correspondence for a stated period, marketing consent until withdrawn - not 'as long as necessary', which is the phrase every weak notice uses and which tells the reader nothing.\n"
+				. "Cover INTERNATIONAL TRANSFERS: whether personal data is transferred outside the UK, and if so that it is protected by UK adequacy regulations or the International Data Transfer Agreement/Addendum. Say honestly that common service providers may process data outside the UK rather than implying everything stays in the country.\n"
+				. "State the right to complain to the Information Commissioner's Office with its real contact route (ico.org.uk, helpline 0303 123 1113), and that the customer is encouraged but not required to raise it with the business first.\n"
+				. "Name the data controller explicitly - the registered legal entity, not the trading name alone.\n"
 				. "Be accurate about payment data: the payment provider collects card details directly through its own secure interface, and the shop itself does not receive or store complete card numbers or security codes. Claiming to hold less data than you do is as wrong as claiming to hold more, so describe what the shop genuinely receives - typically a masked card reference, an amount, and an authorisation result.\n"
 				. "Say that creating an account is optional where guest checkout is offered, and list what is additionally processed for account holders.\n"
 				. "Cover the evidence customers send in support of a claim - photographs or video of damage or incorrect delivery - since that is personal data the shop asks for and rarely mentions.\n"
@@ -804,7 +811,7 @@ function wookiee_build_content_prompt( $key, $brief, $previous_audit = '' ) {
 
 		if ( 'shipping' === $key ) {
 			$prompt .= "\n\nFULFILMENT TRANSPARENCY. State plainly where stock is held and where orders are dispatched from, using the 'Orders are dispatched from' value in the business details. This is the disclosure a payment provider or Google Merchant Center review looks for first, and its absence is what makes a store look like it is hiding a supply chain.\n"
-				. "If that value is empty or unclear, say honestly that dispatch locations vary by product and are confirmed on dispatch - do NOT claim UK-based fulfilment, a UK warehouse, or that nothing ships from overseas. Those are specific factual claims; stating them without knowing them is misrepresentation, and it is the kind that gets a merchant account suspended rather than warned.\n"
+				. "Use whatever that field says, verbatim in substance - it may describe a UK warehouse, several locations, or supplier partners. If it is empty, do not fill the gap: say that dispatch details are confirmed on dispatch, and make no claim about warehouse location, country of origin or who fulfils. That is the same rule already applied to the company number and registered address above - state what the business has told you and nothing else - and it matters more here because a wrong answer about fulfilment is the kind a payment provider acts on.\n"
 				. "Say who fulfils orders - the business itself or a third party - and name the delivery providers in general or specific terms, making clear that a carrier transports parcels and does not select, store or pack them.\n"
 				. "Address the United Kingdom's edges explicitly: whether the Crown Dependencies (Jersey, Guernsey, the Isle of Man) and the offshore islands are covered, since they are commonly assumed to be included and are not part of the UK for delivery purposes.\n"
 				. "State whether the delivery charge is per order or per item, and whether collection in person is available - a registered office is not a shop, and customers do turn up.\n"
@@ -825,7 +832,14 @@ function wookiee_build_content_prompt( $key, $brief, $previous_audit = '' ) {
 		}
 
 		if ( 'returns' === $key ) {
-			$prompt .= "\n\nBe precise about the mechanics, because this is the policy customers argue over:\n"
+			$prompt .= "\n\nSet out the FAULTY GOODS remedies as the tiered structure the Consumer Rights Act 2015 actually creates, not as a single blanket refund promise:\n"
+				. "- a short-term right to reject for a full refund within 30 days of receiving the goods;\n"
+				. "- after that, one repair or one replacement within a reasonable time and without significant inconvenience;\n"
+				. "- and if that repair or replacement fails or is not possible, a final right to reject, or to keep the goods and claim a price reduction.\n"
+				. "Most policies compress this to 'we refund faulty items', which understates what the customer is entitled to and is wrong in a way that favours the shop - state it accurately.\n"
+				. "Also state that after the first six months the burden of proving a fault was present at delivery shifts to the customer, and that any commercial guarantee offered is in addition to these rights and does not replace them.\n\n"
+				. "Include a MODEL CANCELLATION FORM at the end, as a plain block the customer can copy: to (business name and address), I hereby give notice that I cancel my contract of sale for the following goods, ordered on / received on, name of consumer, address of consumer, date. The Consumer Contracts Regulations require traders to make this form available, and almost no small store does - saying customers may use it or any other clear statement.\n\n"
+				. "Be precise about the mechanics, because this is the policy customers argue over:\n"
 				. "- Say what the return window is counted FROM (the delivery date, not the order date), in calendar days, and that it is not extended for weekends or public holidays.\n"
 				. "- Say that where items in one order are delivered separately, each has its own window.\n"
 				. "- Define what condition a change-of-mind return must be in, concretely - unopened in original packaging, or unused - and state that this voluntary condition does not restrict statutory cancellation or faulty-goods rights.\n"
@@ -1068,7 +1082,17 @@ function wookiee_build_policy_audit_prompt( $title, $policy_text ) {
 		. "Review against:\n"
 		. "- Google Merchant Center requirements: misrepresentation, missing business information, unclear refund/shipping disclosures, trustworthiness, account suspension risk.\n"
 		. "- UK law: the Consumer Rights Act 2015, the Consumer Contracts Regulations, the Electronic Commerce Regulations, UK GDPR, the Data Protection Act 2018, and PECR, wherever relevant.\n"
-		. "- Quality: weak, confusing, or contradictory wording; generic boilerplate; AI-sounding text; missing sections; poor formatting.\n\n"
+		. "- Quality: weak, confusing, or contradictory wording; generic boilerplate; AI-sounding text; missing sections; poor formatting.\n"
+		. "- The standard this store holds itself to, above the legal minimum. Treat each of these as an issue when absent from a policy where it belongs:\n"
+		. "  * a plain-English summary before the formal wording, so the page is usable and not merely present;\n"
+		. "  * an effective/last-updated date;\n"
+		. "  * legislation named in full rather than gestured at as 'consumer law';\n"
+		. "  * a statutory-rights savings clause, and no wording that reads as if the policy overrides consumer law;\n"
+		. "  * durations given as calendar or working days and said which, amounts in a named currency;\n"
+		. "  * concrete values where the business has them - vague commitments like 'promptly' or 'as long as necessary' commit to nothing and should be flagged;\n"
+		. "  * on shipping: where orders are dispatched from, who fulfils them, carriers and their role, whether the Crown Dependencies are covered, per-order vs per-item charging;\n"
+		. "  * on returns: the Consumer Rights Act tiered remedies stated correctly (30-day short-term right to reject, then repair or replacement, then final right to reject or price reduction), who pays return postage in each case, and a model cancellation form;\n"
+		. "  * on privacy: named controller, actual retention periods, international transfers, and the ICO complaint route.\n\n"
 		. "Do not invent legal obligations that don't apply, and do not assume any business fact that isn't present in the text above - flag missing information instead of guessing. Note: a business-offered returns window longer than 14 days (e.g. 30 days) is normal and legal - it sits alongside, not instead of, the customer's 14-day statutory cancellation right under the Consumer Contracts Regulations. Only flag this as an issue if the text is genuinely unclear about the two coexisting, not merely because two different day-counts appear.\n\n"
 		. "Output in plain text, no markdown, using exactly this structure:\n"
 		. "OVERALL SCORE: a number from 1 to 10, calibrated strictly against the ISSUES FOUND list you produce below - do not default to a middle score out of habit:\n"

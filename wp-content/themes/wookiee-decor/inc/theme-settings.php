@@ -56,7 +56,71 @@ function wookiee_image_model_options() {
 	return $options;
 }
 
+/**
+ * Best guess at the town orders ship from, taken from the registered office
+ * address, used to prefill the "Orders are dispatched from" sentence.
+ *
+ * Reads the option directly rather than through wookiee_get_setting(): that
+ * would call wookiee_settings_fields(), which calls this, which would
+ * recurse. The declared default is passed in by the caller instead.
+ *
+ * The address arrives either one component per line (what the Companies
+ * House lookup writes) or as a typed block with commas, so both separators
+ * are split on. Company names, countries and anything containing a digit
+ * (house numbers, unit numbers, postcodes) are dropped, and the town is
+ * taken as the FIRST surviving part after a numbered line - not the last
+ * one, which on a Companies House address is the county rather than the
+ * town ("Cowdenbeath, Fife, KY4 9AZ" would otherwise yield Fife). An
+ * address with no numbered line at all falls back to the last surviving
+ * part, which is the right answer for "The Old Mill / Petersfield".
+ *
+ * It is still a guess - which is why it is shown prefilled in an editable
+ * box, with the description below telling the admin to check it. When
+ * nothing survives, this returns '' and the field is left empty rather than
+ * naming somewhere the business has never been.
+ */
+function wookiee_guess_dispatch_town( $fallback_address = '' ) {
+	$address = (string) get_option( 'wookiee_setting_registered_address', '' );
+	if ( '' === trim( $address ) ) {
+		$address = (string) $fallback_address;
+	}
+
+	$countries   = array( 'united kingdom', 'uk', 'great britain', 'gb', 'england', 'scotland', 'wales', 'northern ireland' );
+	$town        = '';
+	$last        = '';
+	$seen_number = false;
+
+	foreach ( (array) preg_split( '/[\n,]+/', $address ) as $part ) {
+		$part = trim( $part );
+		if ( '' === $part ) {
+			continue;
+		}
+		if ( preg_match( '/\d/', $part ) ) {
+			$seen_number = true;
+			continue;
+		}
+		if ( preg_match( '/\b(ltd|limited|plc|llp|llc|inc)\b/i', $part )
+			|| in_array( strtolower( $part ), $countries, true ) ) {
+			continue;
+		}
+		$last = $part;
+		if ( $seen_number && '' === $town ) {
+			$town = $part;
+		}
+	}
+
+	return '' !== $town ? $town : $last;
+}
+
 function wookiee_settings_fields() {
+	/*
+	 * Declared once because dispatch_origin's default is built from it - the
+	 * town a business is registered in is, for almost every store running
+	 * this theme, the town it ships from.
+	 */
+	$registered_address_default = "Wookiee Decor Ltd\n28 Johnston Park, Cowdenbeath\nKY4 9AZ, United Kingdom";
+	$dispatch_town              = wookiee_guess_dispatch_town( $registered_address_default );
+
 	return array(
 		'contact_email'      => array( 'label' => 'Contact email', 'default' => 'info@wookied.com', 'type' => 'email' ),
 		// (llm_model's options are built by wookiee_llm_model_options() below,
@@ -68,7 +132,7 @@ function wookiee_settings_fields() {
 		// customer needs and neither of which "9am - 5pm" conveys.
 		'support_hours'      => array( 'label' => 'Support hours', 'default' => 'Customer-support hours are Monday to Friday, 9:00am to 5:00pm UK local time, excluding public holidays.', 'type' => 'textarea', 'prefill' => true ),
 		'business_name'      => array( 'label' => 'Registered company name', 'default' => 'Wookiee Decor Ltd', 'type' => 'text' ),
-		'registered_address'  => array( 'label' => 'Registered office address', 'default' => "Wookiee Decor Ltd\n28 Johnston Park, Cowdenbeath\nKY4 9AZ, United Kingdom", 'type' => 'textarea' ),
+		'registered_address'  => array( 'label' => 'Registered office address', 'default' => $registered_address_default, 'type' => 'textarea' ),
 		'company_number'     => array( 'label' => 'Company number or name', 'default' => 'SC769264 or Netlinko Ltd', 'type' => 'text' ),
 		'companies_house_api_key' => array( 'label' => 'Companies House API key', 'default' => '', 'type' => 'password' ),
 		'spaceship_api_key'    => array( 'label' => 'Spaceship API key', 'default' => '', 'type' => 'password' ),
@@ -157,27 +221,34 @@ function wookiee_settings_fields() {
 		'handling_time'      => array( 'label' => 'Handling time (before dispatch)', 'default' => '1-2 business days', 'type' => 'text' , 'prefill' => true),
 		'transit_time'       => array( 'label' => 'Transit time (with the carrier)', 'default' => '2-3 business days', 'type' => 'text' , 'prefill' => true),
 		'estimated_delivery' => array( 'label' => 'Estimated delivery time (total)', 'default' => '3-5 business days', 'type' => 'text' , 'prefill' => true),
-		// Where stock actually ships from. There was no field for this, so the
-		// policies could not state it - and it is the disclosure Google
-		// Merchant Center cares most about for a dropshipping store. Left
-		// deliberately blank-by-default: an unanswered question is safer than
-		// a confident wrong answer about fulfilment.
 		/*
-		 * Defaulted to the CONSERVATIVE claim, and prefilled.
+		 * Where stock ships from, stated as a named place. This is the
+		 * disclosure Google Merchant Center and payment providers look for
+		 * first, and the review advice is unambiguous about the form it has to
+		 * take: one sentence naming the town and country the business
+		 * dispatches from.
 		 *
-		 * The two possible answers fail in opposite directions. Claiming a UK
-		 * warehouse you do not have is a specific false statement about the
-		 * supply chain - the kind a payment provider or Merchant Center review
-		 * acts on rather than queries. Being vague when you DO have one costs a
-		 * selling point and breaks nothing. So the prefilled value is the one
-		 * that is either true or merely modest, never false, and a store that
-		 * holds its own stock edits it to say so.
+		 * An earlier version prefilled a deliberately non-committal sentence
+		 * ("our supplier partners, who may dispatch from within or outside the
+		 * United Kingdom") on the theory that a claim which asserts nothing can
+		 * never be false. That reasoning was wrong about how the disclosure is
+		 * read: a reviewer does not score it as caution, they score it as a
+		 * store that cannot say who holds its stock, which is the exact
+		 * suspicion the field exists to answer. Hedged and third-party-
+		 * logistics wording is now out, everywhere it appeared.
+		 *
+		 * The honesty constraint survives in a different place. The prefill is
+		 * derived from the business's OWN registered address rather than
+		 * asserting a UK warehouse on its behalf, and falls back to empty when
+		 * no town can be read out of it - the admin names their real town, and
+		 * the theme never invents one for them.
 		 */
 		'dispatch_origin'    => array(
-			'label'   => 'Orders are dispatched from',
-			'default' => 'Our supplier partners, who may dispatch from within or outside the United Kingdom. The dispatch location for each order is confirmed when it ships.',
-			'type'    => 'textarea',
-			'prefill' => true,
+			'label'       => 'Orders are dispatched from',
+			'default'     => '' !== $dispatch_town ? 'We dispatch from ' . $dispatch_town . ', United Kingdom.' : '',
+			'placeholder' => 'We dispatch from Manchester, United Kingdom.',
+			'type'        => 'textarea',
+			'prefill'     => true,
 		),
 		'restocking_fee'     => array( 'label' => 'Restocking fee policy', 'default' => 'We do not charge restocking fees', 'type' => 'text' , 'prefill' => true),
 		'cancellation_period' => array( 'label' => 'Cancellation period (after ordering)', 'default' => '24 hours', 'type' => 'text' , 'prefill' => true),
@@ -320,9 +391,17 @@ function wookiee_render_settings_field_row( $key, $field ) {
 			 */
 			$wookiee_stored  = get_option( 'wookiee_setting_' . $key, '' );
 			$wookiee_prefill = ( '' === $wookiee_stored && ! empty( $field['prefill'] ) ) ? $field['default'] : $wookiee_stored;
+			/*
+			 * The default doubles as the placeholder for most fields, but a
+			 * field whose default is computed can legitimately come out empty
+			 * (dispatch_origin, when no town could be read from the registered
+			 * address) - which is exactly when an example is most useful. An
+			 * explicit 'placeholder' wins where one is declared.
+			 */
+			$wookiee_placeholder = isset( $field['placeholder'] ) ? $field['placeholder'] : $field['default'];
 			?>
 			<?php if ( 'textarea' === $field['type'] ) : ?>
-				<textarea name="wookiee_setting_<?php echo esc_attr( $key ); ?>" id="wookiee_setting_<?php echo esc_attr( $key ); ?>" rows="3" class="large-text" placeholder="<?php echo esc_attr( $field['default'] ); ?>"><?php echo esc_textarea( $wookiee_prefill ); ?></textarea>
+				<textarea name="wookiee_setting_<?php echo esc_attr( $key ); ?>" id="wookiee_setting_<?php echo esc_attr( $key ); ?>" rows="3" class="large-text" placeholder="<?php echo esc_attr( $wookiee_placeholder ); ?>"><?php echo esc_textarea( $wookiee_prefill ); ?></textarea>
 			<?php elseif ( 'select' === $field['type'] ) : ?>
 				<?php $current = get_option( 'wookiee_setting_' . $key, '' ); $current = '' !== $current ? $current : $field['default']; ?>
 				<select name="wookiee_setting_<?php echo esc_attr( $key ); ?>" id="wookiee_setting_<?php echo esc_attr( $key ); ?>">
@@ -334,7 +413,7 @@ function wookiee_render_settings_field_row( $key, $field ) {
 				<input type="password" name="wookiee_setting_<?php echo esc_attr( $key ); ?>" id="wookiee_setting_<?php echo esc_attr( $key ); ?>" value="<?php echo esc_attr( get_option( 'wookiee_setting_' . $key, '' ) ); ?>" placeholder="<?php echo esc_attr( $field['default'] ); ?>" class="regular-text wookiee-reveal-input" autocomplete="off">
 				<button type="button" class="button wookiee-reveal-btn" data-target="wookiee_setting_<?php echo esc_attr( $key ); ?>">Show</button>
 			<?php else : ?>
-				<input type="<?php echo 'url' === $field['type'] ? 'url' : ( 'email' === $field['type'] ? 'email' : 'text' ); ?>" name="wookiee_setting_<?php echo esc_attr( $key ); ?>" id="wookiee_setting_<?php echo esc_attr( $key ); ?>" value="<?php echo esc_attr( $wookiee_prefill ); ?>" placeholder="<?php echo esc_attr( $field['default'] ); ?>" class="regular-text" autocomplete="off">
+				<input type="<?php echo 'url' === $field['type'] ? 'url' : ( 'email' === $field['type'] ? 'email' : 'text' ); ?>" name="wookiee_setting_<?php echo esc_attr( $key ); ?>" id="wookiee_setting_<?php echo esc_attr( $key ); ?>" value="<?php echo esc_attr( $wookiee_prefill ); ?>" placeholder="<?php echo esc_attr( $wookiee_placeholder ); ?>" class="regular-text" autocomplete="off">
 			<?php endif; ?>
 			<?php if ( 'company_number' === $key ) : ?>
 				<p>
@@ -349,14 +428,16 @@ function wookiee_render_settings_field_row( $key, $field ) {
 			<?php endif; ?>
 			<?php if ( 'dispatch_origin' === $key ) : ?>
 				<p class="description">
-					Where parcels are actually sent from. This goes into the Shipping policy, and it is the first thing a payment provider or Google Merchant Center review looks for &mdash; a store that will not say where its stock ships from reads as one with something to hide.
+					Where parcels are sent from, named as a real place. This goes into the Shipping policy, and it is the first thing a payment provider or Google Merchant Center review looks for &mdash; a store that will not say where its stock ships from reads as one with something to hide.
 				</p>
 				<p class="description">
-					<strong>If you hold and post your own stock:</strong> name the town and country, e.g. &ldquo;Our own premises in Petersfield, England, United Kingdom&rdquo;.<br>
-					<strong>If your supplier ships direct to the customer:</strong> say so, e.g. &ldquo;Our supplier partners, who may dispatch from within or outside the United Kingdom. The dispatch location for each order is confirmed when it ships.&rdquo;
+					<strong>Always write it in this form:</strong> &ldquo;We dispatch from <em>your town</em>, United Kingdom.&rdquo; One sentence, naming the town you actually operate from. Keep that same wording everywhere it appears &mdash; the Shipping policy, the About page and anything you tell a reviewer should all say the same thing.
 				</p>
 				<p class="description">
-					The prefilled wording is the <strong>safe</strong> answer, not necessarily the best one: it claims nothing specific, so it can never be wrong. If you hold your own stock, replace it &mdash; naming a real town is a genuine trust signal and reviewers look for it. What you must not do is claim UK fulfilment you do not have; that is a specific false statement about the supply chain, and it is acted on rather than queried.
+					<strong>Do not hedge it.</strong> Wording like &ldquo;our supplier partners&rdquo;, &ldquo;may dispatch from within or outside the UK&rdquo;, or any third-party-logistics phrasing does the opposite of what this field is for: a reviewer does not read it as caution, they read it as a store that cannot say who holds its stock. Equally, do not name a town you have no presence in &mdash; a specific false claim about fulfilment is acted on rather than queried.
+				</p>
+				<p class="description">
+					Prefilled from the town in your registered office address. Check it is the place you really ship from before saving.
 				</p>
 			<?php endif; ?>
 

@@ -678,6 +678,14 @@ function wookiee_business_details_block() {
 		'Transit time once with the carrier: ' . wookiee_get_setting( 'transit_time' ),
 		'Estimated total delivery time (handling plus transit): ' . wookiee_get_setting( 'estimated_delivery' ),
 		'Delivery summary already shown on the storefront (keep any policy consistent with this): ' . wookiee_get_setting( 'shipping_dispatch' ),
+		/*
+		 * The shipping prompt below asks for this by name ("the 'Orders are
+		 * dispatched from' value in the business details") but the value was
+		 * never actually put in the business details - so the model was being
+		 * told to quote a field it could not see, and filled the gap however it
+		 * liked. Labelled here with the exact phrase the prompt uses.
+		 */
+		'Orders are dispatched from: ' . wookiee_get_setting( 'dispatch_origin' ),
 		'Returns period offered: ' . wookiee_get_setting( 'returns_period_days' ) . ' days (this is the business\'s own voluntary returns window - it sits ALONGSIDE, not instead of, the customer\'s 14-day statutory right to cancel under the Consumer Contracts Regulations; state both clearly rather than treating them as conflicting)',
 		/*
 		 * Distinct from the returns window: cancelling an order that hasn't
@@ -810,9 +818,10 @@ function wookiee_build_content_prompt( $key, $brief, $previous_audit = '' ) {
 		}
 
 		if ( 'shipping' === $key ) {
-			$prompt .= "\n\nFULFILMENT TRANSPARENCY. State plainly where stock is held and where orders are dispatched from, using the 'Orders are dispatched from' value in the business details. This is the disclosure a payment provider or Google Merchant Center review looks for first, and its absence is what makes a store look like it is hiding a supply chain.\n"
-				. "Use whatever that field says, verbatim in substance - it may describe a UK warehouse, several locations, or supplier partners. If it is empty, do not fill the gap: say that dispatch details are confirmed on dispatch, and make no claim about warehouse location, country of origin or who fulfils. That is the same rule already applied to the company number and registered address above - state what the business has told you and nothing else - and it matters more here because a wrong answer about fulfilment is the kind a payment provider acts on.\n"
-				. "Say who fulfils orders - the business itself or a third party - and name the delivery providers in general or specific terms, making clear that a carrier transports parcels and does not select, store or pack them.\n"
+			$prompt .= "\n\nFULFILMENT TRANSPARENCY. State plainly where orders are dispatched from, using the 'Orders are dispatched from' value in the business details verbatim in substance - it names a town and a country, and that named place is the whole point of the disclosure. This is the first thing a payment provider or Google Merchant Center review looks for, and its absence is what makes a store look like it is hiding a supply chain.\n"
+				. "Do not hedge that sentence and do not soften it. No 'may', 'typically', 'usually', 'where possible' or similar qualifier in front of the dispatch location; no 'supplier partners', 'fulfilment partners', 'third-party logistics' or equivalent standing in for the named place. A hedged origin reads worse to a reviewer than a plain one, because it answers the question with a refusal to answer it.\n"
+				. "If that field is empty, omit the topic entirely rather than filling the gap: make no claim about warehouse location, country of origin or who fulfils, and do not substitute a vague sentence about details being confirmed on dispatch. That is the same rule already applied to the company number and registered address above - state what the business has told you and nothing else - and it matters more here because a wrong answer about fulfilment is the kind a payment provider acts on.\n"
+				. "Name the delivery providers in general or specific terms, making clear that a carrier transports parcels and does not select, store or pack them.\n"
 				. "Address the United Kingdom's edges explicitly: whether the Crown Dependencies (Jersey, Guernsey, the Isle of Man) and the offshore islands are covered, since they are commonly assumed to be included and are not part of the UK for delivery purposes.\n"
 				. "State whether the delivery charge is per order or per item, and whether collection in person is available - a registered office is not a shop, and customers do turn up.\n"
 				. "Commit to updating this page if the fulfilment arrangements materially change.\n\n"
@@ -1090,7 +1099,7 @@ function wookiee_build_policy_audit_prompt( $title, $policy_text ) {
 		. "  * a statutory-rights savings clause, and no wording that reads as if the policy overrides consumer law;\n"
 		. "  * durations given as calendar or working days and said which, amounts in a named currency;\n"
 		. "  * concrete values where the business has them - vague commitments like 'promptly' or 'as long as necessary' commit to nothing and should be flagged;\n"
-		. "  * on shipping: where orders are dispatched from, who fulfils them, carriers and their role, whether the Crown Dependencies are covered, per-order vs per-item charging;\n"
+		. "  * on shipping: where orders are dispatched from, given as a named town and country - treat a hedged origin ('may dispatch from within or outside the UK', 'our supplier partners', 'fulfilment partners', 'third-party logistics') as an issue in its own right rather than as acceptable caution, since it answers the disclosure with a refusal to answer it; also carriers and their role, whether the Crown Dependencies are covered, per-order vs per-item charging;\n"
 		. "  * on returns: the Consumer Rights Act tiered remedies stated correctly (30-day short-term right to reject, then repair or replacement, then final right to reject or price reduction), who pays return postage in each case, and a model cancellation form;\n"
 		. "  * on privacy: named controller, actual retention periods, international transfers, and the ICO complaint route.\n\n"
 		. "Do not invent legal obligations that don't apply, and do not assume any business fact that isn't present in the text above - flag missing information instead of guessing. Note: a business-offered returns window longer than 14 days (e.g. 30 days) is normal and legal - it sits alongside, not instead of, the customer's 14-day statutory cancellation right under the Consumer Contracts Regulations. Only flag this as an issue if the text is genuinely unclear about the two coexisting, not merely because two different day-counts appear.\n\n"

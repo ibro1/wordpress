@@ -207,6 +207,15 @@ services:
       TORCH_THREADS: ${SD_TORCH_THREADS:-4}
       DREAMSHAPER_STEPS: ${SD_DREAMSHAPER_STEPS:-6}
       REALISTIC_VISION_STEPS: ${SD_REALISTIC_VISION_STEPS:-25}
+    # Bounded so it cannot take the host down with it. A float32 SD1.5
+    # pipeline is several GB resident, and a second one loading before the
+    # first is released briefly holds both - on a box also running WordPress,
+    # MySQL and the API, that is enough for the OOM killer to start choosing
+    # victims, or for runc to fail forking a new container process entirely.
+    # Hitting this limit kills only this container, which restarts.
+    mem_limit: 12g
+    memswap_limit: 12g
+    pids_limit: 512
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:7860/healthz')"]
       interval: 30s

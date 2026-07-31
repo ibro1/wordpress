@@ -162,7 +162,23 @@ function wookiee_settings_fields() {
 		// Merchant Center cares most about for a dropshipping store. Left
 		// deliberately blank-by-default: an unanswered question is safer than
 		// a confident wrong answer about fulfilment.
-		'dispatch_origin'    => array( 'label' => 'Orders are dispatched from', 'default' => '', 'type' => 'textarea' ),
+		/*
+		 * Defaulted to the CONSERVATIVE claim, and prefilled.
+		 *
+		 * The two possible answers fail in opposite directions. Claiming a UK
+		 * warehouse you do not have is a specific false statement about the
+		 * supply chain - the kind a payment provider or Merchant Center review
+		 * acts on rather than queries. Being vague when you DO have one costs a
+		 * selling point and breaks nothing. So the prefilled value is the one
+		 * that is either true or merely modest, never false, and a store that
+		 * holds its own stock edits it to say so.
+		 */
+		'dispatch_origin'    => array(
+			'label'   => 'Orders are dispatched from',
+			'default' => 'Our supplier partners, who may dispatch from within or outside the United Kingdom. The dispatch location for each order is confirmed when it ships.',
+			'type'    => 'textarea',
+			'prefill' => true,
+		),
 		'restocking_fee'     => array( 'label' => 'Restocking fee policy', 'default' => 'We do not charge restocking fees', 'type' => 'text' , 'prefill' => true),
 		'cancellation_period' => array( 'label' => 'Cancellation period (after ordering)', 'default' => '24 hours', 'type' => 'text' , 'prefill' => true),
 		'facebook_url'       => array( 'label' => 'Facebook URL (leave blank to hide the icon)', 'default' => '', 'type' => 'url' ),
@@ -340,7 +356,7 @@ function wookiee_render_settings_field_row( $key, $field ) {
 					<strong>If your supplier ships direct to the customer:</strong> say so, e.g. &ldquo;Our supplier partners, who may dispatch from within or outside the United Kingdom. The dispatch location for each order is confirmed when it ships.&rdquo;
 				</p>
 				<p class="description">
-					There is deliberately no default. Write what is true for this store &mdash; leaving it blank is safe, because the policy will then say dispatch details are confirmed on dispatch rather than inventing a location, but a wrong answer here is the kind that costs a merchant account.
+					The prefilled wording is the <strong>safe</strong> answer, not necessarily the best one: it claims nothing specific, so it can never be wrong. If you hold your own stock, replace it &mdash; naming a real town is a genuine trust signal and reviewers look for it. What you must not do is claim UK fulfilment you do not have; that is a specific false statement about the supply chain, and it is acted on rather than queried.
 				</p>
 			<?php endif; ?>
 

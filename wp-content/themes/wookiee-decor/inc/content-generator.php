@@ -1532,6 +1532,33 @@ function wookiee_suggest_niche_handler() {
 		$exclude_note = "\n\nDo not suggest any of these niches already suggested recently:\n- " . implode( "\n- ", array_slice( $recent_suggestions, -8 ) ) . "\n";
 	}
 
+	/*
+	 * The suggester used to know nothing about the business it was suggesting
+	 * for, so a company registered to sell clothing could be handed a pet-
+	 * supplies store. The registered name and the SIC codes filed with
+	 * Companies House are the two things that actually say what this company
+	 * trades in, and a niche inside its own line of business is both an easier
+	 * sell and a far better answer if a payment provider ever asks why the
+	 * store and the company disagree.
+	 *
+	 * Preference, not a cage: plenty of company names say nothing useful
+	 * ("Netlinko Ltd"), and forcing a related niche out of an opaque one would
+	 * produce a worse suggestion than the demand data would. The prompt says
+	 * to fall back rather than to strain for a connection.
+	 */
+	$company_name = trim( (string) wookiee_get_setting( 'business_name' ) );
+	$company_sic  = trim( (string) wookiee_get_setting( 'sic_codes' ) );
+	$company_note = '';
+
+	if ( '' !== $company_name || '' !== $company_sic ) {
+		$company_note = "\n\nTHE COMPANY THIS STORE BELONGS TO:\n"
+			. ( '' !== $company_name ? "- Registered name: {$company_name}\n" : '' )
+			. ( '' !== $company_sic ? "- Companies House SIC codes (its filed line of business): {$company_sic}\n" : '' )
+			. "PRIORITISE a niche that plausibly belongs to this company's own trade - a store whose goods match the company that owns it is coherent to a customer and defensible to a payment provider, where an unrelated one invites the question of what the company is really doing.\n"
+			. "Judge that from the name and the SIC codes together. If neither says anything meaningful about a trade - a coined or purely abstract name with no informative codes - do not strain to invent a connection: fall back to the best niche on the other criteria and say nothing about the company.\n"
+			. "This preference NEVER overrides the hard constraint below. If the company's own trade falls in an excluded category, suggest something outside it - the exclusion wins, every time.\n";
+	}
+
 	$example = 'UK home-storage and organisation products - baskets, shelving, drawer organisers, aimed at small flats';
 
 	// Stated in the prompt as well as filtered afterwards. The filter is what
@@ -1542,12 +1569,12 @@ function wookiee_suggest_niche_handler() {
 	if ( $grounded ) {
 		$prompt = "You are helping a UK dropshipping ecommerce store owner pick a promising single-niche to build a store around.\n\n"
 			. "Real UK search-volume and CPC data for several candidate categories, from Google Ads Keyword Planner:\n" . implode( "\n", $keyword_lines ) . "\n"
-			. $exclude_note . $avoid_note . "\n"
-			. "Pick the ONE candidate niche from the data above with the best combination of genuine search demand (higher avg monthly searches) and reasonable ad cost (lower CPC/competition) for a small dropshipping store to realistically compete in.\n\n"
+			. $company_note . $exclude_note . $avoid_note . "\n"
+			. "Pick the niche with the best combination of fit to the company above, genuine search demand (higher avg monthly searches) and reasonable ad cost (lower CPC/competition) for a small dropshipping store to realistically compete in. Prefer a candidate from the data where one suits the company's trade; where none does, a well-judged niche in that trade beats a poorly-fitting one with better numbers.\n\n"
 			. "Respond with ONLY a single, concise niche brief in the same style as this example (one sentence, plain and specific, no markdown, no preamble/commentary): \"{$example}\"";
 	} else {
-		$prompt = "You are helping a UK dropshipping ecommerce store owner pick a promising single-niche to build a store around - one they might not have thought of themselves, but with genuine, steady consumer demand and realistic to source/ship as a small operation (lightweight, not fragile, not heavily regulated).\n"
-			. $exclude_note . $avoid_note . "\n"
+		$prompt = "You are helping a UK dropshipping ecommerce store owner pick a promising single-niche to build a store around - with genuine, steady consumer demand and realistic to source/ship as a small operation (lightweight, not fragile, not heavily regulated).\n"
+			. $company_note . $exclude_note . $avoid_note . "\n"
 			. "Suggest ONE such niche, favouring evergreen demand over fleeting trends.\n\n"
 			. "Respond with ONLY a single, concise niche brief in the same style as this example (one sentence, plain and specific, no markdown, no preamble/commentary): \"{$example}\"";
 	}

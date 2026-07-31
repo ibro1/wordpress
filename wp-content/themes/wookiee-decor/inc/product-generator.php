@@ -87,14 +87,37 @@ function wookiee_render_product_generator_page() {
 		<?php endif; ?>
 
 		<table class="form-table" role="presentation">
+			<?php
+			/*
+			 * Read-only on purpose. This was an editable textarea with its own
+			 * suggest button, which made it the second place the one site-wide
+			 * niche could be set - and the two drifted, so products got sourced
+			 * against a niche the policy pages and store design knew nothing
+			 * about. The niche is decided once, in Business Identity; every
+			 * later screen shows what it is and links back to it.
+			 *
+			 * The hidden input keeps the id the generate handler reads, so the
+			 * value still travels with the request without being editable here.
+			 */
+			$wookiee_brief_set  = '' !== trim( (string) $saved_brief );
+			$wookiee_brief_link = admin_url( 'admin.php?page=wookiee-setup#business' );
+			?>
 			<tr>
-				<th scope="row"><label for="wookiee-niche-brief">Niche brief</label></th>
+				<th scope="row">Niche</th>
 				<td>
-					<div class="wookiee-niche-input-wrap is-textarea">
-						<textarea id="wookiee-niche-brief" rows="3" class="large-text" placeholder="e.g. UK home-storage and organisation products - baskets, shelving, drawer organisers, aimed at small flats"><?php echo esc_textarea( $saved_brief ); ?></textarea>
-						<?php wookiee_niche_suggest_button( 'wookiee-niche-brief' ); ?>
+					<input type="hidden" id="wookiee-niche-brief" value="<?php echo esc_attr( $saved_brief ); ?>">
+					<?php // Rewritten in place by the wizard when step 2 saves a niche, so step 5 does not keep claiming there isn't one. ?>
+					<div id="wookiee-niche-display" data-link="<?php echo esc_url( $wookiee_brief_link ); ?>">
+					<?php if ( $wookiee_brief_set ) : ?>
+						<p style="margin:0;"><strong><?php echo esc_html( $saved_brief ); ?></strong></p>
+						<p class="description">Set once for the whole site, so every sourced product belongs in the same catalog. <a href="<?php echo esc_url( $wookiee_brief_link ); ?>">Change it in Setup &rsaquo; Business identity</a> — changing it here as well is what lets the two drift apart.</p>
+						<?php if ( wookiee_niche_is_excluded( $saved_brief ) ) : ?>
+							<div class="notice notice-warning inline" style="margin:8px 0 0;"><p>This niche is in a restricted category (skincare, cosmetics, health, wellness or similar). These attract Google Merchant Center scrutiny a small store cannot answer, and the supplier catalog barely stocks them. Change the niche before sourcing products.</p></div>
+						<?php endif; ?>
+					<?php else : ?>
+						<div class="notice notice-warning inline" style="margin:0;"><p>No niche set yet. <a href="<?php echo esc_url( $wookiee_brief_link ); ?>">Set it in Setup &rsaquo; Business identity</a> first — product sourcing has nothing to search for without it.</p></div>
+					<?php endif; ?>
 					</div>
-					<p class="description">One niche for the whole site — every sourced product should feel like it belongs in the same catalog. Click the sparkle to have AI suggest one, grounded in real UK search demand when Google Ads is connected.</p>
 				</td>
 			</tr>
 			<tr>
@@ -107,7 +130,8 @@ function wookiee_render_product_generator_page() {
 		</table>
 
 		<p>
-			<button type="button" class="button button-primary" id="wookiee-generate-btn" <?php disabled( ! $has_woo || ! $has_key || ! $has_cj_creds ); ?>>Generate &amp; source real products</button>
+			<?php // Nothing to type a niche into on this screen any more, so a missing one has to block the button rather than surface as an error on click. ?>
+			<button type="button" class="button button-primary" id="wookiee-generate-btn" data-prereqs-ok="<?php echo ( $has_woo && $has_key && $has_cj_creds ) ? '1' : '0'; ?>" <?php disabled( ! $has_woo || ! $has_key || ! $has_cj_creds || ! $wookiee_brief_set ); ?>>Generate &amp; source real products</button>
 			<span id="wookiee-generate-status" style="margin-left:8px;"></span>
 		</p>
 

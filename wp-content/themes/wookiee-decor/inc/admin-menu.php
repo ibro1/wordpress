@@ -256,8 +256,13 @@ function wookiee_enqueue_niche_suggest_assets( $hook ) {
 					}
 					var nameField = document.getElementById( 'wookiee_setting_business_name' );
 					var addrField = document.getElementById( 'wookiee_setting_registered_address' );
+					var sicField  = document.getElementById( 'wookiee_setting_sic_codes' );
 					if ( nameField ) { nameField.value = res.data.company_name; }
 					if ( addrField ) { addrField.value = res.data.address; }
+					// Only overwrite when the register actually returned codes,
+					// so a lookup on a company with none filed does not wipe a
+					// value already saved.
+					if ( sicField && res.data.sic_codes ) { sicField.value = res.data.sic_codes; }
 					status.textContent = 'Found: ' + res.data.company_name + ' (status: ' + res.data.company_status + '). Review the fields, then click Save Changes.';
 					runSiteNameSuggest( res.data.company_name );
 				} )

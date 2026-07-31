@@ -190,6 +190,13 @@ function wookiee_settings_fields() {
 		'business_name'      => array( 'label' => 'Registered company name', 'default' => 'Wookiee Decor Ltd', 'type' => 'text' ),
 		'registered_address'  => array( 'label' => 'Registered office address', 'default' => $registered_address_default, 'type' => 'textarea' ),
 		'company_number'     => array( 'label' => 'Company number or name', 'default' => 'SC769264 or Netlinko Ltd', 'type' => 'text' ),
+		/*
+		 * Filled by the Companies House lookup, not typed. Kept as a real
+		 * saved field rather than a transient value because the niche
+		 * suggester reads it long after setup, to propose a niche in the
+		 * company's own trade instead of a category drawn at random.
+		 */
+		'sic_codes'          => array( 'label' => 'Nature of business (SIC codes)', 'default' => '', 'placeholder' => 'Filled in by the Companies House lookup', 'type' => 'text' ),
 		'companies_house_api_key' => array( 'label' => 'Companies House API key', 'default' => '', 'type' => 'password' ),
 		'spaceship_api_key'    => array( 'label' => 'Spaceship API key', 'default' => '', 'type' => 'password' ),
 		'spaceship_api_secret' => array( 'label' => 'Spaceship API secret', 'default' => '', 'type' => 'password' ),
@@ -354,7 +361,7 @@ function wookiee_settings_tabs() {
 	return array(
 		'business' => array(
 			'label'  => 'Business Identity',
-			'fields' => array( 'company_number', 'companies_house_api_key', 'business_name', 'registered_address', 'countries_served', 'product_markup_percent' ),
+			'fields' => array( 'company_number', 'companies_house_api_key', 'business_name', 'registered_address', 'sic_codes', 'countries_served', 'product_markup_percent' ),
 		),
 		'contact' => array(
 			'label'  => 'Contact & Support',
@@ -505,6 +512,9 @@ function wookiee_render_settings_field_row( $key, $field ) {
 				</p>
 				<p class="description">Fills in the registered company name and address below from the official Companies House register — enter the exact company number, or just the company name to search a list of matches. <?php echo wookiee_central_api_configured() ? '' : 'Requires an API key (below) — get one free at <a href="https://developer.company-information.service.gov.uk/" target="_blank" rel="noopener">developer.company-information.service.gov.uk</a>. '; ?>Review the filled-in fields before saving.</p>
 				<div id="wookiee-ch-search-results" class="wookiee-ch-search-results" hidden></div>
+			<?php endif; ?>
+			<?php if ( 'sic_codes' === $key ) : ?>
+				<p class="description">The official classification of what this company does, filled in by the lookup above. The AI niche suggester uses it to propose a niche in your company's own line of business rather than an unrelated category. Safe to leave as it comes.</p>
 			<?php endif; ?>
 			<?php if ( 'companies_house_api_key' === $key ) : ?>
 				<p class="description">Only needed to use the lookup button above. Free to obtain, one per WordPress install.</p>
@@ -1002,10 +1012,21 @@ function wookiee_ch_lookup_handler() {
 		isset( $addr['country'] ) ? $addr['country'] : '',
 	) );
 
+	/*
+	 * SIC codes come back as bare numbers ("47710"), which is enough - they
+	 * are a standard classification a model reads without a lookup table, and
+	 * they are the only machine-readable statement of what this company
+	 * actually trades in. The niche suggester uses them to propose something
+	 * in the company's own line of business rather than a category picked at
+	 * random.
+	 */
+	$sic = isset( $data['sic_codes'] ) && is_array( $data['sic_codes'] ) ? array_filter( array_map( 'strval', $data['sic_codes'] ) ) : array();
+
 	wp_send_json_success( array(
 		'company_name'   => isset( $data['company_name'] ) ? $data['company_name'] : '',
 		'company_status' => isset( $data['company_status'] ) ? $data['company_status'] : '',
 		'address'        => implode( "\n", $lines ),
+		'sic_codes'      => implode( ', ', $sic ),
 	) );
 }
 

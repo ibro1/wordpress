@@ -637,6 +637,39 @@ function wookiee_render_setup_wizard_page() {
 							var el = document.getElementById( id );
 							if ( el ) { el.value = brief; }
 						} );
+						/*
+						 * Step 5 shows the niche rather than offering a second
+						 * box to type it in, so syncing the hidden value is not
+						 * enough - the visible text and the blocked Generate
+						 * button both have to catch up, or the step goes on
+						 * insisting no niche is set.
+						 */
+						var nicheDisplay = document.getElementById( 'wookiee-niche-display' );
+						if ( nicheDisplay ) {
+							var link = nicheDisplay.getAttribute( 'data-link' ) || '';
+							nicheDisplay.textContent = '';
+							var briefLine  = document.createElement( 'p' );
+							briefLine.style.margin = '0';
+							var briefStrong = document.createElement( 'strong' );
+							briefStrong.textContent = brief;
+							briefLine.appendChild( briefStrong );
+							var briefNote = document.createElement( 'p' );
+							briefNote.className = 'description';
+							briefNote.textContent = 'Set once for the whole site, so every sourced product belongs in the same catalog. ';
+							if ( link ) {
+								var briefLink = document.createElement( 'a' );
+								briefLink.href = link;
+								briefLink.textContent = 'Change it in Setup › Business identity';
+								briefNote.appendChild( briefLink );
+								briefNote.appendChild( document.createTextNode( '.' ) );
+							}
+							nicheDisplay.appendChild( briefLine );
+							nicheDisplay.appendChild( briefNote );
+						}
+						var genBtn = document.getElementById( 'wookiee-generate-btn' );
+						if ( genBtn && '1' === genBtn.getAttribute( 'data-prereqs-ok' ) ) {
+							genBtn.disabled = false;
+						}
 						activateStep( 'content' );
 					} )
 					.catch( function() {

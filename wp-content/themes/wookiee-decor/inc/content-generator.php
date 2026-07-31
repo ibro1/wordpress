@@ -824,7 +824,16 @@ function wookiee_build_content_prompt( $key, $brief, $previous_audit = '' ) {
 
 		if ( 'cookies' === $key ) {
 			$prompt .= "\n\nThis store's actual cookie consent mechanism, describe it accurately using these facts (do not describe any other mechanism, and do not omit it): " . wookiee_cookie_consent_mechanism_description() . "\n"
-				. "Also state explicitly how long cookies are retained on the customer's device (state the actual duration if given above, otherwise state a typical, honest range such as \"up to 12 months\" rather than omitting it), commit to notifying customers of this page if the categories of cookies used change in future, and briefly explain how a customer can exercise their data rights specifically in relation to cookie data (not just personal data generally).";
+				. "Also state explicitly how long cookies are retained on the customer's device (state the actual duration if given above, otherwise state a typical, honest range such as \"up to 12 months\" rather than omitting it), commit to notifying customers of this page if the categories of cookies used change in future, and briefly explain how a customer can exercise their data rights specifically in relation to cookie data (not just personal data generally).\n"
+				/*
+				 * A cookie policy is the one page where PECR, not UK GDPR, is
+				 * the operative instrument, and the one page where a reviewer
+				 * expects a per-cookie breakdown rather than three category
+				 * paragraphs. The page had neither, which is most of why it
+				 * scored below the pages either side of it.
+				 */
+				. "Name the PRIVACY AND ELECTRONIC COMMUNICATIONS REGULATIONS 2003 (PECR) explicitly and say what it requires here - consent before any non-essential cookie is set, and that strictly necessary cookies are exempt from that consent requirement. PECR, not UK GDPR, is the instrument that governs setting a cookie, and a cookie policy that never names it is the single most common gap a reviewer finds on one. Cite UK GDPR alongside it for what happens to the data afterwards.\n"
+				. "Break the cookies down INDIVIDUALLY, not just by category: give each one a name, what it is for, whether it is first- or third-party, and how long it lasts, using the consent mechanism facts above and WooCommerce's own well-known cookies (the cart, session and consent cookies this store actually sets). Three paragraphs describing 'necessary, analytics and marketing' in the abstract is what every weak cookie notice does, and it does not tell a customer what is on their device. Do not invent analytics or advertising cookies the store does not set - if it sets none, say so plainly, which is a stronger disclosure than a vague one.";
 		}
 
 		if ( 'terms' === $key ) {
@@ -1140,6 +1149,16 @@ function wookiee_clear_audit_result( $post_id ) {
 }
 
 /**
+ * Today's date, stated to the auditor before it reads anything.
+ *
+ * Shared by both rubrics: a cookie-preferences page carries a date as readily
+ * as a policy does, and the false positive is not specific to either.
+ */
+function wookiee_policy_audit_today_line() {
+	return "TODAY'S DATE IS " . date_i18n( 'j F Y' ) . ". Use this and nothing else to judge whether a date on the page is current. A 'Last updated' date matching today, or any recent past date, is correct and must NOT be reported as a future date, a typo or an error - you have no reliable sense of the current date yourself, so defer to the line above. Only a date genuinely later than today, or so old the page reads as abandoned, is worth raising.\n\n";
+}
+
+/**
  * The report structure every audit must emit, whichever rubric produced it.
  *
  * Shared rather than duplicated because the parser and the dashboard read
@@ -1190,6 +1209,7 @@ function wookiee_build_policy_audit_prompt( $title, $policy_text, $key = '' ) {
 	 */
 	if ( 'cookie_pref' === $key ) {
 		$prompt = "Act as a UK privacy and usability reviewer. Below is a store's Cookie Preferences page: a short, plain-English explainer that sits directly above the live consent toggles, NOT a legal policy. The full legal Cookie Policy is a separate page at /cookie/ and is reviewed separately.\n\n"
+			. wookiee_policy_audit_today_line()
 			. "Page: {$title}\n\n"
 			. "--- PAGE TEXT ---\n{$policy_text}\n--- END PAGE TEXT ---\n\n"
 			. "Judge it ONLY on what this page is for. Do NOT mark it down for lacking a plain-English summary of itself, an effective/last-updated date, a statutory-rights savings clause, durations in calendar days, a company registration number, a complaints-escalation route, or any other apparatus of a formal policy - none of those belong on a preferences explainer, and their absence is correct rather than an omission.\n\n"
@@ -1208,6 +1228,15 @@ function wookiee_build_policy_audit_prompt( $title, $policy_text, $key = '' ) {
 	}
 
 	$prompt = "Act as a senior UK e-commerce compliance reviewer: a Google Merchant Center (GMC) policy reviewer, a UK solicitor specialising in consumer protection and e-commerce law, and a professional legal copywriter. Perform a compliance audit of the following policy page - do not just proofread it.\n\n"
+		/*
+		 * The auditor has no clock, exactly as the generator had none. Told to
+		 * assess a page dated later than its own training data, it reported a
+		 * "future date error" on correctly-dated pages - penalising every page
+		 * on the store for the date fix that had just been applied to them.
+		 * Same root cause, same remedy: state the date rather than let it be
+		 * inferred.
+		 */
+		. wookiee_policy_audit_today_line()
 		. "Policy page: {$title}\n\n"
 		. "--- POLICY TEXT ---\n{$policy_text}\n--- END POLICY TEXT ---\n\n"
 		. "Review against:\n"

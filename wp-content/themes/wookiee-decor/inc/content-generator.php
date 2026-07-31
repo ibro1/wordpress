@@ -894,7 +894,15 @@ function wookiee_build_content_prompt( $key, $brief, $previous_audit = '' ) {
 				. "- and if that repair or replacement fails or is not possible, a final right to reject, or to keep the goods and claim a price reduction.\n"
 				. "Most policies compress this to 'we refund faulty items', which understates what the customer is entitled to and is wrong in a way that favours the shop - state it accurately.\n"
 				. "Also state that after the first six months the burden of proving a fault was present at delivery shifts to the customer, and that any commercial guarantee offered is in addition to these rights and does not replace them.\n\n"
-				. "Include a MODEL CANCELLATION FORM at the end, as a plain block the customer can copy: to (business name and address), I hereby give notice that I cancel my contract of sale for the following goods, ordered on / received on, name of consumer, address of consumer, date. The Consumer Contracts Regulations require traders to make this form available, and almost no small store does - saying customers may use it or any other clear statement.\n\n"
+				. "Include a MODEL CANCELLATION FORM at the end, as a plain block the customer can copy: to (business name and address), I hereby give notice that I cancel my contract of sale for the following goods, ordered on / received on, name of consumer, address of consumer, date. The Consumer Contracts Regulations require traders to make this form available, and almost no small store does - saying customers may use it or any other clear statement.\n"
+				/*
+				 * The form was addressing the registered office while the
+				 * policy around it gave the returns address, so one page told
+				 * a customer to send the notice to one town and the goods to
+				 * another. Whichever address the business uses, the page has
+				 * to use it consistently and say what each is for.
+				 */
+				. "Address the form to the SAME address this policy tells customers to send returns to - the returns address in the business details, not the registered office - unless the two are genuinely different places, in which case say explicitly which is for the cancellation notice and which is for the goods. A returns policy naming two addresses without explaining the difference reads as a mistake, and it is the kind a customer acts on wrongly.\n\n"
 				. "Be precise about the mechanics, because this is the policy customers argue over:\n"
 				. "- Say what the return window is counted FROM (the delivery date, not the order date), in calendar days, and that it is not extended for weekends or public holidays.\n"
 				. "- Say that where items in one order are delivered separately, each has its own window.\n"
@@ -1234,7 +1242,15 @@ function wookiee_build_policy_audit_prompt( $title, $policy_text, $key = '' ) {
 		 */
 		. "  * internal consistency of the business's own details: two different postal addresses used for the same purpose, a phone number or company number that does not match the others, a trading name that differs between sections. Flag the contradiction and say which values disagree - do not pick one and assume the rest are typos.\n"
 		. "  * whether the named legal entity plausibly matches the goods described. A registered name from an unrelated trade selling something else entirely (an apparel company selling skincare, say) is not a wording problem, it is the misrepresentation signal a Merchant Center review acts on, and it should be raised even though every individual sentence reads correctly.\n"
-		. "  * any remaining \"[Business input required: X]\" placeholder, or any equivalent bracketed gap, TBC or blank left in the published text. Treat each one as a Serious issue: it is a visible hole on a live page, and it tells a reviewer the business has not finished setting up.\n\n"
+		/*
+		 * The exemption is not a nicety. The statutory model cancellation form
+		 * is a fill-in-the-blank template - "[insert description of goods]",
+		 * "[insert your name]" - and those brackets are the form working as
+		 * designed. Without this carve-out the rule above flags six Serious
+		 * issues on a correct Returns Policy, and a regeneration told to clear
+		 * them would strip the blanks out and break the form.
+		 */
+		. "  * any remaining \"[Business input required: X]\" placeholder, or any equivalent bracketed gap, TBC or blank left in the published text. Treat each one as a Serious issue: it is a visible hole on a live page, and it tells a reviewer the business has not finished setting up. EXCEPTION: the blanks inside a model cancellation form (\"[insert description of goods]\", \"[insert your name]\", \"[insert today's date]\" and the like) are the customer's to complete - they are what the statutory template is, and they are correct. Never flag those, and never suggest filling them in.\n\n"
 		. "Do not invent legal obligations that don't apply, and do not assume any business fact that isn't present in the text above - flag missing information instead of guessing. Note: a business-offered returns window longer than 14 days (e.g. 30 days) is normal and legal - it sits alongside, not instead of, the customer's 14-day statutory cancellation right under the Consumer Contracts Regulations. Only flag this as an issue if the text is genuinely unclear about the two coexisting, not merely because two different day-counts appear.\n\n"
 		/*
 		 * A policy that strays into another page's territory scores well on

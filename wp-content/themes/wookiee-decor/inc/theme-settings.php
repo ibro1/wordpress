@@ -57,59 +57,90 @@ function wookiee_image_model_options() {
 }
 
 /**
- * Best guess at the town orders ship from, taken from the registered office
- * address, used to prefill the "Orders are dispatched from" sentence.
+ * UK counties, regions and council areas, for telling a post town apart from
+ * the county sitting next to it in an address.
  *
- * Reads the option directly rather than through wookiee_get_setting(): that
- * would call wookiee_settings_fields(), which calls this, which would
- * recurse. The declared default is passed in by the caller instead.
+ * Only used to EXCLUDE: nothing is rejected for being absent from this list,
+ * so a gap costs at worst a county where a town was wanted, in a field the
+ * admin is looking at and can correct.
+ */
+function wookiee_uk_counties() {
+	return array(
+		'bedfordshire', 'berkshire', 'bristol', 'buckinghamshire', 'cambridgeshire', 'cheshire', 'cleveland',
+		'cornwall', 'cumbria', 'derbyshire', 'devon', 'dorset', 'durham', 'county durham',
+		'east riding of yorkshire', 'east sussex', 'essex', 'gloucestershire', 'greater london',
+		'greater manchester', 'hampshire', 'herefordshire', 'hertfordshire', 'isle of wight', 'kent',
+		'lancashire', 'leicestershire', 'lincolnshire', 'merseyside', 'norfolk', 'north yorkshire',
+		'northamptonshire', 'northumberland', 'nottinghamshire', 'oxfordshire', 'rutland', 'shropshire',
+		'somerset', 'south yorkshire', 'staffordshire', 'suffolk', 'surrey', 'tyne and wear',
+		'warwickshire', 'west midlands', 'west sussex', 'west yorkshire', 'wiltshire', 'worcestershire',
+		'aberdeenshire', 'angus', 'argyll and bute', 'ayrshire', 'clackmannanshire', 'dumfries and galloway',
+		'dunbartonshire', 'east lothian', 'fife', 'highland', 'inverclyde', 'lanarkshire', 'midlothian',
+		'moray', 'perth and kinross', 'renfrewshire', 'scottish borders', 'stirlingshire', 'west lothian',
+		'anglesey', 'carmarthenshire', 'ceredigion', 'conwy', 'denbighshire', 'flintshire', 'gwynedd',
+		'monmouthshire', 'pembrokeshire', 'powys', 'swansea', 'wrexham',
+		'antrim', 'armagh', 'down', 'fermanagh', 'londonderry', 'tyrone',
+	);
+}
+
+/**
+ * Best guess at the town orders ship from, used to prefill the "Orders are
+ * dispatched from" sentence.
  *
- * The address arrives either one component per line (what the Companies
- * House lookup writes) or as a typed block with commas, so both separators
- * are split on. Company names, countries and anything containing a digit
- * (house numbers, unit numbers, postcodes) are dropped, and the town is
- * taken as the FIRST surviving part after a numbered line - not the last
- * one, which on a Companies House address is the county rather than the
- * town ("Cowdenbeath, Fife, KY4 9AZ" would otherwise yield Fife). An
- * address with no numbered line at all falls back to the last surviving
- * part, which is the right answer for "The Old Mill / Petersfield".
+ * Takes the RETURNS address in preference to the registered office. A
+ * registered office is a legal service address and is very often the
+ * accountant's or formation agent's - the demo store's is a formation-agent
+ * address in Croydon while the business actually operates from Petersfield -
+ * whereas the returns address is somewhere the business genuinely handles
+ * stock. For most small retailers returns come back to the same place orders
+ * leave from, which is exactly the question this field asks. It also keeps the
+ * policy pages internally consistent: a shipping policy naming one town and a
+ * returns section naming another is the contradiction the audit now flags.
  *
- * It is still a guess - which is why it is shown prefilled in an editable
- * box, with the description below telling the admin to check it. When
- * nothing survives, this returns '' and the field is left empty rather than
- * naming somewhere the business has never been.
+ * Reads the options directly rather than through wookiee_get_setting() or
+ * wookiee_get_returns_address(): both call wookiee_settings_fields(), which
+ * calls this, which would recurse. The declared default is passed in instead.
+ *
+ * The address arrives either one component per line (what the Companies House
+ * lookup writes) or as a typed block with commas, so both separators are split
+ * on. Company names, countries, counties and anything containing a digit
+ * (house numbers, unit numbers, postcodes) are dropped, and the LAST part left
+ * standing is the town. Dropping counties is what makes that work in both
+ * directions: "Cowdenbeath, Fife, KY4 9AZ" yields Cowdenbeath rather than
+ * Fife, and "Buriton, Petersfield, Hampshire, GU31 5RS" yields Petersfield -
+ * the post town - rather than stopping at the village before it.
+ *
+ * It is still a guess, which is why it is shown prefilled in an editable box
+ * with the description telling the admin to check it. When nothing survives,
+ * this returns '' and the field is left empty rather than naming somewhere the
+ * business has never been.
  */
 function wookiee_guess_dispatch_town( $fallback_address = '' ) {
-	$address = (string) get_option( 'wookiee_setting_registered_address', '' );
+	$address = (string) get_option( 'wookiee_setting_returns_address', '' );
+	if ( '' === trim( $address ) ) {
+		$address = (string) get_option( 'wookiee_setting_registered_address', '' );
+	}
 	if ( '' === trim( $address ) ) {
 		$address = (string) $fallback_address;
 	}
 
-	$countries   = array( 'united kingdom', 'uk', 'great britain', 'gb', 'england', 'scotland', 'wales', 'northern ireland' );
-	$town        = '';
-	$last        = '';
-	$seen_number = false;
+	$countries = array( 'united kingdom', 'uk', 'great britain', 'gb', 'england', 'scotland', 'wales', 'northern ireland' );
+	$counties  = wookiee_uk_counties();
+	$town      = '';
 
 	foreach ( (array) preg_split( '/[\n,]+/', $address ) as $part ) {
 		$part = trim( $part );
-		if ( '' === $part ) {
+		if ( '' === $part
+			|| preg_match( '/\d/', $part )
+			|| preg_match( '/\b(ltd|limited|plc|llp|llc|inc)\b/i', $part )
+			|| in_array( strtolower( $part ), $countries, true )
+			|| in_array( strtolower( $part ), $counties, true ) ) {
 			continue;
 		}
-		if ( preg_match( '/\d/', $part ) ) {
-			$seen_number = true;
-			continue;
-		}
-		if ( preg_match( '/\b(ltd|limited|plc|llp|llc|inc)\b/i', $part )
-			|| in_array( strtolower( $part ), $countries, true ) ) {
-			continue;
-		}
-		$last = $part;
-		if ( $seen_number && '' === $town ) {
-			$town = $part;
-		}
+		$town = $part;
 	}
 
-	return '' !== $town ? $town : $last;
+	return $town;
 }
 
 /**
@@ -301,7 +332,7 @@ function wookiee_settings_fields() {
 		 * logistics wording is now out, everywhere it appeared.
 		 *
 		 * The honesty constraint survives in a different place. The prefill is
-		 * derived from the business's OWN registered address rather than
+		 * derived from one of the business's OWN addresses rather than
 		 * asserting a UK warehouse on its behalf, and falls back to empty when
 		 * no town can be read out of it - the admin names their real town, and
 		 * the theme never invents one for them.
@@ -530,7 +561,7 @@ function wookiee_render_settings_field_row( $key, $field ) {
 					<strong>Do not hedge it.</strong> Wording like &ldquo;our supplier partners&rdquo;, &ldquo;may dispatch from within or outside the UK&rdquo;, or any third-party-logistics phrasing does the opposite of what this field is for: a reviewer does not read it as caution, they read it as a store that cannot say who holds its stock. Equally, do not name a town you have no presence in &mdash; a specific false claim about fulfilment is acted on rather than queried.
 				</p>
 				<p class="description">
-					Prefilled from the town in your registered office address. Check it is the place you really ship from before saving.
+					Prefilled from the town in your returns address, or your registered office address if you haven&rsquo;t set one &mdash; a registered office is often just an accountant&rsquo;s address, so check this is the place you really ship from before saving.
 				</p>
 			<?php endif; ?>
 			<?php if ( 'shipping_carriers' === $key ) : ?>

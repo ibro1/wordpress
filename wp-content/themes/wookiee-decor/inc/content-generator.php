@@ -658,6 +658,15 @@ function wookiee_missing_critical_business_fields() {
 
 function wookiee_business_details_block() {
 	$lines = array(
+		/*
+		 * The prompts ask for an effective-date line "using the current date".
+		 * A language model has no clock, so it was answering from its training
+		 * data - the live terms page went out stamped "Last updated: October
+		 * 2023", which is exactly the kind of stale-looking date a compliance
+		 * reviewer treats as evidence the page is unmaintained. Today's date
+		 * is a business fact like any other and belongs in this block.
+		 */
+		'Today\'s date (use this, and only this, for any "last updated" or effective-date line): ' . date_i18n( 'j F Y' ),
 		'Business/trading name: ' . wookiee_get_setting( 'business_name' ),
 		'Registered address: ' . str_replace( "\n", ', ', wookiee_get_setting( 'registered_address' ) ),
 		'Company number: ' . wookiee_get_setting( 'company_number' ),
@@ -695,6 +704,16 @@ function wookiee_business_details_block() {
 		'Order cancellation period after ordering (before dispatch - not the same as the returns window above): ' . wookiee_get_setting( 'cancellation_period' ),
 		'Restocking fees: ' . wookiee_get_setting( 'restocking_fee' ),
 		'Returns address: ' . str_replace( "\n", ', ', wookiee_get_returns_address() ),
+		/*
+		 * Both of these were named by the prompts below and supplied by
+		 * nothing, so the model did as it was told and published
+		 * "[Business input required: ...]" placeholders in their place.
+		 * Carriers may legitimately be empty - the prompt has a generic
+		 * fallback for it - so the line says so rather than leaving the model
+		 * to interpret a bare empty value.
+		 */
+		'Delivery carriers used: ' . ( '' !== trim( (string) wookiee_get_setting( 'shipping_carriers' ) ) ? wookiee_get_setting( 'shipping_carriers' ) : 'not specified - refer to "a tracked UK courier service" in general terms, do not name a carrier and do not use a placeholder' ),
+		'Payment methods accepted: ' . wookiee_get_setting( 'payment_methods' ),
 		'Website: ' . home_url( '/' ),
 	);
 	return implode( "\n", $lines );
@@ -744,7 +763,8 @@ function wookiee_founder_voice_block() {
 function wookiee_build_audit_feedback_block( $previous_audit ) {
 	$block = "A previous version of this exact page was reviewed by a compliance auditor and scored below full marks. That review is reproduced below. You are rewriting the page specifically to resolve every issue it raises - this is not a fresh first draft.\n\n"
 		. "--- PREVIOUS COMPLIANCE REVIEW ---\n" . trim( (string) $previous_audit ) . "\n--- END REVIEW ---\n\n"
-		. "Address every point in that review. Keep whatever the review did not criticise. Where the review says information is missing and it genuinely isn't available in the business details above, use an explicit \"[Business input required: X]\" placeholder rather than inventing it or silently omitting the section - a missing fact the owner can fill in scores better, and is more honest, than a plausible-sounding guess.";
+		. "Address every point in that review. Keep whatever the review did not criticise. Where the review says information is missing and it genuinely isn't available in the business details above, use an explicit \"[Business input required: X]\" placeholder rather than inventing it or silently omitting the section - a missing fact the owner can fill in scores better, and is more honest, than a plausible-sounding guess.\n\n"
+		. "Apply the placeholder test from the rules above before writing one, and apply it to any placeholder already in the page you are rewriting: if the fact is now present in the business details, fill it in; if the topic has a true general formulation, use it; if it is standard or statutory wording, write it out. A placeholder that survives a rewrite because it was in the previous draft is the most common way these pages keep the same score twice.";
 
 	return wookiee_maybe_override( 'policy_audit_feedback', $block, array( 'previous_audit' => $previous_audit ) );
 }
@@ -766,6 +786,7 @@ function wookiee_build_content_prompt( $key, $brief, $previous_audit = '' ) {
 			. "Rules:\n"
 			. "- Check against UK GDPR, the Data Protection Act 2018, the Consumer Rights Act 2015, the Consumer Contracts Regulations, the Electronic Commerce Regulations, and PECR, wherever relevant to this specific policy.\n"
 			. "- Do not invent any business fact beyond the details given above. If something relevant is missing, write a clear inline placeholder like \"[Business input required: X]\" instead of guessing.\n"
+			. "- A placeholder is a LAST RESORT, not a way to acknowledge a topic. Before writing one, check three things: is the fact already in the business details above under a different label; does the topic have an accepted general formulation that is true without it (carriers are the standard example - \"a tracked UK courier service\" is a complete answer); and is it something only the owner can supply at all. Statutory templates and standard wording are NEVER a business input - a model cancellation form, for instance, is a fixed form filled in from the business name and address given above, so write it out rather than asking the owner for it. Only a genuine, owner-only, un-generalisable fact earns a placeholder. Every placeholder published is a visible gap on a live page, and a reviewer counts it as missing information rather than as honesty.\n"
 			. "- Do not copy another company's policy text.\n"
 			. "- Write in plain, professional, customer-friendly English - not robotic or generic-sounding boilerplate.\n"
 			. "- A policy page is still the business speaking, not a template: where it is not a legal requirement to use set wording, use the business's own plain voice.\n"
@@ -776,7 +797,7 @@ function wookiee_build_content_prompt( $key, $brief, $previous_audit = '' ) {
 			. "- State the business's full legal/trading name and company registration number explicitly within the body text itself (not only implied) - UK company law expects this on formal business documents, and it must appear even if it feels repetitive with other sections.\n"
 			. "- Do NOT tell the reader to consult a solicitor, and do NOT state that this is not legal advice. This page is the shop speaking to its customers; advice about having it reviewed is for the shop owner, not for the person reading it, and printing it undermines the document in front of the very people it is written for.\n"
 			. "- Open with a short PLAIN-ENGLISH SUMMARY headed '## The short version': three to five bullet-style sentences giving the answers most readers came for, before any formal wording. State that it is a summary and the detail below governs. Almost no store does this; it is the single thing that makes a policy page usable rather than merely present.\n"
-			. "- Give an effective date line ('Last updated: <month year>') using the current date, and say the current version is the one that applies to orders placed while it is published.\n"
+			. "- Give an effective date line ('Last updated: <month year>') taken from the \"Today's date\" line in the business details above - do not use any other date, and do not date it from memory - and say the current version is the one that applies to orders placed while it is published.\n"
 			. "- Name the actual legislation where it is relied on, in full and correctly: the Consumer Rights Act 2015, the Consumer Contracts (Information, Cancellation and Additional Charges) Regulations 2013, the Electronic Commerce (EC Directive) Regulations 2002, UK GDPR and the Data Protection Act 2018, the Privacy and Electronic Communications Regulations 2003. A named instrument is checkable; 'consumer law' is not.\n"
 			. "- Include a pricing and availability error clause: what happens if an item is listed at the wrong price or is unavailable after an order is placed - that the business may cancel and refund in full before dispatch, and that a customer is never charged more than the price shown at checkout without agreeing to it.\n"
 			. "- Open with a SCOPE paragraph: what this policy covers, which goods it applies to, and which country's customers. Then a DEFINITIONS line fixing the ambiguous terms it uses - that 'we', 'us' and 'our' mean the named legal entity, and that 'UK local time' means Greenwich Mean Time or British Summer Time as applicable.\n"
@@ -827,10 +848,27 @@ function wookiee_build_content_prompt( $key, $brief, $previous_audit = '' ) {
 				. "Commit to updating this page if the fulfilment arrangements materially change.\n\n"
 				. "State the delivery timings EXPLICITLY and separately, using the real values given in the business details above: how long before an order is dispatched (handling time), how long it then takes in transit, and the total a customer should expect from order to doorstep. This is the single thing most people open a shipping page to find, and a policy that describes dispatch without ever saying when the parcel arrives has not answered it.\n"
 				. "Also cover what happens when delivery goes wrong - a parcel that is late, lost, damaged in transit, or returned as undeliverable because nobody was in or the address was wrong - and say what the customer should do in each case.\n"
-				. "Name the delivery service/carrier used in general terms (e.g. \"a tracked UK courier service\") and confirm that tracking information is provided once an order is dispatched - do not invent a specific named carrier if none was given, but do not omit the topic either.\n"
+				. "Name the carriers given on the 'Delivery carriers used' line above. If that line says none were specified, describe the service in general terms instead (e.g. \"a tracked UK courier service\") - that is a complete and accurate answer, so do NOT write a placeholder asking the owner to name a carrier, and do not omit the topic either. Confirm that tracking information is provided once an order is dispatched.\n"
 				. "If shipping costs are non-refundable in some circumstances, state clearly that this does not apply where the goods are faulty, not as described, or the order was cancelled under the customer's statutory rights - do not state a blanket non-refundable shipping rule without that carve-out.\n"
 				. "Do not restate return-period or refund-process details here beyond a one-line pointer to the Returns Policy (at /returns/) by name - that policy is the single source of truth for returns, to avoid the two pages describing it inconsistently.\n"
 				. "If the niche brief mentions sustainability/eco-friendly framing, do not make unsubstantiated environmental claims here - keep any such mention brief and factual, or omit it if it's not something concretely described in the business details above.";
+		}
+
+		/*
+		 * Terms had no per-page block at all, and it showed: every one of the
+		 * placeholders published on the live terms page landed in a topic the
+		 * shared prompt names but nothing here tells it how to answer. Payment
+		 * methods and carriers now have fields; the model cancellation form
+		 * never needed one - it is a statutory template, and the returns page
+		 * already writes it out in full, so terms points at it rather than
+		 * asking the owner to write one.
+		 */
+		if ( 'terms' === $key ) {
+			$prompt .= "\n\nName the payment methods from the 'Payment methods accepted' line in the business details, as the customer-facing brands they are. Do not write \"major payment methods\" or similar filler, and do not write a placeholder for this.\n"
+				. "On the model cancellation form required by the Consumer Contracts Regulations: the Returns Policy at /returns/ sets it out in full. Point the reader there in one line. Do NOT reproduce the form here, and above all do not write a placeholder asking the business to supply one - it is a fixed statutory template, not a business input, and the two pages carrying separate copies of it is how they end up disagreeing.\n"
+				. "Set out how a contract is formed: that an order confirmation acknowledges receipt rather than accepting the order, and that acceptance happens on dispatch. Customers dispute this exact point and terms pages routinely leave it unsaid.\n"
+				. "State the governing law and jurisdiction, and get it right for where the business is registered - England and Wales, Scotland, or Northern Ireland as applicable, taken from the registered address above. Add that a consumer keeps the right to bring proceedings in their own place of residence.\n"
+				. "Do not restate the shipping, returns or privacy policies at length. Summarise each in a sentence and point to it by name and path (/shipping/, /returns/, /privacy-policy/) - terms is the map, not a second copy of the territory.";
 		}
 
 		if ( 'payment' === $key ) {
@@ -1101,7 +1139,18 @@ function wookiee_build_policy_audit_prompt( $title, $policy_text ) {
 		. "  * concrete values where the business has them - vague commitments like 'promptly' or 'as long as necessary' commit to nothing and should be flagged;\n"
 		. "  * on shipping: where orders are dispatched from, given as a named town and country - treat a hedged origin ('may dispatch from within or outside the UK', 'our supplier partners', 'fulfilment partners', 'third-party logistics') as an issue in its own right rather than as acceptable caution, since it answers the disclosure with a refusal to answer it; also carriers and their role, whether the Crown Dependencies are covered, per-order vs per-item charging;\n"
 		. "  * on returns: the Consumer Rights Act tiered remedies stated correctly (30-day short-term right to reject, then repair or replacement, then final right to reject or price reduction), who pays return postage in each case, and a model cancellation form;\n"
-		. "  * on privacy: named controller, actual retention periods, international transfers, and the ICO complaint route.\n\n"
+		. "  * on privacy: named controller, actual retention periods, international transfers, and the ICO complaint route.\n"
+		/*
+		 * Both of these were sitting in plain sight on a page that still scored
+		 * a middling pass: a returns address in a different county from the
+		 * registered office, and a registered company name belonging to an
+		 * entirely different trade from the goods being sold. Neither is a
+		 * missing section, so nothing in the list above caught them, and both
+		 * are exactly what a Merchant Center reviewer reads as a front.
+		 */
+		. "  * internal consistency of the business's own details: two different postal addresses used for the same purpose, a phone number or company number that does not match the others, a trading name that differs between sections. Flag the contradiction and say which values disagree - do not pick one and assume the rest are typos.\n"
+		. "  * whether the named legal entity plausibly matches the goods described. A registered name from an unrelated trade selling something else entirely (an apparel company selling skincare, say) is not a wording problem, it is the misrepresentation signal a Merchant Center review acts on, and it should be raised even though every individual sentence reads correctly.\n"
+		. "  * any remaining \"[Business input required: X]\" placeholder, or any equivalent bracketed gap, TBC or blank left in the published text. Treat each one as a Serious issue: it is a visible hole on a live page, and it tells a reviewer the business has not finished setting up.\n\n"
 		. "Do not invent legal obligations that don't apply, and do not assume any business fact that isn't present in the text above - flag missing information instead of guessing. Note: a business-offered returns window longer than 14 days (e.g. 30 days) is normal and legal - it sits alongside, not instead of, the customer's 14-day statutory cancellation right under the Consumer Contracts Regulations. Only flag this as an issue if the text is genuinely unclear about the two coexisting, not merely because two different day-counts appear.\n\n"
 		. "Output in plain text, no markdown, using exactly this structure:\n"
 		. "OVERALL SCORE: a number from 1 to 10, calibrated strictly against the ISSUES FOUND list you produce below - do not default to a middle score out of habit:\n"

@@ -70,12 +70,58 @@ function wookiee_lookup_business_phone( $business, $address = '' ) {
 			. ( isset( $result['snippet'] ) ? $result['snippet'] : '' );
 	}
 
-	$answer = wookiee_call_llm( wookiee_build_phone_lookup_prompt( $business, $address, implode( "\n\n", $lines ) ), 120 );
+	$results_block = implode( "\n\n", $lines );
+
+	$answer = wookiee_call_llm( wookiee_build_phone_lookup_prompt( $business, $address, $results_block ), 120 );
 	if ( is_wp_error( $answer ) ) {
 		return '';
 	}
 
-	return wookiee_parse_phone_answer( $answer );
+	$number = wookiee_parse_phone_answer( $answer );
+
+	/*
+	 * The prompt tells the model the number must appear in the results and that
+	 * it must not construct or complete one. Nothing checked that it obeyed,
+	 * and a fabricated number is the one failure mode this whole function is
+	 * built to avoid - it passes every shape test, looks filled in, and so
+	 * never gets read again. A store went live publishing one.
+	 *
+	 * So verify it rather than trusting it: the digits have to be present in
+	 * the text the model was shown. Separators are stripped from the haystack
+	 * (numbers are written "020 7946 0000", "(020) 7946-0000" and every
+	 * variation in between) while letters are kept, so two unrelated numbers
+	 * cannot merge into a match across a sentence boundary.
+	 */
+	if ( '' !== $number && ! wookiee_phone_appears_in( $number, $results_block ) ) {
+		return '';
+	}
+
+	return $number;
+}
+
+/**
+ * True when a candidate number's digits genuinely occur in the source text.
+ *
+ * Compares on the national portion, since a page may print "020 7946 0000"
+ * where the model answered "+44 20 7946 0000" - the leading 44 is a formatting
+ * choice the model was explicitly asked to make, not evidence of invention.
+ */
+function wookiee_phone_appears_in( $number, $haystack ) {
+	$digits = preg_replace( '/\D/', '', (string) $number );
+
+	if ( 0 === strpos( $digits, '44' ) ) {
+		$digits = substr( $digits, 2 );
+	}
+
+	$digits = ltrim( $digits, '0' );
+
+	if ( strlen( $digits ) < 7 ) {
+		return false;
+	}
+
+	$flat = preg_replace( '/[\s().\-\x{2010}-\x{2015}]+/u', '', (string) $haystack );
+
+	return false !== strpos( $flat, $digits );
 }
 
 function wookiee_build_phone_lookup_prompt( $business, $address, $results_block ) {
@@ -129,7 +175,40 @@ function wookiee_parse_phone_answer( $answer ) {
 		return '';
 	}
 
+	if ( ! wookiee_uk_phone_shape_is_valid( $digits ) ) {
+		return '';
+	}
+
 	return $number;
+}
+
+/**
+ * Structural check on a UK number, on top of the digit count above.
+ *
+ * The count check catches a date or a company number but not a number of
+ * simply the wrong shape. Ofcom has never issued an 04 or 06 range, and the 05
+ * range is only 055, 056 and the withdrawn 0500, so a number outside the
+ * allocated openings cannot be anyone's line however plausible its length.
+ *
+ * Non-UK numbers pass untouched. The theme is UK-facing, but a UK company may
+ * perfectly well publish an overseas support line, and rejecting one on a
+ * guess about its country would be worse than the problem being fixed.
+ */
+function wookiee_uk_phone_shape_is_valid( $digits ) {
+	if ( 0 === strpos( $digits, '44' ) ) {
+		$national = ltrim( substr( $digits, 2 ), '0' );
+	} elseif ( 0 === strpos( $digits, '0' ) ) {
+		$national = ltrim( $digits, '0' );
+	} else {
+		return true;
+	}
+
+	// UK subscriber numbers run to 9 or 10 digits after the trunk prefix.
+	if ( strlen( $national ) < 9 || strlen( $national ) > 10 ) {
+		return false;
+	}
+
+	return 1 === preg_match( '/^(1|2|3|500|55|56|7|80|84|87|9)/', $national );
 }
 
 add_action( 'wp_ajax_wookiee_lookup_phone', 'wookiee_lookup_phone_handler' );

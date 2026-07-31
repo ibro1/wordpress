@@ -112,6 +112,62 @@ function wookiee_guess_dispatch_town( $fallback_address = '' ) {
 	return '' !== $town ? $town : $last;
 }
 
+/**
+ * The payment methods the store actually accepts, read from WooCommerce's
+ * enabled gateways.
+ *
+ * Policies have to name these - "we accept major payment methods" commits to
+ * nothing and reads as filler - but there was no field for them, so the
+ * generator had no choice but to emit a "[Business input required: Payment
+ * methods]" placeholder into the published page. Asking the owner to retype
+ * a list WooCommerce already holds would be the wrong fix; this reads the
+ * enabled gateways and uses their customer-facing titles, which is both
+ * accurate and self-maintaining when a gateway is switched on or off.
+ *
+ * Statically cached: wookiee_settings_fields() is called on every
+ * wookiee_get_setting(), which on a page render is dozens of times, and
+ * instantiating the gateway objects is not free. Guarded on
+ * woocommerce_init because the gateways do not exist before it.
+ */
+function wookiee_detect_payment_methods() {
+	static $detected = null;
+
+	if ( null !== $detected ) {
+		return $detected;
+	}
+
+	/*
+	 * Nothing is cached until WooCommerce is actually up. wookiee_get_setting()
+	 * runs early and often, so an "" answered before woocommerce_init would
+	 * otherwise stick for the rest of the request and the field would look
+	 * undetectable on a store where the gateways are sitting right there.
+	 */
+	if ( ! function_exists( 'WC' ) || ! did_action( 'woocommerce_init' ) ) {
+		return '';
+	}
+
+	$gateways = WC()->payment_gateways();
+	if ( ! $gateways ) {
+		return '';
+	}
+
+	$detected = '';
+
+	$titles = array();
+	foreach ( $gateways->payment_gateways() as $gateway ) {
+		if ( isset( $gateway->enabled ) && 'yes' === $gateway->enabled ) {
+			$title = trim( wp_strip_all_tags( $gateway->get_title() ) );
+			if ( '' !== $title ) {
+				$titles[] = $title;
+			}
+		}
+	}
+
+	$detected = implode( ', ', array_unique( $titles ) );
+
+	return $detected;
+}
+
 function wookiee_settings_fields() {
 	/*
 	 * Declared once because dispatch_origin's default is built from it - the
@@ -250,6 +306,33 @@ function wookiee_settings_fields() {
 			'type'        => 'textarea',
 			'prefill'     => true,
 		),
+		/*
+		 * Carriers and payment methods: both were named by the policy prompts
+		 * as things to state, and neither had a field to state them from, so
+		 * both came out of the generator as "[Business input required: ...]"
+		 * placeholders published live on the page.
+		 *
+		 * They are handled differently on purpose. A carrier has an acceptable
+		 * generic answer ("a tracked UK courier service"), so leaving this
+		 * blank is a real choice and the prompt falls back to that phrasing
+		 * rather than a placeholder. Payment methods have no acceptable vague
+		 * form - "we accept major payment methods" is filler - but WooCommerce
+		 * already knows the answer, so the default is detected rather than
+		 * asked for.
+		 */
+		'shipping_carriers'  => array(
+			'label'       => 'Delivery carriers (optional)',
+			'default'     => '',
+			'placeholder' => 'Royal Mail, Evri, DPD',
+			'type'        => 'text',
+		),
+		'payment_methods'    => array(
+			'label'       => 'Payment methods accepted',
+			'default'     => wookiee_detect_payment_methods(),
+			'placeholder' => 'Visa, Mastercard, American Express, PayPal, Apple Pay',
+			'type'        => 'text',
+			'prefill'     => true,
+		),
 		'restocking_fee'     => array( 'label' => 'Restocking fee policy', 'default' => 'We do not charge restocking fees', 'type' => 'text' , 'prefill' => true),
 		'cancellation_period' => array( 'label' => 'Cancellation period (after ordering)', 'default' => '24 hours', 'type' => 'text' , 'prefill' => true),
 		'facebook_url'       => array( 'label' => 'Facebook URL (leave blank to hide the icon)', 'default' => '', 'type' => 'url' ),
@@ -279,7 +362,7 @@ function wookiee_settings_tabs() {
 		),
 		'shipping' => array(
 			'label'  => 'Shipping & Returns',
-			'fields' => array( 'shipping_rate', 'shipping_dispatch', 'handling_time', 'transit_time', 'estimated_delivery', 'dispatch_origin', 'returns_address', 'returns_period_days', 'cancellation_period', 'restocking_fee' ),
+			'fields' => array( 'shipping_rate', 'shipping_dispatch', 'handling_time', 'transit_time', 'estimated_delivery', 'dispatch_origin', 'shipping_carriers', 'payment_methods', 'returns_address', 'returns_period_days', 'cancellation_period', 'restocking_fee' ),
 		),
 		'homepage' => array(
 			'label'  => 'Homepage Copy',
@@ -438,6 +521,20 @@ function wookiee_render_settings_field_row( $key, $field ) {
 				</p>
 				<p class="description">
 					Prefilled from the town in your registered office address. Check it is the place you really ship from before saving.
+				</p>
+			<?php endif; ?>
+			<?php if ( 'shipping_carriers' === $key ) : ?>
+				<p class="description">Who actually carries your parcels, e.g. &ldquo;Royal Mail, Evri&rdquo;. Optional &mdash; leave it blank and your policies will say &ldquo;a tracked UK courier service&rdquo; instead, which is accurate and perfectly acceptable. Only name a carrier you genuinely use.</p>
+			<?php endif; ?>
+			<?php if ( 'payment_methods' === $key ) : ?>
+				<?php $wookiee_detected_gateways = wookiee_detect_payment_methods(); ?>
+				<p class="description">
+					What customers can pay with. Your policy pages have to name these &mdash; &ldquo;we accept major payment methods&rdquo; commits to nothing and reads as filler to a reviewer.
+					<?php if ( '' !== $wookiee_detected_gateways ) : ?>
+						Prefilled from the payment gateways currently enabled in WooCommerce (<?php echo esc_html( $wookiee_detected_gateways ); ?>). Edit it if you want the card brands spelled out &mdash; customers look for &ldquo;Visa, Mastercard&rdquo; rather than the name of the gateway processing them.
+					<?php else : ?>
+						No enabled WooCommerce payment gateways were detected, so this needs filling in by hand. List what customers actually see at checkout.
+					<?php endif; ?>
 				</p>
 			<?php endif; ?>
 

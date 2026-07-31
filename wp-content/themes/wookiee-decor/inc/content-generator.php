@@ -1214,7 +1214,15 @@ function wookiee_build_policy_audit_prompt( $title, $policy_text, $key = '' ) {
 		. "  * durations given as calendar or working days and said which, amounts in a named currency;\n"
 		. "  * concrete values where the business has them - vague commitments like 'promptly' or 'as long as necessary' commit to nothing and should be flagged;\n"
 		. "  * on shipping: where orders are dispatched from, given as a named town and country - treat a hedged origin ('may dispatch from within or outside the UK', 'our supplier partners', 'fulfilment partners', 'third-party logistics') as an issue in its own right rather than as acceptable caution, since it answers the disclosure with a refusal to answer it; also carriers and their role, whether the Crown Dependencies are covered, per-order vs per-item charging;\n"
-		. "  * on returns: the Consumer Rights Act tiered remedies stated correctly (30-day short-term right to reject, then repair or replacement, then final right to reject or price reduction), who pays return postage in each case, and a model cancellation form;\n"
+		/*
+		 * "and a model cancellation form" used to read as a requirement on
+		 * every page. The generator was told to write the form on the Returns
+		 * Policy only and to cross-reference it from anywhere else, so the two
+		 * instructions contradicted: the audit asked Terms to add a form, the
+		 * generator refused and pointed at /returns/, and the score never
+		 * moved however many times it was regenerated. Scoped explicitly.
+		 */
+		. "  * on returns SPECIFICALLY: the Consumer Rights Act tiered remedies stated correctly (30-day short-term right to reject, then repair or replacement, then final right to reject or price reduction), who pays return postage in each case, and a model cancellation form written out in full. On ANY OTHER page a one-line cross-reference to the Returns Policy is the correct and complete treatment - do not raise the absence of a cancellation form as an issue anywhere except the Returns Policy itself;\n"
 		. "  * on privacy: named controller, actual retention periods, international transfers, and the ICO complaint route.\n"
 		/*
 		 * Both of these were sitting in plain sight on a page that still scored

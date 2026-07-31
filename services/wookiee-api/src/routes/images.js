@@ -233,7 +233,17 @@ router.post('/generate', async (req, res) => {
     // does not show it to the customer.
     return res.json({ image_base64: result.base64, model: result.model });
   } catch (err) {
-    return res.status(502).json({ error: `Image generation failed: ${err.message}` });
+    /*
+     * Generic to the caller, detailed in the log.
+     *
+     * err.message carries the provider label and its own wording - "OpenAI:
+     * Incorrect API key provided: sk-...". That is the operator's business,
+     * and it was being rendered on a customer's WordPress screen: which vendor
+     * the platform runs on, and the state of its credentials. Neither is
+     * something a store owner can act on or should see.
+     */
+    console.error('[images/generate]', target.id, err.message);
+    return res.status(502).json({ error: 'Image generation failed. If this keeps happening, contact support.' });
   }
 });
 

@@ -270,7 +270,7 @@ function wookiee_generate_slot_image( $slot, $brief ) {
 
 	$encoded = isset( $result['image_base64'] ) ? (string) $result['image_base64'] : '';
 	if ( '' === $encoded ) {
-		return new WP_Error( 'wookiee_image_empty', 'The backend returned no image.' );
+		return new WP_Error( 'wookiee_image_empty', 'Image generation did not return an image. Try again.' );
 	}
 
 	$binary = base64_decode( $encoded, true );

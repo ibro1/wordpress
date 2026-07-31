@@ -207,7 +207,7 @@ function wookiee_render_setup_wizard_page() {
 				<span id="wookiee-phone-lookup-status" class="description" style="margin-left:8px;"></span>
 			</p>
 			<p class="description">
-				Searches for the number this business already publishes and fills the field above. Optional &mdash; if it finds nothing, type one in. Needs a Firecrawl key on the backend; without one it simply reports nothing found.
+				Searches for a number this business already publishes online and fills the field above. Optional &mdash; if nothing is found, just type one in.
 			</p>
 
 			<h3>Social media</h3>

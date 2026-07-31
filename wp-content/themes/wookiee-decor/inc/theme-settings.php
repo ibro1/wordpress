@@ -331,6 +331,19 @@ function wookiee_render_settings_field_row( $key, $field ) {
 			<?php if ( 'companies_house_api_key' === $key ) : ?>
 				<p class="description">Only needed to use the lookup button above. Free to obtain, one per WordPress install.</p>
 			<?php endif; ?>
+			<?php if ( 'dispatch_origin' === $key ) : ?>
+				<p class="description">
+					Where parcels are actually sent from. This goes into the Shipping policy, and it is the first thing a payment provider or Google Merchant Center review looks for &mdash; a store that will not say where its stock ships from reads as one with something to hide.
+				</p>
+				<p class="description">
+					<strong>If you hold and post your own stock:</strong> name the town and country, e.g. &ldquo;Our own premises in Petersfield, England, United Kingdom&rdquo;.<br>
+					<strong>If your supplier ships direct to the customer:</strong> say so, e.g. &ldquo;Our supplier partners, who may dispatch from within or outside the United Kingdom. The dispatch location for each order is confirmed when it ships.&rdquo;
+				</p>
+				<p class="description">
+					There is deliberately no default. Write what is true for this store &mdash; leaving it blank is safe, because the policy will then say dispatch details are confirmed on dispatch rather than inventing a location, but a wrong answer here is the kind that costs a merchant account.
+				</p>
+			<?php endif; ?>
+
 			<?php if ( 'cj_api_key' === $key ) : ?>
 				<p class="description">From your CJ Dropshipping account: My CJ → API Setting. Used with the email above to authenticate the <a href="<?php echo esc_url( admin_url( 'admin.php?page=wookiee-supplier-catalog' ) ); ?>">Wookiee Supplier Catalog</a> page.</p>
 			<?php endif; ?>

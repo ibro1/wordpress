@@ -31,7 +31,7 @@ function wookiee_remove_background_to_white( $image_url ) {
 			return $result;
 		}
 		if ( empty( $result['image_base64'] ) ) {
-			return new WP_Error( 'wookiee_bg_no_image', 'The backend did not return a processed image.' );
+			return new WP_Error( 'wookiee_bg_no_image', 'Background removal did not return an image. Try again.' );
 		}
 		return wookiee_composite_png_onto_white( base64_decode( $result['image_base64'] ) );
 	}

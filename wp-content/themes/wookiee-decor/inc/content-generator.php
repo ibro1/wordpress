@@ -791,12 +791,24 @@ function wookiee_build_content_prompt( $key, $brief, $previous_audit = '' ) {
 			. "- In that same section, also explain how a customer can escalate a complaint if they're unhappy with how it was handled directly - mention that UK customers can contact Citizens Advice or their local Trading Standards if the issue can't be resolved with the business directly. Do not just give the contact email and stop.\n"
 			. "- Include a brief note that this policy may be updated from time to time and customers should check this page periodically.\n"
 			. "- Where genuinely relevant, refer to the store's other policies by name (e.g. mention the Privacy Policy when discussing personal data, the Returns Policy when discussing refunds) rather than repeating their content.\n"
+			. "- STAY IN SCOPE. Write this policy and only this policy. If a topic belongs to another page - order cancellations, pricing errors, refunds and return postage on a privacy policy, say, or data-subject rights on a shipping policy - name that policy and its path in one line and move on. Do not write the section here. Two pages covering the same ground is how they come to contradict each other, and a policy that wanders outside its title reads to a reviewer as generated rather than written.\n"
+			. "- A model cancellation form belongs on the Returns Policy and nowhere else. If another page needs to mention it, point to /returns/ in a line rather than reproducing the form.\n"
 			. "- State the business's full legal/trading name and company registration number explicitly within the body text itself (not only implied) - UK company law expects this on formal business documents, and it must appear even if it feels repetitive with other sections.\n"
 			. "- Do NOT tell the reader to consult a solicitor, and do NOT state that this is not legal advice. This page is the shop speaking to its customers; advice about having it reviewed is for the shop owner, not for the person reading it, and printing it undermines the document in front of the very people it is written for.\n"
 			. "- Open with a short PLAIN-ENGLISH SUMMARY headed '## The short version': three to five bullet-style sentences giving the answers most readers came for, before any formal wording. State that it is a summary and the detail below governs. Almost no store does this; it is the single thing that makes a policy page usable rather than merely present.\n"
 			. "- Give an effective date line ('Last updated: <month year>') taken from the \"Today's date\" line in the business details above - do not use any other date, and do not date it from memory - and say the current version is the one that applies to orders placed while it is published.\n"
 			. "- Name the actual legislation where it is relied on, in full and correctly: the Consumer Rights Act 2015, the Consumer Contracts (Information, Cancellation and Additional Charges) Regulations 2013, the Electronic Commerce (EC Directive) Regulations 2002, UK GDPR and the Data Protection Act 2018, the Privacy and Electronic Communications Regulations 2003. A named instrument is checkable; 'consumer law' is not.\n"
-			. "- Include a pricing and availability error clause: what happens if an item is listed at the wrong price or is unavailable after an order is placed - that the business may cancel and refund in full before dispatch, and that a customer is never charged more than the price shown at checkout without agreeing to it.\n"
+			/*
+			 * Commerce pages only. This sat in the shared rules and so was
+			 * being applied to the Privacy and Cookie policies as well, which
+			 * is how a privacy policy ended up carrying "Pricing and
+			 * availability errors" and "Order cancellations" sections. A rule
+			 * about what happens to an order has no business in a document
+			 * about personal data.
+			 */
+			. ( in_array( $key, array( 'terms', 'payment', 'returns', 'shipping' ), true )
+				? "- Include a pricing and availability error clause: what happens if an item is listed at the wrong price or is unavailable after an order is placed - that the business may cancel and refund in full before dispatch, and that a customer is never charged more than the price shown at checkout without agreeing to it.\n"
+				: '' )
 			. "- Open with a SCOPE paragraph: what this policy covers, which goods it applies to, and which country's customers. Then a DEFINITIONS line fixing the ambiguous terms it uses - that 'we', 'us' and 'our' mean the named legal entity, and that 'UK local time' means Greenwich Mean Time or British Summer Time as applicable.\n"
 			. "- Include a statutory-rights savings clause, in substance: nothing in this policy excludes, restricts or replaces any statutory consumer right or remedy that cannot lawfully be excluded or restricted. A policy that reads as if it overrides consumer law is worse than no policy.\n"
 			. "- State amounts in pounds sterling and say so. State time periods in CALENDAR days (or working days) and say which - 'within 14 days' is ambiguous and ambiguity is what disputes are made of.\n"
@@ -1050,7 +1062,7 @@ function wookiee_audit_policy_page_handler() {
 		wp_send_json_error( array( 'message' => 'Select a valid policy draft first.' ) );
 	}
 
-	$prompt = wookiee_build_policy_audit_prompt( $post->post_title, wp_strip_all_tags( $post->post_content ) );
+	$prompt = wookiee_build_policy_audit_prompt( $post->post_title, wp_strip_all_tags( $post->post_content ), wookiee_policy_key_for_post( $post ) );
 	$report = wookiee_call_llm( $prompt, 3000 );
 
 	if ( is_wp_error( $report ) ) {
@@ -1119,7 +1131,74 @@ function wookiee_clear_audit_result( $post_id ) {
 	delete_post_meta( $post_id, '_wookiee_audit_date' );
 }
 
-function wookiee_build_policy_audit_prompt( $title, $policy_text ) {
+/**
+ * The report structure every audit must emit, whichever rubric produced it.
+ *
+ * Shared rather than duplicated because the parser and the dashboard read
+ * these exact labels - a second rubric that drifted on the wording of
+ * "OVERALL SCORE" would silently produce unscored cards.
+ */
+function wookiee_policy_audit_output_format() {
+	return "Output in plain text, no markdown, using exactly this structure:\n"
+		. "OVERALL SCORE: a number from 1 to 10, calibrated strictly against the ISSUES FOUND list you produce below - do not default to a middle score out of habit:\n"
+		. "  9-10 = zero or near-zero issues found, fully compliant\n"
+		. "  7-8 = only Minor issues found, nothing Serious\n"
+		. "  5-6 = one or two Serious issues, or several Minor ones\n"
+		. "  3-4 = three or more Serious issues, or any actively misleading statement\n"
+		. "  1-2 = missing required legal content entirely, or the page would likely trigger a GMC suspension\n"
+		. "GMC RISK: Low, Medium, or High, with a one-sentence reason\n"
+		. "LEGAL RISK: a short paragraph on UK legal concerns, if any\n"
+		. "ISSUES FOUND: a numbered list - what's wrong, how serious, how to fix it\n"
+		. "MISSING INFORMATION: anything the business needs to supply that isn't in the text\n"
+		. "RECOMMENDATION: a short closing paragraph\n\n"
+		. "Be critical and specific. This is a QA report for a human to act on - do not rewrite the page, only assess it.";
+}
+
+/**
+ * Which of the managed pieces a page is, matched on slug. '' when the page
+ * isn't one of them - the audit then falls back to the full policy rubric,
+ * which is the right default for anything unrecognised.
+ */
+function wookiee_policy_key_for_post( $post ) {
+	foreach ( wookiee_content_generator_pieces() as $piece_key => $piece ) {
+		if ( isset( $post->post_name ) && $piece['slug'] === $post->post_name ) {
+			return $piece_key;
+		}
+	}
+	return '';
+}
+
+function wookiee_build_policy_audit_prompt( $title, $policy_text, $key = '' ) {
+	/*
+	 * The Cookie Preferences page is deliberately generated as a short
+	 * customer-facing explainer sitting above the live consent toggles, not as
+	 * a legal instrument - and the generator prompt says so in as many words.
+	 * The auditor was never told, so it marked the page against the full
+	 * policy rubric and took marks off for the absence of things an explainer
+	 * has no reason to carry: a plain-English summary of itself, an effective
+	 * date, a statutory-rights savings clause, durations in calendar days. It
+	 * scored lowest of the seven pages for being exactly what it was asked to
+	 * be. Judge it on its own terms instead.
+	 */
+	if ( 'cookie_pref' === $key ) {
+		$prompt = "Act as a UK privacy and usability reviewer. Below is a store's Cookie Preferences page: a short, plain-English explainer that sits directly above the live consent toggles, NOT a legal policy. The full legal Cookie Policy is a separate page at /cookie/ and is reviewed separately.\n\n"
+			. "Page: {$title}\n\n"
+			. "--- PAGE TEXT ---\n{$policy_text}\n--- END PAGE TEXT ---\n\n"
+			. "Judge it ONLY on what this page is for. Do NOT mark it down for lacking a plain-English summary of itself, an effective/last-updated date, a statutory-rights savings clause, durations in calendar days, a company registration number, a complaints-escalation route, or any other apparatus of a formal policy - none of those belong on a preferences explainer, and their absence is correct rather than an omission.\n\n"
+			. "Review against:\n"
+			. "- PECR and UK GDPR as they actually apply to consent: that non-essential cookies are described as off until the customer agrees, that consent is as easy to refuse and to withdraw as it is to give, and that nothing on the page implies consent is required to use the site.\n"
+			. "- Accuracy: whether the categories described match what the store genuinely sets. Claiming analytics or marketing cookies the store does not use is as much a defect as failing to disclose ones it does.\n"
+			. "- Usefulness: whether a customer can tell what each category does and act on it, whether the browser-level instructions are correct and not fabricated, and whether it points to the full Cookie Policy by name.\n"
+			. "- Quality: weak, confusing or contradictory wording; generic boilerplate; AI-sounding text.\n\n"
+			. "Do not invent obligations that do not apply to an explainer page, and do not assume any business fact not present in the text - flag missing information instead of guessing.\n\n";
+
+		return wookiee_maybe_override(
+			'policy_audit',
+			$prompt . wookiee_policy_audit_output_format(),
+			array( 'title' => $title, 'policy_text' => $policy_text )
+		);
+	}
+
 	$prompt = "Act as a senior UK e-commerce compliance reviewer: a Google Merchant Center (GMC) policy reviewer, a UK solicitor specialising in consumer protection and e-commerce law, and a professional legal copywriter. Perform a compliance audit of the following policy page - do not just proofread it.\n\n"
 		. "Policy page: {$title}\n\n"
 		. "--- POLICY TEXT ---\n{$policy_text}\n--- END POLICY TEXT ---\n\n"
@@ -1149,19 +1228,16 @@ function wookiee_build_policy_audit_prompt( $title, $policy_text ) {
 		. "  * whether the named legal entity plausibly matches the goods described. A registered name from an unrelated trade selling something else entirely (an apparel company selling skincare, say) is not a wording problem, it is the misrepresentation signal a Merchant Center review acts on, and it should be raised even though every individual sentence reads correctly.\n"
 		. "  * any remaining \"[Business input required: X]\" placeholder, or any equivalent bracketed gap, TBC or blank left in the published text. Treat each one as a Serious issue: it is a visible hole on a live page, and it tells a reviewer the business has not finished setting up.\n\n"
 		. "Do not invent legal obligations that don't apply, and do not assume any business fact that isn't present in the text above - flag missing information instead of guessing. Note: a business-offered returns window longer than 14 days (e.g. 30 days) is normal and legal - it sits alongside, not instead of, the customer's 14-day statutory cancellation right under the Consumer Contracts Regulations. Only flag this as an issue if the text is genuinely unclear about the two coexisting, not merely because two different day-counts appear.\n\n"
-		. "Output in plain text, no markdown, using exactly this structure:\n"
-		. "OVERALL SCORE: a number from 1 to 10, calibrated strictly against the ISSUES FOUND list you produce below - do not default to a middle score out of habit:\n"
-		. "  9-10 = zero or near-zero issues found, fully compliant\n"
-		. "  7-8 = only Minor issues found, nothing Serious\n"
-		. "  5-6 = one or two Serious issues, or several Minor ones\n"
-		. "  3-4 = three or more Serious issues, or any actively misleading statement\n"
-		. "  1-2 = missing required legal content entirely, or the policy would likely trigger a GMC suspension\n"
-		. "GMC RISK: Low, Medium, or High, with a one-sentence reason\n"
-		. "LEGAL RISK: a short paragraph on UK legal concerns, if any\n"
-		. "ISSUES FOUND: a numbered list - what's wrong, how serious, how to fix it\n"
-		. "MISSING INFORMATION: anything the business needs to supply that isn't in the text\n"
-		. "RECOMMENDATION: a short closing paragraph\n\n"
-		. "Be critical and specific. This is a QA report for a human to act on - do not rewrite the policy, only assess it.";
+		/*
+		 * A policy that strays into another page's territory scores well on
+		 * every checklist above while being wrong in the way that matters: the
+		 * two pages drift, then contradict. Nothing here caught it, so a
+		 * privacy policy carrying pricing errors, order cancellations and a
+		 * model cancellation form passed as a middling score rather than a
+		 * flagged defect.
+		 */
+		. "Also flag material that belongs on a different page: order cancellations, pricing errors, refunds, return postage or a model cancellation form appearing on a privacy or cookie policy, data-subject rights appearing on a shipping policy, and so on. A page that answers another page's questions duplicates content that will drift out of step, and it reads as generated rather than written. A one-line cross-reference to the correct policy is right; a section is not.\n\n"
+		. wookiee_policy_audit_output_format();
 
 	return wookiee_maybe_override( 'policy_audit', $prompt, array( 'title' => $title, 'policy_text' => $policy_text ) );
 }

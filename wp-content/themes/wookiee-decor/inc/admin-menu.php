@@ -29,13 +29,15 @@ function wookiee_register_admin_menu() {
 }
 
 /**
- * The "suggest a niche" sparkle icon appears inside 4 different niche-
- * brief fields across 3 admin screens (Product Generator, Content
- * Generator, and both niche-brief fields on the Settings page). Rather
- * than duplicating the same CSS/JS in each render function, this loads
- * it once, only on those screens, and wires up any element matching
- * .wookiee-niche-suggest-btn found on the page - each screen only needs
- * to output the button markup itself (see wookiee_niche_suggest_button()).
+ * The "suggest a niche" sparkle icon now appears in exactly one place - the
+ * niche box on Setup > Business identity - since every other screen shows the
+ * niche read-only rather than offering a second place to change it. The JS
+ * still wires up any .wookiee-niche-suggest-btn on the page, so nothing breaks
+ * if another one is ever added.
+ *
+ * This stays enqueued across all the screens listed above regardless: the same
+ * stylesheet carries the Companies House search results and the domain
+ * suggestion/registration UI, which are very much still in use.
  */
 add_action( 'admin_enqueue_scripts', 'wookiee_enqueue_niche_suggest_assets' );
 function wookiee_enqueue_niche_suggest_assets( $hook ) {
@@ -194,7 +196,7 @@ function wookiee_enqueue_niche_suggest_assets( $hook ) {
 				var status = document.getElementById( statusId );
 				var brief  = document.getElementById( briefId ).value.trim();
 				if ( ! brief ) {
-					status.textContent = 'Describe the niche first.';
+					status.textContent = 'Set the niche in Setup › Business identity first.';
 					return;
 				}
 				btn.disabled = true;
@@ -932,6 +934,43 @@ function wookiee_enqueue_niche_suggest_assets( $hook ) {
 	wp_register_script( 'wookiee-niche-suggest', false, array(), false, true );
 	wp_enqueue_script( 'wookiee-niche-suggest' );
 	wp_add_inline_script( 'wookiee-niche-suggest', $js );
+}
+
+/**
+ * The niche, shown rather than offered for editing.
+ *
+ * Every downstream generator screen used to render its own editable copy of
+ * the one site-wide niche, each with its own suggest button. Changing it on
+ * any of them silently changed it for all of them - and for everything already
+ * generated from it, so a store could end up with policy pages written for one
+ * niche, products sourced for a second and homepage copy for a third, with
+ * nothing on screen showing they had diverged.
+ *
+ * The niche is set once, on Setup > Business identity. Everywhere else calls
+ * this: a hidden input carrying the value under the id that screen's JS
+ * already reads, plus a plain display of what it is and a link back to where
+ * it changes.
+ *
+ * @param string $field_id The element id that screen's existing JS reads.
+ */
+function wookiee_render_niche_readonly( $field_id ) {
+	$brief = (string) get_option( 'wookiee_niche_brief', '' );
+	$set   = '' !== trim( $brief );
+	$link  = admin_url( 'admin.php?page=wookiee-setup#business' );
+	?>
+	<input type="hidden" id="<?php echo esc_attr( $field_id ); ?>" value="<?php echo esc_attr( $brief ); ?>">
+	<div class="wookiee-niche-readonly" data-niche-display="1" data-link="<?php echo esc_url( $link ); ?>">
+		<?php if ( $set ) : ?>
+			<p style="margin:0;"><strong><?php echo esc_html( $brief ); ?></strong></p>
+			<p class="description">Set once for the whole site, so the policy pages, sourced products, copy and design all describe the same shop. <a href="<?php echo esc_url( $link ); ?>">Change it in Setup &rsaquo; Business identity</a> — anything already generated from the old niche needs regenerating afterwards.</p>
+			<?php if ( function_exists( 'wookiee_niche_is_excluded' ) && wookiee_niche_is_excluded( $brief ) ) : ?>
+				<div class="notice notice-warning inline" style="margin:8px 0 0;"><p>This niche is in a restricted category (skincare, cosmetics, health, wellness or similar). These attract Google Merchant Center scrutiny a small store cannot answer, and the supplier catalog barely stocks them. Change the niche before generating anything else from it.</p></div>
+			<?php endif; ?>
+		<?php else : ?>
+			<div class="notice notice-warning inline" style="margin:0;"><p>No niche set yet. <a href="<?php echo esc_url( $link ); ?>">Set it in Setup &rsaquo; Business identity</a> first — every generator on this page reads it.</p></div>
+		<?php endif; ?>
+	</div>
+	<?php
 }
 
 /**

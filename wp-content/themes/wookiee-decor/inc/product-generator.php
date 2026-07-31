@@ -96,28 +96,16 @@ function wookiee_render_product_generator_page() {
 			 * about. The niche is decided once, in Business Identity; every
 			 * later screen shows what it is and links back to it.
 			 *
-			 * The hidden input keeps the id the generate handler reads, so the
-			 * value still travels with the request without being editable here.
+			 * wookiee_render_niche_readonly() (inc/admin-menu.php) renders the
+			 * display and the hidden input that keeps the id this screen's
+			 * generate handler reads.
 			 */
-			$wookiee_brief_set  = '' !== trim( (string) $saved_brief );
-			$wookiee_brief_link = admin_url( 'admin.php?page=wookiee-setup#business' );
+			$wookiee_brief_set = '' !== trim( (string) $saved_brief );
 			?>
 			<tr>
 				<th scope="row">Niche</th>
 				<td>
-					<input type="hidden" id="wookiee-niche-brief" value="<?php echo esc_attr( $saved_brief ); ?>">
-					<?php // Rewritten in place by the wizard when step 2 saves a niche, so step 5 does not keep claiming there isn't one. ?>
-					<div id="wookiee-niche-display" data-link="<?php echo esc_url( $wookiee_brief_link ); ?>">
-					<?php if ( $wookiee_brief_set ) : ?>
-						<p style="margin:0;"><strong><?php echo esc_html( $saved_brief ); ?></strong></p>
-						<p class="description">Set once for the whole site, so every sourced product belongs in the same catalog. <a href="<?php echo esc_url( $wookiee_brief_link ); ?>">Change it in Setup &rsaquo; Business identity</a> — changing it here as well is what lets the two drift apart.</p>
-						<?php if ( wookiee_niche_is_excluded( $saved_brief ) ) : ?>
-							<div class="notice notice-warning inline" style="margin:8px 0 0;"><p>This niche is in a restricted category (skincare, cosmetics, health, wellness or similar). These attract Google Merchant Center scrutiny a small store cannot answer, and the supplier catalog barely stocks them. Change the niche before sourcing products.</p></div>
-						<?php endif; ?>
-					<?php else : ?>
-						<div class="notice notice-warning inline" style="margin:0;"><p>No niche set yet. <a href="<?php echo esc_url( $wookiee_brief_link ); ?>">Set it in Setup &rsaquo; Business identity</a> first — product sourcing has nothing to search for without it.</p></div>
-					<?php endif; ?>
-					</div>
+					<?php wookiee_render_niche_readonly( 'wookiee-niche-brief' ); ?>
 				</td>
 			</tr>
 			<tr>
@@ -356,7 +344,7 @@ function wookiee_render_product_generator_page() {
 			var count   = document.getElementById( 'wookiee-product-count' ).value;
 
 			if ( ! brief ) {
-				status.textContent = 'Describe the niche first.';
+				status.textContent = 'Set the niche in Setup › Business identity first.';
 				return;
 			}
 
@@ -546,7 +534,7 @@ function wookiee_generate_products_handler() {
 	$count = max( 1, min( WOOKIEE_AI_MAX_PRODUCTS, $count ) );
 
 	if ( '' === trim( $brief ) ) {
-		wp_send_json_error( array( 'message' => 'Describe the niche first.' ) );
+		wp_send_json_error( array( 'message' => 'Set the niche in Setup › Business identity first.' ) );
 	}
 
 	update_option( 'wookiee_niche_brief', $brief );

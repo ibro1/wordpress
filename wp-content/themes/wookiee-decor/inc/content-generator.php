@@ -92,13 +92,10 @@ function wookiee_render_content_generator_page() {
 		<div id="wookiee-cg-generate-screen">
 			<table class="form-table" role="presentation">
 				<tr>
-					<th scope="row"><label for="wookiee-niche-brief-2">Niche brief</label></th>
+					<th scope="row">Niche</th>
 					<td>
-						<div class="wookiee-niche-input-wrap is-textarea">
-							<textarea id="wookiee-niche-brief-2" rows="3" class="large-text" placeholder="e.g. UK home-storage and organisation products - baskets, shelving, drawer organisers, aimed at small flats"><?php echo esc_textarea( $saved_brief ); ?></textarea>
-							<?php wookiee_niche_suggest_button( 'wookiee-niche-brief-2' ); ?>
-						</div>
-						<p class="description">Shared with the Product Generator's niche brief. Click the sparkle to have AI suggest one.</p>
+						<?php // Read-only: editing it here would rewrite the niche these very policy pages were generated against. ?>
+						<?php wookiee_render_niche_readonly( 'wookiee-niche-brief-2' ); ?>
 					</td>
 				</tr>
 				<tr>
@@ -399,7 +396,7 @@ function wookiee_render_content_generator_page() {
 			var checked = Array.prototype.slice.call( document.querySelectorAll( '.wookiee-content-piece:checked' ) ).map( function( el ) { return el.value; } );
 
 			if ( ! brief ) {
-				status.textContent = 'Describe the niche first.';
+				status.textContent = 'Set the niche in Setup › Business identity first.';
 				return;
 			}
 			if ( ! checked.length ) {
@@ -505,7 +502,7 @@ function wookiee_generate_content_handler() {
 	$custom_prompt = isset( $_POST['custom_prompt'] ) ? sanitize_textarea_field( wp_unslash( $_POST['custom_prompt'] ) ) : '';
 
 	if ( '' === trim( $brief ) ) {
-		wp_send_json_error( array( 'message' => 'Describe the niche first.' ) );
+		wp_send_json_error( array( 'message' => 'Set the niche in Setup › Business identity first.' ) );
 	}
 	if ( empty( $pieces ) ) {
 		wp_send_json_error( array( 'message' => 'Select at least one item to generate.' ) );

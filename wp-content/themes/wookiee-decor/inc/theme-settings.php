@@ -678,11 +678,9 @@ function wookiee_render_ai_copy_generator_notice( $tab_key, $id_suffix = '' ) {
 	?>
 	<div style="background:#f6f7f7;border:1px solid #dcdcde;border-radius:4px;padding:12px 16px;margin-bottom:20px;max-width:900px;">
 		<p style="margin-top:0;"><strong>Generate with AI</strong> — <?php echo $c['desc']; ?> Review and edit before clicking Save Changes at the bottom; nothing changes on the live site until then.</p>
+		<?php // Read-only: this box generates copy FROM the niche, it is not a place to change it. ?>
+		<?php wookiee_render_niche_readonly( $c['brief_id'] ); ?>
 		<p>
-			<span class="wookiee-niche-input-wrap">
-				<input type="text" id="<?php echo esc_attr( $c['brief_id'] ); ?>" class="regular-text" value="<?php echo esc_attr( get_option( 'wookiee_niche_brief', '' ) ); ?>" placeholder="e.g. UK home-storage and organisation products - baskets, shelving, drawer organisers">
-				<?php wookiee_niche_suggest_button( $c['brief_id'] ); ?>
-			</span>
 			<button type="button" class="button button-primary" id="<?php echo esc_attr( $c['btn_id'] ); ?>" <?php disabled( ! $has_llm_key ); ?>>Generate with AI</button>
 			<span id="<?php echo esc_attr( $c['status_id'] ); ?>" style="margin-left:8px;"></span>
 		</p>
@@ -890,7 +888,7 @@ function wookiee_inline_generate_homepage_copy_handler() {
 
 	$brief = isset( $_POST['brief'] ) ? sanitize_textarea_field( wp_unslash( $_POST['brief'] ) ) : '';
 	if ( '' === trim( $brief ) ) {
-		wp_send_json_error( array( 'message' => 'Describe the niche first.' ) );
+		wp_send_json_error( array( 'message' => 'Set the niche in Setup › Business identity first.' ) );
 	}
 
 	update_option( 'wookiee_niche_brief', $brief );
@@ -922,7 +920,7 @@ function wookiee_inline_generate_about_contact_copy_handler() {
 
 	$brief = isset( $_POST['brief'] ) ? sanitize_textarea_field( wp_unslash( $_POST['brief'] ) ) : '';
 	if ( '' === trim( $brief ) ) {
-		wp_send_json_error( array( 'message' => 'Describe the niche first.' ) );
+		wp_send_json_error( array( 'message' => 'Set the niche in Setup › Business identity first.' ) );
 	}
 
 	update_option( 'wookiee_niche_brief', $brief );

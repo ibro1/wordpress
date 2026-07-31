@@ -644,8 +644,7 @@ function wookiee_render_setup_wizard_page() {
 						 * button both have to catch up, or the step goes on
 						 * insisting no niche is set.
 						 */
-						var nicheDisplay = document.getElementById( 'wookiee-niche-display' );
-						if ( nicheDisplay ) {
+						document.querySelectorAll( '[data-niche-display]' ).forEach( function( nicheDisplay ) {
 							var link = nicheDisplay.getAttribute( 'data-link' ) || '';
 							nicheDisplay.textContent = '';
 							var briefLine  = document.createElement( 'p' );
@@ -655,7 +654,7 @@ function wookiee_render_setup_wizard_page() {
 							briefLine.appendChild( briefStrong );
 							var briefNote = document.createElement( 'p' );
 							briefNote.className = 'description';
-							briefNote.textContent = 'Set once for the whole site, so every sourced product belongs in the same catalog. ';
+							briefNote.textContent = 'Set once for the whole site, so the policy pages, sourced products, copy and design all describe the same shop. ';
 							if ( link ) {
 								var briefLink = document.createElement( 'a' );
 								briefLink.href = link;
@@ -665,7 +664,7 @@ function wookiee_render_setup_wizard_page() {
 							}
 							nicheDisplay.appendChild( briefLine );
 							nicheDisplay.appendChild( briefNote );
-						}
+						} );
 						var genBtn = document.getElementById( 'wookiee-generate-btn' );
 						if ( genBtn && '1' === genBtn.getAttribute( 'data-prereqs-ok' ) ) {
 							genBtn.disabled = false;

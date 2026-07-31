@@ -24,12 +24,7 @@ defined( 'ABSPATH' ) || exit;
 // fails outright against a parent that does not exist yet.
 add_action( 'admin_menu', 'wookiee_register_rebrand_page', 11 );
 function wookiee_register_rebrand_page() {
-	/*
-	 * Registered into the same list the niche-suggest assets are gated on.
-	 * Without it the sparkle button renders on this page but its CSS and JS
-	 * never load, so it looks like a dead control.
-	 */
-	$GLOBALS['wookiee_niche_suggest_hooks'][] = add_submenu_page(
+	add_submenu_page(
 		'wookiee-setup',
 		'Rebrand store',
 		'Rebrand',
@@ -828,18 +823,7 @@ function wookiee_render_rebrand_panel() {
 
 		<div style="background:#fff;border:1px solid #dcdcde;border-radius:4px;padding:18px;max-width:760px;margin-top:16px;">
 			<label for="wookiee-rebrand-brief" style="display:block;font-weight:600;margin-bottom:6px;">What does this store sell?</label>
-			<span class="wookiee-niche-input-wrap is-textarea">
-				<textarea id="wookiee-rebrand-brief" rows="3" style="width:100%;" placeholder="e.g. Portable outdoor cooking gear - compact grills, camp stoves and cookware for British campers and van-lifers."><?php echo esc_textarea( $brief ); ?></textarea>
-				<?php
-				// Same suggest button the Setup wizard's brief field has. This is
-				// the other place a niche gets written, and it was the only one
-				// without it - so an operator rebranding an existing store had to
-				// go and find the wizard to get a suggestion.
-				if ( function_exists( 'wookiee_niche_suggest_button' ) ) {
-					wookiee_niche_suggest_button( 'wookiee-rebrand-brief' );
-				}
-				?>
-			</span>
+			<textarea id="wookiee-rebrand-brief" rows="3" style="width:100%;" placeholder="e.g. Portable outdoor cooking gear - compact grills, camp stoves and cookware for British campers and van-lifers."><?php echo esc_textarea( $brief ); ?></textarea>
 
 			<?php if ( $params && $tokens ) : ?>
 				<?php $described = wookiee_describe_design( $params ); ?>

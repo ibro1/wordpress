@@ -989,6 +989,15 @@ function wookiee_build_content_prompt( $key, $brief, $previous_audit = '' ) {
 			. "Real business details to use (do not invent anything beyond this list):\n" . wookiee_business_details_block() . "\n\n"
 			. "The page has these fixed sections, in this order: a hero (eyebrow tag, headline, subheadline, two buttons), a 3-item trust bar, a featured-products section (kicker+title only, products are real and already listed), a categories section (kicker+title+subtitle, cards are real categories already listed), a \"how it works\" section (kicker, title, lead paragraph, 3 numbered steps each with a title+description, a button), a philosophy section (heading+paragraph), and a collections section (kicker+title).\n\n"
 			. wookiee_founder_voice_block() . "\n"
+			/*
+			 * The homepage told customers their order would be sent "within
+			 * 2-3 days" while the payment policy said 1-2 - because 2-3 is the
+			 * TRANSIT time and the model used it as the dispatch time. Nothing
+			 * here had ever explained that the three figures measure different
+			 * clocks, so the mix-up was close to inevitable, and it is exactly
+			 * the contradiction a compliance review picks up.
+			 */
+			. "DELIVERY FIGURES. Three separate timings appear in the business details above and they measure different things: handling time is how long before an order LEAVES, transit time is how long it then spends WITH THE CARRIER, and the estimated delivery time is the two added together as the customer experiences it. Never use one in place of another. If a line mentions how quickly an order is sent, use the handling time; if it mentions when the parcel arrives, use the estimated total. Do not average them, round them or reword them into a new figure, and do not invent a number that is not in the list. This page sits beside policy pages quoting the same values, and a homepage that disagrees with them is the first thing a reviewer notices.\n\n"
 			. "Provide EXACTLY these labelled sections, each on its own line as \"LABEL: value\" (including the colon), nothing before or after them, in this exact order:\n"
 			. "HERO_EYEBROW: very short tag line above the headline (2-5 words)\n"
 			. "HERO_HEADLINE: short, punchy hero headline (under 10 words)\n"

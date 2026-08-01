@@ -1059,7 +1059,15 @@ function wookiee_build_custom_policy_prompt( $title, $custom_instruction ) {
 		. "Rules:\n"
 		. "- Follow the owner's instructions as closely as possible without contradicting UK consumer/privacy law or inventing a business fact not given above - if something relevant is missing, use a clear \"[Business input required: X]\" placeholder instead of guessing.\n"
 		. "- State the business's full legal/trading name, company registration number and registered office address explicitly within the body text itself.\n"
-		. "- End with a short note that this policy should be reviewed by a qualified UK solicitor before being relied on, since it is not legal advice.\n"
+		/*
+		 * The main generation prompt forbids exactly this, and these three
+		 * page-writing paths required it - so a page that was correct when
+		 * generated could acquire the disclaimer simply by being repaired or
+		 * edited. Advice to have the document reviewed is for the shop owner
+		 * reading the audit, not for the customer reading the page, and
+		 * printing it undermines the document in front of them.
+		 */
+		. "- Do NOT tell the reader to consult a solicitor, and do NOT state that this is not legal advice - even where an audit report recommends a legal review. That recommendation is for the shop owner, not for the customer reading this page.\n"
 		. "- Output ONLY the finished page text as plain paragraphs separated by a blank line, starting with a single plain-text heading line. No markdown, no HTML, no commentary.";
 
 	return wookiee_maybe_override( 'policy_custom', $prompt, array( 'title' => $title, 'custom_instruction' => $custom_instruction ) );
@@ -1383,6 +1391,35 @@ function wookiee_policy_text_to_html( $text ) {
 	// promote the whole line so it does not sit mid-paragraph.
 	$escaped = preg_replace( '/^(\d+\.\s*)<strong>(.+?)<\/strong>\s*$/m', '<h2>$1$2</h2>', $escaped );
 
+	/*
+	 * Cross-references are written as bare paths - "our Returns Policy at
+	 * /returns/" - because the prompts ask for the slug so the reference is
+	 * checkable rather than a vague "see our other policy". Nothing then made
+	 * them clickable, so every audit came back asking for direct links to the
+	 * referenced policies and to the cancellation form. The prompt was right
+	 * and the renderer was the gap.
+	 *
+	 * Only the theme's own known policy slugs are linked, matched whole. A
+	 * blanket "anything that looks like a path" rule would turn a date or a
+	 * fraction into a broken link, and linking to a page that does not exist
+	 * is worse than the plain text it replaced.
+	 */
+	$slugs = array();
+	foreach ( wookiee_content_generator_pieces() as $piece ) {
+		$slugs[] = preg_quote( $piece['slug'], '/' );
+	}
+	// The privacy page is referenced by the prompts as /privacy-policy/ as
+	// well as its actual /privacy/ slug; both resolve, so both are linked.
+	$slugs[] = 'privacy-policy';
+
+	$escaped = preg_replace_callback(
+		'/(?<![\w\/])\/(' . implode( '|', $slugs ) . ')\/(?![\w\/])/',
+		function ( $m ) {
+			return '<a href="' . esc_url( home_url( '/' . $m[1] . '/' ) ) . '">/' . esc_html( $m[1] ) . '/</a>';
+		},
+		$escaped
+	);
+
 	return wpautop( $escaped );
 }
 
@@ -1399,7 +1436,15 @@ function wookiee_build_policy_fix_prompt( $title, $current_text, $audit_report )
 		. "- Write in plain, professional, customer-friendly English - not robotic or generic-sounding boilerplate.\n"
 		. "- State the business's full legal/trading name, company registration number and registered office address explicitly within the body text itself - the Electronic Commerce Regulations 2002 require a geographic address, not just an email.\n"
 		. "- Whatever section covers contacting the business must also explain how to escalate a complaint if it's not resolved directly - mention Citizens Advice or local Trading Standards as the UK escalation route - not just repeat the contact email.\n"
-		. "- End with a short note that this policy should be reviewed by a qualified UK solicitor before being relied on, since it is not legal advice.\n"
+		/*
+		 * The main generation prompt forbids exactly this, and these three
+		 * page-writing paths required it - so a page that was correct when
+		 * generated could acquire the disclaimer simply by being repaired or
+		 * edited. Advice to have the document reviewed is for the shop owner
+		 * reading the audit, not for the customer reading the page, and
+		 * printing it undermines the document in front of them.
+		 */
+		. "- Do NOT tell the reader to consult a solicitor, and do NOT state that this is not legal advice - even where an audit report recommends a legal review. That recommendation is for the shop owner, not for the customer reading this page.\n"
 		. "- Output ONLY the finished, complete policy text as plain paragraphs separated by a blank line, starting with a single plain-text heading line. No markdown, no HTML, no commentary, no changelog of what you fixed - just the finished, publishable page.";
 
 	if ( false !== stripos( $title, 'privacy' ) || false !== stripos( $title, 'cookie' ) ) {
@@ -1474,7 +1519,15 @@ function wookiee_apply_custom_policy_prompt_handler() {
 		. "- Do not invent any business fact, feature, or practice not in the details above or already accurately stated in the current text.\n"
 		. "- Write in plain, professional, customer-friendly English - not robotic or generic-sounding boilerplate.\n"
 		. "- State the business's full legal/trading name, company registration number and registered office address explicitly within the body text itself.\n"
-		. "- End with a short note that this policy should be reviewed by a qualified UK solicitor before being relied on, since it is not legal advice.\n"
+		/*
+		 * The main generation prompt forbids exactly this, and these three
+		 * page-writing paths required it - so a page that was correct when
+		 * generated could acquire the disclaimer simply by being repaired or
+		 * edited. Advice to have the document reviewed is for the shop owner
+		 * reading the audit, not for the customer reading the page, and
+		 * printing it undermines the document in front of them.
+		 */
+		. "- Do NOT tell the reader to consult a solicitor, and do NOT state that this is not legal advice - even where an audit report recommends a legal review. That recommendation is for the shop owner, not for the customer reading this page.\n"
 		. "- Output ONLY the finished, complete policy text as plain paragraphs separated by a blank line, starting with a single plain-text heading line. No markdown, no HTML, no commentary.";
 
 	if ( false !== stripos( $post->post_title, 'privacy' ) || false !== stripos( $post->post_title, 'cookie' ) ) {

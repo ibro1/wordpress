@@ -848,7 +848,21 @@ function wookiee_build_content_prompt( $key, $brief, $previous_audit = '' ) {
 		if ( 'terms' === $key ) {
 			$prompt .= "\n\nWhere this page mentions the Payment Policy or Returns Policy, state the specific page slug so it reads as a real link once published (e.g. \"our Payment Policy at /payment/\" and \"our Returns Policy at /returns/\") rather than naming the policy with no way to find it.\n"
 				. "For the section on cancelling an order, explicitly list the accepted methods for a customer to inform the business of their decision to cancel (e.g. email using the contact address given above, or a clear written statement) - do not just say \"inform us\" without saying how.\n"
-				. "Where shipping is mentioned, note that delivery timeframes and methods are covered in full on the Shipping Policy (at /shipping/) rather than repeating or inventing shipping-method specifics here.";
+				. "Where shipping is mentioned, note that delivery timeframes and methods are covered in full on the Shipping Policy (at /shipping/) rather than repeating or inventing shipping-method specifics here.\n"
+				/*
+				 * All four of these came back on consecutive audits of the
+				 * Terms page, three of them under MISSING INFORMATION, and the
+				 * data controller as a Serious issue. The scope rule says to
+				 * cross-reference another policy rather than duplicate it, and
+				 * that is still right - but a cross-reference is not an answer
+				 * to "who is the controller" or "do you deliver to Jersey".
+				 * Those are one-line facts. Name the fact here, keep the
+				 * detail on the page that owns it.
+				 */
+				. "Name the DATA CONTROLLER explicitly wherever this page touches personal data - the registered legal entity named above, not the trading name alone - then point to the Privacy Policy at /privacy-policy/ for retention periods, international transfers and the ICO route. One line naming the controller, not a second privacy policy: a page that discusses data protection without saying who is responsible for it is a serious gap under UK GDPR, and it is not cured by linking elsewhere.\n"
+				. "State in ONE LINE whether delivery covers the Crown Dependencies (Jersey, Guernsey, the Isle of Man) and the offshore islands, then point to the Shipping Policy at /shipping/ for the rest. They are commonly assumed to be included and are not part of the UK for delivery purposes, so their absence reads as an unanswered question rather than as detail deferred.\n"
+				. "Where returns or refunds are mentioned, name the CONSUMER RIGHTS ACT 2015 alongside the Consumer Contracts Regulations - the Regulations govern cancelling, the Act governs faulty goods and remedies, and citing only one of the two reads as a partial account of the customer's rights.\n"
+				. "Every cross-reference to the Returns Policy must confirm in the same breath that statutory rights are unaffected by it. A pointer to another page reads as a limitation unless it says otherwise.";
 		}
 
 		if ( 'privacy' === $key ) {

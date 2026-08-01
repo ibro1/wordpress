@@ -11,7 +11,7 @@ defined( 'ABSPATH' ) || exit;
  * browsers - and Cloudflare in front of them - keep serving the previous file
  * and the change simply does not happen for anyone who has visited before.
  */
-define( 'WOOKIEE_VERSION', '1.1.5' );
+define( 'WOOKIEE_VERSION', '1.1.6' );
 define( 'WOOKIEE_DIR', trailingslashit( get_template_directory() ) );
 define( 'WOOKIEE_URI', trailingslashit( get_template_directory_uri() ) );
 define( 'WOOKIEE_CONTACT_EMAIL', 'info@wookied.com' );
@@ -658,10 +658,49 @@ function wookiee_single_product_rating_mockup() {
 if ( class_exists( 'WooCommerce' ) ) {
     add_action( 'woocommerce_single_product_summary', 'wookiee_single_product_stock_message', 16 );
 }
+/**
+ * The town orders ship from, for the short badges that have no room for the
+ * full "Orders are dispatched from" sentence.
+ *
+ * Prefers a town read out of that setting, since an admin who edited it is
+ * being more authoritative than an address lookup, and falls back to deriving
+ * one from the returns/registered address. Returns '' when neither yields a
+ * town, and every caller then simply omits the place rather than naming one.
+ */
+function wookiee_dispatch_town() {
+    $origin = trim( (string) wookiee_get_setting( 'dispatch_origin' ) );
+
+    if ( '' !== $origin && preg_match( '/dispatch(?:ed)?\s+from\s+([^,.]+)/i', $origin, $m ) ) {
+        return trim( $m[1] );
+    }
+
+    return function_exists( 'wookiee_guess_dispatch_town' ) ? wookiee_guess_dispatch_town() : '';
+}
+
+/*
+ * Everything below used to be hardcoded to the theme's demo store: dispatch
+ * "within 24 hours from Cowdenbeath", free delivery over £50, "Stripe &
+ * PayPal", a returns address at info@wookied.com. None of it came from
+ * Settings, so a live store contradicted its own policies on its own product
+ * page - the shipping policy said 1-2 business days, the homepage said 2-3,
+ * and the product page said 24 hours from a town in Fife the business has
+ * never traded from. The £50 free-delivery line was worse than inconsistent:
+ * the store charges a flat rate and has no such threshold, so it was an offer
+ * a customer could hold it to.
+ */
 function wookiee_single_product_stock_message() {
+    $handling = trim( (string) wookiee_get_setting( 'handling_time' ) );
+    $town     = wookiee_dispatch_town();
+
+    $message = 'In stock';
+    if ( '' !== $handling ) {
+        $message .= ' — dispatched in ' . $handling;
+        $message .= '' !== $town ? ' from ' . $town : '';
+    }
+
     echo '<div style="display: flex; align-items: center; gap: 8px; margin: 15px 0 25px 0; font-size: 14px; color: #2e7d32; font-weight: 600; box-sizing: border-box;">';
     echo '<span style="width: 8px; height: 8px; background-color: #2e7d32; border-radius: 50%; display: inline-block;"></span>';
-    echo 'In stock — Dispatch within 24 hours from Cowdenbeath';
+    echo esc_html( $message );
     echo '</div>';
 }
 
@@ -670,19 +709,91 @@ if ( class_exists( 'WooCommerce' ) ) {
     add_action( 'woocommerce_single_product_summary', 'wookiee_single_product_trust_badges', 35 );
 }
 function wookiee_single_product_trust_badges() {
+    /*
+     * "Free UK delivery on orders over £50" was the worst of the hardcoded
+     * lines: the store charges a flat rate and has no such threshold, so it
+     * was not merely inconsistent with the shipping policy, it was an offer a
+     * customer could hold the shop to. And no payment processor is named any
+     * more - which company clears the payment is the shop's arrangement, not
+     * a fact the customer needs, and it dates the page the day it changes.
+     */
+    $rate    = trim( (string) wookiee_get_setting( 'shipping_rate' ) );
+    $transit = trim( (string) wookiee_get_setting( 'estimated_delivery' ) );
+    $days    = trim( (string) wookiee_get_setting( 'returns_period_days' ) );
+
+    $shipping_line = '' !== $rate ? 'Flat-rate UK delivery — £' . $rate : 'UK delivery';
+    $shipping_line .= '' !== $transit ? ', ' . $transit : '';
+    $returns_line   = '' !== $days ? $days . '-day returns' : '';
+
     echo '
     <div style="margin-top: 30px; padding-top: 25px; border-top: 1px solid var(--wookiee-border); display: flex; flex-direction: column; gap: 15px; box-sizing: border-box;">
         <div style="display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--wookiee-ink); font-weight: 600;">
-            <span style="font-size: 16px;">🚚</span> Free UK delivery on orders over £50
+            <span style="font-size: 16px;">🚚</span> ' . esc_html( $shipping_line ) . '
         </div>
+        ' . ( '' !== $returns_line ? '<div style="display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--wookiee-ink); font-weight: 600;">
+            <span style="font-size: 16px;">🔄</span> ' . esc_html( $returns_line ) . '
+        </div>' : '' ) . '
         <div style="display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--wookiee-ink); font-weight: 600;">
-            <span style="font-size: 16px;">🔄</span> 30-day hassle-free returns policy
-        </div>
-        <div style="display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--wookiee-ink); font-weight: 600;">
-            <span style="font-size: 16px;">🔒</span> Secure checkout via Stripe & PayPal
+            <span style="font-size: 16px;">🔒</span> Secure checkout — card details are handled by our payment provider and never stored on this site
         </div>
     </div>
     ';
+}
+
+/**
+ * The trust signals and policy links under the cart and checkout.
+ *
+ * Was duplicated verbatim in page-cart.php and page-checkout.php, both
+ * hardcoding the demo store's support address and a 30-day guarantee whether
+ * or not that matched Settings. Shared here so the two cannot drift, and so
+ * the figures come from the same place as every other page.
+ *
+ * The policy links are new: a customer deciding whether to pay is exactly who
+ * needs the returns and shipping terms to hand, and the checkout was the one
+ * place on the site that did not offer them.
+ */
+function wookiee_render_checkout_trust_footer() {
+    $transit = trim( (string) wookiee_get_setting( 'estimated_delivery' ) );
+    $days    = trim( (string) wookiee_get_setting( 'returns_period_days' ) );
+    $email   = trim( (string) wookiee_get_setting( 'contact_email' ) );
+
+    $policies = array(
+        'terms'    => 'Terms',
+        'shipping' => 'Shipping',
+        'returns'  => 'Returns',
+        'payment'  => 'Payment',
+        'privacy'  => 'Privacy',
+        'cookie'   => 'Cookies',
+    );
+    ?>
+    <div class="checkout-trust-signals">
+        <div class="trust-signal">
+            <span class="trust-icon">🚚</span>
+            <span class="trust-text">Tracked UK delivery<?php echo '' !== $transit ? ' — ' . esc_html( $transit ) : ''; ?></span>
+        </div>
+        <?php if ( '' !== $days ) : ?>
+            <div class="trust-signal">
+                <span class="trust-icon">🔄</span>
+                <span class="trust-text"><?php echo esc_html( $days ); ?>-day returns</span>
+            </div>
+        <?php endif; ?>
+        <?php if ( '' !== $email ) : ?>
+            <div class="trust-signal">
+                <span class="trust-icon">✉️</span>
+                <span class="trust-text">Support: <a href="mailto:<?php echo esc_attr( $email ); ?>"><?php echo esc_html( $email ); ?></a></span>
+            </div>
+        <?php endif; ?>
+    </div>
+    <p class="checkout-policy-links">
+        <?php
+        $links = array();
+        foreach ( $policies as $slug => $label ) {
+            $links[] = '<a href="' . esc_url( home_url( '/' . $slug . '/' ) ) . '">' . esc_html( $label ) . '</a>';
+        }
+        echo wp_kses_post( implode( ' &middot; ', $links ) );
+        ?>
+    </p>
+    <?php
 }
 
 // Customize single product tabs (horizontal section below the product)
@@ -717,9 +828,45 @@ function wookiee_custom_product_tabs( $tabs ) {
 // Shipping & Returns Tab Callback
 function wookiee_shipping_returns_tab_content() {
     ?>
+    <?php
+    /*
+     * Every figure here now comes from Settings. It previously named a
+     * Cowdenbeath facility, free delivery over £50 and the demo store's own
+     * support address on a live shop's product page - three claims about a
+     * business that had never seen any of them.
+     */
+    $wookiee_origin   = trim( (string) wookiee_get_setting( 'dispatch_origin' ) );
+    $wookiee_rate     = trim( (string) wookiee_get_setting( 'shipping_rate' ) );
+    $wookiee_handling = trim( (string) wookiee_get_setting( 'handling_time' ) );
+    $wookiee_total    = trim( (string) wookiee_get_setting( 'estimated_delivery' ) );
+    $wookiee_days     = trim( (string) wookiee_get_setting( 'returns_period_days' ) );
+    $wookiee_email    = trim( (string) wookiee_get_setting( 'contact_email' ) );
+    ?>
     <div class="wookiee-tab-content-wrapper" style="max-width: 800px; line-height: 1.7; color: #5c5044;">
-        <p style="margin: 0 0 15px 0;"><strong>Fulfillment & Delivery:</strong> All orders are stored, packed, and dispatched directly from our dedicated facility in Cowdenbeath, United Kingdom. We offer free standard UK delivery on all orders over £50. Standard delivery normally takes 3-5 working days.</p>
-        <p style="margin: 0;"><strong>Hassle-Free Returns:</strong> We offer a 30-day return policy. If you are not completely satisfied with your storage products, please email info@wookied.com to request a returns authorization and prepaid shipping label.</p>
+        <p style="margin: 0 0 15px 0;">
+            <strong>Fulfilment &amp; delivery:</strong>
+            <?php echo '' !== $wookiee_origin ? esc_html( $wookiee_origin ) . ' ' : ''; ?>
+            <?php if ( '' !== $wookiee_handling ) : ?>
+                Orders are dispatched in <?php echo esc_html( $wookiee_handling ); ?>.
+            <?php endif; ?>
+            <?php if ( '' !== $wookiee_rate ) : ?>
+                UK delivery is a flat £<?php echo esc_html( $wookiee_rate ); ?> per order.
+            <?php endif; ?>
+            <?php if ( '' !== $wookiee_total ) : ?>
+                Expect your order within <?php echo esc_html( $wookiee_total ); ?> from placing it.
+            <?php endif; ?>
+            Full details are on our <a href="<?php echo esc_url( home_url( '/shipping/' ) ); ?>">Shipping Policy</a>.
+        </p>
+        <p style="margin: 0;">
+            <strong>Returns:</strong>
+            <?php if ( '' !== $wookiee_days ) : ?>
+                You have <?php echo esc_html( $wookiee_days ); ?> days to return an unwanted item, alongside your statutory right to cancel.
+            <?php endif; ?>
+            <?php if ( '' !== $wookiee_email ) : ?>
+                Email <a href="mailto:<?php echo esc_attr( $wookiee_email ); ?>"><?php echo esc_html( $wookiee_email ); ?></a> to start a return.
+            <?php endif; ?>
+            See our <a href="<?php echo esc_url( home_url( '/returns/' ) ); ?>">Returns Policy</a> for how refunds and return postage work.
+        </p>
     </div>
     <?php
 }

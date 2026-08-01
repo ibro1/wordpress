@@ -85,9 +85,33 @@
 		<div class="footer-col">
 			<div class="footer-eyebrow">Get In Touch</div>
 			<p class="footer-info-text footer-contact-line"><span>&#9993;</span> <a href="mailto:<?php echo esc_attr( wookiee_get_setting( 'contact_email' ) ); ?>"><?php echo esc_html( wookiee_get_setting( 'contact_email' ) ); ?></a></p>
-			<p class="footer-info-text footer-contact-line"><span>&#128222;</span> <strong><?php echo esc_html( wookiee_get_setting( 'contact_phone' ) ); ?></strong></p>
+			<?php
+			/*
+			 * The phone was plain text while the email beside it was a link,
+			 * so on a phone - where most of this traffic is - the one number a
+			 * customer might actually want to press could not be pressed. The
+			 * tel: target is digits only (plus a leading +), since spaces and
+			 * brackets are for reading, not for dialling.
+			 */
+			$wookiee_phone     = trim( (string) wookiee_get_setting( 'contact_phone' ) );
+			$wookiee_phone_href = preg_replace( '/[^\d+]/', '', $wookiee_phone );
+
+			/*
+			 * UK addresses routinely end at the home nation, which is not the
+			 * country for anyone reading from outside it. Appended only when
+			 * the address does not already name it, so an address that says
+			 * "United Kingdom" is left exactly as typed.
+			 */
+			$wookiee_address = trim( (string) wookiee_get_setting( 'registered_address' ) );
+			if ( '' !== $wookiee_address && ! preg_match( '/\b(united kingdom|uk)\b/i', $wookiee_address ) ) {
+				$wookiee_address .= "\nUnited Kingdom";
+			}
+			?>
+			<?php if ( '' !== $wookiee_phone ) : ?>
+				<p class="footer-info-text footer-contact-line"><span>&#128222;</span> <a href="tel:<?php echo esc_attr( $wookiee_phone_href ); ?>"><strong><?php echo esc_html( $wookiee_phone ); ?></strong></a></p>
+			<?php endif; ?>
 			<p class="footer-info-text">
-				<?php echo nl2br( esc_html( wookiee_get_setting( 'registered_address' ) ) ); ?><br>
+				<?php echo nl2br( esc_html( $wookiee_address ) ); ?><br>
 				<span class="footer-info-small">Company No. <?php echo esc_html( wookiee_get_setting( 'company_number' ) ); ?></span>
 			</p>
 		</div>
@@ -110,20 +134,50 @@
 			<div class="footer-bottom-row">
 				<div class="footer-copyright">&copy; <?php echo esc_html( date( 'Y' ) ); ?> <?php echo esc_html( wookiee_get_setting( 'business_name' ) ); ?>.</div>
 				<div class="footer-payments">
+					<?php
+					/*
+					 * These were not icons. Four of the five were an <svg>
+					 * containing a <text> node with the brand's NAME in white
+					 * - literally the word "VISA" typeset in Georgia italic -
+					 * which is why only Mastercard, the one real mark, looked
+					 * like anything. They also inherited whatever font the
+					 * device had, so the "logo" changed shape per browser.
+					 *
+					 * Replaced with drawn marks on light tiles: brand colours,
+					 * fixed geometry, no text nodes and no font dependency, so
+					 * they render identically everywhere and stay legible
+					 * whatever the footer background is.
+					 */
+					?>
 					<div class="payment-icon-wrapper" title="Visa">
-						<svg width="40" height="20" viewBox="0 0 40 20"><text x="20" y="14" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-weight="700" font-style="italic" font-size="11" fill="#ffffff">VISA</text></svg>
+						<svg viewBox="0 0 48 30" role="img" aria-label="Visa" focusable="false">
+							<path fill="#1A1F71" d="M20.6 20.4h-3l1.9-11.2h3l-1.9 11.2Zm-5.5-11.2-2.9 7.7-.3-1.7-1-5.2s-.1-.8-1.1-.8H5.1l-.1.2s1.1.2 2.4 1l2.6 10h3.1l4.8-11.2h-2.8Zm16.4 7.3 1.6-4.3.9 4.3h-2.5Zm3.3 3.9h2.8l-2.4-11.2h-2.4c-1.1 0-1.4.9-1.4.9l-4.5 10.3h3.1l.6-1.7h3.8l.4 1.7Zm-6.7-8.4.4-2.5s-1.3-.5-2.7-.5c-1.5 0-5 .6-5 3.8 0 3 4.1 3 4.1 4.6s-3.7 1.3-4.9.3l-.4 2.6s1.3.6 3.3.6 5-1 5-3.9c0-3-4.2-3.3-4.2-4.6 0-1.3 2.9-1.1 4.4-.4Z"/>
+						</svg>
 					</div>
 					<div class="payment-icon-wrapper" title="Mastercard">
-						<svg width="40" height="20" viewBox="0 0 24 16"><circle cx="9" cy="8" r="6" fill="#EB001B" fill-opacity="0.85"/><circle cx="15" cy="8" r="6" fill="#F79E1B" fill-opacity="0.85"/></svg>
+						<svg viewBox="0 0 48 30" role="img" aria-label="Mastercard" focusable="false">
+							<circle cx="19" cy="15" r="9" fill="#EB001B"/>
+							<circle cx="29" cy="15" r="9" fill="#F79E1B"/>
+							<path fill="#FF5F00" d="M24 8.1a9 9 0 0 0 0 13.8 9 9 0 0 0 0-13.8Z"/>
+						</svg>
 					</div>
 					<div class="payment-icon-wrapper" title="PayPal">
-						<svg width="40" height="20" viewBox="0 0 40 20"><text x="20" y="14" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-weight="700" font-style="italic" font-size="9.5" fill="#ffffff">PayPal</text></svg>
+						<svg viewBox="0 0 48 30" role="img" aria-label="PayPal" focusable="false">
+							<path fill="#003087" d="M17.9 7.3h6.4c3.4 0 5.6 1.7 5.2 5.1-.4 3.9-3 5.7-6.5 5.7h-2.4l-.7 4.6h-3.6l1.6-15.4Zm2.9 2.9-.6 4.9h1.9c1.7 0 3-.7 3.2-2.6.2-1.6-.7-2.3-2.3-2.3h-2.2Z"/>
+							<path fill="#009CDE" d="M25.7 10.6h6.4c3.4 0 5 1.7 4.6 5.1-.4 3.9-3 5.7-6.5 5.7h-2.4l-.7 4.6h-3.6l2.2-15.4Zm2.9 2.9-.6 4.9h1.9c1.7 0 3-.7 3.2-2.6.2-1.6-.7-2.3-2.3-2.3h-2.2Z"/>
+						</svg>
 					</div>
 					<div class="payment-icon-wrapper" title="American Express">
-						<svg width="40" height="20" viewBox="0 0 40 20"><text x="20" y="13.5" text-anchor="middle" fill="#ffffff" font-size="8" font-weight="700" font-family="sans-serif">AMEX</text></svg>
+						<svg viewBox="0 0 48 30" role="img" aria-label="American Express" focusable="false">
+							<rect x="4" y="5" width="40" height="20" rx="2" fill="#006FCF"/>
+							<path fill="#fff" d="M11 11h4.6l1 2.3 1-2.3h12v1l.7-1h3.4l.8 1.7.8-1.7H37v8h-2.9l-.8-1.7-.8 1.7H21.4v-1l-.6 1h-2.5l-.6-1v1H11l-.5-1.2H8.9L8.4 19H5.3l3.2-8H11Zm-1.2 2.1-.9 2.2h1.8l-.9-2.2Zm7.6-.6h-2.2v5h1.4v-3.4l1.5 3.4h1.2l1.5-3.4V17h1.4v-5h-2.2l-1.3 3-1.3-3Zm7 0v5h4.2v-1.2h-2.8v-.8h2.7v-1.2h-2.7v-.7h2.8V12h-4.2Z"/>
+						</svg>
 					</div>
 					<div class="payment-icon-wrapper" title="Apple Pay">
-						<svg width="40" height="20" viewBox="0 0 40 20"><text x="20" y="13.5" text-anchor="middle" fill="#ffffff" font-size="7" font-weight="600" font-family="sans-serif">Apple Pay</text></svg>
+						<svg viewBox="0 0 48 30" role="img" aria-label="Apple Pay" focusable="false">
+							<path fill="#000" d="M14.6 10.8c.5-.6.8-1.4.7-2.2-.7 0-1.6.5-2.1 1.1-.5.5-.9 1.3-.7 2.1.8.1 1.6-.4 2.1-1Zm.7 1.2c-1.2-.1-2.2.7-2.7.7-.6 0-1.4-.6-2.3-.6-1.2 0-2.3.7-2.9 1.8-1.2 2.1-.3 5.3.9 7 .6.9 1.3 1.8 2.2 1.8.9 0 1.2-.6 2.3-.6s1.4.6 2.3.6c1 0 1.6-.9 2.2-1.7.7-1 .9-1.9 1-2-.1 0-1.9-.7-1.9-2.8 0-1.7 1.4-2.5 1.5-2.6-.8-1.2-2.1-1.4-2.6-1.6Z"/>
+							<path fill="#000" d="M24.2 9.6c2.4 0 4 1.6 4 4 0 2.5-1.7 4.1-4.1 4.1h-2.6v4.2h-1.9V9.6h4.6Zm-2.7 6.5h2.2c1.6 0 2.6-.9 2.6-2.5s-1-2.4-2.6-2.4h-2.2v4.9Zm7.2 3.4c0-1.6 1.2-2.5 3.5-2.7l2.3-.1v-.7c0-1-.6-1.5-1.8-1.5-1 0-1.7.5-1.8 1.2h-1.8c.1-1.6 1.5-2.8 3.7-2.8 2.1 0 3.5 1.1 3.5 2.9v6h-1.8v-1.4h-.1c-.5 1-1.6 1.6-2.8 1.6-1.7 0-2.9-1-2.9-2.5Zm5.8-.8v-.7l-2 .1c-1.2.1-1.9.6-1.9 1.4s.7 1.3 1.6 1.3c1.3 0 2.3-.9 2.3-2.1Zm3.4 6.3v-1.5c.2 0 .5.1.7.1.9 0 1.3-.4 1.6-1.3l.2-.5-3.3-9.1h2l2.3 7.3h.1l2.3-7.3h2l-3.4 9.5c-.8 2.2-1.7 2.9-3.5 2.9-.2 0-.8 0-1-.1Z"/>
+						</svg>
 					</div>
 				</div>
 			</div>

@@ -69,15 +69,24 @@
                             Back to Home
                         </a>
                     </div>
+                    <?php
+                    // Same hardcoded demo claims as the product page carried:
+                    // a free-shipping threshold this store does not offer, and
+                    // a returns window that ignored Settings.
+                    $wookiee_cart_rate = trim( (string) wookiee_get_setting( 'shipping_rate' ) );
+                    $wookiee_cart_days = trim( (string) wookiee_get_setting( 'returns_period_days' ) );
+                    ?>
                     <div class="empty-cart-features">
                         <div class="empty-cart-feature">
                             <span class="feature-icon">🚚</span>
-                            <span>Free shipping on orders over £50</span>
+                            <span><?php echo '' !== $wookiee_cart_rate ? esc_html( 'Flat-rate UK delivery — £' . $wookiee_cart_rate ) : 'Tracked UK delivery'; ?></span>
                         </div>
+                        <?php if ( '' !== $wookiee_cart_days ) : ?>
                         <div class="empty-cart-feature">
                             <span class="feature-icon">🔄</span>
-                            <span>30-day easy returns</span>
+                            <span><?php echo esc_html( $wookiee_cart_days . '-day returns' ); ?></span>
                         </div>
+                        <?php endif; ?>
                         <div class="empty-cart-feature">
                             <span class="feature-icon">🔒</span>
                             <span>Secure checkout</span>
@@ -93,20 +102,7 @@
     <!-- Cart Footer -->
     <footer class="checkout-footer">
         <div class="checkout-footer-inner">
-            <div class="checkout-trust-signals">
-                <div class="trust-signal">
-                    <span class="trust-icon">🚚</span>
-                    <span class="trust-text">Fast & Tracked Shipping</span>
-                </div>
-                <div class="trust-signal">
-                    <span class="trust-icon">🔄</span>
-                    <span class="trust-text">30-Day Money Back Guarantee</span>
-                </div>
-                <div class="trust-signal">
-                    <span class="trust-icon">✉️</span>
-                    <span class="trust-text">Customer Support: info@wookied.com</span>
-                </div>
-            </div>
+            <?php wookiee_render_checkout_trust_footer(); ?>
             <p class="checkout-copyright">&copy; <?php echo date('Y'); ?> <?php bloginfo( 'name' ); ?>. All rights reserved.</p>
         </div>
     </footer>

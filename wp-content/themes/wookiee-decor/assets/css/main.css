@@ -1430,21 +1430,30 @@ body.mobile-nav-active {
 	color: #c9beae;
 	margin-right: 5px;
 }
+/* A light tile, not a translucent one. The marks are drawn in their own brand
+   colours - navy Visa, blue Amex, black Apple - which disappear against a dark
+   footer. Every real payment badge on the web sits on white for the same
+   reason. */
 .payment-icon-wrapper {
-	background: rgba(255,255,255,0.03);
-	border: 1px solid rgba(255,255,255,0.08);
+	background: #fff;
+	border: 1px solid rgba(0,0,0,0.08);
 	border-radius: 4px;
 	width: 48px;
-	height: 26px;
+	height: 30px;
+	padding: 3px 5px;
 	display: flex;
 	align-items: center;
 	justify-content: center;
 	transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
+.payment-icon-wrapper svg {
+	width: 100%;
+	height: 100%;
+	display: block;
+}
 .payment-icon-wrapper:hover {
-	background: rgba(255,255,255,0.08);
-	border-color: rgba(255,255,255,0.2);
 	transform: scale(1.08) translateY(-2px);
+	box-shadow: 0 4px 10px rgba(0,0,0,0.18);
 }
 
 /* =========================================

@@ -65,20 +65,7 @@
     <!-- Custom Checkout Footer -->
     <footer class="checkout-footer">
         <div class="checkout-footer-inner">
-            <div class="checkout-trust-signals">
-                <div class="trust-signal">
-                    <span class="trust-icon">🚚</span>
-                    <span class="trust-text">Fast & Tracked Shipping</span>
-                </div>
-                <div class="trust-signal">
-                    <span class="trust-icon">🔄</span>
-                    <span class="trust-text">30-Day Money Back Guarantee</span>
-                </div>
-                <div class="trust-signal">
-                    <span class="trust-icon">✉️</span>
-                    <span class="trust-text">Customer Support: info@wookied.com</span>
-                </div>
-            </div>
+            <?php wookiee_render_checkout_trust_footer(); ?>
             <p class="checkout-copyright">&copy; <?php echo date('Y'); ?> <?php bloginfo( 'name' ); ?>. All rights reserved.</p>
         </div>
     </footer>

@@ -227,7 +227,14 @@ function wookiee_cj_search_variants( $query ) {
  * the API returned", which carries no relevance signal at all. Ties keep the
  * original order so CJ's own ranking still decides between equals.
  */
-function wookiee_rank_cj_results( array $results, $query ) {
+/**
+ * The distinctive words of a concept - the ones whose presence in a product
+ * name actually indicates a match.
+ *
+ * Split out of the ranking so the sourcing loop can score a result set before
+ * deciding to spend AI fit-checks on it.
+ */
+function wookiee_cj_query_terms( $query ) {
 	// Words too generic to indicate relevance - they appear in half the
 	// catalog and would flatten the scores.
 	$stop  = array( 'set', 'kit', 'pack', 'new', 'the', 'and', 'with', 'for', 'pcs', 'style', 'pro' );
@@ -238,20 +245,36 @@ function wookiee_rank_cj_results( array $results, $query ) {
 		}
 	}
 
+	return array_values( array_unique( $terms ) );
+}
+
+/** How many of a concept's distinctive terms appear in a product name. */
+function wookiee_cj_name_score( $name, array $terms ) {
+	$name  = strtolower( (string) $name );
+	$score = 0;
+	foreach ( $terms as $term ) {
+		if ( false !== strpos( $name, $term ) ) {
+			$score++;
+		}
+	}
+
+	return $score;
+}
+
+function wookiee_rank_cj_results( array $results, $query ) {
+	$terms = wookiee_cj_query_terms( $query );
+
 	if ( ! $terms ) {
 		return $results;
 	}
 
 	$scored = array();
 	foreach ( $results as $i => $result ) {
-		$name  = strtolower( (string) $result['name'] );
-		$score = 0;
-		foreach ( $terms as $term ) {
-			if ( false !== strpos( $name, $term ) ) {
-				$score++;
-			}
-		}
-		$scored[] = array( 'score' => $score, 'order' => $i, 'result' => $result );
+		$scored[] = array(
+			'score'  => wookiee_cj_name_score( $result['name'], $terms ),
+			'order'  => $i,
+			'result' => $result,
+		);
 	}
 
 	usort(
@@ -270,6 +293,28 @@ function wookiee_rank_cj_results( array $results, $query ) {
 function wookiee_source_real_product_for_idea( $query, $max_attempts = 3, $category_hint = '' ) {
 	$results = array();
 	$tried   = array();
+	$terms   = wookiee_cj_query_terms( $query );
+
+	/*
+	 * Accept a result set on RELEVANCE, not on it being non-empty.
+	 *
+	 * CJ's productName filter ORs the terms rather than ANDing them (see
+	 * wookiee_rank_cj_results below), so a four-word concept always comes back
+	 * with twenty results - they are just twenty products that share one
+	 * incidental word. "custom printed luggage strap" returned 3D-printed RPG
+	 * terrain (matched "printed") and strappy heeled shoes (matched "strap"),
+	 * and because the set was non-empty the loop stopped there and never tried
+	 * the narrower variants it had prepared. All three fit-checks were then
+	 * spent rejecting shoes, and the concept was reported as unavailable when
+	 * the narrower search had never run.
+	 *
+	 * A set counts as relevant when its best result matches at least two of
+	 * the concept's distinctive terms (or all of them, for a concept that only
+	 * has one). Otherwise the search keeps going, remembering the best set
+	 * seen so the operator still gets a real report rather than an empty one.
+	 */
+	$needed = $terms ? min( 2, count( $terms ) ) : 0;
+	$best   = 0;
 
 	foreach ( wookiee_cj_search_variants( $query ) as $variant ) {
 		$found = wookiee_cj_search_products( $variant );
@@ -281,8 +326,19 @@ function wookiee_source_real_product_for_idea( $query, $max_attempts = 3, $categ
 		}
 
 		$tried[] = $variant;
-		if ( ! empty( $found ) ) {
+		if ( empty( $found ) ) {
+			continue;
+		}
+
+		$found = wookiee_rank_cj_results( $found, $query );
+		$top   = $terms ? wookiee_cj_name_score( $found[0]['name'], $terms ) : 0;
+
+		if ( $top > $best || empty( $results ) ) {
 			$results = $found;
+			$best    = $top;
+		}
+
+		if ( ! $terms || $top >= $needed ) {
 			break;
 		}
 	}
@@ -294,9 +350,31 @@ function wookiee_source_real_product_for_idea( $query, $max_attempts = 3, $categ
 		);
 	}
 
-	// Best matches first - see wookiee_rank_cj_results(). Without this the
-	// three attempts below are spent on whatever CJ happened to return first.
-	$results = wookiee_rank_cj_results( $results, $query );
+	/*
+	 * Drop results that match none of the distinctive terms before spending
+	 * attempts on them. Each attempt is an AI fit-check, and a product sharing
+	 * no meaningful word with the concept cannot be the answer - rejecting it
+	 * costs a call to learn what the name already said.
+	 */
+	if ( $terms ) {
+		$plausible = array();
+		foreach ( $results as $result ) {
+			if ( wookiee_cj_name_score( $result['name'], $terms ) > 0 ) {
+				$plausible[] = $result;
+			}
+		}
+
+		if ( empty( $plausible ) ) {
+			return new WP_Error(
+				'wookiee_no_cj_match',
+				'CJ returned ' . count( $results ) . ' result(s) for "' . $query . '" but none shared a single distinctive word with it'
+					. ( count( $tried ) > 1 ? ' (also tried: ' . implode( ', ', array_slice( $tried, 1 ) ) . ')' : '' )
+					. ' - the catalog appears not to stock this concept.'
+			);
+		}
+
+		$results = $plausible;
+	}
 
 	$attempts   = 0;
 	$rejections = array();

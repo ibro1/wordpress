@@ -1445,8 +1445,27 @@ function wookiee_build_policy_fix_prompt( $title, $current_text, $audit_report )
 		. "Real business details (do not invent anything beyond this list):\n" . wookiee_business_details_block() . "\n\n"
 		. "Rules:\n"
 		. "- Resolve every item under \"ISSUES FOUND\".\n"
-		. "- For anything under \"MISSING INFORMATION\", either fill it in from the business details above, or if it's genuinely not available, use a clear \"[Business input required: X]\" placeholder - do not invent it.\n"
-		. "- Do not claim any feature, mechanism, or business practice exists unless it's in the business details above or already accurately stated in the current text - if the audit flagged something missing that isn't something this business actually has, use a placeholder rather than inventing it.\n"
+		/*
+		 * This path was a placeholder factory, and the audit had just been
+		 * taught to score placeholders as Serious - so every "fix these
+		 * issues" pass converted the audit's MISSING INFORMATION list into
+		 * fresh Serious issues and the score fell each time it was clicked.
+		 * A page went 6 -> 5 -> 3 that way, ending with "[Business input
+		 * required: Data Controller's name]" on a page whose business details
+		 * name the controller three lines up, and "[Business input required:
+		 * Link to cancellation form]" where the link is a known fixed slug.
+		 *
+		 * Filling in is now the default and a placeholder the last resort,
+		 * with the two things it kept getting wrong named outright.
+		 */
+		. "- For anything under \"MISSING INFORMATION\", FILL IT IN from the business details above. A placeholder is the last resort, not the normal response, and it is never the answer for a fact that is already available:\n"
+		. "  * the DATA CONTROLLER is the registered legal entity named in the business details - write that name, never a placeholder;\n"
+		. "  * a LINK OR REFERENCE to another policy is a fixed, known path (/terms/, /privacy-policy/, /shipping/, /returns/, /payment/, /cookie/) - write the path, never a placeholder;\n"
+		. "  * the model CANCELLATION FORM lives on the Returns Policy: a one-line cross-reference to /returns/ is the complete and correct treatment on every other page. If the audit asks for the form itself on a page that is not the Returns Policy, keep the cross-reference and do NOT add a placeholder - the audit is over-reaching and the current text is right;\n"
+		. "  * anything else already stated in the business details under a different label - the address, the company number, timings, the returns window - is available: use it.\n"
+		. "- Only a fact that genuinely exists nowhere - not in the business details, not derivable, not a standard or statutory form of words - earns a \"[Business input required: X]\" placeholder. If you cannot honestly satisfy the audit's request, it is better to leave the topic out and say nothing than to publish a visible gap: every placeholder is scored as a Serious issue on the next review, so adding one to resolve an audit point makes the page worse, not better.\n"
+		. "- Never remove a placeholder by inventing the fact instead. If it is genuinely unavailable, the placeholder stays; the rule above is about not creating new ones for facts you already have.\n"
+		. "- Do not claim any feature, mechanism, or business practice exists unless it's in the business details above or already accurately stated in the current text. If the audit flagged something missing that this business does not actually have, say so plainly in the page's own words or omit it - do not invent it, and do not paper over it with a placeholder.\n"
 		. "- Write in plain, professional, customer-friendly English - not robotic or generic-sounding boilerplate.\n"
 		. "- State the business's full legal/trading name, company registration number and registered office address explicitly within the body text itself - the Electronic Commerce Regulations 2002 require a geographic address, not just an email.\n"
 		. "- Whatever section covers contacting the business must also explain how to escalate a complaint if it's not resolved directly - mention Citizens Advice or local Trading Standards as the UK escalation route - not just repeat the contact email.\n"

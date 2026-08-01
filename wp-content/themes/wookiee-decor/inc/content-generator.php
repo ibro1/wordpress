@@ -584,6 +584,7 @@ function wookiee_homepage_copy_fields() {
 		'how_it_works_step3_title', 'how_it_works_step3_desc', 'how_it_works_cta',
 		'collections_kicker', 'collections_title',
 		'homepage_philosophy_heading', 'homepage_philosophy',
+		'newsletter_heading', 'newsletter_sub',
 	);
 }
 
@@ -986,7 +987,7 @@ function wookiee_build_content_prompt( $key, $brief, $previous_audit = '' ) {
 		return "Write homepage marketing copy for a UK single-niche ecommerce store, to slot into an EXISTING page design - you are only rewriting text, the layout/sections themselves are fixed and already built.\n\n"
 			. "Store niche, in the owner's own words: \"{$brief}\"\n\n"
 			. "Real business details to use (do not invent anything beyond this list):\n" . wookiee_business_details_block() . "\n\n"
-			. "The page has these fixed sections, in this order: a hero (eyebrow tag, headline, subheadline, two buttons, a shipping stat badge), a 3-item trust bar, a best-selling-products section (kicker+title only, products are real and already listed), a categories section (kicker+title+subtitle, cards are real categories already listed), a \"how it works\" section (kicker, title, lead paragraph, 3 numbered steps each with a title+description, a button), a philosophy section (heading+paragraph), and a collections section (kicker+title).\n\n"
+			. "The page has these fixed sections, in this order: a hero (eyebrow tag, headline, subheadline, two buttons, a shipping stat badge), a 3-item trust bar, a featured-products section (kicker+title only, products are real and already listed), a categories section (kicker+title+subtitle, cards are real categories already listed), a \"how it works\" section (kicker, title, lead paragraph, 3 numbered steps each with a title+description, a button), a philosophy section (heading+paragraph), and a collections section (kicker+title).\n\n"
 			. wookiee_founder_voice_block() . "\n"
 			. "Provide EXACTLY these labelled sections, each on its own line as \"LABEL: value\" (including the colon), nothing before or after them, in this exact order:\n"
 			. "HERO_EYEBROW: very short tag line above the headline (2-5 words)\n"
@@ -1000,8 +1001,8 @@ function wookiee_build_content_prompt( $key, $brief, $previous_audit = '' ) {
 			. "TRUST_2_DESC: trust-bar item 2 subtext - a full short sentence, not a fragment\n"
 			. "TRUST_3_TITLE: trust-bar item 3 title (2-3 words, about payment security)\n"
 			. "TRUST_3_DESC: trust-bar item 3 subtext - a full short sentence, not a fragment\n"
-			. "PRODUCTS_KICKER: short kicker tag for the best-sellers section (2-4 words)\n"
-			. "PRODUCTS_TITLE: title for the best-sellers section (under 8 words)\n"
+			. "PRODUCTS_KICKER: short kicker tag for the featured-products section (2-4 words) - do NOT call them best-sellers, top-rated or similar; a new store has no sales history and the claim is unverifiable\n"
+			. "PRODUCTS_TITLE: title for the featured-products section (under 8 words) - again, nothing implying sales volume or popularity\n"
 			. "CATEGORIES_KICKER: short kicker tag for the categories section (2-4 words)\n"
 			. "CATEGORIES_TITLE: title for the categories section (under 8 words)\n"
 			. "CATEGORIES_SUBTITLE: two sentences under the categories title, saying how the range is organised and how to choose\n"
@@ -1017,6 +1018,8 @@ function wookiee_build_content_prompt( $key, $brief, $previous_audit = '' ) {
 			. "HOW_IT_WORKS_CTA: button label (2-4 words)\n"
 			. "COLLECTIONS_KICKER: short kicker tag for the collections section (2-4 words)\n"
 			. "COLLECTIONS_TITLE: title for the collections section (under 8 words)\n"
+			. "NEWSLETTER_HEADING: heading for the footer mailing-list band (under 6 words, naming what a subscriber gets in this niche)\n"
+			. "NEWSLETTER_SUB: one short line under it saying what is sent and how often\n"
 			. "HOMEPAGE_PHILOSOPHY_HEADING: short heading for the store's values/approach section (under 8 words)\n"
 			. "HOMEPAGE_PHILOSOPHY: a 150-200 word passage about the store's approach and values for this niche - why these products were chosen, what is deliberately not stocked, and what a customer can expect. On one line (no internal line breaks)\n\n"
 			. "Rules: natural, human, on-brand voice for THIS niche - not generic AI-sounding filler; do not invent specific facts (materials, awards, founding year) that weren't given above and do not reference or imitate a real competitor brand; no markdown; every value on a single line (no line breaks within a value).\n"

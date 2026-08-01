@@ -4,8 +4,18 @@
 	<div class="footer-newsletter-wrap">
 		<div class="container footer-newsletter">
 			<div class="newsletter-text">
-				<span class="newsletter-heading">Stay organised with <?php echo esc_html( get_bloginfo( 'name' ) ); ?></span>
-				<span class="newsletter-sub">Home-organisation ideas and new-product updates, occasionally.</span>
+				<?php
+				/*
+				 * Was hardcoded to "Stay organised with X" and "Home-
+				 * organisation ideas" - so a travel-accessories shop invited
+				 * customers to get tidier, and no niche change could ever
+				 * reach it because it was not a setting at all. Now editable
+				 * and written by the homepage copy generator like the rest of
+				 * the page, with a default that says nothing about any niche.
+				 */
+				?>
+				<span class="newsletter-heading"><?php echo esc_html( wookiee_get_setting( 'newsletter_heading' ) ); ?></span>
+				<span class="newsletter-sub"><?php echo esc_html( wookiee_get_setting( 'newsletter_sub' ) ); ?></span>
 			</div>
 			<form class="newsletter-form">
 				<input type="email" placeholder="Your email address" required>

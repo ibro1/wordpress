@@ -872,17 +872,204 @@ function wookiee_sideload_theme_image( $filename, $title ) {
     return false;
 }
 
+/**
+ * True once this install is a real store rather than a fresh copy of the
+ * theme demo - which, in practice, means someone has told it what it sells.
+ *
+ * The niche brief is the right signal: it is the first thing setup asks for,
+ * every generator downstream reads it, and nothing sets it by accident.
+ */
+function wookiee_store_has_own_niche() {
+    return '' !== trim( (string) get_option( 'wookiee_niche_brief', '' ) );
+}
+
+/**
+ * The demo catalog's categories, named once so the code that creates them and
+ * the code that helps an owner clear them cannot drift apart.
+ */
+function wookiee_demo_categories() {
+    return array(
+        'Kitchen storage'   => 'kitchen-storage',
+        'Bathroom storage'  => 'bathroom-storage',
+        'Drawer organisers' => 'drawer-organisers',
+        'Shoe storage'      => 'shoe-storage',
+    );
+}
+
+/**
+ * Titles of the theme's demo products, kept beside the categories above so
+ * cleanup targets exactly what the demo created and nothing else.
+ */
+function wookiee_demo_product_titles() {
+    return array(
+        'Compact Mobility Scooter (Foldable)',
+        'Bamboo 3-Tier Shelving Unit',
+        'Minimalist Desk Organizer',
+        'Ceramic Bathroom Set',
+        'Stackable Bamboo Storage Box',
+        'Premium Bathroom Shelf',
+    );
+}
+
+/**
+ * Demo catalog still present on a store that has since chosen its own niche.
+ *
+ * Returns product IDs and category term IDs, or empty arrays when the store is
+ * clean. Only ever matches the theme's own demo titles and slugs, so a real
+ * product that happens to be filed under a demo category is never touched -
+ * the category is reported only when nothing else is left in it.
+ */
+function wookiee_leftover_demo_content() {
+    $found = array( 'products' => array(), 'categories' => array() );
+
+    if ( ! class_exists( 'WooCommerce' ) || ! wookiee_store_has_own_niche() ) {
+        return $found;
+    }
+
+    foreach ( wookiee_demo_product_titles() as $title ) {
+        $existing = get_page_by_title( $title, OBJECT, 'product' );
+        if ( $existing instanceof WP_Post && 'trash' !== $existing->post_status ) {
+            $found['products'][] = (int) $existing->ID;
+        }
+    }
+
+    foreach ( wookiee_demo_categories() as $slug ) {
+        $term = get_term_by( 'slug', $slug, 'product_cat' );
+        if ( ! $term || is_wp_error( $term ) ) {
+            continue;
+        }
+        // Anything left in it beyond the demo products we are about to remove
+        // is the owner's, so the category stays.
+        if ( (int) $term->count <= count( $found['products'] ) ) {
+            $found['categories'][] = (int) $term->term_id;
+        }
+    }
+
+    return $found;
+}
+
+/*
+ * Stopping the demo catalog from being recreated does not remove the copies a
+ * store already published before the gate existed - and those are exactly the
+ * ones showing "Bathroom storage" on a travel shop. Offered as a one-click
+ * action rather than done automatically: products go to Trash, not the bin,
+ * and deleting a live catalog is never something an update should decide.
+ */
+add_action( 'admin_notices', 'wookiee_demo_content_notice' );
+function wookiee_demo_content_notice() {
+    if ( ! current_user_can( 'manage_options' ) ) {
+        return;
+    }
+
+    $screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
+    if ( ! $screen || false === strpos( (string) $screen->id, 'wookiee' ) ) {
+        return;
+    }
+
+    $leftover = wookiee_leftover_demo_content();
+    if ( empty( $leftover['products'] ) && empty( $leftover['categories'] ) ) {
+        return;
+    }
+
+    $titles = array();
+    foreach ( $leftover['products'] as $product_id ) {
+        $titles[] = get_the_title( $product_id );
+    }
+    ?>
+    <div class="notice notice-warning">
+        <p><strong>The theme's demo catalog is still published on this store.</strong> It was created before you chose a niche, and it is what puts categories like &ldquo;Bathroom storage&rdquo; on your homepage regardless of what you actually sell. It is no longer recreated, but these copies are still live:</p>
+        <?php if ( $titles ) : ?>
+            <p><?php echo esc_html( implode( ', ', $titles ) ); ?></p>
+        <?php endif; ?>
+        <?php if ( ! empty( $leftover['categories'] ) ) : ?>
+            <p><?php echo count( $leftover['categories'] ); ?> empty demo categor<?php echo 1 === count( $leftover['categories'] ) ? 'y' : 'ies'; ?> will be removed with them.</p>
+        <?php endif; ?>
+        <p>
+            <button type="button" class="button button-primary" id="wookiee-clear-demo-btn">Move demo products to Trash</button>
+            <span id="wookiee-clear-demo-status" style="margin-left:8px;"></span>
+        </p>
+        <p class="description">Products go to Trash, so nothing is lost if you change your mind. Only categories with nothing else in them are removed.</p>
+    </div>
+    <script>
+    ( function() {
+        var btn = document.getElementById( 'wookiee-clear-demo-btn' );
+        if ( ! btn ) { return; }
+        btn.addEventListener( 'click', function() {
+            var status = document.getElementById( 'wookiee-clear-demo-status' );
+            btn.disabled = true;
+            status.textContent = 'Clearing…';
+            var data = new FormData();
+            data.append( 'action', 'wookiee_clear_demo_content' );
+            data.append( 'nonce', <?php echo wp_json_encode( wp_create_nonce( 'wookiee_clear_demo_content' ) ); ?> );
+            fetch( ajaxurl, { method: 'POST', credentials: 'same-origin', body: data } )
+                .then( function( r ) { return r.json(); } )
+                .then( function( res ) {
+                    status.textContent = res && res.success ? 'Done — reloading…' : 'Failed.';
+                    if ( res && res.success ) { window.location.reload(); } else { btn.disabled = false; }
+                } )
+                .catch( function() { btn.disabled = false; status.textContent = 'Failed — could not reach the server.'; } );
+        } );
+    } )();
+    </script>
+    <?php
+}
+
+add_action( 'wp_ajax_wookiee_clear_demo_content', 'wookiee_clear_demo_content_handler' );
+function wookiee_clear_demo_content_handler() {
+    if ( ! current_user_can( 'manage_options' ) ) {
+        wp_send_json_error( array( 'message' => 'Not allowed.' ), 403 );
+    }
+    check_ajax_referer( 'wookiee_clear_demo_content', 'nonce' );
+
+    $leftover = wookiee_leftover_demo_content();
+
+    foreach ( $leftover['products'] as $product_id ) {
+        wp_trash_post( $product_id );
+    }
+
+    // Re-read after trashing: a category that looked occupied only because of
+    // the demo products is empty now, and one that still has real products in
+    // it drops out of the list rather than being deleted underneath them.
+    foreach ( wookiee_demo_categories() as $slug ) {
+        $term = get_term_by( 'slug', $slug, 'product_cat' );
+        if ( $term && ! is_wp_error( $term ) && 0 === (int) $term->count ) {
+            wp_delete_term( $term->term_id, 'product_cat' );
+        }
+    }
+
+    wp_send_json_success();
+}
+
 function wookiee_create_dummy_products() {
     if ( ! class_exists( 'WooCommerce' ) ) {
         return;
     }
 
-    $dummy_categories = array(
-        'Kitchen storage' => 'kitchen-storage',
-        'Bathroom storage' => 'bathroom-storage',
-        'Drawer organisers' => 'drawer-organisers',
-        'Shoe storage' => 'shoe-storage',
-    );
+    /*
+     * This is demo scaffolding for a theme with no store behind it yet, and it
+     * runs on EVERY request (see the init hook in functions.php, deliberately
+     * unconditional so it self-heals if WooCommerce was activated later). That
+     * was fine while the theme only ever ran the storage demo. It is not fine
+     * on a configured store: it publishes a Ceramic Bathroom Set and a
+     * Compact Mobility Scooter into four hardcoded categories - Kitchen
+     * storage, Bathroom storage, Drawer organisers, Shoe storage - whatever
+     * the shop actually sells.
+     *
+     * That is why a travel-accessories store still showed "Bathroom storage"
+     * under Shop By Type, and why deleting the category did not help: it was
+     * recreated on the next page load. A niche change could never take effect
+     * while this kept running.
+     *
+     * Once a niche is set, the store owns its own catalog and nothing here
+     * should touch it. Existing demo products are left alone rather than
+     * deleted - removing published products and their categories is the
+     * owner's decision, not a side effect of an update.
+     */
+    if ( wookiee_store_has_own_niche() ) {
+        return;
+    }
+
+    $dummy_categories = wookiee_demo_categories();
 
     foreach ( $dummy_categories as $name => $slug ) {
         if ( ! term_exists( $slug, 'product_cat' ) ) {

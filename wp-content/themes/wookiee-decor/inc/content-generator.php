@@ -793,7 +793,7 @@ function wookiee_build_content_prompt( $key, $brief, $previous_audit = '' ) {
 			. "- Where genuinely relevant, refer to the store's other policies by name (e.g. mention the Privacy Policy when discussing personal data, the Returns Policy when discussing refunds) rather than repeating their content.\n"
 			. "- STAY IN SCOPE. Write this policy and only this policy. If a topic belongs to another page - order cancellations, pricing errors, refunds and return postage on a privacy policy, say, or data-subject rights on a shipping policy - name that policy and its path in one line and move on. Do not write the section here. Two pages covering the same ground is how they come to contradict each other, and a policy that wanders outside its title reads to a reviewer as generated rather than written.\n"
 			. "- A model cancellation form belongs on the Returns Policy and nowhere else. If another page needs to mention it, point to /returns/ in a line rather than reproducing the form.\n"
-			. "- State the business's full legal/trading name and company registration number explicitly within the body text itself (not only implied) - UK company law expects this on formal business documents, and it must appear even if it feels repetitive with other sections.\n"
+			. "- State the business's full legal/trading name, company registration number AND registered office address explicitly within the body text itself (not only implied). The Electronic Commerce (EC Directive) Regulations 2002 require a geographic address, not just an email, and the audit reports the address as missing information when only the name and number appear. All three must be there even if it feels repetitive with other sections.\n"
 			. "- Do NOT tell the reader to consult a solicitor, and do NOT state that this is not legal advice. This page is the shop speaking to its customers; advice about having it reviewed is for the shop owner, not for the person reading it, and printing it undermines the document in front of the very people it is written for.\n"
 			. "- Open with a short PLAIN-ENGLISH SUMMARY headed '## The short version': three to five bullet-style sentences giving the answers most readers came for, before any formal wording. State that it is a summary and the detail below governs. Almost no store does this; it is the single thing that makes a policy page usable rather than merely present.\n"
 			. "- Give an effective date line ('Last updated: <month year>') taken from the \"Today's date\" line in the business details above - do not use any other date, and do not date it from memory - and say the current version is the one that applies to orders placed while it is published.\n"
@@ -833,6 +833,15 @@ function wookiee_build_content_prompt( $key, $brief, $previous_audit = '' ) {
 				 * scored below the pages either side of it.
 				 */
 				. "Name the PRIVACY AND ELECTRONIC COMMUNICATIONS REGULATIONS 2003 (PECR) explicitly and say what it requires here - consent before any non-essential cookie is set, and that strictly necessary cookies are exempt from that consent requirement. PECR, not UK GDPR, is the instrument that governs setting a cookie, and a cookie policy that never names it is the single most common gap a reviewer finds on one. Cite UK GDPR alongside it for what happens to the data afterwards.\n"
+				/*
+				 * Both raised by the audit as missing information rather than
+				 * as wording faults, so nothing in the prompt had asked for
+				 * either. The controller is a UK GDPR requirement; the lapse
+				 * behaviour is the question a customer actually has after
+				 * being told their choice is remembered for six months.
+				 */
+				. "Name the DATA CONTROLLER explicitly - the business named above is the controller for the data these cookies collect - since a cookie policy that never says who is responsible leaves the reader with nowhere to direct a request.\n"
+				. "Say what happens when consent EXPIRES: whether the banner reappears and consent is asked for again, or whether the choice simply lapses to the default. Telling a customer their preference is remembered for a period without saying what follows it leaves the one question that period raises unanswered.\n"
 				. "Break the cookies down INDIVIDUALLY, not just by category: give each one a name, what it is for, whether it is first- or third-party, and how long it lasts, using the consent mechanism facts above and WooCommerce's own well-known cookies (the cart, session and consent cookies this store actually sets). Three paragraphs describing 'necessary, analytics and marketing' in the abstract is what every weak cookie notice does, and it does not tell a customer what is on their device. Do not invent analytics or advertising cookies the store does not set - if it sets none, say so plainly, which is a stronger disclosure than a vague one.";
 		}
 
@@ -1049,7 +1058,7 @@ function wookiee_build_custom_policy_prompt( $title, $custom_instruction ) {
 		. "Real business details to use (do not invent anything beyond this list):\n" . wookiee_business_details_block() . "\n\n"
 		. "Rules:\n"
 		. "- Follow the owner's instructions as closely as possible without contradicting UK consumer/privacy law or inventing a business fact not given above - if something relevant is missing, use a clear \"[Business input required: X]\" placeholder instead of guessing.\n"
-		. "- State the business's full legal/trading name and company registration number explicitly within the body text itself.\n"
+		. "- State the business's full legal/trading name, company registration number and registered office address explicitly within the body text itself.\n"
 		. "- End with a short note that this policy should be reviewed by a qualified UK solicitor before being relied on, since it is not legal advice.\n"
 		. "- Output ONLY the finished page text as plain paragraphs separated by a blank line, starting with a single plain-text heading line. No markdown, no HTML, no commentary.";
 
@@ -1388,7 +1397,7 @@ function wookiee_build_policy_fix_prompt( $title, $current_text, $audit_report )
 		. "- For anything under \"MISSING INFORMATION\", either fill it in from the business details above, or if it's genuinely not available, use a clear \"[Business input required: X]\" placeholder - do not invent it.\n"
 		. "- Do not claim any feature, mechanism, or business practice exists unless it's in the business details above or already accurately stated in the current text - if the audit flagged something missing that isn't something this business actually has, use a placeholder rather than inventing it.\n"
 		. "- Write in plain, professional, customer-friendly English - not robotic or generic-sounding boilerplate.\n"
-		. "- State the business's full legal/trading name and company registration number explicitly within the body text itself - UK company law expects this on formal business documents.\n"
+		. "- State the business's full legal/trading name, company registration number and registered office address explicitly within the body text itself - the Electronic Commerce Regulations 2002 require a geographic address, not just an email.\n"
 		. "- Whatever section covers contacting the business must also explain how to escalate a complaint if it's not resolved directly - mention Citizens Advice or local Trading Standards as the UK escalation route - not just repeat the contact email.\n"
 		. "- End with a short note that this policy should be reviewed by a qualified UK solicitor before being relied on, since it is not legal advice.\n"
 		. "- Output ONLY the finished, complete policy text as plain paragraphs separated by a blank line, starting with a single plain-text heading line. No markdown, no HTML, no commentary, no changelog of what you fixed - just the finished, publishable page.";
@@ -1464,7 +1473,7 @@ function wookiee_apply_custom_policy_prompt_handler() {
 		. "- Apply the owner's instruction as directly as possible, without contradicting UK consumer/privacy law or the real business details above.\n"
 		. "- Do not invent any business fact, feature, or practice not in the details above or already accurately stated in the current text.\n"
 		. "- Write in plain, professional, customer-friendly English - not robotic or generic-sounding boilerplate.\n"
-		. "- State the business's full legal/trading name and company registration number explicitly within the body text itself.\n"
+		. "- State the business's full legal/trading name, company registration number and registered office address explicitly within the body text itself.\n"
 		. "- End with a short note that this policy should be reviewed by a qualified UK solicitor before being relied on, since it is not legal advice.\n"
 		. "- Output ONLY the finished, complete policy text as plain paragraphs separated by a blank line, starting with a single plain-text heading line. No markdown, no HTML, no commentary.";
 

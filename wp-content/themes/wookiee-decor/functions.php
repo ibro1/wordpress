@@ -5,7 +5,13 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'WOOKIEE_VERSION', '1.1.4' );
+/*
+ * Bump this whenever assets/js or assets/css change. It is the cache-buster
+ * on every enqueue, so shipping a JS or CSS change without touching it means
+ * browsers - and Cloudflare in front of them - keep serving the previous file
+ * and the change simply does not happen for anyone who has visited before.
+ */
+define( 'WOOKIEE_VERSION', '1.1.5' );
 define( 'WOOKIEE_DIR', trailingslashit( get_template_directory() ) );
 define( 'WOOKIEE_URI', trailingslashit( get_template_directory_uri() ) );
 define( 'WOOKIEE_CONTACT_EMAIL', 'info@wookied.com' );

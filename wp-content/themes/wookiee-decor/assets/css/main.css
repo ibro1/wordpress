@@ -2521,32 +2521,104 @@ a.added_to_cart:hover,
 .wookiee-cookie-panel-inner {
     background: #fff;
     color: var(--wookiee-ink);
-    max-width: 480px;
+    max-width: 620px;
     width: 100%;
+    /* A long-form panel on a short screen has to scroll itself rather than
+       push its own buttons off the bottom, where they cannot be reached. */
+    max-height: calc(100vh - 40px);
+    overflow-y: auto;
     border-radius: var(--radius-md);
     padding: 28px;
 }
-.wookiee-cookie-panel-inner h2 {
-    margin-top: 0;
-    font-size: 20px;
-}
-.wookiee-cookie-row {
+.wookiee-cookie-panel-head {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
     gap: 16px;
+}
+.wookiee-cookie-panel-inner h2 {
+    margin-top: 0;
+    margin-bottom: 0;
+    font-size: 20px;
+}
+.wookiee-cookie-close {
+    flex-shrink: 0;
+    background: none;
+    border: none;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    font-size: 26px;
+    line-height: 1;
+    color: #666;
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+}
+.wookiee-cookie-close:hover {
+    color: var(--wookiee-ink);
+    background: #f2f2f2;
+}
+.wookiee-cookie-panel-intro {
+    margin: 10px 0 4px;
+    font-size: 14px;
+    line-height: 1.55;
+    color: #555;
+}
+.wookiee-cookie-rows {
+    margin-top: 8px;
+}
+/* Checkbox first, then a stacked label and description - a description sitting
+   on its own line stays readable at any width, where the old side-by-side row
+   squeezed it into a column two words wide on a phone. */
+.wookiee-cookie-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
     padding: 14px 0;
     border-bottom: 1px solid #eee;
     font-size: 14px;
+    cursor: pointer;
 }
 .wookiee-cookie-row:last-of-type {
     border-bottom: none;
 }
+.wookiee-cookie-row input[type="checkbox"] {
+    flex-shrink: 0;
+    margin-top: 2px;
+    width: 18px;
+    height: 18px;
+}
+.wookiee-cookie-row input[type="checkbox"]:disabled {
+    cursor: not-allowed;
+}
+.wookiee-cookie-row-text {
+    display: block;
+}
+.wookiee-cookie-row-text strong {
+    display: block;
+    margin-bottom: 2px;
+}
+.wookiee-cookie-row-text span {
+    display: block;
+    color: #555;
+    line-height: 1.5;
+}
 .wookiee-cookie-panel-actions {
     display: flex;
+    flex-wrap: wrap;
     justify-content: flex-end;
     gap: 10px;
     margin-top: 20px;
+}
+/* Stacked full-width on a phone: three side-by-side buttons wrap into an
+   uneven, hard-to-hit row well before 360px. */
+@media (max-width: 480px) {
+    .wookiee-cookie-panel-actions {
+        flex-direction: column-reverse;
+    }
+    .wookiee-cookie-panel-actions .wookiee-cookie-btn {
+        width: 100%;
+    }
 }
 /* Inside the panel, the button colors need dark text on the outline variant */
 .wookiee-cookie-panel-inner .wookiee-cookie-btn {

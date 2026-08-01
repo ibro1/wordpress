@@ -25,7 +25,7 @@ defined( 'ABSPATH' ) || exit;
  * the real mechanism rather than inventing or omitting one.
  */
 function wookiee_cookie_consent_mechanism_description() {
-	return 'This site shows a cookie consent banner to first-time visitors, offering three choices: Accept All, Reject Non-Essential, or Manage Preferences (to individually allow or disallow Analytics and Marketing cookies). Strictly Necessary cookies - the ones required to run the shopping cart, checkout, and basic site security - cannot be disabled since the site cannot function without them; this is the "essential" category. Analytics and Marketing cookies are the "non-essential" categories a visitor can freely accept or reject. The visitor\'s choice is remembered for 6 months and can be changed at any time via the "Manage cookie preferences" button on the Cookie Preferences page. This site does not currently have any third-party analytics or advertising scripts (e.g. Google Analytics, ad networks) actually installed - state this plainly rather than describing hypothetical third-party cookies.';
+	return 'This site shows a cookie consent banner to first-time visitors, offering three choices: Accept All, Reject Non-Essential, or Manage Preferences. Manage Preferences opens a dialog listing the three categories with a checkbox each, and that dialog itself offers Decline All, Accept All and Save My Choices - so a visitor can refuse everything in one click from the dialog exactly as easily as accepting everything. Non-essential categories are off until the visitor allows them. Strictly Necessary cookies - the ones required to run the shopping cart, checkout, and basic site security - cannot be disabled since the site cannot function without them; this is the "essential" category. Analytics and Marketing cookies are the "non-essential" categories a visitor can freely accept or reject. The visitor\'s choice is remembered for 6 months, after which the banner appears again and consent is asked for afresh. It can be changed at any time from the "Cookie preferences" link in the site footer, which opens the same dialog directly. This site does not currently have any third-party analytics or advertising scripts (e.g. Google Analytics, ad networks) actually installed - state this plainly rather than describing hypothetical third-party cookies.';
 }
 
 add_action( 'wp_footer', 'wookiee_render_cookie_consent_banner' );
@@ -45,24 +45,56 @@ function wookiee_render_cookie_consent_banner() {
 		</div>
 	</div>
 
+	<?php
+	/*
+	 * The panel carries Accept all and Decline all as well as Save, so a
+	 * visitor who opens it to change one thing is not forced to tick boxes to
+	 * get to a blanket answer. That is not only convenience: PECR expects
+	 * refusing to be as easy as accepting, and a panel offering only "save
+	 * what you have ticked" makes rejecting the longer path of the two.
+	 *
+	 * Only the three categories this site genuinely has. Adding a
+	 * "Personalization" row because other consent tools show one would be a
+	 * disclosure about cookies that are never set - the same false-precision
+	 * problem the Cookie Policy prompt already forbids.
+	 */
+	?>
 	<div id="wookiee-cookie-panel" class="wookiee-cookie-panel" hidden>
-		<div class="wookiee-cookie-panel-inner">
-			<h2>Manage cookie preferences</h2>
-			<label class="wookiee-cookie-row">
-				<span><strong>Strictly necessary</strong> — required for the site to work (cart, checkout, security). Always on.</span>
-				<input type="checkbox" checked disabled>
-			</label>
-			<label class="wookiee-cookie-row">
-				<span><strong>Analytics</strong> — helps us understand how visitors use the site.</span>
-				<input type="checkbox" id="wookiee-cookie-analytics">
-			</label>
-			<label class="wookiee-cookie-row">
-				<span><strong>Marketing</strong> — used to show relevant ads and measure campaigns.</span>
-				<input type="checkbox" id="wookiee-cookie-marketing">
-			</label>
+		<div class="wookiee-cookie-panel-inner" role="dialog" aria-modal="true" aria-labelledby="wookiee-cookie-panel-title">
+			<div class="wookiee-cookie-panel-head">
+				<h2 id="wookiee-cookie-panel-title">Cookie preferences</h2>
+				<button type="button" class="wookiee-cookie-close" id="wookiee-cookie-panel-close" aria-label="Close cookie preferences">&times;</button>
+			</div>
+			<p class="wookiee-cookie-panel-intro">You choose which cookies this site may use. Strictly necessary cookies are always on because the site cannot run without them; everything else is off until you allow it. Your choice is remembered for six months and you can change it any time from the footer. See our <a href="<?php echo esc_url( home_url( '/cookie/' ) ); ?>">Cookie Policy</a>.</p>
+
+			<div class="wookiee-cookie-rows">
+				<label class="wookiee-cookie-row">
+					<input type="checkbox" checked disabled>
+					<span class="wookiee-cookie-row-text">
+						<strong>Strictly necessary</strong>
+						<span>Required for the site to work — your basket, checkout and basic security. These cannot be turned off.</span>
+					</span>
+				</label>
+				<label class="wookiee-cookie-row">
+					<input type="checkbox" id="wookiee-cookie-analytics">
+					<span class="wookiee-cookie-row-text">
+						<strong>Analytics</strong>
+						<span>Helps us understand how visitors use the site so we can improve it.</span>
+					</span>
+				</label>
+				<label class="wookiee-cookie-row">
+					<input type="checkbox" id="wookiee-cookie-marketing">
+					<span class="wookiee-cookie-row-text">
+						<strong>Marketing</strong>
+						<span>Used to show relevant ads and measure how campaigns perform.</span>
+					</span>
+				</label>
+			</div>
+
 			<div class="wookiee-cookie-panel-actions">
-				<button type="button" class="wookiee-cookie-btn" id="wookiee-cookie-panel-cancel">Cancel</button>
-				<button type="button" class="wookiee-cookie-btn wookiee-cookie-btn--primary" id="wookiee-cookie-panel-save">Save preferences</button>
+				<button type="button" class="wookiee-cookie-btn" id="wookiee-cookie-panel-reject">Decline all</button>
+				<button type="button" class="wookiee-cookie-btn" id="wookiee-cookie-panel-accept">Accept all</button>
+				<button type="button" class="wookiee-cookie-btn wookiee-cookie-btn--primary" id="wookiee-cookie-panel-save">Save my choices</button>
 			</div>
 		</div>
 	</div>

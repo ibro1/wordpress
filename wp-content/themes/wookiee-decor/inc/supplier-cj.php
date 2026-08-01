@@ -476,7 +476,19 @@ function wookiee_build_supplier_import_prompt( $brief, $raw_title, $raw_descript
 		. "LONG_DESCRIPTION: the full product page description, written as several plain-text paragraphs separated by blank lines, in this order:\n"
 		. "  1. An overview paragraph - what it is, who it's for, the core benefit, in this niche's voice.\n"
 		. "  2. A \"Key features\" paragraph or list of short lines (one per line, starting with \"- \").\n"
-		. "  3. A \"Specifications\" list (one \"- Label: value\" line per spec) using ONLY the known specs given above - for any specification a real product page would normally list but wasn't provided (e.g. exact dimensions, weight, material), write \"- [Spec name]: Not specified by supplier\" instead of guessing a number.\n"
+		/*
+		 * This used to require "- Weight: Not specified by supplier" for any
+		 * spec the data lacked. The honesty was right and the execution was
+		 * wrong twice over: it filled the page with rows that inform nobody,
+		 * and the word "supplier" tells a customer the shop does not hold its
+		 * own stock - which is the shop's business arrangement, not a product
+		 * fact, and not something a product page should disclose.
+		 *
+		 * Omitting the line is just as honest and reads as a finished page. A
+		 * spec sheet listing four real measurements is better than one listing
+		 * ten, six of which are apologies.
+		 */
+		. "  3. A \"Specifications\" list (one \"- Label: value\" line per spec) using ONLY the known specs given above. If a specification was not provided, LEAVE THE LINE OUT ENTIRELY - do not guess it, and do not write a placeholder for it. Never write \"Not specified\", \"N/A\", \"unknown\", \"see listing\" or any similar filler, and never mention a supplier, vendor, manufacturer's data or where the product information came from: none of that is a fact about the product, and it tells the customer about the shop's buying arrangements rather than about what they are buying. If fewer than two real specifications are known, omit the Specifications section altogether rather than printing a near-empty one.\n"
 		. "  4. A short \"How to use / install\" paragraph with generic, accurate guidance appropriate to this type of product (e.g. general mounting/assembly/care advice) - do not state specific measurements, hardware, or steps that weren't given.\n"
 		. "  5. A brief closing care/maintenance sentence if relevant to this product type.\n"
 		. "Do not invent features, materials, exact measurements, or claims beyond what the supplier's data and the known specs above provide.";

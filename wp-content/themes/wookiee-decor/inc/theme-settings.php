@@ -260,7 +260,6 @@ function wookiee_settings_fields() {
 		'homepage_philosophy' => array( 'label' => 'Homepage philosophy paragraph', 'default' => "We pick products for how well they do the job they are bought for, describe them plainly, and stand behind them after the sale.", 'type' => 'textarea' ),
 		'hero_cta_primary'   => array( 'label' => 'Hero button: primary', 'default' => 'Shop all products', 'type' => 'text' ),
 		'hero_cta_secondary' => array( 'label' => 'Hero button: secondary', 'default' => 'Explore categories', 'type' => 'text' ),
-		'hero_stat_label'    => array( 'label' => 'Hero stat badge text', 'default' => 'flat-rate UK shipping', 'type' => 'text' ),
 		'trust_1_title'      => array( 'label' => 'Trust bar item 1: title', 'default' => 'Flat-rate shipping', 'type' => 'text' ),
 		'trust_2_title'      => array( 'label' => 'Trust bar item 2: title', 'default' => '30 day returns', 'type' => 'text' ),
 		'trust_2_desc'       => array( 'label' => 'Trust bar item 2: subtext', 'default' => 'Hassle-free refunds', 'type' => 'text' ),
@@ -411,7 +410,7 @@ function wookiee_settings_tabs() {
 		'homepage' => array(
 			'label'  => 'Homepage Copy',
 			'fields' => array(
-				'hero_eyebrow', 'hero_headline', 'hero_subheadline', 'hero_cta_primary', 'hero_cta_secondary', 'hero_stat_label',
+				'hero_eyebrow', 'hero_headline', 'hero_subheadline', 'hero_cta_primary', 'hero_cta_secondary',
 				'newsletter_heading', 'newsletter_sub',
 				'trust_1_title', 'trust_2_title', 'trust_2_desc', 'trust_3_title', 'trust_3_desc',
 				'products_kicker', 'products_title',

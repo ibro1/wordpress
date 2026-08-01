@@ -92,9 +92,6 @@ do_action( 'woocommerce_before_cart' );
                                 <?php else : echo wp_kses_post( $product_name ); endif; ?>
                             </span>
                             <?php echo wc_get_formatted_cart_item_data( $cart_item ); ?>
-                            <?php if ( $_product->get_sku() ) : ?>
-                                <span class="wookiee-cart-sku">SKU: <?php echo esc_html( $_product->get_sku() ); ?></span>
-                            <?php endif; ?>
                             <?php if ( $_product->is_in_stock() ) : ?>
                                 <span class="wookiee-in-stock">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="9" height="9" viewBox="0 0 24 24" fill="#2e7d32"><circle cx="12" cy="12" r="10"/></svg>

@@ -574,7 +574,7 @@ function wookiee_generate_content_handler() {
  * the setting key, so parsing and applying need no separate mapping.
  */
 function wookiee_homepage_copy_fields() {
-	return array( 'hero_eyebrow', 'hero_headline', 'hero_subheadline', 'hero_cta_primary', 'hero_cta_secondary', 'hero_stat_label',
+	return array( 'hero_eyebrow', 'hero_headline', 'hero_subheadline', 'hero_cta_primary', 'hero_cta_secondary',
 		'trust_1_title', 'trust_2_title', 'trust_2_desc', 'trust_3_title', 'trust_3_desc',
 		'products_kicker', 'products_title',
 		'categories_kicker', 'categories_title', 'categories_subtitle',
@@ -987,7 +987,7 @@ function wookiee_build_content_prompt( $key, $brief, $previous_audit = '' ) {
 		return "Write homepage marketing copy for a UK single-niche ecommerce store, to slot into an EXISTING page design - you are only rewriting text, the layout/sections themselves are fixed and already built.\n\n"
 			. "Store niche, in the owner's own words: \"{$brief}\"\n\n"
 			. "Real business details to use (do not invent anything beyond this list):\n" . wookiee_business_details_block() . "\n\n"
-			. "The page has these fixed sections, in this order: a hero (eyebrow tag, headline, subheadline, two buttons, a shipping stat badge), a 3-item trust bar, a featured-products section (kicker+title only, products are real and already listed), a categories section (kicker+title+subtitle, cards are real categories already listed), a \"how it works\" section (kicker, title, lead paragraph, 3 numbered steps each with a title+description, a button), a philosophy section (heading+paragraph), and a collections section (kicker+title).\n\n"
+			. "The page has these fixed sections, in this order: a hero (eyebrow tag, headline, subheadline, two buttons), a 3-item trust bar, a featured-products section (kicker+title only, products are real and already listed), a categories section (kicker+title+subtitle, cards are real categories already listed), a \"how it works\" section (kicker, title, lead paragraph, 3 numbered steps each with a title+description, a button), a philosophy section (heading+paragraph), and a collections section (kicker+title).\n\n"
 			. wookiee_founder_voice_block() . "\n"
 			. "Provide EXACTLY these labelled sections, each on its own line as \"LABEL: value\" (including the colon), nothing before or after them, in this exact order:\n"
 			. "HERO_EYEBROW: very short tag line above the headline (2-5 words)\n"
@@ -995,7 +995,6 @@ function wookiee_build_content_prompt( $key, $brief, $previous_audit = '' ) {
 			. "HERO_SUBHEADLINE: two sentences under the headline - what the store sells and who it is for\n"
 			. "HERO_CTA_PRIMARY: primary hero button label (2-4 words, e.g. \"Shop now\")\n"
 			. "HERO_CTA_SECONDARY: secondary hero button label (2-4 words)\n"
-			. "HERO_STAT_LABEL: a short phrase completing \"[shipping icon] £X \" about delivery, e.g. \"flat-rate UK shipping\" - do not include the price, just the phrase after it\n"
 			. "TRUST_1_TITLE: trust-bar item 1 title (2-3 words, about shipping)\n"
 			. "TRUST_2_TITLE: trust-bar item 2 title (2-3 words, about returns)\n"
 			. "TRUST_2_DESC: trust-bar item 2 subtext - a full short sentence, not a fragment\n"

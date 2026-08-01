@@ -11,15 +11,25 @@
 <div class="announcement-bar">
 	<?php
 	/*
-	 * No shipping price here. It was in this bar, in the hero stat badge and
-	 * in the trust bar - the same figure three times above the fold, which a
-	 * reviewer picked up immediately. The hero badge keeps the price, since it
-	 * is the element built to carry a number; this bar carries the returns
-	 * window and the checkout reassurance instead, and the trust bar carries
-	 * dispatch time. One fact, one place.
+	 * The shipping price now lives here rather than on a badge pinned over the
+	 * hero image, which is where review asked for it: an announcement bar is
+	 * the conventional place for a delivery line, and the hero is stronger
+	 * without a price plate covering the photograph. Still one fact in one
+	 * place - the trust bar below carries dispatch time, not this.
 	 */
+	$wookiee_bar_rate = trim( (string) wookiee_get_setting( 'shipping_rate' ) );
+	$wookiee_bar_days = trim( (string) wookiee_get_setting( 'returns_period_days' ) );
+
+	$wookiee_bar = array();
+	if ( '' !== $wookiee_bar_rate ) {
+		$wookiee_bar[] = 'Flat-rate UK delivery £' . $wookiee_bar_rate;
+	}
+	if ( '' !== $wookiee_bar_days ) {
+		$wookiee_bar[] = $wookiee_bar_days . '-day returns';
+	}
+	$wookiee_bar[] = 'Secure checkout';
 	?>
-	<p><?php echo esc_html( wookiee_get_setting( 'returns_period_days' ) ); ?>-day returns &nbsp;&middot;&nbsp; UK customer support &nbsp;&middot;&nbsp; Secure checkout</p>
+	<p><?php echo esc_html( implode( '  ·  ', $wookiee_bar ) ); ?></p>
 </div>
 
 <header class="site-header">

@@ -570,24 +570,64 @@ body.mobile-nav-active {
 }
 
 /* Features / trust bar */
+/* Three equal columns, not three centred blobs. As a wrapping flex row the
+   items took their width from their own text, so the icons sat at three
+   different distances from the left and a caption that wrapped to two lines
+   pushed its whole item out of line with the others. A grid gives each the
+   same box; align-items:start keeps the icon level with the first line of
+   text whether the caption wraps or not. */
 .features-section {
-	display: flex;
-	justify-content: center;
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
 	gap: 20px;
+	max-width: 1100px;
+	margin: 0 auto;
 	padding: 36px 20px;
 	background: var(--wookiee-white);
 	border-bottom: 1px solid var(--wookiee-border);
-	flex-wrap: wrap;
 }
 .feature-item {
 	display: flex;
-	align-items: center;
+	align-items: flex-start;
 	gap: 14px;
 	text-align: left;
 	font-size: 14px;
 	font-weight: 600;
 	color: var(--wookiee-ink);
-	padding: 10px 24px;
+	padding: 10px 16px;
+	min-width: 0;
+}
+@media (max-width: 768px) {
+	.features-section {
+		grid-template-columns: 1fr;
+		gap: 8px;
+	}
+}
+
+/* Sits beside Add to cart, so it must not inherit the full-width block the
+   theme gives WooCommerce's own single_add_to_cart_button. */
+.wookiee-buy-now-btn {
+	display: inline-block;
+	margin-left: 10px;
+	background: transparent;
+	border: 1.5px solid var(--wookiee-ink);
+	color: var(--wookiee-ink);
+	border-radius: var(--radius-sm);
+	padding: 12px 26px;
+	font-weight: 600;
+	text-decoration: none;
+	transition: background 0.2s ease, color 0.2s ease;
+}
+.wookiee-buy-now-btn:hover {
+	background: var(--wookiee-ink);
+	color: #fff;
+}
+@media (max-width: 600px) {
+	.wookiee-buy-now-btn {
+		display: block;
+		margin: 10px 0 0;
+		text-align: center;
+	}
 }
 .feature-icon {
 	color: var(--wookiee-accent-dark);

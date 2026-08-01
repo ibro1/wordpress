@@ -11,7 +11,7 @@ defined( 'ABSPATH' ) || exit;
  * browsers - and Cloudflare in front of them - keep serving the previous file
  * and the change simply does not happen for anyone who has visited before.
  */
-define( 'WOOKIEE_VERSION', '1.1.7' );
+define( 'WOOKIEE_VERSION', '1.1.8' );
 define( 'WOOKIEE_DIR', trailingslashit( get_template_directory() ) );
 define( 'WOOKIEE_URI', trailingslashit( get_template_directory_uri() ) );
 define( 'WOOKIEE_CONTACT_EMAIL', 'info@wookied.com' );
@@ -171,6 +171,16 @@ function wookiee_setup() {
 	add_theme_support( 'title-tag' );
 	add_theme_support( 'post-thumbnails' );
 	add_theme_support( 'woocommerce' );
+	/*
+	 * None of these were declared, so WooCommerce fell back to a plain stack
+	 * of <img> tags: no swipe, no thumbnails that switch the main image, no
+	 * zoom. On a phone - where most of this traffic is - a product with six
+	 * photos showed one and required scrolling past the rest to reach the
+	 * price. The slider is what carries touch-swipe.
+	 */
+	add_theme_support( 'wc-product-gallery-slider' );
+	add_theme_support( 'wc-product-gallery-lightbox' );
+	add_theme_support( 'wc-product-gallery-zoom' );
 	add_theme_support( 'custom-logo', array(
 		'height'      => 90,
 		'width'       => 260,
@@ -702,6 +712,44 @@ function wookiee_single_product_stock_message() {
     echo '<span style="width: 8px; height: 8px; background-color: #2e7d32; border-radius: 50%; display: inline-block;"></span>';
     echo esc_html( $message );
     echo '</div>';
+}
+
+/*
+ * The SKU on a sourced product is the supplier's own catalog reference
+ * ("CJJT30133420001"). Printing it tells a customer nothing they can use -
+ * they cannot order by it, search by it, or quote it to anyone - while
+ * publishing the exact identifier that shows where the shop buys its stock.
+ * Off everywhere on the storefront; the admin still sees it on the product
+ * edit screen, which is the only place it is any use.
+ */
+add_filter( 'wc_product_sku_enabled', '__return_false' );
+
+/*
+ * A "Buy now" beside "Add to cart". Without it the only route to checkout was
+ * add to cart, open the cart, then proceed - three steps for the common case
+ * of wanting one thing.
+ *
+ * Simple, purchasable, in-stock products only. A variable product needs a
+ * chosen variation before it can be bought, and a Buy now that silently
+ * ignored the customer's colour choice would be worse than not offering one.
+ */
+if ( class_exists( 'WooCommerce' ) ) {
+    add_action( 'woocommerce_after_add_to_cart_button', 'wookiee_single_product_buy_now_button' );
+}
+function wookiee_single_product_buy_now_button() {
+    global $product;
+
+    if ( ! $product instanceof WC_Product || ! $product->is_purchasable() || ! $product->is_in_stock() ) {
+        return;
+    }
+    if ( ! $product->is_type( 'simple' ) ) {
+        return;
+    }
+
+    $url = add_query_arg( 'add-to-cart', $product->get_id(), wc_get_checkout_url() );
+    ?>
+    <a href="<?php echo esc_url( $url ); ?>" class="button wookiee-buy-now-btn">Buy it now</a>
+    <?php
 }
 
 // 3. Add Trust Badges below Add to Cart

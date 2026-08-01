@@ -27,10 +27,14 @@ get_header(); ?>
 				$hero_url = wookiee_image_url( 'hero' );
 				?>
 				<img src="<?php echo esc_url( $hero_url ); ?>" alt="<?php echo esc_attr( wookiee_get_setting( 'hero_headline' ) ); ?>">
-				<div class="hero-stat-badge">
-					<div class="stat-number">&pound;<?php echo esc_html( wookiee_get_setting( 'shipping_rate' ) ); ?></div>
-					<div class="stat-label"><?php echo esc_html( wookiee_get_setting( 'hero_stat_label' ) ); ?></div>
-				</div>
+				<?php
+				/*
+				 * The shipping price badge that sat over this image has moved
+				 * to the announcement bar. Review asked for shipping out of
+				 * the hero, and the photograph carries the section better
+				 * without a price plate across one corner of it.
+				 */
+				?>
 			</div>
 		</div>
 	</section>

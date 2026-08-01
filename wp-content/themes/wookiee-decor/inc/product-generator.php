@@ -158,6 +158,8 @@ function wookiee_render_product_generator_page() {
 		var nonce = '<?php echo esc_js( wp_create_nonce( 'wookiee_generate_products' ) ); ?>';
 		var auditNonce = '<?php echo esc_js( wp_create_nonce( 'wookiee_audit_product' ) ); ?>';
 		var PERSISTED_PRODUCTS = <?php echo wp_json_encode( $persisted_products ); ?>;
+		var LAST_BATCH         = <?php echo wp_json_encode( wookiee_get_last_source_batch() ); ?>;
+		var BATCH_NONCE        = <?php echo wp_json_encode( wp_create_nonce( 'wookiee_save_source_batch' ) ); ?>;
 
 		function badgeFromReport( report ) {
 			var scoreMatch = report.match( /OVERALL SCORE:\s*(\d+)/i );
@@ -434,7 +436,27 @@ function wookiee_render_product_generator_page() {
 			chain.then( function() {
 				btn.disabled = false;
 				renderSkipped( skipped );
+				saveBatchOutcome( ideas.length, sourced, skipped );
 			} );
+		}
+
+		/*
+		 * The sourced products survive a reload on their own - they are real
+		 * draft posts, re-queried on page load. The BATCH OUTCOME did not: the
+		 * "1 of 4 sourced, 3 not found" line and the whole "Not sourced" panel
+		 * existed only in this tab, so a refresh left the operator looking at
+		 * one product with no record of the other three or why they failed.
+		 * That explanation is the most useful thing the run produces - it is
+		 * what distinguishes a thin catalog from a broken search.
+		 */
+		function saveBatchOutcome( total, sourced, skipped ) {
+			var d = new FormData();
+			d.append( 'action', 'wookiee_save_source_batch' );
+			d.append( 'nonce', BATCH_NONCE );
+			d.append( 'total', total );
+			d.append( 'sourced', sourced );
+			d.append( 'skipped', JSON.stringify( skipped ) );
+			fetch( ajaxurl, { method: 'POST', credentials: 'same-origin', body: d } ).catch( function() {} );
 		}
 
 		/*
@@ -513,9 +535,76 @@ function wookiee_render_product_generator_page() {
 		if ( PERSISTED_PRODUCTS.length ) {
 			renderProductsTable( PERSISTED_PRODUCTS );
 		}
+
+		// Rehydrate the last run's outcome alongside them, so the count and
+		// the reasons each concept failed are still there after a reload.
+		if ( LAST_BATCH && LAST_BATCH.total ) {
+			status.textContent = LAST_BATCH.sourced + ' of ' + LAST_BATCH.total + ' sourced'
+				+ ( LAST_BATCH.skipped.length ? ', ' + LAST_BATCH.skipped.length + ' not found' : '' )
+				+ '. Review each before publishing.'
+				+ ( LAST_BATCH.when ? ' (last run ' + LAST_BATCH.when + ')' : '' );
+			renderSkipped( LAST_BATCH.skipped );
+		}
 	} )();
 	</script>
 	<?php
+}
+
+/**
+ * The last sourcing run's outcome, or null.
+ *
+ * Kept as a single option rather than per-product meta because the useful part
+ * is precisely the concepts that produced NO product - there is no post to
+ * hang that on, and it is the half of the run that explains itself.
+ */
+function wookiee_get_last_source_batch() {
+	$batch = get_option( 'wookiee_last_source_batch', null );
+
+	if ( ! is_array( $batch ) || empty( $batch['total'] ) ) {
+		return null;
+	}
+
+	$batch['skipped'] = isset( $batch['skipped'] ) && is_array( $batch['skipped'] ) ? $batch['skipped'] : array();
+
+	return $batch;
+}
+
+add_action( 'wp_ajax_wookiee_save_source_batch', 'wookiee_save_source_batch_handler' );
+function wookiee_save_source_batch_handler() {
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_send_json_error( array( 'message' => 'Not allowed.' ), 403 );
+	}
+	check_ajax_referer( 'wookiee_save_source_batch', 'nonce' );
+
+	$skipped_raw = isset( $_POST['skipped'] ) ? json_decode( wp_unslash( $_POST['skipped'] ), true ) : array();
+	$skipped     = array();
+
+	if ( is_array( $skipped_raw ) ) {
+		// Capped: the panel is a diagnostic, not a log, and an option row is
+		// not the place for an unbounded list of supplier product names.
+		foreach ( array_slice( $skipped_raw, 0, 20 ) as $item ) {
+			if ( ! is_array( $item ) ) {
+				continue;
+			}
+			$skipped[] = array(
+				'title'  => sanitize_text_field( isset( $item['title'] ) ? $item['title'] : '' ),
+				'reason' => sanitize_text_field( isset( $item['reason'] ) ? $item['reason'] : '' ),
+			);
+		}
+	}
+
+	update_option(
+		'wookiee_last_source_batch',
+		array(
+			'total'   => absint( isset( $_POST['total'] ) ? $_POST['total'] : 0 ),
+			'sourced' => absint( isset( $_POST['sourced'] ) ? $_POST['sourced'] : 0 ),
+			'skipped' => $skipped,
+			'when'    => date_i18n( 'j M Y, H:i' ),
+		),
+		false
+	);
+
+	wp_send_json_success();
 }
 
 add_action( 'wp_ajax_wookiee_generate_products', 'wookiee_generate_products_handler' );

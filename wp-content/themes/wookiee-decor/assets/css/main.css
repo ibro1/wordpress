@@ -627,39 +627,12 @@ body.mobile-nav-active {
 	background: var(--wookiee-ink) !important;
 	color: #fff !important;
 }
-/* Below this the two buttons cannot sit side by side without their labels
-   wrapping to two lines each, which is what a stakeholder review picked up.
-   Full width and stacked, quantity above them. */
-@media (max-width: 600px) {
-	.woocommerce div.product form.cart .button,
-	.woocommerce div.product form.cart a.wookiee-buy-now-btn {
-		display: block !important;
-		width: 100% !important;
-		margin: 10px 0 0 !important;
-		white-space: normal !important;
-	}
-	.woocommerce div.product form.cart .quantity {
-		display: block !important;
-		width: 100% !important;
-		margin: 0 0 10px !important;
-	}
-}
-
-/* The gallery is the whole screen on a phone: a 75vh main image plus a
-   thumbnail strip pushed the title and price entirely below the fold, and the
-   card ran on so far it read as spilling into the next section. Capped, and
-   the viewport clips so a slide mid-transition cannot show past its frame. */
-@media (max-width: 768px) {
-	.woocommerce div.product div.images img {
-		max-height: 46vh !important;
-	}
-	.woocommerce div.product div.images .flex-viewport {
-		overflow: hidden !important;
-	}
-	.woocommerce div.product div.images .flex-control-thumbs li {
-		width: calc(25% - 9px) !important;
-	}
-}
+/* The responsive rules for this button live with the rest of the add-to-cart
+   mobile block further down the file, not here. Two sets of equally-specific
+   rules for the same elements meant whichever sat later in the file won, and
+   this one sits earlier than the base .woocommerce styles it was trying to
+   override - so it lost, silently, which is why the buttons stayed side by
+   side after the first attempt. */
 .feature-icon {
 	color: var(--wookiee-accent-dark);
 	display: flex;
@@ -1978,6 +1951,19 @@ ol.commentlist li.comment .comment-text .description {
     .woocommerce div.product {
         gap: 30px !important;
     }
+    /*
+     * The gallery was taking the whole screen on a phone - a 75vh main image
+     * plus a thumbnail strip put the title and price entirely below the fold,
+     * and the card ran on far enough to read as spilling into the next
+     * section. Placed here, after the base gallery rules above, so it
+     * actually overrides them.
+     */
+    .woocommerce div.product div.images img {
+        max-height: 46vh !important;
+    }
+    .woocommerce div.product div.images .flex-viewport {
+        overflow: hidden !important;
+    }
 }
 
 @media (max-width: 600px) {
@@ -2001,21 +1987,38 @@ ol.commentlist li.comment .comment-text .description {
     }
 }
 
-@media (max-width: 360px) {
+/*
+ * Was max-width: 360px, which is narrower than almost every phone in use - a
+ * 1080px device at 2.5x reports about 432 CSS pixels, so this never fired and
+ * the add-to-cart row stayed a flex line with both button labels wrapping onto
+ * two lines each. Raised to 600px, which is where a second button stops
+ * fitting beside the first.
+ *
+ * The form is display:flex !important above, so a child cannot stack itself by
+ * going display:block - the parent has to wrap. That is why flex-wrap and
+ * flex-basis are set here rather than on the buttons alone.
+ */
+@media (max-width: 600px) {
     .woocommerce div.product form.cart {
         flex-wrap: wrap !important;
+        gap: 10px !important;
     }
     .woocommerce div.product form.cart .quantity {
         margin-right: 0 !important;
         width: 100% !important;
+        flex: 0 0 100% !important;
     }
     .woocommerce .quantity .qty {
         width: 100% !important;
     }
     .woocommerce div.product form.cart .button,
-    .woocommerce div.product form.cart .single_add_to_cart_button.button {
+    .woocommerce div.product form.cart .single_add_to_cart_button.button,
+    .woocommerce div.product form.cart a.wookiee-buy-now-btn {
         max-width: 100% !important;
         width: 100% !important;
+        flex: 0 0 100% !important;
+        margin: 0 !important;
+        white-space: normal !important;
     }
 }
 

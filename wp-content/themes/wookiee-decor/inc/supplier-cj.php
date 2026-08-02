@@ -97,7 +97,82 @@ function wookiee_cj_auth_request( $path, $body ) {
  * Generic authenticated CJ request. On a 401 the cached token is cleared
  * so the next call re-authenticates rather than looping on a dead token.
  */
+/**
+ * Holds the next call back until at least a second has passed since the last.
+ *
+ * The supplier API allows one request per second per account and answers a
+ * burst with "Too Many Requests, QPS limit is 1 time/1second". Sourcing a
+ * batch fires several searches per concept - more since the search began
+ * trying narrower variants instead of accepting the first non-empty result -
+ * and those went out back to back, so later concepts in a batch failed for
+ * being too quick rather than for anything to do with the catalog.
+ *
+ * The timestamp lives in an option rather than a static because each concept
+ * is its own AJAX request: a per-process variable would reset between them and
+ * see no history at all. autoload is off - this is written far more often than
+ * it is read on a normal page.
+ */
+function wookiee_cj_throttle() {
+	$min_gap = 1.1; // A little over the documented second, to absorb clock drift.
+	$last    = (float) get_option( 'wookiee_cj_last_request', 0 );
+	$wait    = $min_gap - ( microtime( true ) - $last );
+
+	// Capped at $min_gap: a stale or future-dated timestamp must never be able
+	// to park a request for minutes.
+	if ( $wait > 0 ) {
+		usleep( (int) ceil( min( $wait, $min_gap ) * 1000000 ) );
+	}
+
+	update_option( 'wookiee_cj_last_request', microtime( true ), false );
+}
+
+/** True when an error is the supplier's rate limit rather than a real failure. */
+function wookiee_cj_is_rate_limited( $error ) {
+	if ( ! is_wp_error( $error ) ) {
+		return false;
+	}
+
+	$message = strtolower( $error->get_error_message() );
+
+	return false !== strpos( $message, 'too many requests' )
+		|| false !== strpos( $message, 'qps' )
+		|| false !== strpos( $message, 'rate limit' );
+}
+
 function wookiee_cj_request( $method, $path, $body = null ) {
+	/*
+	 * Rate limiting is not a failure, it is a "not yet" - so back off and try
+	 * again rather than reporting a concept as unavailable. Three attempts
+	 * with a widening gap covers a burst; beyond that something else is wrong
+	 * and the error should surface.
+	 */
+	$result = null;
+
+	for ( $attempt = 0; $attempt < 3; $attempt++ ) {
+		if ( $attempt > 0 ) {
+			sleep( $attempt );
+		}
+
+		wookiee_cj_throttle();
+		$result = wookiee_cj_request_once( $method, $path, $body );
+
+		if ( ! wookiee_cj_is_rate_limited( $result ) ) {
+			return $result;
+		}
+	}
+
+	/*
+	 * Still limited after three tries. Say what it means and what to do, in
+	 * place of the supplier's own wording ("QPS limit is 1 time/1second"),
+	 * which reads as a fault in the store rather than as a queue.
+	 */
+	return new WP_Error(
+		'wookiee_cj_rate_limited',
+		'The supplier catalog is limiting how fast it will answer, and did not settle after three attempts. Nothing is wrong with this concept - try a smaller batch, or run it again in a minute.'
+	);
+}
+
+function wookiee_cj_request_once( $method, $path, $body = null ) {
 	if ( wookiee_central_api_configured() ) {
 		return wookiee_central_api_request( 'POST', '/cj/request', array( 'method' => $method, 'path' => $path, 'body' => $body ) );
 	}

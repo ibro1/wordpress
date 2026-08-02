@@ -244,6 +244,73 @@ body.wookiee-checkout-funnel-page {
         flex-direction: column;
         gap: 20px;
     }
+
+    /*
+     * The order summary was pinned over the form. On a phone WooCommerce
+     * Blocks moves the summary above the fields as a collapsible panel, but
+     * the desktop rule kept it position:sticky at top:100px - so it stayed
+     * fixed on screen while the form scrolled underneath it, and "Contact
+     * information" disappeared behind the summary card. It also kept a
+     * 350px flex basis, which is where the tall empty panel came from.
+     */
+    .wookiee-checkout-funnel-page .wc-block-components-sidebar {
+        position: static !important;
+        top: auto !important;
+        flex: 1 1 100% !important;
+        width: 100% !important;
+        align-self: stretch !important;
+    }
+    .wookiee-checkout-funnel-page .wc-block-checkout__main {
+        flex: 1 1 100% !important;
+        width: 100% !important;
+    }
+    .wookiee-checkout-funnel-page .wp-block-woocommerce-checkout {
+        gap: 20px;
+    }
+
+    /*
+     * The header ran out of room and broke apart: "Back to Cart" wrapped onto
+     * three lines and the SSL badge sat on top of it. Wraps properly now, and
+     * the divider that separated logo from link is dropped once they stack.
+     */
+    .checkout-header {
+        position: static;
+    }
+    .checkout-header-inner {
+        flex-wrap: wrap;
+        gap: 10px 14px;
+        padding: 0 16px;
+    }
+    .checkout-header-left {
+        gap: 14px;
+        min-width: 0;
+    }
+    .checkout-text-logo {
+        font-size: 20px;
+    }
+    .back-to-cart-link {
+        padding-left: 14px;
+        white-space: nowrap;
+    }
+    .checkout-header-badge {
+        font-size: 12px;
+        padding: 5px 10px;
+        white-space: nowrap;
+    }
+}
+
+@media (max-width: 420px) {
+    /* Narrower still: the badge is reassurance, not navigation - it gives up
+       its row before the link back to the cart does. */
+    .checkout-header-badge {
+        order: 3;
+        width: 100%;
+        justify-content: center;
+    }
+    .back-to-cart-link {
+        border-left: none;
+        padding-left: 0;
+    }
 }
 
 /* =============================================

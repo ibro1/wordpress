@@ -11,7 +11,7 @@ defined( 'ABSPATH' ) || exit;
  * browsers - and Cloudflare in front of them - keep serving the previous file
  * and the change simply does not happen for anyone who has visited before.
  */
-define( 'WOOKIEE_VERSION', '1.1.8' );
+define( 'WOOKIEE_VERSION', '1.1.9' );
 define( 'WOOKIEE_DIR', trailingslashit( get_template_directory() ) );
 define( 'WOOKIEE_URI', trailingslashit( get_template_directory_uri() ) );
 define( 'WOOKIEE_CONTACT_EMAIL', 'info@wookied.com' );
@@ -723,6 +723,22 @@ function wookiee_single_product_stock_message() {
  * edit screen, which is the only place it is any use.
  */
 add_filter( 'wc_product_sku_enabled', '__return_false' );
+
+/*
+ * Checkout opened on "United States (US)". Everything else about this store is
+ * UK - flat-rate UK delivery, UK-only policies, prices converted into pounds -
+ * so the one field that decides whether a customer can even complete the order
+ * was pre-set to the wrong country, and shipping would not calculate until
+ * they noticed and changed it.
+ *
+ * Only fills the default. A customer who picks another country, or whose
+ * address is already known, is untouched.
+ */
+add_filter( 'default_checkout_billing_country', 'wookiee_default_checkout_country' );
+add_filter( 'default_checkout_shipping_country', 'wookiee_default_checkout_country' );
+function wookiee_default_checkout_country( $country ) {
+    return '' !== $country ? $country : 'GB';
+}
 
 /*
  * A "Buy now" beside "Add to cart". Without it the only route to checkout was

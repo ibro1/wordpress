@@ -604,29 +604,60 @@ body.mobile-nav-active {
 	}
 }
 
-/* Sits beside Add to cart, so it must not inherit the full-width block the
-   theme gives WooCommerce's own single_add_to_cart_button. */
-.wookiee-buy-now-btn {
-	display: inline-block;
-	margin-left: 10px;
-	background: transparent;
-	border: 1.5px solid var(--wookiee-ink);
-	color: var(--wookiee-ink);
-	border-radius: var(--radius-sm);
-	padding: 12px 26px;
-	font-weight: 600;
-	text-decoration: none;
-	transition: background 0.2s ease, color 0.2s ease;
+/* Sits beside Add to cart. Scoped under .woocommerce and marked important to
+   match how every other WooCommerce override in this file is written - without
+   that, WooCommerce's own `.woocommerce a.button` rules win on specificity and
+   the button renders as a second filled block identical to Add to cart, which
+   is exactly what it did. */
+.woocommerce div.product form.cart a.wookiee-buy-now-btn {
+	display: inline-block !important;
+	width: auto !important;
+	margin: 0 0 0 10px !important;
+	background: transparent !important;
+	border: 1.5px solid var(--wookiee-ink) !important;
+	color: var(--wookiee-ink) !important;
+	border-radius: var(--radius-sm) !important;
+	padding: 14px 26px !important;
+	font-weight: 700 !important;
+	text-decoration: none !important;
+	text-align: center !important;
+	transition: background 0.2s ease, color 0.2s ease !important;
 }
-.wookiee-buy-now-btn:hover {
-	background: var(--wookiee-ink);
-	color: #fff;
+.woocommerce div.product form.cart a.wookiee-buy-now-btn:hover {
+	background: var(--wookiee-ink) !important;
+	color: #fff !important;
 }
+/* Below this the two buttons cannot sit side by side without their labels
+   wrapping to two lines each, which is what a stakeholder review picked up.
+   Full width and stacked, quantity above them. */
 @media (max-width: 600px) {
-	.wookiee-buy-now-btn {
-		display: block;
-		margin: 10px 0 0;
-		text-align: center;
+	.woocommerce div.product form.cart .button,
+	.woocommerce div.product form.cart a.wookiee-buy-now-btn {
+		display: block !important;
+		width: 100% !important;
+		margin: 10px 0 0 !important;
+		white-space: normal !important;
+	}
+	.woocommerce div.product form.cart .quantity {
+		display: block !important;
+		width: 100% !important;
+		margin: 0 0 10px !important;
+	}
+}
+
+/* The gallery is the whole screen on a phone: a 75vh main image plus a
+   thumbnail strip pushed the title and price entirely below the fold, and the
+   card ran on so far it read as spilling into the next section. Capped, and
+   the viewport clips so a slide mid-transition cannot show past its frame. */
+@media (max-width: 768px) {
+	.woocommerce div.product div.images img {
+		max-height: 46vh !important;
+	}
+	.woocommerce div.product div.images .flex-viewport {
+		overflow: hidden !important;
+	}
+	.woocommerce div.product div.images .flex-control-thumbs li {
+		width: calc(25% - 9px) !important;
 	}
 }
 .feature-icon {

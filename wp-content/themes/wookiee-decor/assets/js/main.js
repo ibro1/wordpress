@@ -171,3 +171,131 @@ jQuery(function($) {
     banner.textContent = entry[1];
     banner.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }());
+
+/*
+ * Prev/next controls for the product gallery thumbnail strip.
+ *
+ * The strip scrolls and shows a cut-off tile plus a scrollbar to say so, but
+ * on a desktop with no touch and on a phone where the scrollbar is a few
+ * pixels tall, dragging it is fiddly. A pair of buttons makes paging through
+ * a six-image gallery a click rather than a swipe-and-hope.
+ *
+ * Built here rather than in PHP because flexslider creates the strip itself,
+ * after the markup is rendered - there is nothing to attach to server-side.
+ */
+(function () {
+    var STRIP_SELECTOR = '.woocommerce div.product div.images .flex-control-thumbs';
+
+    function makeButton( direction, label, glyph ) {
+        var btn = document.createElement( 'button' );
+        btn.type = 'button';
+        btn.className = 'wookiee-thumb-nav wookiee-thumb-nav--' + direction;
+        btn.setAttribute( 'aria-label', label );
+        btn.textContent = glyph;
+        return btn;
+    }
+
+    function setup( strip ) {
+        // flexslider can rebuild the strip; the flag stops a second pass
+        // wrapping an already-wrapped one.
+        if ( strip.dataset.wookieeThumbNav ) {
+            return;
+        }
+        strip.dataset.wookieeThumbNav = '1';
+
+        var wrap = document.createElement( 'div' );
+        wrap.className = 'wookiee-thumb-nav-wrap';
+        strip.parentNode.insertBefore( wrap, strip );
+        wrap.appendChild( strip );
+
+        var prev = makeButton( 'prev', 'Scroll thumbnails left', '‹' );
+        var next = makeButton( 'next', 'Scroll thumbnails right', '›' );
+        wrap.appendChild( prev );
+        wrap.appendChild( next );
+
+        // Just under a full frame, so the tile you were looking at stays
+        // partly in view and the strip does not feel like it jumped.
+        function step() {
+            return Math.max( strip.clientWidth * 0.8, 80 );
+        }
+
+        prev.addEventListener( 'click', function () {
+            strip.scrollBy( { left: -step(), behavior: 'smooth' } );
+        } );
+        next.addEventListener( 'click', function () {
+            strip.scrollBy( { left: step(), behavior: 'smooth' } );
+        } );
+
+        function update() {
+            var overflow = strip.scrollWidth - strip.clientWidth;
+
+            // No buttons at all when every thumbnail already fits - a control
+            // that cannot do anything is worse than no control.
+            wrap.classList.toggle( 'has-overflow', overflow > 4 );
+            prev.disabled = strip.scrollLeft <= 2;
+            next.disabled = strip.scrollLeft >= overflow - 2;
+        }
+
+        strip.addEventListener( 'scroll', update, { passive: true } );
+        window.addEventListener( 'resize', update );
+
+        /*
+         * Thumbnails are still downloading when this first runs, so scrollWidth
+         * is not final yet and the buttons would be hidden on a strip that does
+         * overflow. ResizeObserver catches the reflow when they land; the
+         * timeouts are the fallback where it is unavailable.
+         */
+        if ( 'ResizeObserver' in window ) {
+            new ResizeObserver( update ).observe( strip );
+        }
+        window.setTimeout( update, 400 );
+        window.setTimeout( update, 1500 );
+
+        update();
+    }
+
+    function scan() {
+        var strips = document.querySelectorAll( STRIP_SELECTOR );
+        for ( var i = 0; i < strips.length; i++ ) {
+            setup( strips[ i ] );
+        }
+        return strips.length > 0;
+    }
+
+    function start() {
+        if ( scan() ) {
+            return;
+        }
+
+        // The strip appears only once flexslider has initialised, which is
+        // after this file runs. Watch for it instead of polling forever, and
+        // stop as soon as it is found.
+        if ( ! ( 'MutationObserver' in window ) ) {
+            return;
+        }
+
+        var gallery = document.querySelector( '.woocommerce div.product div.images' );
+        if ( ! gallery ) {
+            return;
+        }
+
+        var observer = new MutationObserver( function () {
+            if ( scan() ) {
+                observer.disconnect();
+            }
+        } );
+        observer.observe( gallery, { childList: true, subtree: true } );
+
+        // Nothing to watch forever: if the strip has not appeared by now the
+        // product has one image and never will have a strip.
+        window.setTimeout( function () {
+            observer.disconnect();
+        }, 10000 );
+    }
+
+    if ( 'loading' === document.readyState ) {
+        document.addEventListener( 'DOMContentLoaded', start );
+    } else {
+        start();
+    }
+}());

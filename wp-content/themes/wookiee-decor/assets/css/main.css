@@ -1670,6 +1670,54 @@ body.mobile-nav-active {
     width: 22% !important;
     scroll-snap-align: start;
 }
+/* Prev/next controls, added by assets/js/main.js once flexslider has built the
+   strip. The wrapper only exists when those buttons do, so the strip's own
+   layout is untouched on a product with too few images to scroll. */
+.wookiee-thumb-nav-wrap {
+    position: relative;
+}
+.wookiee-thumb-nav {
+    position: absolute;
+    top: calc(50% - 4px);
+    transform: translateY(-50%);
+    z-index: 2;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    padding: 0 0 3px;
+    border: 1px solid rgba(0,0,0,0.08);
+    border-radius: 50%;
+    background: rgba(255,255,255,0.96);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.16);
+    color: var(--wookiee-ink);
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+    transition: opacity 0.2s ease, background 0.2s ease;
+}
+/* Shown only when the strip actually overflows - the class is set in JS. */
+.wookiee-thumb-nav-wrap.has-overflow .wookiee-thumb-nav {
+    display: flex;
+}
+.wookiee-thumb-nav--prev { left: -4px; }
+.wookiee-thumb-nav--next { right: -4px; }
+.wookiee-thumb-nav:hover {
+    background: #fff;
+}
+/* Kept in place rather than hidden at the ends, so the strip does not shift
+   sideways as the buttons appear and disappear mid-scroll. */
+.wookiee-thumb-nav:disabled {
+    opacity: 0.3;
+    cursor: default;
+    box-shadow: none;
+}
+.wookiee-thumb-nav:focus-visible {
+    outline: 2px solid var(--wookiee-accent);
+    outline-offset: 2px;
+}
+
 /* WebKit/Blink needs the scrollbar drawn explicitly - without this the strip
    scrolls on a phone with nothing on screen to say so. */
 .woocommerce div.product div.images .flex-control-thumbs::-webkit-scrollbar {

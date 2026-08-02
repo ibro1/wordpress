@@ -34,8 +34,37 @@ body.wookiee-checkout-funnel-page {
     align-items: center;
     gap: 24px;
 }
+/*
+ * The mark and the store name were stacking, so the checkout opened with a
+ * small emblem sitting on top of "Toys Ahoyhq" and the whole header looked
+ * broken. The shared header lays these two out as a row via .site-logo-link -
+ * but the checkout passes its own wrapper class, so that rule never applied
+ * here and the two spans simply fell one under the other.
+ */
 .checkout-logo-link {
-    display: block;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    text-decoration: none;
+}
+.checkout-logo-link .site-logo-mark {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+}
+.checkout-logo-link .site-logo-name {
+    font-size: 22px;
+    font-weight: 800;
+    color: #1a1614;
+    letter-spacing: -0.4px;
+    line-height: 1.1;
+    /* Truncates rather than wrapping: a two-line brand name beside a
+       single-line "Back to Cart" throws the row off its baseline. */
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 .checkout-logo {
     max-height: 40px;
@@ -284,8 +313,21 @@ body.wookiee-checkout-funnel-page {
            than widen the page. */
         overflow-wrap: anywhere;
     }
+    /*
+     * Equal columns, not label-width ones.
+     *
+     * Each .step was only as wide as its own text, and once the connectors
+     * stopped reserving 60px the three labels ended up shoulder to shoulder -
+     * "CART CHECKOUT CONFIRM" read as one run of words. Giving every step the
+     * same share of the row centres each label under its own bubble and puts
+     * real space between them, whatever the labels say.
+     */
     .wookiee-checkout-steps {
         margin-bottom: 24px;
+    }
+    .step {
+        flex: 1 1 0;
+        min-width: 0;
     }
     .step-bubble {
         width: 34px;
@@ -298,8 +340,12 @@ body.wookiee-checkout-funnel-page {
            "Checkout" reads as a layout fault rather than a step. */
         white-space: nowrap;
     }
+    /* Fixed rather than flexible now the steps take the slack, so the
+       connector cannot collapse to nothing and let the labels meet again. */
     .step-line {
-        margin: 0 6px 18px;
+        flex: 0 0 16px;
+        min-width: 16px;
+        margin: 0 0 18px;
     }
     .wc-block-checkout__main,
     .wc-block-components-sidebar {

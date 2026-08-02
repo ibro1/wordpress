@@ -231,9 +231,75 @@ body.wookiee-checkout-funnel-page {
 }
 
 /* Responsive design adjustments */
+/*
+ * A checkout is read on a phone, one thumb, often on mobile data, by someone
+ * who has already decided to buy. Everything below serves that: nothing may
+ * scroll sideways, nothing may cover a field, every target is thumb-sized, and
+ * the vertical budget goes to the form rather than to decoration.
+ */
+
+/* Nothing on this page may push the viewport wider than itself. clip rather
+   than hidden, so a sticky element inside is not silently broken by creating a
+   scroll container. */
+html:has(body.wookiee-checkout-funnel-page),
+body.wookiee-checkout-funnel-page {
+    overflow-x: clip;
+}
+/* Flex and grid children default to min-width:auto, which is what lets one
+   long word or a wide table shove a whole column past the screen edge. */
+.wookiee-checkout-funnel-page .wc-block-checkout__main,
+.wookiee-checkout-funnel-page .wc-block-components-sidebar,
+.wookiee-checkout-funnel-page .wp-block-woocommerce-checkout > * {
+    min-width: 0;
+    max-width: 100%;
+}
+
+/* Touch targets, on capability rather than width: a small screen with a mouse
+   does not need them, a large touchscreen does. 48px is the accessible floor
+   for a thumb. */
+@media (pointer: coarse) {
+    .wookiee-checkout-funnel-page input:not([type="checkbox"]):not([type="radio"]),
+    .wookiee-checkout-funnel-page select,
+    .wookiee-checkout-funnel-page .wc-block-components-button {
+        min-height: 48px !important;
+    }
+    .wookiee-checkout-funnel-page .wc-block-components-checkout-place-order-button {
+        min-height: 56px !important;
+    }
+}
+
 @media (max-width: 768px) {
     .checkout-main {
-        padding: 30px 0;
+        /* Title and steps were eating most of the first screen before a single
+           field appeared. Fluid, so it tightens further as the screen narrows. */
+        padding: clamp(16px, 4vw, 30px) 0 40px;
+    }
+    .checkout-content-container {
+        padding: 0 16px;
+    }
+    .checkout-page-title {
+        font-size: clamp(22px, 6vw, 32px);
+        margin: 0 0 18px 0;
+        /* A long store name in a heading must break inside the word rather
+           than widen the page. */
+        overflow-wrap: anywhere;
+    }
+    .wookiee-checkout-steps {
+        margin-bottom: 24px;
+    }
+    .step-bubble {
+        width: 34px;
+        height: 34px;
+    }
+    .step-label {
+        font-size: 10px;
+        letter-spacing: 0.3px;
+        /* Single-line affordance: these labels name a stage, and a wrapped
+           "Checkout" reads as a layout fault rather than a step. */
+        white-space: nowrap;
+    }
+    .step-line {
+        margin: 0 6px 18px;
     }
     .wc-block-checkout__main,
     .wc-block-components-sidebar {
@@ -246,12 +312,40 @@ body.wookiee-checkout-funnel-page {
     }
 
     /*
-     * The order summary was pinned over the form. On a phone WooCommerce
-     * Blocks moves the summary above the fields as a collapsible panel, but
-     * the desktop rule kept it position:sticky at top:100px - so it stayed
-     * fixed on screen while the form scrolled underneath it, and "Contact
-     * information" disappeared behind the summary card. It also kept a
-     * 350px flex basis, which is where the tall empty panel came from.
+     * Stack on the CONTAINER, not on the children.
+     *
+     * The previous attempt set flex:1 1 100% on .wc-block-components-sidebar
+     * and .wc-block-checkout__main and nothing moved - the two panels stayed
+     * side by side and the row ran off the right edge, taking the "Confirm"
+     * step label with it. WooCommerce Blocks decides its own column count from
+     * classes it adds at runtime (is-large / is-medium / is-small), and the
+     * element actually carrying the width is not reliably the one those
+     * selectors name.
+     *
+     * Turning the container into a single column settles it whatever the
+     * children are called, and keeps flex so `order` still works below.
+     */
+    .wookiee-checkout-funnel-page .wp-block-woocommerce-checkout,
+    .wookiee-checkout-funnel-page .wc-block-checkout {
+        display: flex !important;
+        flex-direction: column !important;
+        flex-wrap: nowrap !important;
+        gap: 20px !important;
+    }
+    .wookiee-checkout-funnel-page .wp-block-woocommerce-checkout > *,
+    .wookiee-checkout-funnel-page .wc-block-checkout > * {
+        flex: 0 0 auto !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        float: none !important;
+    }
+
+    /*
+     * The order summary was also pinned over the form: the desktop rule kept
+     * it position:sticky at top:100px, so it stayed fixed on screen while the
+     * form scrolled underneath and "Contact information" disappeared behind
+     * it. Unstuck here as well as unstacked.
      */
     .wookiee-checkout-funnel-page .wc-block-components-sidebar {
         position: static !important;
@@ -299,6 +393,48 @@ body.wookiee-checkout-funnel-page {
     }
 }
 
+@media (max-width: 768px) {
+    /*
+     * Summary above the form, explicitly. Every checkout worth copying puts
+     * the total where a buyer can see it before typing, collapsed so it costs
+     * a line rather than a screen. Blocks already renders it first, but the
+     * order is stated here so a markup change upstream cannot silently bury it.
+     */
+    .wookiee-checkout-funnel-page .wc-block-components-sidebar {
+        order: -1;
+    }
+
+    /*
+     * The tall blank panel under "Order summary". A collapsed panel should
+     * take no vertical space, but it kept the card's 40px padding and its own
+     * margins, so it reserved most of a screen to say nothing.
+     */
+    .wookiee-checkout-funnel-page .wc-block-components-order-summary {
+        border-bottom: none;
+        padding-bottom: 0;
+        margin-bottom: 0;
+    }
+    .wookiee-checkout-funnel-page .wc-block-components-panel__content:empty {
+        display: none;
+    }
+
+    /* Fields go full width and stack: two-up name fields at 375px leave each
+       too narrow to read what you typed. */
+    .wookiee-checkout-funnel-page .wc-block-components-address-form__address_1,
+    .wookiee-checkout-funnel-page .wc-block-components-text-input,
+    .wookiee-checkout-funnel-page .wc-block-components-country-input,
+    .wookiee-checkout-funnel-page .wc-block-components-state-input {
+        width: 100% !important;
+    }
+
+    /* The one action on the page. Full width, thumb-height, and never a
+       two-line label. */
+    .wookiee-checkout-funnel-page .wc-block-components-checkout-place-order-button {
+        width: 100% !important;
+        white-space: nowrap;
+    }
+}
+
 @media (max-width: 420px) {
     /* Narrower still: the badge is reassurance, not navigation - it gives up
        its row before the link back to the cart does. */
@@ -310,6 +446,29 @@ body.wookiee-checkout-funnel-page {
     .back-to-cart-link {
         border-left: none;
         padding-left: 0;
+    }
+}
+
+@media (max-width: 360px) {
+    /*
+     * 320-360px is the floor this has to survive, not a size to design for.
+     * The connectors go entirely: at this width they are two hairlines worth
+     * about six pixels each, and the three bubbles read as a sequence without
+     * them.
+     */
+    .step-line {
+        display: none;
+    }
+    .wookiee-checkout-steps {
+        justify-content: space-between;
+        gap: 4px;
+    }
+    .checkout-content-container {
+        padding: 0 12px;
+    }
+    .wc-block-checkout__main,
+    .wc-block-components-sidebar {
+        padding: 16px !important;
     }
 }
 
@@ -1077,11 +1236,18 @@ body.wookiee-cart-funnel-page {
     color: #1a1614;
 }
 .step-line {
-    flex: 1;
+    /*
+     * min-width was 60px. Three steps, two connectors and three uppercase
+     * labels then needed more room than a 375px phone has, so the row pushed
+     * the page wider than the viewport - the "Confirm" label was cut off at
+     * the right edge and the whole checkout scrolled sideways. A connector is
+     * decoration; it is the one part of this row that should give up its
+     * width first.
+     */
+    flex: 1 1 0;
+    min-width: 0;
     height: 2px;
     background: #ddd0bd;
-    min-width: 60px;
-    margin-bottom: 20px;
     margin: 0 8px 20px;
 }
 

@@ -239,6 +239,13 @@ function wookiee_settings_fields() {
 		'cj_email'           => array( 'label' => 'CJ Dropshipping account email', 'default' => '', 'type' => 'email' ),
 		'cj_api_key'         => array( 'label' => 'CJ Dropshipping API key', 'default' => '', 'type' => 'password' ),
 		'product_markup_percent' => array( 'label' => 'Product markup (%)', 'default' => '0', 'type' => 'text' , 'prefill' => true),
+		/*
+		 * Supplier prices are quoted in US dollars and nothing converted them,
+		 * so a UK store priced its catalog off a dollar figure. Fixed and
+		 * admin-set rather than a live feed: predictable, auditable, and it
+		 * does not reprice the whole catalog on its own when a rate moves.
+		 */
+		'supplier_price_rate' => array( 'label' => 'Supplier price conversion rate (USD to GBP)', 'default' => '0.79', 'type' => 'text', 'prefill' => true ),
 		'bg_removal_provider' => array( 'label' => 'Featured image white-background provider', 'default' => 'none', 'type' => 'select', 'options' => array( 'none' => 'Disabled', 'cloudinary' => 'Cloudinary', 'rembg' => 'Self-hosted rembg' ) ),
 		'cloudinary_cloud_name' => array( 'label' => 'Cloudinary cloud name', 'default' => '', 'type' => 'text' ),
 		'cloudinary_api_key' => array( 'label' => 'Cloudinary API key', 'default' => '', 'type' => 'text' ),
@@ -397,7 +404,7 @@ function wookiee_settings_tabs() {
 	return array(
 		'business' => array(
 			'label'  => 'Business Identity',
-			'fields' => array( 'company_number', 'companies_house_api_key', 'business_name', 'registered_address', 'sic_codes', 'countries_served', 'product_markup_percent' ),
+			'fields' => array( 'company_number', 'companies_house_api_key', 'business_name', 'registered_address', 'sic_codes', 'countries_served', 'product_markup_percent', 'supplier_price_rate' ),
 		),
 		'contact' => array(
 			'label'  => 'Contact & Support',
@@ -549,6 +556,9 @@ function wookiee_render_settings_field_row( $key, $field ) {
 				</p>
 				<p class="description">Fills in the registered company name and address below from the official Companies House register — enter the exact company number, or just the company name to search a list of matches. <?php echo wookiee_central_api_configured() ? '' : 'Requires an API key (below) — get one free at <a href="https://developer.company-information.service.gov.uk/" target="_blank" rel="noopener">developer.company-information.service.gov.uk</a>. '; ?>Review the filled-in fields before saving.</p>
 				<div id="wookiee-ch-search-results" class="wookiee-ch-search-results" hidden></div>
+			<?php endif; ?>
+			<?php if ( 'supplier_price_rate' === $key ) : ?>
+				<p class="description">Supplier catalog prices are quoted in US dollars. This converts them before your markup is applied, so a product costing $10 at a rate of 0.79 starts from £7.90. Check it against the current rate now and then &mdash; it is deliberately fixed rather than live, so your prices do not move on their own.</p>
 			<?php endif; ?>
 			<?php if ( 'sic_codes' === $key ) : ?>
 				<p class="description">The official classification of what this company does, filled in by the lookup above. The AI niche suggester uses it to propose a niche in your company's own line of business rather than an unrelated category. Safe to leave as it comes.</p>

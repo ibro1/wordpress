@@ -126,6 +126,37 @@ function wookiee_cj_throttle() {
 	update_option( 'wookiee_cj_last_request', microtime( true ), false );
 }
 
+/*
+ * Converting supplier prices into pounds only helps if the store then labels
+ * them as pounds. A store left on WooCommerce's default currency shows "$7.62"
+ * beside £6.99 shipping and £-denominated policies - which is how this was
+ * found - so the mismatch is worth saying out loud rather than leaving to be
+ * noticed on a product page.
+ */
+add_action( 'admin_notices', 'wookiee_store_currency_notice' );
+function wookiee_store_currency_notice() {
+	if ( ! current_user_can( 'manage_options' ) || ! function_exists( 'get_woocommerce_currency' ) ) {
+		return;
+	}
+
+	$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
+	if ( ! $screen || false === strpos( (string) $screen->id, 'wookiee' ) ) {
+		return;
+	}
+
+	$currency = get_woocommerce_currency();
+	if ( 'GBP' === $currency ) {
+		return;
+	}
+
+	?>
+	<div class="notice notice-warning">
+		<p><strong>This store's currency is <?php echo esc_html( $currency ); ?>, but everything else about it is priced in pounds.</strong> Shipping is a flat £ rate, the policy pages quote pounds, and supplier prices are converted to pounds on import — so product prices are being shown with the wrong symbol.</p>
+		<p><a href="<?php echo esc_url( admin_url( 'admin.php?page=wc-settings' ) ); ?>">Set the currency to GBP in WooCommerce settings</a>, then reimport or re-check any products sourced before the change.</p>
+	</div>
+	<?php
+}
+
 /** True when an error is the supplier's rate limit rather than a real failure. */
 function wookiee_cj_is_rate_limited( $error ) {
 	if ( ! is_wp_error( $error ) ) {
@@ -486,8 +517,25 @@ function wookiee_source_real_product_for_idea( $query, $max_attempts = 3, $categ
  * as postmeta (_wookiee_cj_cost_price) alongside the marked-up price.
  */
 function wookiee_apply_product_markup( $cost_price ) {
+	/*
+	 * Supplier prices are quoted in US dollars. Nothing converted them, so a
+	 * UK store selling with a £6.99 flat rate and £-denominated policies was
+	 * pricing its products off a dollar figure - either shown as "$7.62" beside
+	 * pound shipping, or, if the store currency were set to GBP, silently
+	 * relabelled as £7.62 and under-charging by the difference. The second is
+	 * the worse of the two, because it looks correct.
+	 *
+	 * A fixed admin-set rate rather than a live feed: predictable, auditable,
+	 * and it does not silently reprice the catalog when a rate moves.
+	 */
+	$rate = (float) wookiee_get_setting( 'supplier_price_rate' );
+	if ( $rate <= 0 ) {
+		$rate = 1.0;
+	}
+
 	$markup_percent = (float) wookiee_get_setting( 'product_markup_percent' );
-	$marked_up      = (float) $cost_price * ( 1 + ( $markup_percent / 100 ) );
+	$marked_up      = (float) $cost_price * $rate * ( 1 + ( $markup_percent / 100 ) );
+
 	return number_format( $marked_up, 2, '.', '' );
 }
 
@@ -776,13 +824,35 @@ function wookiee_cj_import_product( $pid, $auto_skip_low_fit = false, $category_
 	// string got passed through as a single "url" value. Normalizing both
 	// fields the same way handles a plain URL, a real array, or a JSON-
 	// array-as-string uniformly instead of assuming one shape.
-	$images = array_merge(
-		wookiee_normalize_cj_image_list( isset( $p['productImage'] ) ? $p['productImage'] : '' ),
-		wookiee_normalize_cj_image_list( isset( $p['productImageSet'] ) ? $p['productImageSet'] : '' )
-	);
-	$images = array_slice( array_unique( array_filter( $images ) ), 0, 5 );
+	/*
+	 * Only two fields were read, and a product that carries its gallery under
+	 * any other name arrived with a single photo - which then looks like the
+	 * gallery slider is broken, when in truth there was nothing to swipe
+	 * between. The variant images are worth having too: on a set like packing
+	 * cubes they are the individual pieces, which is exactly what a customer
+	 * wants to page through.
+	 */
+	$image_fields = array( 'productImage', 'productImageSet', 'productImages', 'productImgList', 'image' );
+	$images       = array();
+	foreach ( $image_fields as $field ) {
+		if ( isset( $p[ $field ] ) ) {
+			$images = array_merge( $images, wookiee_normalize_cj_image_list( $p[ $field ] ) );
+		}
+	}
+	if ( ! empty( $p['variants'] ) && is_array( $p['variants'] ) ) {
+		foreach ( $p['variants'] as $variant ) {
+			if ( isset( $variant['variantImage'] ) ) {
+				$images = array_merge( $images, wookiee_normalize_cj_image_list( $variant['variantImage'] ) );
+			}
+		}
+	}
+
+	$images = array_values( array_unique( array_filter( array_map( 'trim', $images ) ) ) );
+	$found  = count( $images );
+	$images = array_slice( $images, 0, 6 );
 
 	$attach_ids = array();
+	$failed     = 0;
 	foreach ( $images as $index => $url ) {
 		$attach_id = 0;
 
@@ -802,8 +872,23 @@ function wookiee_cj_import_product( $pid, $auto_skip_low_fit = false, $category_
 
 		if ( $attach_id ) {
 			$attach_ids[] = $attach_id;
+		} else {
+			$failed++;
 		}
 	}
+
+	/*
+	 * A download that fails leaves no trace otherwise: the product just
+	 * quietly has fewer pictures, and there is no way to tell a supplier who
+	 * published one photo from five that would not download. Recorded so the
+	 * difference is visible on the product itself.
+	 */
+	update_post_meta( $post_id, '_wookiee_cj_image_report', sprintf(
+		'%d offered by supplier, %d imported, %d failed to download',
+		$found,
+		count( $attach_ids ),
+		$failed
+	) );
 	if ( ! empty( $attach_ids ) ) {
 		update_post_meta( $post_id, '_thumbnail_id', $attach_ids[0] );
 		if ( count( $attach_ids ) > 1 ) {
@@ -854,8 +939,27 @@ function wookiee_sideload_remote_image( $url, $title ) {
 		require_once ABSPATH . 'wp-admin/includes/file.php';
 		require_once ABSPATH . 'wp-admin/includes/image.php';
 	}
-	$attach_id = media_sideload_image( $url, 0, $title, 'id' );
-	return is_wp_error( $attach_id ) ? 0 : (int) $attach_id;
+
+	/*
+	 * Retried once. A supplier CDN dropping a single connection mid-batch is
+	 * common and self-correcting, and losing a gallery image to it is a silent
+	 * loss - the product simply publishes with fewer photos and nothing says
+	 * why. One retry costs a second and recovers most of them.
+	 */
+	for ( $attempt = 0; $attempt < 2; $attempt++ ) {
+		if ( $attempt > 0 ) {
+			sleep( 1 );
+		}
+
+		$attach_id = media_sideload_image( $url, 0, $title, 'id' );
+		if ( ! is_wp_error( $attach_id ) ) {
+			return (int) $attach_id;
+		}
+
+		error_log( 'Wookiee: gallery image failed (' . $url . ') - ' . $attach_id->get_error_message() );
+	}
+
+	return 0;
 }
 
 function wookiee_render_supplier_catalog_page() {

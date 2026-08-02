@@ -609,16 +609,32 @@ body.mobile-nav-active {
    that, WooCommerce's own `.woocommerce a.button` rules win on specificity and
    the button renders as a second filled block identical to Add to cart, which
    is exactly what it did. */
+/* Mirrors the add-to-cart button's box model exactly and differs only in
+   colour, so the pair are the same size whatever the width.
+   box-sizing matters: as a bare <a> this element was content-box, so
+   width:100% plus 26px of padding and a 1.5px border on each side pushed it
+   about 55px past the container and its right edge ran off the screen. It also
+   had no height while the button beside it is a fixed 48px, so it sat visibly
+   taller. Both were only obvious once the two stacked. */
 .woocommerce div.product form.cart a.wookiee-buy-now-btn {
-	display: inline-block !important;
-	width: auto !important;
-	margin: 0 0 0 10px !important;
+	box-sizing: border-box !important;
+	display: flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	flex: 1 !important;
+	max-width: 250px !important;
+	height: 48px !important;
+	line-height: 1 !important;
+	margin: 0 !important;
+	padding: 15px 30px !important;
 	background: transparent !important;
 	border: 1.5px solid var(--wookiee-ink) !important;
 	color: var(--wookiee-ink) !important;
-	border-radius: var(--radius-sm) !important;
-	padding: 14px 26px !important;
+	border-radius: 8px !important;
+	font-size: 15px !important;
 	font-weight: 700 !important;
+	text-transform: uppercase !important;
+	letter-spacing: 0.5px !important;
 	text-decoration: none !important;
 	text-align: center !important;
 	transition: background 0.2s ease, color 0.2s ease !important;
@@ -1629,17 +1645,43 @@ body.mobile-nav-active {
     background: #ffffff !important;
 }
 
-/* Gallery thumbnail strip (only visible once a product has 2+ images) */
+/* Gallery thumbnail strip (only visible once a product has 2+ images).
+   One scrolling line rather than a wrapping grid: a six-image product wrapped
+   to two rows of four and two, which reads as a broken grid and pushed the
+   price further down the page. Kept on one row, with the fifth thumbnail
+   deliberately part-visible - a cut-off tile is the clearest signal that the
+   strip scrolls, and it is backed up by a real scrollbar below it. */
 .woocommerce div.product div.images .flex-control-thumbs {
     display: flex !important;
-    flex-wrap: wrap !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x proximity;
+    scrollbar-width: thin;
+    scrollbar-color: var(--wookiee-accent) rgba(0,0,0,0.08);
     gap: 12px !important;
     margin: 16px 0 0 !important;
-    padding: 0 !important;
+    padding: 0 0 8px !important;
     list-style: none !important;
 }
 .woocommerce div.product div.images .flex-control-thumbs li {
-    width: calc(25% - 9px) !important;
+    flex: 0 0 22% !important;
+    width: 22% !important;
+    scroll-snap-align: start;
+}
+/* WebKit/Blink needs the scrollbar drawn explicitly - without this the strip
+   scrolls on a phone with nothing on screen to say so. */
+.woocommerce div.product div.images .flex-control-thumbs::-webkit-scrollbar {
+    height: 4px;
+}
+.woocommerce div.product div.images .flex-control-thumbs::-webkit-scrollbar-track {
+    background: rgba(0,0,0,0.08);
+    border-radius: 4px;
+}
+.woocommerce div.product div.images .flex-control-thumbs::-webkit-scrollbar-thumb {
+    background: var(--wookiee-accent);
+    border-radius: 4px;
 }
 .woocommerce div.product div.images .flex-control-thumbs img {
     width: 100% !important;

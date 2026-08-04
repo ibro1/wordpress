@@ -52,7 +52,33 @@ function wookiee_central_api_base_url() {
  * cannot be reached.
  */
 function wookiee_central_api_public_url() {
-	return 'https://api.davebukartechnologies.com';
+	/*
+	 * This was hardcoded to api.davebukartechnologies.com, which has since
+	 * expired - so the fallback that exists to rescue a failed internal hop
+	 * pointed at a domain that no longer resolves, and every retry was
+	 * guaranteed to fail. It also meant moving the network to a new domain
+	 * silently broke the backup route while leaving the primary one working,
+	 * which is the hardest kind of fault to notice.
+	 *
+	 * An explicit constant wins if one is set. Otherwise it is derived from
+	 * the NETWORK's domain, which is the right source: the API's Traefik
+	 * router is Host(`api.${MAIN_DOMAIN}`), and MAIN_DOMAIN is by definition
+	 * the network's main site. Deriving from home_url() instead would break
+	 * on a mapped custom domain, where the shop answers on its own hostname
+	 * but the API does not.
+	 */
+	if ( defined( 'WOOKIEE_API_PUBLIC_URL' ) && WOOKIEE_API_PUBLIC_URL ) {
+		return rtrim( (string) WOOKIEE_API_PUBLIC_URL, '/' );
+	}
+
+	if ( function_exists( 'get_network' ) ) {
+		$network = get_network();
+		if ( $network && ! empty( $network->domain ) ) {
+			return 'https://api.' . ltrim( (string) $network->domain, '.' );
+		}
+	}
+
+	return 'https://api.' . (string) wp_parse_url( home_url(), PHP_URL_HOST );
 }
 
 function wookiee_central_api_shared_secret() {

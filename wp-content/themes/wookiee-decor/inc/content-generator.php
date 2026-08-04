@@ -574,7 +574,7 @@ function wookiee_generate_content_handler() {
  * the setting key, so parsing and applying need no separate mapping.
  */
 function wookiee_homepage_copy_fields() {
-	return array( 'hero_eyebrow', 'hero_headline', 'hero_subheadline', 'hero_cta_primary', 'hero_cta_secondary',
+	return array( 'announcement_bar', 'hero_eyebrow', 'hero_headline', 'hero_subheadline', 'hero_cta_primary', 'hero_cta_secondary',
 		'trust_1_title', 'trust_2_title', 'trust_2_desc', 'trust_3_title', 'trust_3_desc',
 		'products_kicker', 'products_title',
 		'categories_kicker', 'categories_title', 'categories_subtitle',
@@ -999,6 +999,7 @@ function wookiee_build_content_prompt( $key, $brief, $previous_audit = '' ) {
 			 */
 			. "DELIVERY FIGURES. Three separate timings appear in the business details above and they measure different things: handling time is how long before an order LEAVES, transit time is how long it then spends WITH THE CARRIER, and the estimated delivery time is the two added together as the customer experiences it. Never use one in place of another. If a line mentions how quickly an order is sent, use the handling time; if it mentions when the parcel arrives, use the estimated total. Do not average them, round them or reword them into a new figure, and do not invent a number that is not in the list. This page sits beside policy pages quoting the same values, and a homepage that disagrees with them is the first thing a reviewer notices.\n\n"
 			. "Provide EXACTLY these labelled sections, each on its own line as \"LABEL: value\" (including the colon), nothing before or after them, in this exact order:\n"
+			. "ANNOUNCEMENT_BAR: one short line for the strip above the header, under 9 words. It must say something about THIS shop - what it sells, what makes it worth buying from - and must NOT repeat delivery cost, returns window or checkout security, all of which already appear on the product page and are what made the previous version redundant.\n"
 			. "HERO_EYEBROW: very short tag line above the headline (2-5 words)\n"
 			. "HERO_HEADLINE: short, punchy hero headline (under 10 words)\n"
 			. "HERO_SUBHEADLINE: two sentences under the headline - what the store sells and who it is for\n"

@@ -260,6 +260,13 @@ function wookiee_settings_fields() {
 		'returns_address'    => array( 'label' => 'Returns address (leave blank to use registered office address)', 'default' => '', 'type' => 'textarea' ),
 		'returns_period_days' => array( 'label' => 'Returns period (days)', 'default' => '30', 'type' => 'text' , 'prefill' => true),
 		'countries_served'   => array( 'label' => 'Countries served', 'default' => 'United Kingdom', 'type' => 'text' , 'prefill' => true),
+		/*
+		 * The strip above the header. Blank by default and hidden when blank:
+		 * it previously repeated the shipping rate and returns window that the
+		 * product page already shows, which review rightly called redundant,
+		 * and a generic stand-in would only be the same mistake in nicer words.
+		 */
+		'announcement_bar'   => array( 'label' => 'Top announcement bar (blank hides it)', 'default' => '', 'placeholder' => 'Personalised travel gear, made to order in the UK', 'type' => 'text' ),
 		'hero_eyebrow'       => array( 'label' => 'Homepage hero eyebrow tag', 'default' => 'Our range', 'type' => 'text' ),
 		'hero_headline'      => array( 'label' => 'Homepage hero headline', 'default' => 'Welcome to the shop.', 'type' => 'text' ),
 		'hero_subheadline'   => array( 'label' => 'Homepage hero subheadline', 'default' => 'Browse the full range and find what you are looking for.', 'type' => 'textarea' ),
@@ -417,6 +424,7 @@ function wookiee_settings_tabs() {
 		'homepage' => array(
 			'label'  => 'Homepage Copy',
 			'fields' => array(
+				'announcement_bar',
 				'hero_eyebrow', 'hero_headline', 'hero_subheadline', 'hero_cta_primary', 'hero_cta_secondary',
 				'newsletter_heading', 'newsletter_sub',
 				'trust_1_title', 'trust_2_title', 'trust_2_desc', 'trust_3_title', 'trust_3_desc',

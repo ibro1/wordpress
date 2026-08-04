@@ -8,29 +8,29 @@
 <body <?php body_class(); ?>>
 <?php wp_body_open(); ?>
 
+<?php
+/*
+ * A line about the shop, not about the transaction.
+ *
+ * This bar carried the shipping rate, the returns window and "Secure
+ * checkout" - every one of which already appears in the trust badges on the
+ * product page, so it said the same three things twice above the fold. Review
+ * called it redundant, and it was: a strip pinned to the top of every page is
+ * the most valuable line on the site, and spending it repeating the delivery
+ * price is a waste of it.
+ *
+ * It is a single editable line now, written by the homepage copy generator
+ * alongside the rest of the page so it describes THIS shop. Empty hides the
+ * bar completely rather than falling back to something generic - a fresh
+ * install saying nothing beats one announcing a fact about a different store.
+ */
+$wookiee_announcement = trim( (string) wookiee_get_setting( 'announcement_bar' ) );
+?>
+<?php if ( '' !== $wookiee_announcement ) : ?>
 <div class="announcement-bar">
-	<?php
-	/*
-	 * The shipping price now lives here rather than on a badge pinned over the
-	 * hero image, which is where review asked for it: an announcement bar is
-	 * the conventional place for a delivery line, and the hero is stronger
-	 * without a price plate covering the photograph. Still one fact in one
-	 * place - the trust bar below carries dispatch time, not this.
-	 */
-	$wookiee_bar_rate = trim( (string) wookiee_get_setting( 'shipping_rate' ) );
-	$wookiee_bar_days = trim( (string) wookiee_get_setting( 'returns_period_days' ) );
-
-	$wookiee_bar = array();
-	if ( '' !== $wookiee_bar_rate ) {
-		$wookiee_bar[] = 'Flat-rate UK delivery £' . $wookiee_bar_rate;
-	}
-	if ( '' !== $wookiee_bar_days ) {
-		$wookiee_bar[] = $wookiee_bar_days . '-day returns';
-	}
-	$wookiee_bar[] = 'Secure checkout';
-	?>
-	<p><?php echo esc_html( implode( '  ·  ', $wookiee_bar ) ); ?></p>
+	<p><?php echo esc_html( $wookiee_announcement ); ?></p>
 </div>
+<?php endif; ?>
 
 <header class="site-header">
 	<div class="container header-inner">

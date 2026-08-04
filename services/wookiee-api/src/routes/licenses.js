@@ -102,6 +102,46 @@ router.post('/:code/revoke', (req, res) => {
   res.json({ success: true });
 });
 
+/*
+ * Seat management. Operator-only, like the rest of this router: freeing or
+ * moving a seat is a billing decision, not something a site should do to
+ * itself. Both exist because activate() only ever appends - before this,
+ * a customer moving domain meant a shell into the container and a
+ * hand-edited licenses.json.
+ */
+router.post('/:code/release', (req, res) => {
+  const domain = String((req.body && req.body.domain) || '').trim().toLowerCase();
+  if (!domain) {
+    return res.status(400).json({ error: 'A domain is required.' });
+  }
+
+  const result = licenseStore.release(req.params.code, domain);
+  if (!result.ok) {
+    return res.status(400).json({ error: result.error });
+  }
+  res.json({ released: domain, remaining: result.remaining });
+});
+
+/*
+ * Prefer this to release-then-activate when a site has simply moved: on a
+ * single-seat code - the most common kind - releasing first leaves a window
+ * where the seat is free, and re-activating is a second round trip that can
+ * fail and leave the customer with no seat at all.
+ */
+router.post('/:code/rebind', (req, res) => {
+  const from = String((req.body && req.body.from) || '').trim().toLowerCase();
+  const to = String((req.body && req.body.to) || '').trim().toLowerCase();
+  if (!from || !to) {
+    return res.status(400).json({ error: 'Both `from` and `to` domains are required.' });
+  }
+
+  const result = licenseStore.rebind(req.params.code, from, to);
+  if (!result.ok) {
+    return res.status(400).json({ error: result.error });
+  }
+  res.json({ rebound: { from, to }, activations: result.activations });
+});
+
 // Exported separately - registered in index.js BEFORE the requireAuth
 // middleware, so it's reachable with no X-Api-Key/Basic Auth at all.
 function activatePublic(req, res) {
@@ -114,9 +154,30 @@ function activatePublic(req, res) {
 
   const result = licenseStore.activate(code, domain);
   if (!result.ok) {
-    return res.status(403).json({ error: result.error });
+    return res.status(403).json({ error: result.error, activations: result.activations });
   }
   res.json({ activated: true });
 }
 
-module.exports = { router, activatePublic };
+/**
+ * Read-only "is this code usable by this domain".
+ *
+ * Public for the same reason activate() is: possession of the code is the
+ * credential, and a site with no valid seat cannot authenticate to ask. It
+ * changes nothing, and it reports the reason so a site can say WHY it is not
+ * activated rather than claiming it is - which is what a stored-string check
+ * does, and what let a licence bound to an old hostname look healthy while
+ * every request was being refused.
+ */
+function verifyPublic(req, res) {
+  const code = String((req.body && req.body.code) || '').trim().toUpperCase();
+  const domain = String((req.body && req.body.domain) || '').trim().toLowerCase();
+
+  if (!code || !domain) {
+    return res.status(400).json({ error: 'Both an activation code and a domain are required.' });
+  }
+
+  res.json(licenseStore.verify(code, domain));
+}
+
+module.exports = { router, activatePublic, verifyPublic };

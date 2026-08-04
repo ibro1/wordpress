@@ -90,6 +90,76 @@ function wookiee_central_api_configured() {
 }
 
 /**
+ * Whether the backend will actually accept this site - not merely whether a
+ * code has been typed in.
+ *
+ * wookiee_central_api_configured() only checks that a string is stored. It
+ * cannot tell an activated site from one whose code is bound to a hostname it
+ * no longer answers on, and it reported "activated" throughout a domain move
+ * while every single request was being refused. The status a person reads
+ * has to come from the party doing the refusing.
+ *
+ * Cached for ten minutes because this renders on admin screens: long enough
+ * that page loads do not each cost a round trip, short enough that fixing a
+ * licence shows up without hunting for a way to clear it. Saving a code
+ * clears it immediately, which covers the case people actually hit.
+ *
+ * A backend that cannot be reached returns null rather than false - "I could
+ * not ask" is not the same as "you are not activated", and showing the second
+ * when the first is true sends people off fixing a licence that was fine.
+ *
+ * @return array{valid: bool|null, reason: string}
+ */
+function wookiee_central_api_activation_status( $force = false ) {
+	$code = trim( wookiee_central_api_shared_secret() );
+	if ( '' === $code ) {
+		return array( 'valid' => false, 'reason' => 'No activation code has been entered yet.' );
+	}
+
+	// Keyed on code + domain: both are what the answer depends on, so a
+	// re-bound licence or a moved site cannot be answered from a stale entry.
+	$key = 'wookiee_activation_' . md5( $code . '|' . wookiee_current_site_domain() );
+
+	if ( ! $force ) {
+		$cached = get_transient( $key );
+		if ( is_array( $cached ) ) {
+			return $cached;
+		}
+	}
+
+	$response = wp_remote_post(
+		wookiee_central_api_base_url() . '/licenses/verify',
+		array(
+			'headers' => array( 'Content-Type' => 'application/json' ),
+			'body'    => wp_json_encode( array( 'code' => $code, 'domain' => wookiee_current_site_domain() ) ),
+			'timeout' => 10,
+		)
+	);
+
+	if ( is_wp_error( $response ) ) {
+		return array( 'valid' => null, 'reason' => 'Could not reach the backend to check: ' . $response->get_error_message() );
+	}
+
+	$data   = json_decode( wp_remote_retrieve_body( $response ), true );
+	$status = array(
+		'valid'  => is_array( $data ) && ! empty( $data['valid'] ),
+		'reason' => is_array( $data ) && isset( $data['reason'] ) ? (string) $data['reason'] : '',
+	);
+
+	set_transient( $key, $status, 10 * MINUTE_IN_SECONDS );
+
+	return $status;
+}
+
+/** Drop the cached answer - called whenever a code is saved. */
+function wookiee_central_api_forget_activation_status() {
+	$code = trim( wookiee_central_api_shared_secret() );
+	if ( '' !== $code ) {
+		delete_transient( 'wookiee_activation_' . md5( $code . '|' . wookiee_current_site_domain() ) );
+	}
+}
+
+/**
  * The domain this activation code is bound to on the backend - the
  * backend rejects any request presenting a code that hasn't been
  * activated for this exact host, so it has to be sent on every request,
@@ -392,6 +462,10 @@ function wookiee_activate_backend_handler() {
 	}
 
 	update_option( 'wookiee_setting_wookiee_api_shared_secret', $code );
+
+	// The stored answer is keyed on the old code; keeping it would show the
+	// previous verdict against the new one.
+	wookiee_central_api_forget_activation_status();
 
 	// The allowed-model list is per activation code, so a newly entered code
 	// almost certainly grants a different set - drop the cache rather than

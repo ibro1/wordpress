@@ -1793,12 +1793,29 @@ function wookiee_set_domain_dns_records_handler() {
  * nothing to migrate or clear on the WordPress side anymore.
  */
 function wookiee_render_activation_section() {
-	$activated = wookiee_central_api_configured();
-	$masked    = $activated ? wookiee_central_api_shared_secret() : '';
+	/*
+	 * The state shown here used to be "is a code stored", which is not the
+	 * same question as "will the backend accept this site" and answered
+	 * "activated" for the entire duration of a domain move while every
+	 * request was being refused. It now asks the backend, which is the only
+	 * party that can answer it.
+	 */
+	$has_code = wookiee_central_api_configured();
+	$status   = $has_code ? wookiee_central_api_activation_status() : array( 'valid' => false, 'reason' => '' );
+	$masked   = $has_code ? wookiee_central_api_shared_secret() : '';
+
+	// Three states, not two. Unreachable is not the same as rejected, and
+	// colouring it red sends people off fixing a licence that is fine.
+	$border = true === $status['valid'] ? '#00a32a' : ( null === $status['valid'] ? '#dba617' : '#d63638' );
 	?>
-	<div style="background:#fff; border:1px solid <?php echo $activated ? '#00a32a' : '#d63638'; ?>; border-left-width:4px; border-radius:2px; padding:16px 20px; margin:0 0 24px;">
-		<?php if ( $activated ) : ?>
-			<p style="color:#00622e;">&#10003; This site is activated.</p>
+	<div style="background:#fff; border:1px solid <?php echo esc_attr( $border ); ?>; border-left-width:4px; border-radius:2px; padding:16px 20px; margin:0 0 24px;">
+		<?php if ( true === $status['valid'] ) : ?>
+			<p style="color:#00622e;">&#10003; This site is activated for <code><?php echo esc_html( wookiee_current_site_domain() ); ?></code>.</p>
+		<?php elseif ( null === $status['valid'] ) : ?>
+			<p style="color:#8a6d00;"><strong>Could not check the activation.</strong> <?php echo esc_html( $status['reason'] ); ?> The code below may well be fine - this says the backend could not be reached, not that the site is unlicensed.</p>
+		<?php elseif ( $has_code ) : ?>
+			<p style="color:#8a2424;"><strong>This code is not valid for this site.</strong> <?php echo esc_html( $status['reason'] ); ?></p>
+			<p class="description">Activation codes are bound to a specific hostname. If this store has changed domain, its code is still held by the old one - the seat has to be moved before this address will work, which is done from the backend rather than here.</p>
 		<?php else : ?>
 			<p style="color:#8a2424;"><strong>Not activated yet</strong> - AI generation, Companies House lookup, domain search/registration, and CJ product sourcing are unavailable until an activation code is entered below.</p>
 		<?php endif; ?>

@@ -266,12 +266,103 @@ function activate(code, domain) {
   }
 
   if (entry.activations.length >= entry.max_activations) {
-    return { ok: false, error: 'This activation code has already been used on its maximum number of sites.' };
+    /*
+     * Name what is holding the seats. The bare "already used on its maximum
+     * number of sites" is true and useless: it does not say which sites, so
+     * an operator whose store has simply MOVED DOMAIN has no way to tell a
+     * genuine second install from their own old hostname still holding the
+     * only seat. That exact case cost an afternoon - the answer was sitting
+     * in this array the whole time.
+     */
+    const bound = entry.activations.map((a) => a.domain).join(', ');
+    return {
+      ok: false,
+      error: `This activation code has already been used on its maximum number of sites (${entry.activations.length}/${entry.max_activations}). Currently bound to: ${bound}. If one of those is this site under a previous domain, release it before activating.`,
+      activations: entry.activations.map((a) => a.domain),
+    };
   }
 
   entry.activations.push({ domain, activated_at: new Date().toISOString() });
   writeAll(codes);
   return { ok: true };
+}
+
+/**
+ * Frees the seat a domain is holding.
+ *
+ * activate() only ever appends, so a site that changes hostname keeps its old
+ * seat forever and the new hostname is refused once the cap is reached. There
+ * was no way through the API to undo that - it needed a shell into the
+ * container and a hand-edited JSON file, which is not a thing an operator
+ * should have to do because a customer moved domain.
+ */
+function release(code, domain) {
+  const codes = readAll();
+  const entry = codes[code];
+
+  if (!entry) {
+    return { ok: false, error: 'Unknown activation code.' };
+  }
+
+  const before = entry.activations.length;
+  entry.activations = entry.activations.filter((a) => a.domain !== domain);
+
+  if (entry.activations.length === before) {
+    return { ok: false, error: `This code is not activated for ${domain}.` };
+  }
+
+  writeAll(codes);
+  return { ok: true, remaining: entry.activations.map((a) => a.domain) };
+}
+
+/**
+ * Moves a seat from one hostname to another in place, so a site that has
+ * changed domain keeps the seat it already paid for rather than needing one
+ * freed and another taken - which fails outright on a single-seat code, the
+ * most common kind.
+ */
+function rebind(code, fromDomain, toDomain) {
+  const codes = readAll();
+  const entry = codes[code];
+
+  if (!entry) {
+    return { ok: false, error: 'Unknown activation code.' };
+  }
+
+  const seat = entry.activations.find((a) => a.domain === fromDomain);
+  if (!seat) {
+    return { ok: false, error: `This code is not activated for ${fromDomain}.` };
+  }
+  if (entry.activations.some((a) => a.domain === toDomain)) {
+    return { ok: false, error: `This code is already activated for ${toDomain}.` };
+  }
+
+  seat.domain = toDomain;
+  seat.rebound_at = new Date().toISOString();
+  writeAll(codes);
+  return { ok: true, activations: entry.activations.map((a) => a.domain) };
+}
+
+/**
+ * Answers "is this code usable by this domain" without side effects, so a
+ * site can show an honest activation state instead of inferring one from the
+ * presence of a stored string.
+ */
+function verify(code, domain) {
+  const codes = readAll();
+  const entry = codes[code];
+
+  if (!entry) {
+    return { valid: false, reason: 'Unknown activation code.' };
+  }
+  if (!entry.active) {
+    return { valid: false, reason: 'This activation code has been revoked.' };
+  }
+  if (!entry.activations.some((a) => a.domain === domain)) {
+    return { valid: false, reason: `This code is not activated for ${domain}.` };
+  }
+
+  return { valid: true };
 }
 
 /**
@@ -294,6 +385,9 @@ module.exports = {
   get,
   revoke,
   activate,
+  release,
+  rebind,
+  verify,
   isActivatedForDomain,
   isModelAllowed,
   isImageModelAllowed,

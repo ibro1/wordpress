@@ -1,7 +1,7 @@
 const express = require('express');
 const path = require('path');
 const { requireAdminAuth, requireApiAuth } = require('./auth');
-const { router: licensesRouter, activatePublic } = require('./routes/licenses');
+const { router: licensesRouter, activatePublic, verifyPublic } = require('./routes/licenses');
 const { adminRouter: promptsAdminRouter, siteRouter: promptsSiteRouter } = require('./routes/prompts');
 
 const app = express();
@@ -22,6 +22,11 @@ app.get('/health', (req, res) => res.json({ ok: true }));
 // settings, license management, the static UI) or requireApiAuth (a
 // WordPress site with an already-activated code, or the operator).
 app.post('/licenses/activate', activatePublic);
+
+// Same reasoning, and read-only: a site whose seat is bound to a hostname it
+// no longer answers on cannot authenticate to ask why, so this has to be
+// reachable without a valid seat. Possession of the code is the credential.
+app.post('/licenses/verify', verifyPublic);
 
 // A dedicated exact-path route rather than app.use('/', ..., express.static(...))
 // on purpose - express.static mounted at '/' matches every path as a prefix,

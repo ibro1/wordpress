@@ -1296,47 +1296,142 @@ body.mobile-nav-active {
 	width: 100%;
 	border-bottom: 1px solid rgba(255,255,255,0.06);
 }
+/* A statement on the left, the sign-up card on the right. minmax(0,1fr) on
+   both tracks rather than a bare 1fr - a grid track sized to its content will
+   push the layout past the viewport the moment a long word appears in it. */
 .footer-newsletter {
-	padding: 26px 20px;
-	display: flex;
-	flex-wrap: wrap;
-	gap: 20px;
+	padding: 56px 20px;
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+	gap: 48px;
 	align-items: center;
-	justify-content: space-between;
 }
 .newsletter-text {
 	display: flex;
 	flex-direction: column;
-	gap: 2px;
+	gap: 14px;
+	min-width: 0;
+}
+.newsletter-eyebrow {
+	font-size: 12px;
+	font-weight: 700;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+	color: var(--wookiee-accent);
 }
 .newsletter-heading {
-	font-size: 16px;
-	font-weight: 700;
+	font-size: clamp(26px, 3.4vw, 40px);
+	font-weight: 800;
+	line-height: 1.12;
+	letter-spacing: -0.02em;
 	color: #ffffff;
+	/* A brand name with no spaces must break inside the word rather than
+	   widen the footer. */
+	overflow-wrap: anywhere;
 }
 .newsletter-sub {
-	font-size: 13px;
+	font-size: 15px;
+	line-height: 1.6;
 	color: #a89a89;
+	max-width: 46ch;
 }
+.newsletter-benefits {
+	list-style: none;
+	margin: 4px 0 0;
+	padding: 0;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px 26px;
+}
+.newsletter-benefits li {
+	font-size: 13px;
+	font-weight: 600;
+	color: #e6ddd2;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+.newsletter-benefits li span {
+	color: var(--wookiee-accent);
+	font-weight: 700;
+}
+
+/* The card. Light on a dark band so the form reads as the thing to act on. */
 .newsletter-form {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	min-width: 0;
+	background: #ffffff;
+	border-radius: 16px;
+	padding: 28px;
+	box-shadow: 0 18px 40px rgba(0,0,0,0.18);
+}
+.newsletter-form-icon {
+	width: 44px;
+	height: 44px;
+	border-radius: 12px;
+	background: var(--wookiee-cream, #f6f0e8);
+	color: var(--wookiee-accent-dark);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 20px;
+	margin-bottom: 4px;
+}
+.newsletter-form-heading {
+	font-size: 20px;
+	font-weight: 800;
+	color: var(--wookiee-ink);
+	letter-spacing: -0.01em;
+	overflow-wrap: anywhere;
+}
+.newsletter-form-sub {
+	font-size: 14px;
+	color: #6b6058;
+	margin-bottom: 6px;
+}
+.newsletter-form-row {
 	display: flex;
 	gap: 10px;
 	align-items: center;
-	flex-shrink: 0;
+	min-width: 0;
 }
+/* The consent notice. Small, but it is the part that makes collecting the
+   address lawful, so it stays legible rather than shrinking to nothing. */
+.newsletter-consent {
+	font-size: 12px;
+	line-height: 1.55;
+	color: #6b6058;
+	margin-top: 6px;
+}
+.newsletter-consent a {
+	color: var(--wookiee-accent-dark);
+	font-weight: 600;
+	text-decoration: underline;
+}
+/* Inside a white card now, so the input is dark-on-light. width:100% with
+   min-width:0 rather than a fixed 220px: a fixed-width field in a flex row is
+   what makes a form overflow its container on a narrow screen. */
 .newsletter-form input {
-	border: 1px solid rgba(255,255,255,0.15);
-	background: rgba(255,255,255,0.04);
+	border: 1px solid #d9d0c4;
+	background: #fff;
 	border-radius: 30px;
 	outline: none;
 	font-size: 14px;
-	color: #ffffff;
+	color: var(--wookiee-ink);
 	font-family: inherit;
-	padding: 10px 18px;
-	width: 220px;
+	padding: 12px 18px;
+	flex: 1 1 auto;
+	min-width: 0;
+	width: 100%;
+}
+.newsletter-form input:focus {
+	border-color: var(--wookiee-accent);
+	box-shadow: 0 0 0 3px rgba(193,112,74,0.18);
 }
 .newsletter-form input::placeholder {
-	color: rgba(255,255,255,0.45);
+	color: #9b9088;
 }
 .newsletter-form button {
 	background: var(--wookiee-accent);
@@ -2135,10 +2230,20 @@ ol.commentlist li.comment .comment-text .description {
 
 /* Footer Responsiveness */
 @media (max-width: 900px) {
+    /* One column. Not centred: the statement, the ticks and the consent notice
+       are all left-aligned reading matter, and centring them makes three
+       different ragged edges. */
     .footer-newsletter {
+        grid-template-columns: minmax(0, 1fr) !important;
+        gap: 28px !important;
+        padding: 40px 20px !important;
+    }
+    .newsletter-form-row {
         flex-direction: column !important;
         align-items: stretch !important;
-        text-align: center !important;
+    }
+    .newsletter-form-row button {
+        width: 100% !important;
     }
     .footer-columns-grid {
         grid-template-columns: 1fr 1fr !important;

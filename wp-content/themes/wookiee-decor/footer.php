@@ -1,25 +1,70 @@
 <footer class="site-footer">
 
 	<!-- Newsletter Band -->
+	<?php
+	/*
+	 * A statement on the left, the form in a card on the right.
+	 *
+	 * This was a heading, a line of subtext and an input on one row - and no
+	 * consent notice at all, which is the part that actually mattered. A UK
+	 * shop collecting an address for marketing needs consent under PECR, and
+	 * the notice has to say what is being consented to, that it is optional
+	 * and not a condition of buying, and how to withdraw it. That wording is
+	 * fixed below rather than generated: it is a legal statement, and it is
+	 * not something an AI should be inventing per store.
+	 *
+	 * The copy around it IS generated, so it describes this shop rather than
+	 * inviting a travel-accessories customer to get tidier.
+	 */
+	// Deduplicated as well as emptied: the generator is told that repeating a
+	// reason is how it declines to invent a third, so that has to be true
+	// here or it will pad the list rather than leave it short.
+	$wookiee_nl_benefits = array_values( array_unique( array_filter( array_map( 'trim', array(
+		(string) wookiee_get_setting( 'newsletter_benefit_1' ),
+		(string) wookiee_get_setting( 'newsletter_benefit_2' ),
+		(string) wookiee_get_setting( 'newsletter_benefit_3' ),
+	) ) ) ) );
+	$wookiee_nl_brand = trim( (string) wookiee_get_setting( 'business_name' ) );
+	$wookiee_nl_brand = '' !== $wookiee_nl_brand ? $wookiee_nl_brand : get_bloginfo( 'name' );
+	?>
 	<div class="footer-newsletter-wrap">
 		<div class="container footer-newsletter">
 			<div class="newsletter-text">
-				<?php
-				/*
-				 * Was hardcoded to "Stay organised with X" and "Home-
-				 * organisation ideas" - so a travel-accessories shop invited
-				 * customers to get tidier, and no niche change could ever
-				 * reach it because it was not a setting at all. Now editable
-				 * and written by the homepage copy generator like the rest of
-				 * the page, with a default that says nothing about any niche.
-				 */
-				?>
+				<?php if ( '' !== trim( (string) wookiee_get_setting( 'newsletter_eyebrow' ) ) ) : ?>
+					<span class="newsletter-eyebrow"><?php echo esc_html( wookiee_get_setting( 'newsletter_eyebrow' ) ); ?></span>
+				<?php endif; ?>
 				<span class="newsletter-heading"><?php echo esc_html( wookiee_get_setting( 'newsletter_heading' ) ); ?></span>
 				<span class="newsletter-sub"><?php echo esc_html( wookiee_get_setting( 'newsletter_sub' ) ); ?></span>
+				<?php if ( $wookiee_nl_benefits ) : ?>
+					<ul class="newsletter-benefits">
+						<?php foreach ( $wookiee_nl_benefits as $wookiee_nl_benefit ) : ?>
+							<li><span aria-hidden="true">&#10003;</span> <?php echo esc_html( $wookiee_nl_benefit ); ?></li>
+						<?php endforeach; ?>
+					</ul>
+				<?php endif; ?>
 			</div>
 			<form class="newsletter-form">
+				<span class="newsletter-form-icon" aria-hidden="true">&#9993;</span>
+				<span class="newsletter-form-heading"><?php echo esc_html( wookiee_get_setting( 'newsletter_form_heading' ) ); ?></span>
+				<span class="newsletter-form-sub">Enter your email address to join our mailing list.</span>
+				<span class="newsletter-form-row">
 				<input type="email" placeholder="Your email address" required>
-				<button type="submit">Subscribe</button>
+				<button type="submit">Sign me up</button>
+				</span>
+				<?php
+				/*
+				 * Fixed wording, deliberately. This is the PECR consent
+				 * statement, and it has to carry three things to be worth
+				 * anything: what the address will be used for, that agreeing
+				 * is optional and not a condition of buying, and how to
+				 * withdraw. Generated copy would vary those per store, which
+				 * is the one thing that must not happen.
+				 */
+				?>
+				<span class="newsletter-consent">
+					By entering your email address and selecting &ldquo;Sign me up&rdquo;, you consent to receive marketing emails from <?php echo esc_html( $wookiee_nl_brand ); ?>. Marketing is optional and is not required to make a purchase. You can withdraw your consent at any time using the unsubscribe link in any marketing email.
+					<a href="<?php echo esc_url( home_url( '/privacy-policy/' ) ); ?>">Read our Privacy Policy</a>. <a href="<?php echo esc_url( home_url( '/cookie/' ) ); ?>">Read our Cookie Policy</a>.
+				</span>
 			</form>
 		</div>
 	</div>

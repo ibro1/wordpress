@@ -283,8 +283,18 @@ function wookiee_settings_fields() {
 		 * The footer newsletter band. Hardcoded until now, which made it the
 		 * one piece of homepage copy a niche change could not reach.
 		 */
+		'newsletter_eyebrow' => array( 'label' => 'Footer newsletter eyebrow', 'default' => '', 'placeholder' => 'Join the mailing list', 'type' => 'text' ),
 		'newsletter_heading' => array( 'label' => 'Footer newsletter heading', 'default' => 'Join our mailing list', 'type' => 'text' ),
 		'newsletter_sub'     => array( 'label' => 'Footer newsletter subtext', 'default' => 'New arrivals and occasional updates. No spam.', 'type' => 'text' ),
+		/*
+		 * Three short reasons to subscribe, and the heading on the form card
+		 * itself. Blank entries are skipped rather than rendering an empty
+		 * tick, so a store that only has two reasons shows two.
+		 */
+		'newsletter_benefit_1' => array( 'label' => 'Newsletter reason 1', 'default' => '', 'placeholder' => 'New arrivals first', 'type' => 'text' ),
+		'newsletter_benefit_2' => array( 'label' => 'Newsletter reason 2', 'default' => '', 'placeholder' => 'Occasional offers', 'type' => 'text' ),
+		'newsletter_benefit_3' => array( 'label' => 'Newsletter reason 3', 'default' => '', 'placeholder' => 'No spam, unsubscribe anytime', 'type' => 'text' ),
+		'newsletter_form_heading' => array( 'label' => 'Newsletter form card heading', 'default' => 'Sign up for updates', 'type' => 'text' ),
 		'products_kicker'    => array( 'label' => 'Best-sellers section kicker', 'default' => 'Curated Catalog', 'type' => 'text' ),
 		'products_title'     => array( 'label' => 'Best-sellers section title', 'default' => 'Featured products', 'type' => 'text' ),
 		'categories_kicker'  => array( 'label' => 'Categories section kicker', 'default' => 'Browse the range', 'type' => 'text' ),
@@ -426,7 +436,8 @@ function wookiee_settings_tabs() {
 			'fields' => array(
 				'announcement_bar',
 				'hero_eyebrow', 'hero_headline', 'hero_subheadline', 'hero_cta_primary', 'hero_cta_secondary',
-				'newsletter_heading', 'newsletter_sub',
+				'newsletter_eyebrow', 'newsletter_heading', 'newsletter_sub',
+				'newsletter_benefit_1', 'newsletter_benefit_2', 'newsletter_benefit_3', 'newsletter_form_heading',
 				'trust_1_title', 'trust_2_title', 'trust_2_desc', 'trust_3_title', 'trust_3_desc',
 				'products_kicker', 'products_title',
 				'categories_kicker', 'categories_title', 'categories_subtitle',

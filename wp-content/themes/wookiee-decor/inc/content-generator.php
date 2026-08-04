@@ -584,7 +584,8 @@ function wookiee_homepage_copy_fields() {
 		'how_it_works_step3_title', 'how_it_works_step3_desc', 'how_it_works_cta',
 		'collections_kicker', 'collections_title',
 		'homepage_philosophy_heading', 'homepage_philosophy',
-		'newsletter_heading', 'newsletter_sub',
+		'newsletter_eyebrow', 'newsletter_heading', 'newsletter_sub',
+		'newsletter_benefit_1', 'newsletter_benefit_2', 'newsletter_benefit_3', 'newsletter_form_heading',
 	);
 }
 
@@ -1027,7 +1028,12 @@ function wookiee_build_content_prompt( $key, $brief, $previous_audit = '' ) {
 			. "HOW_IT_WORKS_CTA: button label (2-4 words)\n"
 			. "COLLECTIONS_KICKER: short kicker tag for the collections section (2-4 words)\n"
 			. "COLLECTIONS_TITLE: title for the collections section (under 8 words)\n"
+			. "NEWSLETTER_EYEBROW: tiny label above the mailing-list heading (3-6 words, e.g. \"Join the <brand> mailing list\")\n"
 			. "NEWSLETTER_HEADING: heading for the footer mailing-list band (under 6 words, naming what a subscriber gets in this niche)\n"
+			. "NEWSLETTER_BENEFIT_1: two to four words naming one concrete thing a subscriber gets\n"
+			. "NEWSLETTER_BENEFIT_2: a second, different one - do not restate the first\n"
+			. "NEWSLETTER_BENEFIT_3: a third. If this niche honestly only supports two, repeat the second verbatim and it will be dropped rather than padded out\n"
+			. "NEWSLETTER_FORM_HEADING: heading on the sign-up card itself (under 6 words). It sits beside the heading above, so say something different - not a reworded copy of it\n"
 			. "NEWSLETTER_SUB: one short line under it saying what is sent and how often\n"
 			. "HOMEPAGE_PHILOSOPHY_HEADING: short heading for the store's values/approach section (under 8 words)\n"
 			. "HOMEPAGE_PHILOSOPHY: a 150-200 word passage about the store's approach and values for this niche - why these products were chosen, what is deliberately not stocked, and what a customer can expect. On one line (no internal line breaks)\n\n"

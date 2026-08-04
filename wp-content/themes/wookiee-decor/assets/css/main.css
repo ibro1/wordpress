@@ -1450,11 +1450,24 @@ body.mobile-nav-active {
 }
 
 /* Columns */
+/*
+ * The columns are wildly uneven by nature: three or four links against a
+ * seven-line postal address. At 70px padding and a 50px gap that imbalance
+ * turned into a large empty rectangle under the two short columns and a long
+ * dead run before the sub-footer, which is what reads as "not arranged".
+ *
+ * align-content: start stops the grid distributing spare height into the row.
+ * minmax(0, ...) on every track because a long link label - "Personalized
+ * Travel Accessories" - otherwise sets the column's minimum width and squeezes
+ * its neighbours instead of wrapping.
+ */
 .footer-columns-grid {
-	padding: 70px 20px;
+	padding: 56px 20px 48px;
 	display: grid;
-	grid-template-columns: 1.5fr 1fr 1fr 1.2fr;
-	gap: 50px;
+	grid-template-columns: minmax(0, 1.5fr) minmax(0, 1.15fr) minmax(0, 1fr) minmax(0, 1.25fr);
+	gap: 40px;
+	align-content: start;
+	align-items: start;
 }
 .footer-logo {
 	margin-bottom: 22px;
@@ -1466,10 +1479,11 @@ body.mobile-nav-active {
 }
 .footer-about-copy {
 	font-size: 14px;
-	line-height: 1.6;
+	line-height: 1.55;
 	color: #c9beae;
-	margin: 0 0 28px 0;
+	margin: 0 0 22px 0;
 	padding-right: 20px;
+	max-width: 40ch;
 }
 .footer-socials {
 	display: flex;
@@ -1493,7 +1507,7 @@ body.mobile-nav-active {
 	margin: 0;
 }
 .footer-links-list li {
-	margin-bottom: 12px;
+	margin-bottom: 10px;
 }
 .footer-links-list a {
 	color: #c9beae;
@@ -1510,7 +1524,9 @@ body.mobile-nav-active {
 	margin: 0;
 	color: #c9beae;
 	font-size: 14px;
-	line-height: 1.6;
+	/* 1.6 over seven address lines added ~30px of pure height to the tallest
+	   column in the footer, for no legibility gain at this size. */
+	line-height: 1.45;
 }
 .footer-info-text strong {
 	color: #ffffff;
@@ -1540,13 +1556,16 @@ body.mobile-nav-active {
 /* Sub footer */
 .footer-subfooter {
 	background: #051628;
-	padding: 40px 20px;
-	border-top: 1px solid rgba(255,255,255,0.03);
+	padding: 28px 20px;
+	/* Was 0.03 alpha - invisible against the footer behind it, so the policy
+	   links read as floating loose below the columns rather than as their own
+	   band. Uneven column bottoms need a stated edge under them, not a gap. */
+	border-top: 1px solid rgba(255,255,255,0.10);
 }
 .footer-subfooter-inner {
 	display: flex;
 	flex-direction: column;
-	gap: 30px;
+	gap: 22px;
 }
 .sub-footer-links {
 	display: flex;

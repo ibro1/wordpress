@@ -81,8 +81,15 @@ services:
       - "traefik.http.routers.wp-main.service=wp-service"
 
       # --- Router 2: Wildcard Subdomains (dynamic, based on MAIN_DOMAIN) ---
-      # Matches site1.<MAIN_DOMAIN>, etc.
-      - "traefik.http.routers.wp-wildcard.rule=HostRegexp(`^.+\\.${MAIN_DOMAIN}$$`)"
+      # Matches site1.<MAIN_DOMAIN>, etc., MINUS anything named in
+      # EXCLUDED_DOMAINS. Set that variable to hand a subdomain to something
+      # other than this WordPress install, e.g.
+      #     EXCLUDED_DOMAINS=Host(`deer.linkfa.de`) || Host(`shop.linkfa.de`)
+      # It holds full Traefik rule syntax, same as EXTERNAL_DOMAINS below.
+      # The .invalid default keeps the rule valid when nothing is excluded:
+      # that TLD is reserved by RFC 2606 and can never resolve, so the
+      # negation matches nothing and the router behaves as it always did.
+      - "traefik.http.routers.wp-wildcard.rule=HostRegexp(`^.+\\.${MAIN_DOMAIN}$$`) && !(${EXCLUDED_DOMAINS:-Host(`excluded.invalid`)})"
       - "traefik.http.routers.wp-wildcard.entrypoints=websecure"
       - "traefik.http.routers.wp-wildcard.tls=true"
       - "traefik.http.routers.wp-wildcard.service=wp-service"
@@ -94,8 +101,10 @@ services:
       - "traefik.http.routers.wp-ext.service=wp-service"
 
       # --- Router 4: Catch-All Fallback (Priority 1) ---
-      # Catches any other domain pointed here, but might have SSL delay
-      - "traefik.http.routers.wp-catchall.rule=HostRegexp(`{host:.+}`)"
+      # Catches any other domain pointed here, but might have SSL delay.
+      # Carries the same EXCLUDED_DOMAINS negation as Router 2 - without it
+      # this router simply re-catches whatever the wildcard just let go.
+      - "traefik.http.routers.wp-catchall.rule=HostRegexp(`^.+$$`) && !(${EXCLUDED_DOMAINS:-Host(`excluded.invalid`)})"
       - "traefik.http.routers.wp-catchall.entrypoints=websecure"
       - "traefik.http.routers.wp-catchall.tls=true"
       - "traefik.http.routers.wp-catchall.priority=1"

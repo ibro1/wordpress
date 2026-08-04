@@ -74,11 +74,21 @@ services:
       # --- Service Port ---
       - "traefik.http.services.wp-service.loadbalancer.server.port=80"
 
+      # --- Router priorities ---
+      # Stated rather than inherited. Traefik defaults a router's priority to
+      # the LENGTH OF ITS RULE STRING, so without these the order depends on
+      # how many characters each rule happens to contain - and adding the
+      # EXCLUDED_DOMAINS negation to the wildcard lengthened it, raising its
+      # priority, which is the opposite of what that change was for. Ordered
+      # most specific to least: exact main domain, exact external hosts,
+      # subdomain wildcard, then everything else.
+
       # --- Router 1: Main Domain (dynamic) ---
       - "traefik.http.routers.wp-main.rule=Host(`${MAIN_DOMAIN}`)"
       - "traefik.http.routers.wp-main.entrypoints=websecure"
       - "traefik.http.routers.wp-main.tls=true"
       - "traefik.http.routers.wp-main.service=wp-service"
+      - "traefik.http.routers.wp-main.priority=100"
 
       # --- Router 2: Wildcard Subdomains (dynamic, based on MAIN_DOMAIN) ---
       # Matches site1.<MAIN_DOMAIN>, etc., MINUS anything named in
@@ -93,12 +103,19 @@ services:
       - "traefik.http.routers.wp-wildcard.entrypoints=websecure"
       - "traefik.http.routers.wp-wildcard.tls=true"
       - "traefik.http.routers.wp-wildcard.service=wp-service"
+      - "traefik.http.routers.wp-wildcard.priority=50"
 
       # --- Router 3: External Domains (single dynamic rule, holds full Traefik rule syntax) ---
+      # Keep this a list of EXACT hosts - Host(`a.com`) || Host(`b.com`).
+      # It deliberately carries no EXCLUDED_DOMAINS negation, because an exact
+      # host cannot over-reach. Put a wildcard or a HostRegexp in here and this
+      # router will re-catch the very subdomains Router 2 was told to release,
+      # with nothing in its rule to hint at why.
       - "traefik.http.routers.wp-ext.rule=${EXTERNAL_DOMAINS}"
       - "traefik.http.routers.wp-ext.entrypoints=websecure"
       - "traefik.http.routers.wp-ext.tls=true"
       - "traefik.http.routers.wp-ext.service=wp-service"
+      - "traefik.http.routers.wp-ext.priority=90"
 
       # --- Router 4: Catch-All Fallback (Priority 1) ---
       # Catches any other domain pointed here, but might have SSL delay.
@@ -107,6 +124,10 @@ services:
       - "traefik.http.routers.wp-catchall.rule=HostRegexp(`^.+$$`) && !(${EXCLUDED_DOMAINS:-Host(`excluded.invalid`)})"
       - "traefik.http.routers.wp-catchall.entrypoints=websecure"
       - "traefik.http.routers.wp-catchall.tls=true"
+      # The only router that was not naming its service. Traefik falls back to
+      # the container's single defined service, so it worked - but it worked by
+      # inference, and it would stop the day a second service is defined here.
+      - "traefik.http.routers.wp-catchall.service=wp-service"
       - "traefik.http.routers.wp-catchall.priority=1"
 
     entrypoint: |

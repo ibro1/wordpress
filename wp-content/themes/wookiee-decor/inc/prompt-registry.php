@@ -116,6 +116,13 @@ function wookiee_prompt_registry() {
 		'required'     => array(),
 	);
 
+	$registry['recategorise'] = array(
+		'label'        => 'Catalogue re-categorisation',
+		'description'  => 'Sorts every existing product into browsable categories in ONE call rather than per product - judging each item alone is what lands a whole catalogue in a single category, since a broad existing category matches everything it is compared against.',
+		'placeholders' => array( 'brief', 'products' ),
+		'required'     => array( 'brief', 'products' ),
+	);
+
 	$registry['design_params'] = array(
 		'label'        => 'Store design generator',
 		'description'  => 'Generates the storefront design from the niche. The model returns design parameters (hue, chroma, density, columns...) which the theme turns into CSS with contrast verified in code - it never returns colours or CSS itself.',
@@ -314,6 +321,7 @@ function wookiee_prompt_capture_builders() {
 		'policy_audit'    => function () { return wookiee_build_policy_audit_prompt( '{{title}}', '{{policy_text}}' ); },
 		'policy_fix'      => function () { return wookiee_build_policy_fix_prompt( '{{title}}', '{{current_text}}', '{{audit_report}}' ); },
 		'policy_custom'   => function () { return wookiee_build_custom_policy_prompt( '{{title}}', '{{custom_instruction}}' ); },
+		'recategorise'    => function () { return wookiee_build_recategorise_prompt( '{{products}}', 0, '{{brief}}' ); },
 
 		/*
 		 * The two product-idea branches are selected inside the builder by

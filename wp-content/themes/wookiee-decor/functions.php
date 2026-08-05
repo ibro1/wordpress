@@ -39,6 +39,7 @@ require_once WOOKIEE_DIR . 'inc/product-generator.php';
 require_once WOOKIEE_DIR . 'inc/content-generator.php';
 require_once WOOKIEE_DIR . 'inc/background-removal.php';
 require_once WOOKIEE_DIR . 'inc/supplier-cj.php';
+require_once WOOKIEE_DIR . 'inc/recategorise.php';
 require_once WOOKIEE_DIR . 'inc/cookie-consent.php';
 
 /**

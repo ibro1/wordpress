@@ -616,7 +616,7 @@ function wookiee_build_supplier_import_prompt( $brief, $raw_title, $raw_descript
 		. "Judge the PRODUCT, not the listing. Supplier titles are routinely keyword-stuffed, mistranslated and badly punctuated; that says nothing about whether the item belongs here, and cleaning it up is your job in the next field.\n"
 		. "REASON: one short sentence explaining the FIT answer\n"
 		. "CLEAN_TITLE: a clear, accurate Google Merchant Center-compliant product title on one line - no keyword stuffing, no supplier/trade jargon (e.g. \"cross-border\"), no ALL CAPS, no promotional symbols\n"
-		. "CATEGORY: one line - prefer an existing store category from the list above if a good match exists, otherwise a short new category name\n"
+		. "CATEGORY: one line naming the KIND of product this is - \"Travel Journals\", \"Wash Bags\", \"Drinkware\" - not the shop's subject matter. Reuse an existing store category only when it names the same kind of thing; if the closest existing one is broad enough to fit most of the catalogue, ignore it and give a specific name instead. Categories exist so a customer can narrow the range down, and one that everything belongs to narrows nothing.\n"
 		. "SHORT_DESCRIPTION: one line, 1-2 sentences - a hook description for the cart/catalog view\n"
 		. "LONG_DESCRIPTION: the full product page description, written as several plain-text paragraphs separated by blank lines, in this order:\n"
 		. "  1. An overview paragraph - what it is, who it's for, the core benefit, in this niche's voice.\n"
@@ -693,7 +693,17 @@ function wookiee_ai_clean_supplier_product( $raw_title, $raw_description, $raw_c
 		// plan for this niche before ever searching the supplier catalog -
 		// without this, each product's category was re-guessed
 		// independently per-import and could drift from that plan.
-		$hint_line = "This product was sourced to fill the catalog's intended \"{$category_hint}\" category - use that (or the closest matching existing store category) unless the supplier data clearly makes it a poor fit.\n";
+		/*
+		 * The escape clause here used to read "(or the closest matching
+		 * existing store category)", and that one parenthesis undid the whole
+		 * plan. Once a store has a broad category - "Personalized Travel
+		 * Accessories" on a personalised-travel shop - it is the closest match
+		 * for every product that will ever be sourced, so each import reused
+		 * it and a five-product batch of a flask, a journal, an atomiser, a
+		 * toiletry bag and a mirror all landed in one collection. The hint is
+		 * now binding unless the product genuinely does not belong in it.
+		 */
+		$hint_line = "This product was sourced to fill the catalog's intended \"{$category_hint}\" category. USE THAT NAME. Do not substitute a broader existing category because it also fits - a category that fits every product in the shop is not a category, it is the shop. Depart from the hint only if the supplier data shows the product is genuinely not that kind of thing, and then name what it actually is.\n";
 	}
 
 	$prompt = wookiee_build_supplier_import_prompt(

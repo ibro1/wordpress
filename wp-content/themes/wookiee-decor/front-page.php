@@ -52,13 +52,35 @@ get_header(); ?>
 			<div class="feature-icon">
 				<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path></svg>
 			</div>
-			<div><?php echo esc_html( wookiee_get_setting( 'trust_2_title' ) ); ?><span class="feature-text-sub"><?php echo esc_html( wookiee_get_setting( 'trust_2_desc' ) ); ?></span></div>
+			<?php
+			/*
+			 * Derived, not written. This was AI-generated free text and it
+			 * produced "Return within 30 days; statutory rights apply" - a
+			 * legal claim on the homepage, composed independently of the
+			 * Returns Policy it is supposed to summarise, and flagged in
+			 * review as contradicting it. The same fault as the dispatch time
+			 * saying 2-3 days while the policy said 1-2: a page stating a
+			 * commitment in its own words will eventually state it differently.
+			 * It now reads from the setting the policies are generated from,
+			 * so the two cannot disagree.
+			 */
+			?>
+			<div><?php echo esc_html( wookiee_get_setting( 'trust_2_title' ) ); ?><span class="feature-text-sub"><?php echo esc_html( wookiee_get_setting( 'returns_period_days' ) ); ?>-day returns</span></div>
 		</div>
 		<div class="feature-item">
 			<div class="feature-icon">
 				<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
 			</div>
-			<div><?php echo esc_html( wookiee_get_setting( 'trust_3_title' ) ); ?><span class="feature-text-sub"><?php echo esc_html( wookiee_get_setting( 'trust_3_desc' ) ); ?></span></div>
+			<?php
+			/*
+			 * Sub-line dropped. It read "Pay with confidence using PayPal,
+			 * Visa, or Mastercard" - the same list the footer already shows as
+			 * payment marks, so it said nothing new, and it re-introduced the
+			 * named-provider wording that was deliberately taken off the
+			 * product page. The heading carries the reassurance on its own.
+			 */
+			?>
+			<div><?php echo esc_html( wookiee_get_setting( 'trust_3_title' ) ); ?></div>
 		</div>
 	</section>
 
@@ -134,42 +156,15 @@ get_header(); ?>
 
 	<!-- Categories Grid Section -->
 	<?php $display_cats = wookiee_get_display_categories( 4 ); ?>
-	<?php if ( ! empty( $display_cats ) ) : ?>
-	<section class="container home-section" id="categories">
-		<div class="section-header text-center">
-			<div class="section-kicker"><?php echo esc_html( wookiee_get_setting( 'categories_kicker' ) ); ?></div>
-			<h2 class="section-title"><?php echo esc_html( wookiee_get_setting( 'categories_title' ) ); ?></h2>
-			<p class="section-subtitle"><?php echo esc_html( wookiee_get_setting( 'categories_subtitle' ) ); ?></p>
-		</div>
-
-		<div class="wookiee-cat-grid">
-			<?php
-			$cat_palette = array(
-				array( 'color' => '#e8f4f4', 'accent' => '#c1704a', 'icon' => '<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>' ),
-				array( 'color' => '#fef6ec', 'accent' => '#c9972f', 'icon' => '<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>' ),
-				array( 'color' => '#edf4fb', 'accent' => '#5b9ecf', 'icon' => '<path d="M5 12h14"/><path d="M5 12a7 7 0 0 0 7 7"/><path d="M5 12a7 7 0 0 1 7-7"/><circle cx="12" cy="12" r="3"/>' ),
-				array( 'color' => '#f0f0f8', 'accent' => '#7b7bcc', 'icon' => '<rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>' ),
-			);
-			foreach ( $display_cats as $i => $cat ) :
-				$style = $cat_palette[ $i % count( $cat_palette ) ];
-				$desc  = $cat->description ? $cat->description : sprintf( 'Shop our %s range.', strtolower( $cat->name ) );
-			?>
-			<a href="<?php echo esc_url( get_term_link( $cat ) ); ?>" class="wookiee-cat-card" style="--cat-color:<?php echo esc_attr( $style['color'] ); ?>; --cat-accent:<?php echo esc_attr( $style['accent'] ); ?>;">
-				<div class="cat-card-icon-wrap">
-					<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="<?php echo esc_attr( $style['accent'] ); ?>" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><?php echo $style['icon']; ?></svg>
-				</div>
-				<div class="cat-card-body">
-					<h3 class="cat-card-title"><?php echo esc_html( $cat->name ); ?></h3>
-					<p class="cat-card-desc"><?php echo esc_html( $desc ); ?></p>
-				</div>
-				<div class="cat-card-arrow" style="color: <?php echo esc_attr( $style['accent'] ); ?>;">
-					<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-				</div>
-			</a>
-			<?php endforeach; ?>
-		</div>
-	</section>
-	<?php endif; ?>
+	<?php
+	/*
+	 * The "Shop by type" section was removed. It listed the same product
+	 * categories as the Collections section further down - the two read the
+	 * same $display_cats - so a store showed every category twice on one page,
+	 * and a store with a single category showed the identical card twice with
+	 * a different heading over each. Collections keeps the job.
+	 */
+	?>
 
 	<!-- How it works Section -->
 	<section class="container home-section wookiee-content-grid-2 how-it-works">
@@ -220,7 +215,8 @@ get_header(); ?>
 
 	<!-- Collections Grid Section -->
 	<?php if ( ! empty( $display_cats ) ) : ?>
-	<section class="container home-section">
+	<?php // Carries the #categories id the hero's second button links to - it lived on the removed section. ?>
+	<section class="container home-section" id="categories">
 		<div class="section-header text-center">
 			<div class="section-kicker"><?php echo esc_html( wookiee_get_setting( 'collections_kicker' ) ); ?></div>
 			<h2 class="section-title"><?php echo esc_html( wookiee_get_setting( 'collections_title' ) ); ?></h2>

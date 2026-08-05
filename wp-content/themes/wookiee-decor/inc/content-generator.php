@@ -577,7 +577,6 @@ function wookiee_homepage_copy_fields() {
 	return array( 'announcement_bar', 'hero_eyebrow', 'hero_headline', 'hero_subheadline', 'hero_cta_primary', 'hero_cta_secondary',
 		'trust_1_title', 'trust_2_title', 'trust_2_desc', 'trust_3_title', 'trust_3_desc',
 		'products_kicker', 'products_title',
-		'categories_kicker', 'categories_title', 'categories_subtitle',
 		'how_it_works_kicker', 'how_it_works_title', 'how_it_works_lead',
 		'how_it_works_step1_title', 'how_it_works_step1_desc',
 		'how_it_works_step2_title', 'how_it_works_step2_desc',
@@ -1013,9 +1012,6 @@ function wookiee_build_content_prompt( $key, $brief, $previous_audit = '' ) {
 			. "TRUST_3_DESC: trust-bar item 3 subtext - a full short sentence, not a fragment\n"
 			. "PRODUCTS_KICKER: short kicker tag for the featured-products section (2-4 words) - do NOT call them best-sellers, top-rated or similar; a new store has no sales history and the claim is unverifiable\n"
 			. "PRODUCTS_TITLE: title for the featured-products section (under 8 words) - again, nothing implying sales volume or popularity\n"
-			. "CATEGORIES_KICKER: short kicker tag for the categories section (2-4 words)\n"
-			. "CATEGORIES_TITLE: title for the categories section (under 8 words)\n"
-			. "CATEGORIES_SUBTITLE: two sentences under the categories title, saying how the range is organised and how to choose\n"
 			. "HOW_IT_WORKS_KICKER: short kicker tag (2-4 words)\n"
 			. "HOW_IT_WORKS_TITLE: title for the how-it-works section (under 10 words)\n"
 			. "HOW_IT_WORKS_LEAD: a lead paragraph of 2-3 sentences setting up the three steps\n"

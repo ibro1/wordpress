@@ -881,7 +881,7 @@ function wookiee_build_product_ideas_prompt( $brief, $count, $keyword_data, $rec
 			. "Using ONLY the keywords listed above, pick exactly {$count} of the best ones to build this store's catalog around - prioritise genuine search demand (higher avg monthly searches) balanced against reasonable ad cost (lower CPC), while keeping the set feeling like one coherent niche catalog (2-4 categories total, not {$count} unique ones). Do not invent a keyword that isn't in the list above, and do not alter the wording of the keywords you choose.\n\n"
 			. "Respond with ONLY a raw JSON array containing EXACTLY {$count} element(s) (no markdown fences, no commentary before or after), where each element has exactly these keys:\n"
 			. "- \"title\": one of the exact keywords from the list above\n"
-			. "- \"category\": a short category name; reuse the same category string across concepts that belong together";
+			. "- \"category\": a short category name. Group the batch into SEVERAL categories that describe different KINDS of product - two or three for a small batch, more for a large one - and reuse a string only for concepts that genuinely belong together. Do not put every concept in one category, and never use the niche itself as the category name: a category that fits every product in the shop tells a customer nothing and leaves the storefront with a single collection to browse.";
 	} else {
 		$exclude_note = '';
 		if ( ! empty( $recent_concepts ) ) {
@@ -894,7 +894,7 @@ function wookiee_build_product_ideas_prompt( $brief, $count, $keyword_data, $rec
 			. "Each concept's title will be used as a search query against a real product catalog, so phrase it the way you'd search for that item - a few plain, common keywords (e.g. \"ceramic plant pot\"), not a stylized marketing title.\n\n"
 			. "Respond with ONLY a raw JSON array containing EXACTLY {$count} element(s) (no markdown fences, no commentary before or after), where each element has exactly these keys:\n"
 			. "- \"title\": the plain keyword search query for this product concept\n"
-			. "- \"category\": a short category name; reuse the same category string across concepts that belong together";
+			. "- \"category\": a short category name. Group the batch into SEVERAL categories that describe different KINDS of product - two or three for a small batch, more for a large one - and reuse a string only for concepts that genuinely belong together. Do not put every concept in one category, and never use the niche itself as the category name: a category that fits every product in the shop tells a customer nothing and leaves the storefront with a single collection to browse.";
 	}
 
 	$prompt = wookiee_maybe_override(

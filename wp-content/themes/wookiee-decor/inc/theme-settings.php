@@ -238,7 +238,20 @@ function wookiee_settings_fields() {
 		'llm_default_model'  => array( 'label' => 'LLM default model', 'default' => 'gpt-4o-mini', 'type' => 'text' ),
 		'cj_email'           => array( 'label' => 'CJ Dropshipping account email', 'default' => '', 'type' => 'email' ),
 		'cj_api_key'         => array( 'label' => 'CJ Dropshipping API key', 'default' => '', 'type' => 'password' ),
-		'product_markup_percent' => array( 'label' => 'Product markup (%)', 'default' => '0', 'type' => 'text' , 'prefill' => true),
+		/*
+		 * Was 0 - the store sold at supplier cost. A dropship shop cannot run
+		 * on no margin, and it looked wrong before it looked unprofitable: a
+		 * £3.00 product beside £6.99 postage reads as a pricing fault. 150%
+		 * (2.5x cost) is the conventional floor for this model.
+		 */
+		'product_markup_percent' => array( 'label' => 'Product markup (%)', 'default' => '150', 'type' => 'text' , 'prefill' => true),
+		/*
+		 * A percentage cannot rescue a cheap item: 150% on a £1.20 cost is
+		 * still £3.00 against £6.99 delivery. Cheap goods need a bigger
+		 * absolute margin than a multiplier gives them, so the price floors
+		 * here regardless of what the supplier charged.
+		 */
+		'product_min_price'  => array( 'label' => 'Minimum product price (£)', 'default' => '9.99', 'type' => 'text', 'prefill' => true ),
 		/*
 		 * Supplier prices are quoted in US dollars and nothing converted them,
 		 * so a UK store priced its catalog off a dollar figure. Fixed and
@@ -421,7 +434,7 @@ function wookiee_settings_tabs() {
 	return array(
 		'business' => array(
 			'label'  => 'Business Identity',
-			'fields' => array( 'company_number', 'companies_house_api_key', 'business_name', 'registered_address', 'sic_codes', 'countries_served', 'product_markup_percent', 'supplier_price_rate' ),
+			'fields' => array( 'company_number', 'companies_house_api_key', 'business_name', 'registered_address', 'sic_codes', 'countries_served', 'product_markup_percent', 'product_min_price', 'supplier_price_rate' ),
 		),
 		'contact' => array(
 			'label'  => 'Contact & Support',
@@ -440,7 +453,6 @@ function wookiee_settings_tabs() {
 				'newsletter_benefit_1', 'newsletter_benefit_2', 'newsletter_benefit_3', 'newsletter_form_heading',
 				'trust_1_title', 'trust_2_title', 'trust_2_desc', 'trust_3_title', 'trust_3_desc',
 				'products_kicker', 'products_title',
-				'categories_kicker', 'categories_title', 'categories_subtitle',
 				'how_it_works_kicker', 'how_it_works_title', 'how_it_works_lead',
 				'how_it_works_step1_title', 'how_it_works_step1_desc',
 				'how_it_works_step2_title', 'how_it_works_step2_desc',
@@ -575,6 +587,9 @@ function wookiee_render_settings_field_row( $key, $field ) {
 				</p>
 				<p class="description">Fills in the registered company name and address below from the official Companies House register — enter the exact company number, or just the company name to search a list of matches. <?php echo wookiee_central_api_configured() ? '' : 'Requires an API key (below) — get one free at <a href="https://developer.company-information.service.gov.uk/" target="_blank" rel="noopener">developer.company-information.service.gov.uk</a>. '; ?>Review the filled-in fields before saving.</p>
 				<div id="wookiee-ch-search-results" class="wookiee-ch-search-results" hidden></div>
+			<?php endif; ?>
+			<?php if ( 'product_min_price' === $key ) : ?>
+				<p class="description">No product is listed below this, whatever the supplier charged. A markup percentage cannot fix a cheap item &mdash; 150% on a £1.20 cost is still £3.00, against £6.99 to deliver it, which loses money on every order and reads to a customer as a mistake. Set it above your delivery charge. Prices are rounded up to the nearest .99.</p>
 			<?php endif; ?>
 			<?php if ( 'supplier_price_rate' === $key ) : ?>
 				<p class="description">Supplier catalog prices are quoted in US dollars. This converts them before your markup is applied, so a product costing $10 at a rate of 0.79 starts from £7.90. Check it against the current rate now and then &mdash; it is deliberately fixed rather than live, so your prices do not move on their own.</p>

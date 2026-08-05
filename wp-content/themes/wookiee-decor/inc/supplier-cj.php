@@ -536,6 +536,28 @@ function wookiee_apply_product_markup( $cost_price ) {
 	$markup_percent = (float) wookiee_get_setting( 'product_markup_percent' );
 	$marked_up      = (float) $cost_price * $rate * ( 1 + ( $markup_percent / 100 ) );
 
+	/*
+	 * A floor, because a percentage markup cannot rescue a cheap item. A £1.20
+	 * supplier cost at 150% is £3.00, and this store charges £6.99 to deliver
+	 * it - the postage costs more than twice the product, which reads as a
+	 * mistake to a customer and loses money on every order once picking and
+	 * packing are counted. Cheap goods have to carry a bigger absolute margin
+	 * than a percentage gives them.
+	 */
+	$floor = (float) wookiee_get_setting( 'product_min_price' );
+	if ( $floor > 0 && $marked_up < $floor ) {
+		$marked_up = $floor;
+	}
+
+	/*
+	 * Land on a .99. Every retailer does this and a shopper reads a computed
+	 * figure like 7.43 as a conversion artefact rather than a price - which is
+	 * exactly what it was, being a dollar cost times an exchange rate.
+	 */
+	$marked_up = floor( $marked_up ) + 0.99 < $marked_up
+		? ceil( $marked_up ) + 0.99
+		: floor( $marked_up ) + 0.99;
+
 	return number_format( $marked_up, 2, '.', '' );
 }
 

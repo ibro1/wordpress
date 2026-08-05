@@ -1527,3 +1527,29 @@ body.wookiee-cart-funnel-page {
     border-radius: 5px;
 }
 
+/* Payment marks on the checkout, where a customer is deciding whether their
+   card will be taken. Reuses the footer tile styling but centred, since this
+   footer is a single centred column rather than a wide row. */
+.checkout-payments {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 18px;
+}
+.checkout-payments .payment-icon-wrapper {
+    background: #fff;
+    border: 1px solid rgba(0,0,0,0.08);
+    border-radius: 4px;
+    width: 48px;
+    height: 30px;
+    padding: 3px 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.checkout-payments .payment-icon-wrapper svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+}

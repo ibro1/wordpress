@@ -155,7 +155,16 @@ get_header(); ?>
 	</section>
 
 	<!-- Categories Grid Section -->
-	<?php $display_cats = wookiee_get_display_categories( 4 ); ?>
+	<?php
+	/*
+	 * Was 4, which capped the section before the catalogue did. It also only
+	 * ever shows categories with PUBLISHED products - a term's count ignores
+	 * drafts - so a store that has sourced widely but published a handful sees
+	 * far fewer collections than it has categories, which looks like a fault
+	 * and is not one.
+	 */
+	$display_cats = wookiee_get_display_categories( 8 );
+	?>
 	<?php
 	/*
 	 * The "Shop by type" section was removed. It listed the same product
@@ -221,22 +230,48 @@ get_header(); ?>
 			<div class="section-kicker"><?php echo esc_html( wookiee_get_setting( 'collections_kicker' ) ); ?></div>
 			<h2 class="section-title"><?php echo esc_html( wookiee_get_setting( 'collections_title' ) ); ?></h2>
 		</div>
+		<?php
+		/*
+		 * Two zones rather than text floated over a darkened photograph.
+		 *
+		 * The card used the category image as a full-bleed background at
+		 * background-size: cover under a 75% dark gradient - which is fine for
+		 * a lifestyle shot and wrong for what these actually are: cut-out
+		 * product photographs on white. Covering one crops it, and dimming it
+		 * to three-quarters black turns a white background grey, so every card
+		 * read as a washed-out smudge with words on it.
+		 *
+		 * Now the product sits uncropped on a light panel and the words sit on
+		 * a solid one beneath, which also fixes the collision - the arrow was
+		 * absolutely positioned in the corner the second line of a wrapped
+		 * title ran into, and "Pet Travel Accessories" pushed its own product
+		 * count off the bottom of the card.
+		 *
+		 * Deliberately no 01/02/03 numbering, despite the reference having it:
+		 * a numbered marker should encode a real sequence, and collections are
+		 * a set with no order - numbering them is decoration pretending to be
+		 * information.
+		 */
+		?>
 		<div class="collections-grid">
 			<?php foreach ( $display_cats as $cat ) :
 				$img  = wookiee_get_category_image_url( $cat );
 				$desc = $cat->description ? $cat->description : sprintf( '%d product%s', $cat->count, 1 === (int) $cat->count ? '' : 's' );
 			?>
 			<a href="<?php echo esc_url( get_term_link( $cat ) ); ?>" class="collection-card-link">
-				<div class="collection-card<?php echo $img ? '' : ' collection-card-plain'; ?>">
-					<?php if ( $img ) : ?>
-						<div class="collection-bg" style="background-image: url('<?php echo esc_url( $img ); ?>');"></div>
-						<div class="collection-overlay"></div>
-					<?php endif; ?>
-					<div class="collection-content">
-						<h3><?php echo esc_html( $cat->name ); ?></h3>
-						<p><?php echo esc_html( $desc ); ?></p>
+				<div class="collection-card">
+					<div class="collection-media<?php echo $img ? '' : ' collection-media-empty'; ?>">
+						<?php if ( $img ) : ?>
+							<img src="<?php echo esc_url( $img ); ?>" alt="" loading="lazy" decoding="async">
+						<?php endif; ?>
 					</div>
-					<div class="collection-arrow">&#10132;</div>
+					<div class="collection-panel">
+						<span class="collection-panel-text">
+							<span class="collection-name"><?php echo esc_html( $cat->name ); ?></span>
+							<span class="collection-meta"><?php echo esc_html( $desc ); ?></span>
+						</span>
+						<span class="collection-arrow" aria-hidden="true">&rarr;</span>
+					</div>
 				</div>
 			</a>
 			<?php endforeach; ?>

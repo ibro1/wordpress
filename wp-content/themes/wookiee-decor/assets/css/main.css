@@ -797,78 +797,111 @@ body.mobile-nav-active {
 /* Collections Grid */
 .collections-grid {
 	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+	/* minmax(0, 1fr) not a bare fraction: a long category name would otherwise
+	   set the track's minimum width and squeeze its neighbours. */
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr));
 	gap: 24px;
 }
+.collection-card-link {
+	text-decoration: none;
+	display: block;
+	height: 100%;
+}
 .collection-card {
-    position: relative;
-    border-radius: 20px;
-    overflow: hidden;
-    min-height: 280px;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
-    padding: 40px;
-    box-sizing: border-box;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.02);
-    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s ease;
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	border-radius: 18px;
+	overflow: hidden;
+	background: #fff;
+	border: 1px solid rgba(0,0,0,0.06);
+	box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+	transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s ease;
 }
-.collection-card-plain {
-    background: var(--wookiee-ink, #1a1614);
+/* The image zone takes the slack, so cards in a row finish level whether their
+   title runs to one line or two - the old min-height plus content-driven growth
+   left every card a different height. */
+.collection-media {
+	flex: 1 1 auto;
+	min-height: 190px;
+	background: var(--wookiee-cream, #f6f0e8);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 20px;
+	overflow: hidden;
 }
-.collection-bg {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-size: cover;
-    background-position: center;
-    transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-    z-index: 1;
+.collection-media img {
+	width: 100%;
+	height: 100%;
+	/* contain, like every other product image on the site: these are cut-out
+	   shots, and cropping one to fill a tile hides the thing being sold. */
+	object-fit: contain;
+	display: block;
+	transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
-.collection-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(180deg, rgba(26, 22, 20,0.15) 0%, rgba(26, 22, 20,0.75) 100%);
-    z-index: 2;
+.collection-media-empty {
+	background: var(--wookiee-ink, #1a1614);
 }
-.collection-content {
-    position: relative;
-    z-index: 3;
-    color: #ffffff;
-    padding-right: 60px;
+.collection-panel {
+	display: flex;
+	align-items: center;
+	gap: 14px;
+	padding: 16px 18px;
+	background: var(--wookiee-ink, #1a1614);
+	color: #fff;
 }
+.collection-panel-text {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+.collection-name {
+	display: block;
+	font-size: 17px;
+	font-weight: 700;
+	line-height: 1.25;
+	letter-spacing: -0.01em;
+	/* A long single-word category has to break inside the word rather than
+	   widen the card. */
+	overflow-wrap: anywhere;
+}
+.collection-meta {
+	display: block;
+	margin-top: 3px;
+	font-size: 13px;
+	color: rgba(255,255,255,0.72);
+}
+/* In the flow beside the text rather than absolutely positioned in the corner,
+   which is what a second line of title used to collide with. */
 .collection-arrow {
-    position: absolute;
-    bottom: 40px;
-    right: 40px;
-    width: 45px;
-    height: 45px;
-    background: #ffffff;
-    color: var(--wookiee-ink);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 3;
-    transition: background-color 0.25s, color 0.25s, transform 0.25s;
-    font-size: 16px;
+	flex-shrink: 0;
+	width: 38px;
+	height: 38px;
+	border-radius: 50%;
+	background: rgba(255,255,255,0.12);
+	color: #fff;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 17px;
+	transition: background-color 0.25s ease, color 0.25s ease, transform 0.25s ease;
 }
-.collection-card-link:hover .collection-card {
-    transform: translateY(-5px);
-    box-shadow: 0 15px 30px rgba(26, 22, 20,0.12);
+@media (hover: hover) and (pointer: fine) {
+	.collection-card-link:hover .collection-card {
+		transform: translateY(-4px);
+		box-shadow: 0 16px 32px rgba(26,22,20,0.14);
+	}
+	.collection-card-link:hover .collection-media img {
+		transform: scale(1.04);
+	}
+	.collection-card-link:hover .collection-arrow {
+		background: var(--wookiee-accent, #c1704a);
+		transform: translateX(2px);
+	}
 }
-.collection-card-link:hover .collection-bg {
-    transform: scale(1.06);
-}
-.collection-card-link:hover .collection-arrow {
-    background: var(--wookiee-ink);
-    color: #ffffff;
-    transform: scale(1.05);
+.collection-card-link:focus-visible .collection-card {
+	outline: 2px solid var(--wookiee-accent, #c1704a);
+	outline-offset: 3px;
 }
 .collection-content h3 {
 	margin: 0 0 5px 0;

@@ -11,7 +11,7 @@ defined( 'ABSPATH' ) || exit;
  * browsers - and Cloudflare in front of them - keep serving the previous file
  * and the change simply does not happen for anyone who has visited before.
  */
-define( 'WOOKIEE_VERSION', '1.2.7' );
+define( 'WOOKIEE_VERSION', '1.2.8' );
 define( 'WOOKIEE_DIR', trailingslashit( get_template_directory() ) );
 define( 'WOOKIEE_URI', trailingslashit( get_template_directory_uri() ) );
 define( 'WOOKIEE_CONTACT_EMAIL', 'info@wookied.com' );

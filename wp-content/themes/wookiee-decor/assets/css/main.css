@@ -723,16 +723,36 @@ body.mobile-nav-active {
     position: relative;
 }
 
+/*
+ * contain, not cover.
+ *
+ * cover fills the tile by cropping whatever does not fit, which is right for
+ * a lifestyle photograph and wrong for a product shot: a 3-piece luggage set
+ * came out as a slab of suitcase with the cases cut off top and bottom, and a
+ * toiletry bag lost its handles. The customer cannot see what they are buying,
+ * which is the one job of this image.
+ *
+ * The single-product gallery already uses contain, so cards were also
+ * disagreeing with the page they link to - the same product looked like two
+ * different shapes either side of the click.
+ *
+ * Padding keeps the product off the tile edges, since these are cut-out shots
+ * on white and contain will otherwise run them corner to corner.
+ */
 .product-image-wrapper img {
     width: 100% !important;
     height: 100% !important;
-    object-fit: cover !important;
+    object-fit: contain !important;
+    padding: 14px !important;
+    box-sizing: border-box !important;
     transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1) !important;
     display: block !important;
 }
 
+/* Gentler than the old 1.06: with contain there is no cropped margin to grow
+   into, so the same zoom pushes the product against the tile edge. */
 .product-card:hover .product-image-wrapper img {
-    transform: scale(1.06);
+    transform: scale(1.03);
 }
 
 /* Loop Add to Cart Button Styling */
@@ -2404,18 +2424,27 @@ ol.commentlist li.comment .comment-text .description {
     flex-direction: column !important;
     text-decoration: none !important;
 }
+/* The shop and category archives. Same fault as the homepage cards, and this
+   is the grid the Shop link actually goes to: cover cropped a luggage set down
+   to a slab of suitcase with both ends cut off. White background rather than
+   the page tint, so a cut-out product shot sits on white as it does on the
+   product page instead of on a coloured field. */
 .woocommerce ul.products li.product a.woocommerce-LoopProduct-link img {
     width: 100% !important;
     height: 240px !important;
-    object-fit: cover !important;
+    object-fit: contain !important;
+    padding: 14px !important;
+    box-sizing: border-box !important;
     display: block !important;
-    background: var(--wookiee-bg) !important;
+    background: #ffffff !important;
     transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1) !important;
     margin: 0 !important;
 }
 
+/* Matched to the homepage cards: with contain there is no cropped overspill
+   to grow into, so 1.06 pushes the product against the tile edge. */
 .woocommerce ul.products li.product:hover a.woocommerce-LoopProduct-link img {
-    transform: scale(1.06) !important;
+    transform: scale(1.03) !important;
 }
 
 /* Title alignment */

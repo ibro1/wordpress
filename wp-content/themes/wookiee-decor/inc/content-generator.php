@@ -778,7 +778,7 @@ function wookiee_build_content_prompt( $key, $brief, $previous_audit = '' ) {
 	);
 
 	if ( isset( $policy_labels[ $key ] ) ) {
-		$prompt = "Act as a UK e-commerce legal policy writer. Write a complete, ready-to-publish {$policy_labels[ $key ]} page for a UK online store.\n\n"
+		$prompt = "Act as a senior UK e-commerce solicitor and compliance editor. Write a complete, ready-to-publish {$policy_labels[ $key ]} page for a UK online store.\n\n"
 			. "Store niche, in the owner's own words: \"{$brief}\"\n\n"
 			. "Real business details to use (do not invent anything beyond this list):\n" . wookiee_business_details_block() . "\n\n"
 			. "Rules:\n"
@@ -787,6 +787,7 @@ function wookiee_build_content_prompt( $key, $brief, $previous_audit = '' ) {
 			. "- A placeholder is a LAST RESORT, not a way to acknowledge a topic. Before writing one, check three things: is the fact already in the business details above under a different label; does the topic have an accepted general formulation that is true without it (carriers are the standard example - \"a tracked UK courier service\" is a complete answer); and is it something only the owner can supply at all. Statutory templates and standard wording are NEVER a business input - a model cancellation form, for instance, is a fixed form filled in from the business name and address given above, so write it out rather than asking the owner for it. Only a genuine, owner-only, un-generalisable fact earns a placeholder. Every placeholder published is a visible gap on a live page, and a reviewer counts it as missing information rather than as honesty.\n"
 			. "- Do not copy another company's policy text.\n"
 			. "- Write in plain, professional, customer-friendly English - not robotic or generic-sounding boilerplate.\n"
+			. "- " . wookiee_british_english_rule() . "\n"
 			. "- A policy page is still the business speaking, not a template: where it is not a legal requirement to use set wording, use the business's own plain voice.\n"
 			/*
 			 * These six pages are generated one at a time and read together.
@@ -989,6 +990,7 @@ function wookiee_build_content_prompt( $key, $brief, $previous_audit = '' ) {
 			. "- Point customers to the full Cookie Policy page by name for complete details, and give the contact email for questions.\n"
 			. "- Do not invent any business fact beyond the details given above.\n"
 			. "- Write in plain, professional, customer-friendly English - not robotic or generic-sounding boilerplate.\n"
+			. "- " . wookiee_british_english_rule() . "\n"
 			. "- A policy page is still the business speaking, not a template: where it is not a legal requirement to use set wording, use the business's own plain voice.\n"
 			. "- Output ONLY the finished page text as plain paragraphs/short headings separated by a blank line, starting with a single plain-text heading line. No markdown, no HTML, no commentary.";
 	}
@@ -1499,6 +1501,7 @@ function wookiee_build_policy_fix_prompt( $title, $current_text, $audit_report )
 		. "- Never remove a placeholder by inventing the fact instead. If it is genuinely unavailable, the placeholder stays; the rule above is about not creating new ones for facts you already have.\n"
 		. "- Do not claim any feature, mechanism, or business practice exists unless it's in the business details above or already accurately stated in the current text. If the audit flagged something missing that this business does not actually have, say so plainly in the page's own words or omit it - do not invent it, and do not paper over it with a placeholder.\n"
 		. "- Write in plain, professional, customer-friendly English - not robotic or generic-sounding boilerplate.\n"
+		. "- " . wookiee_british_english_rule() . "\n"
 		. "- State the business's full legal/trading name, company registration number and registered office address explicitly within the body text itself - the Electronic Commerce Regulations 2002 require a geographic address, not just an email.\n"
 		. "- Whatever section covers contacting the business must also explain how to escalate a complaint if it's not resolved directly - mention Citizens Advice or local Trading Standards as the UK escalation route - not just repeat the contact email.\n"
 		/*
@@ -1583,6 +1586,7 @@ function wookiee_apply_custom_policy_prompt_handler() {
 		. "- Apply the owner's instruction as directly as possible, without contradicting UK consumer/privacy law or the real business details above.\n"
 		. "- Do not invent any business fact, feature, or practice not in the details above or already accurately stated in the current text.\n"
 		. "- Write in plain, professional, customer-friendly English - not robotic or generic-sounding boilerplate.\n"
+		. "- " . wookiee_british_english_rule() . "\n"
 		. "- State the business's full legal/trading name, company registration number and registered office address explicitly within the body text itself.\n"
 		/*
 		 * The main generation prompt forbids exactly this, and these three

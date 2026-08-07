@@ -326,3 +326,16 @@ function wookiee_parse_labelled_sections( $text, array $labels ) {
 
 	return $fields;
 }
+
+/**
+ * The spelling rule, in one place.
+ *
+ * Only the brand-voice block ever asked for British English, so everything it
+ * did not cover - product titles, category names, policy text - was free to
+ * come back American. The live store ended up with a category called
+ * "Personalized Travel Accessories" beside copy about being "organised",
+ * which a customer reads as carelessness even without being able to say why.
+ */
+function wookiee_british_english_rule() {
+	return "Write in British English throughout: personalised, organised, customised, colour, favourite, catalogue, jewellery - never the American spellings. This is a UK shop, and one American spelling beside a British one reads as copied in from somewhere else.";
+}

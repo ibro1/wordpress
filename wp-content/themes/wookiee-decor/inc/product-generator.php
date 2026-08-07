@@ -879,6 +879,7 @@ function wookiee_build_product_ideas_prompt( $brief, $count, $keyword_data, $rec
 		$prompt = "You are helping source real products for a single-niche UK ecommerce store from a wholesale/dropship catalog. The store's niche, in the owner's own words:\n\"" . $brief . "\"\n\n"
 			. "Real UK search-volume and cost-per-click data for this niche, from Google Ads Keyword Planner:\n" . implode( "\n", $lines ) . "\n\n"
 			. "Using ONLY the keywords listed above, pick exactly {$count} of the best ones to build this store's catalog around - prioritise genuine search demand (higher avg monthly searches) balanced against reasonable ad cost (lower CPC), while keeping the set feeling like one coherent niche catalog (2-4 categories total, not {$count} unique ones). Do not invent a keyword that isn't in the list above, and do not alter the wording of the keywords you choose.\n\n"
+			. wookiee_british_english_rule() . "\n"
 			. "Respond with ONLY a raw JSON array containing EXACTLY {$count} element(s) (no markdown fences, no commentary before or after), where each element has exactly these keys:\n"
 			. "- \"title\": one of the exact keywords from the list above\n"
 			. "- \"category\": a short category name. Group the batch into SEVERAL categories that describe different KINDS of product - two or three for a small batch, more for a large one - and reuse a string only for concepts that genuinely belong together. Do not put every concept in one category, and never use the niche itself as the category name: a category that fits every product in the shop tells a customer nothing and leaves the storefront with a single collection to browse.";
@@ -892,6 +893,7 @@ function wookiee_build_product_ideas_prompt( $brief, $count, $keyword_data, $rec
 			. $exclude_note . "\n"
 			. "Generate exactly {$count} distinct product concepts this store's catalog should include - same niche, consistent quality tier, no duplicate concepts, forming 2-4 categories total, not {$count} unique ones. Do not reference or imitate any specific real-world brand or existing product listing.\n\n"
 			. "Each concept's title will be used as a search query against a real product catalog, so phrase it the way you'd search for that item - a few plain, common keywords (e.g. \"ceramic plant pot\"), not a stylized marketing title.\n\n"
+			. wookiee_british_english_rule() . "\n"
 			. "Respond with ONLY a raw JSON array containing EXACTLY {$count} element(s) (no markdown fences, no commentary before or after), where each element has exactly these keys:\n"
 			. "- \"title\": the plain keyword search query for this product concept\n"
 			. "- \"category\": a short category name. Group the batch into SEVERAL categories that describe different KINDS of product - two or three for a small batch, more for a large one - and reuse a string only for concepts that genuinely belong together. Do not put every concept in one category, and never use the niche itself as the category name: a category that fits every product in the shop tells a customer nothing and leaves the storefront with a single collection to browse.";

@@ -788,6 +788,16 @@ function wookiee_build_content_prompt( $key, $brief, $previous_audit = '' ) {
 			. "- Do not copy another company's policy text.\n"
 			. "- Write in plain, professional, customer-friendly English - not robotic or generic-sounding boilerplate.\n"
 			. "- A policy page is still the business speaking, not a template: where it is not a legal requirement to use set wording, use the business's own plain voice.\n"
+			/*
+			 * These six pages are generated one at a time and read together.
+			 * Nothing previously fixed the vocabulary, so a customer could
+			 * meet "buyer" on one page and "customer" on the next, or
+			 * "working days" against "business days", and had no way to know
+			 * whether two words meant two things. Naming the canonical set is
+			 * cheap and removes the whole class.
+			 */
+			. "- HOUSE TERMINOLOGY, identical on every page. \"Customer\" - never buyer, purchaser, client or user. \"Order\" - never purchase or transaction. \"Dispatch\" for the moment an order leaves us, \"delivery\" for the moment it reaches the customer; these are different events and the difference is the whole of the delivery estimate. \"Business days\" - never working days. \"Refund\" is money returned and \"replacement\" is goods re-sent; they are different remedies under the Consumer Rights Act and must never stand in for one another. When naming another policy, use its exact published title.\n"
+			. "- VARY THE SENTENCES. Do not open consecutive sentences or list items with the same construction, and do not lean on one connective throughout. A uniform rhythm is the plainest tell that a page was generated rather than drafted, and it survives every other instruction here unless it is named directly.\n"
 			. "- Include a clearly labelled section near the end on how customers can contact the business about this policy, using the contact email given above.\n"
 			. "- In that same section, also explain how a customer can escalate a complaint if they're unhappy with how it was handled directly - mention that UK customers can contact Citizens Advice or their local Trading Standards if the issue can't be resolved with the business directly. Do not just give the contact email and stop.\n"
 			. "- Include a brief note that this policy may be updated from time to time and customers should check this page periodically.\n"
@@ -1315,6 +1325,14 @@ function wookiee_build_policy_audit_prompt( $title, $policy_text, $key = '' ) {
 		 * are exactly what a Merchant Center reviewer reads as a front.
 		 */
 		. "  * internal consistency of the business's own details: two different postal addresses used for the same purpose, a phone number or company number that does not match the others, a trading name that differs between sections. Flag the contradiction and say which values disagree - do not pick one and assume the rest are typos.\n"
+		/*
+		 * Both from the reviewer's own checklist. The first catches the class
+		 * of fault that reads perfectly sentence by sentence and still leaves
+		 * a customer unable to act; the second catches vocabulary drift
+		 * between six pages drafted one at a time.
+		 */
+		. "  * wording a customer could genuinely read two ways: a clause with two plausible meanings, an obligation that never says whose it is, a period that never says what starts it. Quote the clause and give both readings rather than only asserting it is unclear.\n"
+		. "  * terminology drifting from the rest of the store: buyer where the other pages say customer, working days against business days, refund used where replacement is meant. Two words for one thing forces the reader to work out whether two things are meant.\n"
 		. "  * whether the named legal entity plausibly matches the goods described. A registered name from an unrelated trade selling something else entirely (an apparel company selling skincare, say) is not a wording problem, it is the misrepresentation signal a Merchant Center review acts on, and it should be raised even though every individual sentence reads correctly.\n"
 		/*
 		 * The exemption is not a nicety. The statutory model cancellation form

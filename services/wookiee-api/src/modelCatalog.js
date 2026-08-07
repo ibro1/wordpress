@@ -88,6 +88,32 @@ const PROVIDERS = {
       context: m.max_input_tokens || null,
     })),
   },
+  /*
+   * A second, independently-billed Anthropic route.
+   *
+   * Same endpoint and wire format as the entry above - the only thing that
+   * differs is which key pays. That is the point: it lets one licence tier
+   * draw on a different account, workspace or budget from another, and gives
+   * a live fallback when the first account hits a rate limit, without having
+   * to swap a key that every other tenant is also using.
+   *
+   * Catalogue ids stay distinct ("anthropic_alt:claude-...") so a licence
+   * pinned to one route cannot silently start billing the other.
+   */
+  anthropic_alt: {
+    label: 'Anthropic (second account)',
+    base_url: 'https://api.anthropic.com/v1',
+    key_setting: 'llm_anthropic_alt_api_key',
+    listPath: '/models',
+    authStyle: 'anthropic',
+    normalize: (body) => (body && Array.isArray(body.data) ? body.data : []).map((m) => ({
+      model: m.id,
+      label: m.display_name || m.id,
+      in: null,
+      out: null,
+      context: m.max_input_tokens || null,
+    })),
+  },
   google: {
     label: 'Google Gemini',
     base_url: 'https://generativelanguage.googleapis.com/v1beta/openai',

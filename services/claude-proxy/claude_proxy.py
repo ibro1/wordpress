@@ -70,21 +70,46 @@ def get_anthropic_headers(token: str) -> dict:
     return headers
 
 
+ANTHROPIC_MODELS_URL = "https://api.anthropic.com/v1/models"
+
 @app.get("/v1/models")
 async def list_models(request: Request):
     token = get_token(request)
     if token:
         os.environ["CLAUDE_CODE_OAUTH_TOKEN"] = token
+
+    headers = get_anthropic_headers(token) if token else {}
+    if token:
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                res = await client.get(ANTHROPIC_MODELS_URL, headers=headers)
+                if res.is_success:
+                    data = res.json()
+                    raw_data = data.get("data") or data.get("models") or []
+                    models_list = []
+                    for m in raw_data:
+                        if isinstance(m, dict) and "id" in m:
+                            models_list.append({
+                                "id": m["id"],
+                                "object": "model",
+                                "owned_by": "anthropic",
+                                "display_name": m.get("display_name") or m["id"],
+                            })
+                    if models_list:
+                        return {"object": "list", "data": models_list}
+        except Exception as exc:
+            logger.warning("Failed to fetch live Anthropic models: %s", exc)
+
     return {
         "object": "list",
         "data": [
-            {"id": "claude-3-7-sonnet-20250219", "object": "model", "owned_by": "anthropic"},
-            {"id": "claude-3-5-sonnet-20241022", "object": "model", "owned_by": "anthropic"},
-            {"id": "claude-3-5-haiku-20241022", "object": "model", "owned_by": "anthropic"},
-            {"id": "claude-3-opus-20240229", "object": "model", "owned_by": "anthropic"},
-            {"id": "claude-sonnet-4-6", "object": "model", "owned_by": "anthropic"},
-            {"id": "claude-opus-4-8", "object": "model", "owned_by": "anthropic"},
-            {"id": "claude-haiku-4-5", "object": "model", "owned_by": "anthropic"},
+            {"id": "claude-3-7-sonnet-20250219", "object": "model", "owned_by": "anthropic", "display_name": "Claude 3.7 Sonnet"},
+            {"id": "claude-3-5-sonnet-20241022", "object": "model", "owned_by": "anthropic", "display_name": "Claude 3.5 Sonnet"},
+            {"id": "claude-3-5-haiku-20241022", "object": "model", "owned_by": "anthropic", "display_name": "Claude 3.5 Haiku"},
+            {"id": "claude-3-opus-20240229", "object": "model", "owned_by": "anthropic", "display_name": "Claude 3 Opus"},
+            {"id": "claude-sonnet-4-6", "object": "model", "owned_by": "anthropic", "display_name": "Claude Sonnet 4.6"},
+            {"id": "claude-opus-4-8", "object": "model", "owned_by": "anthropic", "display_name": "Claude Opus 4.8"},
+            {"id": "claude-haiku-4-5", "object": "model", "owned_by": "anthropic", "display_name": "Claude Haiku 4.5"},
         ],
     }
 

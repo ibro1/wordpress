@@ -119,7 +119,7 @@ const PROVIDERS = {
     base_url_setting: 'llm_claude_code_base_url',
     key_setting: 'llm_claude_code_api_key',
     listPath: '/models',
-    authStyle: 'anthropic_bearer',
+    authStyle: 'bearer',
     normalize: (body) => (body && Array.isArray(body.data) ? body.data : []).map((m) => {
       let label = m.display_name || m.id;
       if (m.id.includes('claude-3-5-sonnet')) {

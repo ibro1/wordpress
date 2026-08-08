@@ -59,12 +59,14 @@ def get_anthropic_headers(token: str) -> dict:
         "anthropic-version": "2023-06-01",
         "anthropic-beta": "claude-code-20250219,oauth-2025-04-20,interleaved-thinking-2025-05-14,fine-grained-tool-streaming-2025-05-14",
         "content-type": "application/json",
+        "user-agent": "claude-cli/0.2.29",
     }
-    if token.startswith("sk-ant-"):
+    # Standard API keys start with sk-ant-api
+    if token.startswith("sk-ant-api"):
         headers["x-api-key"] = token
     else:
+        # OAuth token (sk-ant-oat... or Bearer token): MUST NOT send x-api-key header
         headers["Authorization"] = f"Bearer {token}"
-        headers["x-api-key"] = token
     return headers
 
 

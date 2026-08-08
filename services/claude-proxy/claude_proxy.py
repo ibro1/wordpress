@@ -54,6 +54,18 @@ def get_token(request: Request) -> str:
     return os.environ.get("CLAUDE_CODE_OAUTH_TOKEN", "")
 
 
+def extract_thinking_budget(body: dict) -> int | None:
+    if isinstance(body.get("max_thinking_tokens"), int):
+        return body["max_thinking_tokens"]
+    thinking = body.get("thinking")
+    if isinstance(thinking, dict) and isinstance(thinking.get("budget_tokens"), int):
+        return thinking["budget_tokens"]
+    effort = body.get("reasoning_effort")
+    if isinstance(effort, str) and effort.lower() in EFFORT_BUDGETS:
+        return EFFORT_BUDGETS[effort.lower()]
+    return None
+
+
 def get_anthropic_headers(token: str, thinking: bool = False) -> dict:
     betas = ["claude-code-20250219", "oauth-2025-04-20"]
     if thinking:
@@ -259,6 +271,11 @@ async def chat_completions(request: Request):
         anthropic_body["top_p"] = body["top_p"]
 
     thinking_budget = extract_thinking_budget(body)
+    if thinking_budget:
+        anthropic_body["thinking"] = {"type": "enabled", "budget_tokens": thinking_budget}
+        if anthropic_body.get("max_tokens", 4096) <= thinking_budget:
+            anthropic_body["max_tokens"] = thinking_budget + 4096
+
     headers = get_anthropic_headers(token, thinking=bool(thinking_budget))
 
     async with httpx.AsyncClient(timeout=120.0) as client:

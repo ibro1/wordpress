@@ -57,6 +57,69 @@ function wookiee_image_model_options() {
 }
 
 /**
+ * Which AI vendor a model belongs to, judged from its own id/label text
+ * only - never from which backend account or route serves it. That routing
+ * stays hidden from this screen on purpose (see the comment in
+ * wookiee_central_api_model_list()): a customer picking a model should be
+ * able to tell Claude from GPT from Gemini, not which of this business's
+ * several backend accounts happens to be billed for it.
+ */
+function wookiee_model_vendor_group( $needle ) {
+	$needle = strtolower( $needle );
+
+	$patterns = array(
+		'Claude'   => array( 'claude' ),
+		'GPT'      => array( 'gpt', 'chatgpt', 'dall-e', 'dall·e', 'davinci', 'o1-', 'o3-' ),
+		'Gemini'   => array( 'gemini', 'imagen' ),
+		'DeepSeek' => array( 'deepseek' ),
+		'Llama'    => array( 'llama' ),
+		'Grok'     => array( 'grok' ),
+		'Mistral'  => array( 'mistral', 'pixtral', 'codestral' ),
+		'Qwen'     => array( 'qwen' ),
+	);
+
+	foreach ( $patterns as $group => $needles ) {
+		foreach ( $needles as $n ) {
+			if ( false !== strpos( $needle, $n ) ) {
+				return $group;
+			}
+		}
+	}
+
+	return 'Other';
+}
+
+/**
+ * Renders a flat id=>label options map (the shape wookiee_llm_model_options()
+ * and wookiee_image_model_options() both return) as <option> elements, with
+ * everything after the leading "Automatic" entry bucketed into <optgroup>s
+ * by vendor family so a long, mixed list is scannable at a glance.
+ */
+function wookiee_render_grouped_model_options( $options, $current ) {
+	$order  = array( 'Claude', 'GPT', 'Gemini', 'DeepSeek', 'Llama', 'Grok', 'Mistral', 'Qwen', 'Other' );
+	$groups = array_fill_keys( $order, array() );
+
+	foreach ( $options as $id => $label ) {
+		if ( '' === $id ) {
+			printf( '<option value="" %s>%s</option>', selected( $current, '', false ), esc_html( $label ) );
+			continue;
+		}
+		$groups[ wookiee_model_vendor_group( $id . ' ' . $label ) ][ $id ] = $label;
+	}
+
+	foreach ( $order as $group ) {
+		if ( empty( $groups[ $group ] ) ) {
+			continue;
+		}
+		printf( '<optgroup label="%s">', esc_attr( $group ) );
+		foreach ( $groups[ $group ] as $id => $label ) {
+			printf( '<option value="%s" %s>%s</option>', esc_attr( $id ), selected( $current, $id, false ), esc_html( $label ) );
+		}
+		echo '</optgroup>';
+	}
+}
+
+/**
  * UK counties, regions and council areas, for telling a post town apart from
  * the county sitting next to it in an address.
  *
@@ -231,8 +294,8 @@ function wookiee_settings_fields() {
 		'companies_house_api_key' => array( 'label' => 'Companies House API key', 'default' => '', 'type' => 'password' ),
 		'spaceship_api_key'    => array( 'label' => 'Spaceship API key', 'default' => '', 'type' => 'password' ),
 		'spaceship_api_secret' => array( 'label' => 'Spaceship API secret', 'default' => '', 'type' => 'password' ),
-		'llm_model'          => array( 'label' => 'AI model', 'default' => '', 'type' => 'select', 'options' => wookiee_llm_model_options() ),
-		'image_model'        => array( 'label' => 'AI image model', 'default' => '', 'type' => 'select', 'options' => wookiee_image_model_options() ),
+		'llm_model'          => array( 'label' => 'AI model', 'default' => '', 'type' => 'select', 'options' => wookiee_llm_model_options(), 'grouped' => true ),
+		'image_model'        => array( 'label' => 'AI image model', 'default' => '', 'type' => 'select', 'options' => wookiee_image_model_options(), 'grouped' => true ),
 		'llm_api_key'        => array( 'label' => 'LLM API key', 'default' => '', 'type' => 'password' ),
 		'llm_base_url'       => array( 'label' => 'LLM base URL', 'default' => 'https://api.openai.com/v1', 'type' => 'text' ),
 		'llm_default_model'  => array( 'label' => 'LLM default model', 'default' => 'gpt-4o-mini', 'type' => 'text' ),
@@ -570,9 +633,13 @@ function wookiee_render_settings_field_row( $key, $field ) {
 			<?php elseif ( 'select' === $field['type'] ) : ?>
 				<?php $current = get_option( 'wookiee_setting_' . $key, '' ); $current = '' !== $current ? $current : $field['default']; ?>
 				<select name="wookiee_setting_<?php echo esc_attr( $key ); ?>" id="wookiee_setting_<?php echo esc_attr( $key ); ?>">
-					<?php foreach ( $field['options'] as $option_value => $option_label ) : ?>
-						<option value="<?php echo esc_attr( $option_value ); ?>" <?php selected( $current, $option_value ); ?>><?php echo esc_html( $option_label ); ?></option>
-					<?php endforeach; ?>
+					<?php if ( ! empty( $field['grouped'] ) ) : ?>
+						<?php wookiee_render_grouped_model_options( $field['options'], $current ); ?>
+					<?php else : ?>
+						<?php foreach ( $field['options'] as $option_value => $option_label ) : ?>
+							<option value="<?php echo esc_attr( $option_value ); ?>" <?php selected( $current, $option_value ); ?>><?php echo esc_html( $option_label ); ?></option>
+						<?php endforeach; ?>
+					<?php endif; ?>
 				</select>
 			<?php elseif ( 'password' === $field['type'] ) : ?>
 				<input type="password" name="wookiee_setting_<?php echo esc_attr( $key ); ?>" id="wookiee_setting_<?php echo esc_attr( $key ); ?>" value="<?php echo esc_attr( get_option( 'wookiee_setting_' . $key, '' ) ); ?>" placeholder="<?php echo esc_attr( $field['default'] ); ?>" class="regular-text wookiee-reveal-input" autocomplete="off">

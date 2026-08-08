@@ -28,19 +28,6 @@ logger = logging.getLogger("claude-proxy")
 
 ANTHROPIC_MESSAGES_URL = "https://api.anthropic.com/v1/messages"
 
-MODEL_MAP = {
-    "claude-3-7-sonnet-20250219": "claude-3-7-sonnet-20250219",
-    "claude-3-5-sonnet-20241022": "claude-3-5-sonnet-20241022",
-    "claude-3-5-haiku-20241022": "claude-3-5-haiku-20241022",
-    "claude-3-opus-20240229": "claude-3-opus-20240229",
-    "claude-sonnet-4-6": "claude-3-7-sonnet-20250219",
-    "claude-opus-4-8": "claude-3-opus-20240229",
-    "claude-haiku-4-5": "claude-3-5-haiku-20241022",
-    "sonnet5-cc": "claude-3-5-sonnet-20241022",
-}
-
-DEFAULT_MODEL = "claude-3-7-sonnet-20250219"
-
 EFFORT_BUDGETS = {"low": 4_000, "medium": 12_000, "high": 32_000}
 
 
@@ -91,43 +78,37 @@ ANTHROPIC_MODELS_URL = "https://api.anthropic.com/v1/models"
 @app.get("/v1/models")
 async def list_models(request: Request):
     token = get_token(request)
-    if token:
-        os.environ["CLAUDE_CODE_OAUTH_TOKEN"] = token
+    if not token:
+        return JSONResponse(status_code=401, content={"error": {"message": "Missing token", "type": "auth_error"}})
 
-    headers = get_anthropic_headers(token) if token else {}
-    if token:
-        try:
-            async with httpx.AsyncClient(timeout=10.0) as client:
-                res = await client.get(ANTHROPIC_MODELS_URL, headers=headers)
-                if res.is_success:
-                    data = res.json()
-                    raw_data = data.get("data") or data.get("models") or []
-                    models_list = []
-                    for m in raw_data:
-                        if isinstance(m, dict) and "id" in m:
-                            models_list.append({
-                                "id": m["id"],
-                                "object": "model",
-                                "owned_by": "anthropic",
-                                "display_name": m.get("display_name") or m["id"],
-                            })
-                    if models_list:
-                        return {"object": "list", "data": models_list}
-        except Exception as exc:
-            logger.warning("Failed to fetch live Anthropic models: %s", exc)
+    os.environ["CLAUDE_CODE_OAUTH_TOKEN"] = token
+    headers = get_anthropic_headers(token)
 
-    return {
-        "object": "list",
-        "data": [
-            {"id": "claude-3-7-sonnet-20250219", "object": "model", "owned_by": "anthropic", "display_name": "Claude 3.7 Sonnet"},
-            {"id": "claude-3-5-sonnet-20241022", "object": "model", "owned_by": "anthropic", "display_name": "Claude 3.5 Sonnet"},
-            {"id": "claude-3-5-haiku-20241022", "object": "model", "owned_by": "anthropic", "display_name": "Claude 3.5 Haiku"},
-            {"id": "claude-3-opus-20240229", "object": "model", "owned_by": "anthropic", "display_name": "Claude 3 Opus"},
-            {"id": "claude-sonnet-4-6", "object": "model", "owned_by": "anthropic", "display_name": "Claude Sonnet 4.6"},
-            {"id": "claude-opus-4-8", "object": "model", "owned_by": "anthropic", "display_name": "Claude Opus 4.8"},
-            {"id": "claude-haiku-4-5", "object": "model", "owned_by": "anthropic", "display_name": "Claude Haiku 4.5"},
-        ],
-    }
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            res = await client.get(ANTHROPIC_MODELS_URL, headers=headers)
+    except Exception as exc:
+        logger.warning("Failed to fetch live Anthropic models: %s", exc)
+        return JSONResponse(status_code=502, content={"error": {"message": f"Could not reach Anthropic: {exc}"}})
+
+    if not res.is_success:
+        logger.error("Anthropic models list returned %s: %s", res.status_code, res.text)
+        content = res.json() if res.headers.get("content-type", "").startswith("application/json") else {"error": {"message": res.text}}
+        return JSONResponse(status_code=res.status_code, content=content)
+
+    data = res.json()
+    raw_data = data.get("data") or data.get("models") or []
+    models_list = []
+    for m in raw_data:
+        if isinstance(m, dict) and "id" in m:
+            models_list.append({
+                "id": m["id"],
+                "object": "model",
+                "owned_by": "anthropic",
+                "display_name": m.get("display_name") or m["id"],
+            })
+
+    return {"object": "list", "data": models_list}
 
 
 def transform_openai_tools(tools: list) -> list:
@@ -247,8 +228,10 @@ async def chat_completions(request: Request):
     except Exception as exc:
         return JSONResponse(status_code=400, content={"error": {"message": f"Invalid JSON: {exc}"}})
 
-    requested_model = body.get("model", DEFAULT_MODEL)
-    anthropic_model = MODEL_MAP.get(requested_model, requested_model)
+    requested_model = body.get("model")
+    if not requested_model:
+        return JSONResponse(status_code=400, content={"error": {"message": "Missing model", "type": "invalid_request_error"}})
+    anthropic_model = requested_model
 
     stream = bool(body.get("stream", False))
     tools = body.get("tools") or []

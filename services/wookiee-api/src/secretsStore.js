@@ -38,6 +38,7 @@ const SECRET_KEYS = [
   'llm_anthropic_alt_api_key',
   'llm_claude_code_api_key',
   'llm_claude_code_base_url',
+  'llm_agentrouter_api_key',
   'llm_google_api_key',
   'llm_deepseek_api_key',
   'cj_email',

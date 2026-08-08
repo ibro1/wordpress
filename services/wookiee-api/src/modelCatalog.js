@@ -128,6 +128,39 @@ const PROVIDERS = {
       context: m.max_input_tokens || null,
     })),
   },
+  /*
+   * A paid gateway fronting several vendors behind one balance and one token,
+   * the same shape as OpenRouter above.
+   *
+   * The claude_code entry above can already reach this - point its base URL
+   * here and paste the same token. This exists so the common case needs no
+   * base URL typed in, and so a licence pinned to the gateway is legible in
+   * the catalogue id rather than depending on what someone put in a settings
+   * field months ago.
+   *
+   * It publishes an Anthropic-compatible endpoint at the bare host and an
+   * OpenAI-compatible one at /v1. This uses the second: generation already
+   * posts to {base_url}/chat/completions with a Bearer token, which is
+   * exactly what that endpoint expects, so nothing else needs special-casing.
+   *
+   * Model ids come from the gateway's own list rather than being hardcoded.
+   * Worth knowing they are the gateway's names, not the upstream vendor's -
+   * a name here is a promise from this gateway rather than from Anthropic.
+   */
+  agentrouter: {
+    label: 'AgentRouter',
+    base_url: 'https://agentrouter.org/v1',
+    key_setting: 'llm_agentrouter_api_key',
+    listPath: '/models',
+    authStyle: 'bearer',
+    normalize: (body) => (body && Array.isArray(body.data) ? body.data : []).map((m) => ({
+      model: m.id,
+      label: m.id,
+      in: null,
+      out: null,
+      context: null,
+    })),
+  },
   google: {
     label: 'Google Gemini',
     // Completions go through the OpenAI-compat layer:

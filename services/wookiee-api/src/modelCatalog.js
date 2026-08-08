@@ -146,6 +146,13 @@ const PROVIDERS = {
    * Model ids come from the gateway's own list rather than being hardcoded.
    * Worth knowing they are the gateway's names, not the upstream vendor's -
    * a name here is a promise from this gateway rather than from Anthropic.
+   *
+   * AgentRouter gates requests by client signature and rejects generic HTTP
+   * clients (plain curl, bare OpenAI SDKs) with "unauthorized client
+   * detected", only accepting the tool identities it lists as supported
+   * (Claude Code among them). extraHeaders below presents that identity on
+   * every request this provider sends, per the operator's own choice to use
+   * their paid AgentRouter account this way.
    */
   agentrouter: {
     label: 'AgentRouter',
@@ -153,6 +160,7 @@ const PROVIDERS = {
     key_setting: 'llm_agentrouter_api_key',
     listPath: '/models',
     authStyle: 'bearer',
+    extraHeaders: { 'User-Agent': 'claude-cli/1.0.0 (external, cli)' },
     normalize: (body) => (body && Array.isArray(body.data) ? body.data : []).map((m) => ({
       model: m.id,
       label: m.id,
@@ -271,17 +279,18 @@ function listProviders() {
 }
 
 function buildHeaders(provider, apiKey) {
+  let headers;
   if (provider.authStyle === 'anthropic') {
-    return { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' };
-  }
-  if (provider.authStyle === 'anthropic_bearer') {
-    return { 'Authorization': `Bearer ${apiKey}`, 'anthropic-version': '2023-06-01' };
-  }
-  if (provider.authStyle === 'google_native') {
+    headers = { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' };
+  } else if (provider.authStyle === 'anthropic_bearer') {
+    headers = { 'Authorization': `Bearer ${apiKey}`, 'anthropic-version': '2023-06-01' };
+  } else if (provider.authStyle === 'google_native') {
     // Key is passed in the query string via listUrlOverride; no auth header needed.
-    return {};
+    headers = {};
+  } else {
+    headers = { Authorization: `Bearer ${apiKey}` };
   }
-  return { Authorization: `Bearer ${apiKey}` };
+  return { ...headers, ...(provider.extraHeaders || {}) };
 }
 
 /**

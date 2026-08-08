@@ -80,6 +80,7 @@ function resolveTarget(requestedModel, licenseEntry) {
       baseUrl: store.get('llm_base_url').replace(/\/+$/, ''),
       apiKey,
       model: store.get('llm_default_model'),
+      extraHeaders: {},
     };
   }
 
@@ -109,6 +110,7 @@ function resolveTarget(requestedModel, licenseEntry) {
     baseUrl: baseUrl.replace(/\/+$/, ''),
     apiKey,
     model: parsed.model,
+    extraHeaders: provider.extraHeaders || {},
   };
 }
 
@@ -133,6 +135,7 @@ router.post('/generate', async (req, res) => {
       headers: {
         Authorization: `Bearer ${target.apiKey}`,
         'Content-Type': 'application/json',
+        ...target.extraHeaders,
       },
       body: JSON.stringify({
         model: target.model,

@@ -280,6 +280,9 @@ services:
       API_SHARED_SECRET: ${WOOKIEE_API_SHARED_SECRET}
       ADMIN_PASSWORD: ${WOOKIEE_API_ADMIN_PASSWORD}
       PORT: 3000
+      # Alpine's musl DNS resolver tries IPv6 first, which silently fails for
+      # some domains (e.g. api.anthropic.com) — force IPv4-first resolution.
+      NODE_OPTIONS: '--dns-result-order=ipv4first'
       LLM_CLAUDE_CODE_BASE_URL: ${LLM_CLAUDE_CODE_BASE_URL:-http://claude_proxy:8082/v1}
       # Optional - provider keys can be set here instead of through the
       # settings UI after deploy. Leave any of these unset/blank in your

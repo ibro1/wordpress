@@ -390,8 +390,12 @@ async def chat_completions(request: Request):
         if stream:
             return StreamingResponse(sse_chunks(model, "", None), media_type="text/event-stream")
         return JSONResponse(content=empty)
+    # Always prepend the built-in tool disable notice so Claude never attempts
+    # Bash/Read/Glob/etc. even on plain completion requests with no OpenAI tools.
     if tools:
         system_prompt = (system_prompt or "") + "\n\n" + _tools_to_system_suffix(tools)
+    else:
+        system_prompt = (system_prompt or "") + "\n\n" + TOOL_PROTOCOL + "\n(No tools are available for this request.)"
     thinking_budget = extract_thinking_budget(body)
 
     try:

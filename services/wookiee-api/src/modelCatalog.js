@@ -120,21 +120,13 @@ const PROVIDERS = {
     key_setting: 'llm_claude_code_api_key',
     listPath: '/models',
     authStyle: 'bearer',
-    normalize: (body) => (body && Array.isArray(body.data) ? body.data : []).map((m) => {
-      let label = m.display_name || m.id;
-      if (m.id.includes('claude-3-5-sonnet')) {
-        label = 'sonnet5-cc';
-      } else {
-        label = label + '-cc';
-      }
-      return {
-        model: m.id,
-        label: label,
-        in: null,
-        out: null,
-        context: m.max_input_tokens || null,
-      };
-    }),
+    normalize: (body) => (body && Array.isArray(body.data) ? body.data : []).map((m) => ({
+      model: m.id,
+      label: m.display_name || m.id,
+      in: null,
+      out: null,
+      context: m.max_input_tokens || null,
+    })),
   },
   google: {
     label: 'Google Gemini',

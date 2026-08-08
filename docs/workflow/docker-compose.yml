@@ -255,6 +255,15 @@ services:
       start_period: 300s
       retries: 3
 
+  claude_proxy:
+    image: ${CLAUDE_PROXY_IMAGE:-kiyo-e/claude-code-proxy:latest}
+    container_name: claude_proxy
+    restart: unless-stopped
+    networks:
+      - default
+    environment:
+      - PORT=8080
+
   wookiee_api:
     build:
       # Relative to this compose file's own location (docs/workflow/), not
@@ -272,6 +281,7 @@ services:
       API_SHARED_SECRET: ${WOOKIEE_API_SHARED_SECRET}
       ADMIN_PASSWORD: ${WOOKIEE_API_ADMIN_PASSWORD}
       PORT: 3000
+      LLM_CLAUDE_CODE_BASE_URL: ${LLM_CLAUDE_CODE_BASE_URL:-http://claude_proxy:8080/v1}
       # Optional - provider keys can be set here instead of through the
       # settings UI after deploy. Leave any of these unset/blank in your
       # Dokploy env config if you don't have that provider yet; the

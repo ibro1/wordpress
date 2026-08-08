@@ -114,6 +114,28 @@ const PROVIDERS = {
       context: m.max_input_tokens || null,
     })),
   },
+  claude_code: {
+    label: 'Claude Code',
+    base_url_setting: 'llm_claude_code_base_url',
+    key_setting: 'llm_claude_code_api_key',
+    listPath: '/models',
+    authStyle: 'anthropic_bearer',
+    normalize: (body) => (body && Array.isArray(body.data) ? body.data : []).map((m) => {
+      let label = m.display_name || m.id;
+      if (m.id.includes('claude-3-5-sonnet')) {
+        label = 'sonnet5-cc';
+      } else {
+        label = label + '-cc';
+      }
+      return {
+        model: m.id,
+        label: label,
+        in: null,
+        out: null,
+        context: m.max_input_tokens || null,
+      };
+    }),
+  },
   google: {
     label: 'Google Gemini',
     base_url: 'https://generativelanguage.googleapis.com/v1beta/openai',
@@ -217,6 +239,9 @@ function listProviders() {
 function buildHeaders(provider, apiKey) {
   if (provider.authStyle === 'anthropic') {
     return { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' };
+  }
+  if (provider.authStyle === 'anthropic_bearer') {
+    return { 'Authorization': `Bearer ${apiKey}`, 'anthropic-version': '2023-06-01' };
   }
   return { Authorization: `Bearer ${apiKey}` };
 }

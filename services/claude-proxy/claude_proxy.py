@@ -54,10 +54,14 @@ def get_token(request: Request) -> str:
     return os.environ.get("CLAUDE_CODE_OAUTH_TOKEN", "")
 
 
-def get_anthropic_headers(token: str) -> dict:
+def get_anthropic_headers(token: str, thinking: bool = False) -> dict:
+    betas = ["claude-code-20250219", "oauth-2025-04-20"]
+    if thinking:
+        betas.extend(["interleaved-thinking-2025-05-14", "fine-grained-tool-streaming-2025-05-14"])
+
     headers = {
         "anthropic-version": "2023-06-01",
-        "anthropic-beta": "claude-code-20250219,oauth-2025-04-20,interleaved-thinking-2025-05-14,fine-grained-tool-streaming-2025-05-14",
+        "anthropic-beta": ",".join(betas),
         "content-type": "application/json",
         "user-agent": "claude-cli/0.2.29",
     }
@@ -254,7 +258,8 @@ async def chat_completions(request: Request):
     if "top_p" in body and body["top_p"] is not None:
         anthropic_body["top_p"] = body["top_p"]
 
-    headers = get_anthropic_headers(token)
+    thinking_budget = extract_thinking_budget(body)
+    headers = get_anthropic_headers(token, thinking=bool(thinking_budget))
 
     async with httpx.AsyncClient(timeout=120.0) as client:
         if not stream:

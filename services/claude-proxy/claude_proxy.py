@@ -1,50 +1,23 @@
 """
-claude_proxy.py  (v4)
-OpenAI-compatible /v1/chat/completions proxy backed by the Claude Agent SDK.
+claude_proxy.py (v5)
+Direct OpenAI-compatible /v1/chat/completions proxy calling Anthropic /v1/messages API with OAuth token.
 
-v4 fixes/adds:
-  - TOOL_PROTOCOL now explicitly tells the model that its native built-in
-    tools (Bash, Read, Glob, Grep, LS, etc.) are disabled in this environment
-    and must not be attempted, even though DeerFlow's own emulated tool
-    schema may include similarly-named tools (bash, glob, grep, ls). Without
-    this, the bundled Claude Code CLI defaults to its trained instinct of
-    calling its own native tools directly, gets denied by disallowed_tools,
-    and reports the denial back as a user-visible "tool access error."
-  - can_use_tool callback added: instead of a bare SDK-level deny (which
-    surfaces as a dead-end error the model just reports to the user), denied
-    native tool calls now get a corrective hint pointing the model back at
-    the JSON tool_call protocol, so the model can self-correct mid-run.
-  - MAX_TURNS raised 6 -> 12 to give headroom for the occasional stray
-    native-tool attempt + retry without exhausting the turn budget.
-
-v3 fixes/adds (carried forward):
-  - max_turns raised (thinking + answer no longer exhausts the session).
-  - Function-calling emulation: OpenAI `tools` schemas are injected into the
-    prompt; when Claude wants a tool, it emits a TOOL_CALL JSON block which is
-    parsed and returned as OpenAI tool_calls (finish_reason="tool_calls").
-    role:"tool" result messages in the history are fed back as tool results.
-  - Vision (image_url parts) and thinking-budget mapping retained from v2.
-
-Auth: CLAUDE_CODE_OAUTH_TOKEN env var.
-Run:  uvicorn claude_proxy:app --host 0.0.0.0 --port 8082
+v5 changes:
+  - Bypasses claude-agent-sdk and subprocess CLI completely.
+  - Passes requests directly to https://api.anthropic.com/v1/messages.
+  - Native Anthropic tool_use and tool_result translation to OpenAI tool_calls.
+  - Native thinking and streaming support.
+  - Uses headers:
+      anthropic-version: 2023-06-01
+      anthropic-beta: claude-code-20250219,oauth-2025-04-20,interleaved-thinking-2025-05-14,fine-grained-tool-streaming-2025-05-14
 """
 
-import base64
 import json
 import logging
-import re
-import time
-import uuid
 import os
-
+import re
+import uuid
 import httpx
-from claude_agent_sdk import (
-    AssistantMessage,
-    ClaudeAgentOptions,
-    ResultMessage,
-    TextBlock,
-    query,
-)
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, StreamingResponse
 
@@ -53,365 +26,374 @@ app = FastAPI()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("claude-proxy")
 
-DEFAULT_MODEL = "claude-sonnet-4-6"
-MAX_TURNS = 12
+ANTHROPIC_MESSAGES_URL = "https://api.anthropic.com/v1/messages"
+
+MODEL_MAP = {
+    "claude-3-7-sonnet-20250219": "claude-3-7-sonnet-20250219",
+    "claude-3-5-sonnet-20241022": "claude-3-5-sonnet-20241022",
+    "claude-3-5-haiku-20241022": "claude-3-5-haiku-20241022",
+    "claude-3-opus-20240229": "claude-3-opus-20240229",
+    "claude-sonnet-4-6": "claude-3-7-sonnet-20250219",
+    "claude-opus-4-8": "claude-3-opus-20240229",
+    "claude-haiku-4-5": "claude-3-5-haiku-20241022",
+    "sonnet5-cc": "claude-3-5-sonnet-20241022",
+}
+
+DEFAULT_MODEL = "claude-3-7-sonnet-20250219"
+
 EFFORT_BUDGETS = {"low": 4_000, "medium": 12_000, "high": 32_000}
-ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp"}
-
-TOOL_CALL_RE = re.compile(r"```tool_call\s*\n(.*?)\n```", re.DOTALL)
-
-TOOL_PROTOCOL = """
-# Tool calling protocol
-
-Your normal built-in tools — Bash, Read, Write, Edit, MultiEdit, NotebookEdit,
-Glob, Grep, LS, WebSearch, WebFetch, Task, TodoWrite, KillShell — are DISABLED
-in this environment and calling any of them will always fail with a
-permission error. Do NOT attempt them, even though some of the tools listed
-below have similar names or purposes (e.g. "bash", "glob", "grep") — those
-are a SEPARATE system you can only reach through the JSON protocol below.
-
-You have access to the tools listed below (JSON Schema). You CANNOT execute
-them and you CANNOT see their results until the next message. To call a tool,
-end your reply with exactly one fenced block:
-
-```tool_call
-{"name": "<tool_name>", "arguments": { ... }}
-```
-
-STRICT rules:
-- The tool_call block must be the LAST thing in your reply. Write nothing after it.
-- NEVER write, predict, imagine, or summarize a tool's output yourself.
-- NEVER write text beginning with "[Tool result" — only the system writes that.
-- At most ONE tool_call block per reply.
-- If no tool is needed, reply normally with no tool_call block.
-
-## Available tools
-"""
 
 
-# ── content conversion ──────────────────────────────────────────────────────
-
-async def _image_part_to_block(part: dict) -> dict | None:
-    url = (part.get("image_url") or {}).get("url", "")
-    if not url:
-        return None
-    if url.startswith("data:"):
-        try:
-            header, data = url.split(",", 1)
-            media_type = header.split(":", 1)[1].split(";", 1)[0]
-        except (ValueError, IndexError):
-            return None
-    else:
-        try:
-            async with httpx.AsyncClient(timeout=20, follow_redirects=True) as client:
-                resp = await client.get(url)
-                resp.raise_for_status()
-            media_type = resp.headers.get("content-type", "image/png").split(";")[0]
-            data = base64.b64encode(resp.content).decode()
-        except Exception:
-            return None
-    if media_type not in ALLOWED_IMAGE_TYPES:
-        return None
-    return {"type": "image", "source": {"type": "base64", "media_type": media_type, "data": data}}
-
-
-def _tools_to_system_suffix(tools: list[dict]) -> str:
-    lines = [TOOL_PROTOCOL]
-    for t in tools:
-        fn = t.get("function", {}) if t.get("type") == "function" else t
-        lines.append(
-            f"- {fn.get('name')}: {fn.get('description', '')}\n"
-            f"  parameters: {json.dumps(fn.get('parameters', {}), separators=(',', ':'))}"
-        )
-    return "\n".join(lines)
-
-
-def _coerce_text(content) -> str:
-    """Content may be a string, a list of parts, or None. Always return a string."""
-    if content is None:
-        return ""
-    if isinstance(content, str):
-        return content
-    if isinstance(content, list):
-        bits = []
-        for p in content:
-            if isinstance(p, dict) and p.get("type") == "text":
-                bits.append(p.get("text", ""))
-            elif isinstance(p, str):
-                bits.append(p)
-        return "\n".join(bits)
-    return str(content)
-
-
-async def messages_to_blocks(messages: list[dict]) -> tuple[str | None, list[dict]]:
-    """Flatten OpenAI chat history (incl. assistant tool_calls and tool results)
-    into (system_prompt, content blocks for one user turn). Defensive against
-    malformed tool_call arguments and non-string content."""
-    system_parts: list[str] = []
-    blocks: list[dict] = []
-    transcript: list[str] = []
-
-    for m in messages:
-        if not isinstance(m, dict):
-            continue
-        role = m.get("role", "user")
-        content = m.get("content", "")
-
-        if role == "system":
-            system_parts.append(_coerce_text(content))
-            continue
-
-        if role == "tool":
-            transcript.append(
-                f"[Tool result for call {m.get('tool_call_id', '?')}]\n{_coerce_text(content)}"
-            )
-            continue
-
-        if role == "assistant":
-            parts = []
-            text = _coerce_text(content)
-            if text:
-                parts.append(text)
-            for tc in m.get("tool_calls") or []:
-                if not isinstance(tc, dict):
-                    continue
-                fn = tc.get("function", {}) or {}
-                raw_args = fn.get("arguments")
-                try:
-                    args = json.loads(raw_args) if isinstance(raw_args, str) else (raw_args or {})
-                except (json.JSONDecodeError, TypeError):
-                    args = {"_raw": raw_args}
-                parts.append(
-                    "```tool_call\n"
-                    + json.dumps({"name": fn.get("name"), "arguments": args})
-                    + "\n```"
-                )
-            if parts:
-                transcript.append("[Previous assistant reply]\n" + "\n".join(parts))
-            continue
-
-        # user
-        if isinstance(content, list):
-            text_bits = []
-            for p in content:
-                if not isinstance(p, dict):
-                    continue
-                if p.get("type") == "text":
-                    text_bits.append(p.get("text", ""))
-                elif p.get("type") == "image_url":
-                    block = await _image_part_to_block(p)
-                    if block:
-                        blocks.append(block)
-            if text_bits:
-                transcript.append("[User]\n" + "\n".join(text_bits))
-        else:
-            transcript.append(f"[User]\n{_coerce_text(content)}")
-
-    if transcript:
-        blocks.insert(0, {"type": "text", "text": "\n\n".join(transcript)})
-    system_prompt = "\n\n".join(p for p in system_parts if p) or None
-    return system_prompt, blocks
-
-
-def extract_thinking_budget(body: dict) -> int | None:
-    if isinstance(body.get("max_thinking_tokens"), int):
-        return body["max_thinking_tokens"]
-    thinking = body.get("thinking")
-    if isinstance(thinking, dict) and isinstance(thinking.get("budget_tokens"), int):
-        return thinking["budget_tokens"]
-    effort = body.get("reasoning_effort")
-    if isinstance(effort, str) and effort.lower() in EFFORT_BUDGETS:
-        return EFFORT_BUDGETS[effort.lower()]
-    return None
-
-
-# ── model call ──────────────────────────────────────────────────────────────
-
-BUILTIN_TOOLS = [
-    "Bash", "Read", "Write", "Edit", "MultiEdit", "NotebookEdit",
-    "Glob", "Grep", "LS", "WebSearch", "WebFetch", "Task", "TodoWrite", "KillShell",
-]
-
-
-async def run_claude(model, system_prompt, blocks, thinking_budget) -> str:
-    opts = dict(
-        model=model,
-        system_prompt=system_prompt,
-        max_turns=MAX_TURNS,
-        allowed_tools=[],
-        disallowed_tools=BUILTIN_TOOLS,
-    )
-    if thinking_budget:
-        opts["max_thinking_tokens"] = thinking_budget
-    options = ClaudeAgentOptions(**opts)
-
-    async def prompt_stream():
-        yield {"type": "user", "message": {"role": "user", "content": blocks}}
-
-    chunks: list[str] = []
-    result_text: str | None = None
-    try:
-        async for message in query(prompt=prompt_stream(), options=options):
-            if isinstance(message, AssistantMessage):
-                for block in message.content:
-                    if isinstance(block, TextBlock):
-                        chunks.append(block.text)
-            elif isinstance(message, ResultMessage):
-                result_text = getattr(message, "result", None)
-    except Exception as exc:
-        msg = str(exc)
-        if "returned an error result" in msg:
-            logger.warning("Claude Code session aborted (likely a blocked native tool attempt): %s", msg)
-            return (
-                "I don't have direct access to that tool in this environment. "
-                "I'll use the JSON tool_call protocol instead if one of the "
-                "listed tools fits what's needed."
-            )
-        raise
-    return "".join(chunks) or (result_text or "")
-
-
-# ── response shaping ────────────────────────────────────────────────────────
-
-FAKE_RESULT_RE = re.compile(r"^\s*\[Tool result.*?\]\s*$", re.MULTILINE)
-
-
-def parse_tool_call(text: str) -> tuple[str, list[dict] | None]:
-    match = TOOL_CALL_RE.search(text)
-    if not match:
-        return text, None
-    try:
-        payload = json.loads(match.group(1))
-        name = payload["name"]
-        arguments = payload.get("arguments", {})
-    except (json.JSONDecodeError, KeyError):
-        return text, None
-
-    plain = text[: match.start()].strip()
-    fake = FAKE_RESULT_RE.search(plain)
-    if fake:
-        plain = plain[: fake.start()].strip()
-
-    tool_calls = [
-        {
-            "id": f"call_{uuid.uuid4().hex[:24]}",
-            "type": "function",
-            "function": {"name": name, "arguments": json.dumps(arguments)},
-        }
-    ]
-    return plain, tool_calls
-
-
-def openai_response(model: str, text: str, tool_calls: list[dict] | None) -> dict:
-    message: dict = {"role": "assistant", "content": text or None}
-    finish = "stop"
-    if tool_calls:
-        message["tool_calls"] = tool_calls
-        finish = "tool_calls"
-    return {
-        "id": f"chatcmpl-{uuid.uuid4().hex[:24]}",
-        "object": "chat.completion",
-        "created": int(time.time()),
-        "model": model,
-        "choices": [{"index": 0, "message": message, "finish_reason": finish}],
-        "usage": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0},
-    }
-
-
-def sse_chunks(model: str, text: str, tool_calls: list[dict] | None):
-    chunk_id = f"chatcmpl-{uuid.uuid4().hex[:24]}"
-    created = int(time.time())
-
-    def chunk(delta, finish=None):
-        return {
-            "id": chunk_id,
-            "object": "chat.completion.chunk",
-            "created": created,
-            "model": model,
-            "choices": [{"index": 0, "delta": delta, "finish_reason": finish}],
-        }
-
-    if tool_calls:
-        delta_calls = [
-            {
-                "index": i,
-                "id": tc["id"],
-                "type": "function",
-                "function": tc["function"],
-            }
-            for i, tc in enumerate(tool_calls)
-        ]
-        yield f"data: {json.dumps(chunk({'role': 'assistant', 'content': text or None, 'tool_calls': delta_calls}))}\n\n"
-        yield f"data: {json.dumps(chunk({}, 'tool_calls'))}\n\n"
-    else:
-        yield f"data: {json.dumps(chunk({'role': 'assistant', 'content': text}))}\n\n"
-        yield f"data: {json.dumps(chunk({}, 'stop'))}\n\n"
-    yield "data: [DONE]\n\n"
-
-
-# ── endpoints ───────────────────────────────────────────────────────────────
-
-def _extract_auth(request: Request):
+def get_token(request: Request) -> str:
     auth_header = request.headers.get("Authorization")
     if auth_header and auth_header.startswith("Bearer "):
-        os.environ["CLAUDE_CODE_OAUTH_TOKEN"] = auth_header.split(" ", 1)[1]
+        return auth_header.split(" ", 1)[1]
+    x_api_key = request.headers.get("x-api-key")
+    if x_api_key:
+        return x_api_key
+    return os.environ.get("CLAUDE_CODE_OAUTH_TOKEN", "")
+
+
+def get_anthropic_headers(token: str) -> dict:
+    headers = {
+        "anthropic-version": "2023-06-01",
+        "anthropic-beta": "claude-code-20250219,oauth-2025-04-20,interleaved-thinking-2025-05-14,fine-grained-tool-streaming-2025-05-14",
+        "content-type": "application/json",
+    }
+    if token.startswith("sk-ant-"):
+        headers["x-api-key"] = token
+    else:
+        headers["Authorization"] = f"Bearer {token}"
+        headers["x-api-key"] = token
+    return headers
+
 
 @app.get("/v1/models")
 async def list_models(request: Request):
-    _extract_auth(request)
+    token = get_token(request)
+    if token:
+        os.environ["CLAUDE_CODE_OAUTH_TOKEN"] = token
     return {
         "object": "list",
         "data": [
-            {"id": m, "object": "model", "owned_by": "anthropic"}
-            for m in ("claude-opus-4-8", "claude-sonnet-4-6", "claude-haiku-4-5", "claude-3-5-sonnet-20241022", "claude-3-7-sonnet-20250219")
+            {"id": "claude-3-7-sonnet-20250219", "object": "model", "owned_by": "anthropic"},
+            {"id": "claude-3-5-sonnet-20241022", "object": "model", "owned_by": "anthropic"},
+            {"id": "claude-3-5-haiku-20241022", "object": "model", "owned_by": "anthropic"},
+            {"id": "claude-3-opus-20240229", "object": "model", "owned_by": "anthropic"},
+            {"id": "claude-sonnet-4-6", "object": "model", "owned_by": "anthropic"},
+            {"id": "claude-opus-4-8", "object": "model", "owned_by": "anthropic"},
+            {"id": "claude-haiku-4-5", "object": "model", "owned_by": "anthropic"},
         ],
     }
 
 
+def transform_openai_tools(tools: list) -> list:
+    anthropic_tools = []
+    for t in tools:
+        if not isinstance(t, dict):
+            continue
+        fn = t.get("function", {}) if t.get("type") == "function" else t
+        if "name" in fn:
+            tool_entry = {
+                "name": fn["name"],
+                "description": fn.get("description", ""),
+                "input_schema": fn.get("parameters") or {"type": "object", "properties": {}},
+            }
+            anthropic_tools.append(tool_entry)
+    return anthropic_tools
+
+
+def transform_openai_messages(messages: list) -> tuple[str | None, list]:
+    system_parts = []
+    anthropic_messages = []
+
+    for m in messages:
+        if not isinstance(m, dict):
+            continue
+        role = m.get("role")
+        content = m.get("content")
+
+        if role == "system":
+            if isinstance(content, str):
+                system_parts.append(content)
+            elif isinstance(content, list):
+                for p in content:
+                    if isinstance(p, dict) and p.get("type") == "text":
+                        system_parts.append(p.get("text", ""))
+            continue
+
+        if role == "user":
+            if isinstance(content, str):
+                anthropic_messages.append({"role": "user", "content": content})
+            elif isinstance(content, list):
+                parts = []
+                for p in content:
+                    if isinstance(p, dict):
+                        if p.get("type") == "text":
+                            parts.append({"type": "text", "text": p.get("text", "")})
+                        elif p.get("type") == "image_url":
+                            img_url = p.get("image_url", {}).get("url", "")
+                            if img_url.startswith("data:"):
+                                header, data = img_url.split(",", 1)
+                                media_type = header.split(";")[0].replace("data:", "")
+                                parts.append({
+                                    "type": "image",
+                                    "source": {
+                                        "type": "base64",
+                                        "media_type": media_type,
+                                        "data": data,
+                                    },
+                                })
+                anthropic_messages.append({"role": "user", "content": parts or content})
+            continue
+
+        if role == "assistant":
+            parts = []
+            if isinstance(content, str) and content:
+                parts.append({"type": "text", "text": content})
+            elif isinstance(content, list):
+                for p in content:
+                    if isinstance(p, dict) and p.get("type") == "text" and p.get("text"):
+                        parts.append({"type": "text", "text": p["text"]})
+            tool_calls = m.get("tool_calls") or []
+            for tc in tool_calls:
+                if isinstance(tc, dict):
+                    fn = tc.get("function", {})
+                    args = fn.get("arguments", {})
+                    if isinstance(args, str):
+                        try:
+                            args = json.loads(args)
+                        except Exception:
+                            args = {}
+                    parts.append({
+                        "type": "tool_use",
+                        "id": tc.get("id", f"call_{uuid.uuid4().hex[:24]}"),
+                        "name": fn.get("name"),
+                        "input": args,
+                    })
+            if parts:
+                anthropic_messages.append({"role": "assistant", "content": parts})
+            continue
+
+        if role == "tool":
+            tool_call_id = m.get("tool_call_id", "")
+            tool_content = content if isinstance(content, str) else json.dumps(content)
+            anthropic_messages.append({
+                "role": "user",
+                "content": [{
+                    "type": "tool_result",
+                    "tool_use_id": tool_call_id,
+                    "content": tool_content,
+                }],
+            })
+
+    system_prompt = "\n\n".join(system_parts) if system_parts else None
+    return system_prompt, anthropic_messages
+
+
 @app.post("/v1/chat/completions")
 async def chat_completions(request: Request):
-    _extract_auth(request)
+    token = get_token(request)
+    if not token:
+        return JSONResponse(status_code=401, content={"error": {"message": "Missing token", "type": "auth_error"}})
+
+    os.environ["CLAUDE_CODE_OAUTH_TOKEN"] = token
+
     try:
         body = await request.json()
     except Exception as exc:
-        return JSONResponse(
-            status_code=400,
-            content={"error": {"message": f"invalid JSON body: {exc}", "type": "invalid_request"}},
-        )
-    model = body.get("model") or DEFAULT_MODEL
-    messages = body.get("messages", [])
+        return JSONResponse(status_code=400, content={"error": {"message": f"Invalid JSON: {exc}"}})
+
+    requested_model = body.get("model", DEFAULT_MODEL)
+    anthropic_model = MODEL_MAP.get(requested_model, requested_model)
+
     stream = bool(body.get("stream", False))
     tools = body.get("tools") or []
 
-    system_prompt, blocks = await messages_to_blocks(messages)
-    if not blocks:
-        logger.warning("empty blocks for request; returning empty completion")
-        empty = openai_response(model, "", None)
-        if stream:
-            return StreamingResponse(sse_chunks(model, "", None), media_type="text/event-stream")
-        return JSONResponse(content=empty)
-    # Always prepend the built-in tool disable notice so Claude never attempts
-    # Bash/Read/Glob/etc. even on plain completion requests with no OpenAI tools.
+    system_prompt, messages = transform_openai_messages(body.get("messages", []))
+
+    anthropic_body = {
+        "model": anthropic_model,
+        "messages": messages,
+        "max_tokens": body.get("max_tokens", 4096),
+        "stream": stream,
+    }
+    if system_prompt:
+        anthropic_body["system"] = system_prompt
     if tools:
-        system_prompt = (system_prompt or "") + "\n\n" + _tools_to_system_suffix(tools)
-    else:
-        system_prompt = (system_prompt or "") + "\n\n" + TOOL_PROTOCOL + "\n(No tools are available for this request.)"
-    thinking_budget = extract_thinking_budget(body)
+        anthropic_body["tools"] = transform_openai_tools(tools)
+    if "temperature" in body and body["temperature"] is not None:
+        anthropic_body["temperature"] = body["temperature"]
+    if "top_p" in body and body["top_p"] is not None:
+        anthropic_body["top_p"] = body["top_p"]
 
-    try:
-        raw = await run_claude(model, system_prompt, blocks, thinking_budget)
-    except Exception as exc:
-        logger.exception("run_claude failed")
-        return JSONResponse(
-            status_code=500,
-            content={"error": {"message": f"claude-agent-sdk error: {exc}", "type": "proxy_error"}},
-        )
+    headers = get_anthropic_headers(token)
 
-    text, tool_calls = parse_tool_call(raw) if tools else (raw, None)
+    async with httpx.AsyncClient(timeout=120.0) as client:
+        if not stream:
+            try:
+                res = await client.post(ANTHROPIC_MESSAGES_URL, json=anthropic_body, headers=headers)
+            except Exception as exc:
+                logger.exception("Anthropic request failed")
+                return JSONResponse(status_code=502, content={"error": {"message": f"Upstream error: {exc}"}})
 
-    if stream:
-        return StreamingResponse(sse_chunks(model, text, tool_calls), media_type="text/event-stream")
-    return JSONResponse(content=openai_response(model, text, tool_calls))
+            if not res.is_success:
+                logger.error("Anthropic returned %s: %s", res.status_code, res.text)
+                return JSONResponse(status_code=res.status_code, content=res.json() if res.headers.get("content-type", "").startswith("application/json") else {"error": res.text})
+
+            data = res.json()
+            return JSONResponse(content=format_openai_response(requested_model, data))
+        else:
+            return StreamingResponse(
+                stream_anthropic_to_openai(client, ANTHROPIC_MESSAGES_URL, anthropic_body, headers, requested_model),
+                media_type="text/event-stream",
+            )
+
+
+def format_openai_response(model: str, data: dict) -> dict:
+    content_blocks = data.get("content", [])
+    text_content = ""
+    tool_calls = []
+
+    for block in content_blocks:
+        if not isinstance(block, dict):
+            continue
+        if block.get("type") == "text":
+            text_content += block.get("text", "")
+        elif block.get("type") == "tool_use":
+            tool_calls.append({
+                "id": block.get("id"),
+                "type": "function",
+                "function": {
+                    "name": block.get("name"),
+                    "arguments": json.dumps(block.get("input", {})),
+                },
+            })
+
+    finish_reason = "tool_calls" if tool_calls else "stop"
+    if data.get("stop_reason") == "max_tokens":
+        finish_reason = "length"
+
+    message_obj = {"role": "assistant", "content": text_content if text_content or not tool_calls else None}
+    if tool_calls:
+        message_obj["tool_calls"] = tool_calls
+
+    usage = data.get("usage", {})
+
+    return {
+        "id": f"chatcmpl-{data.get('id', uuid.uuid4().hex)}",
+        "object": "chat.completion",
+        "created": int(data.get("created_at", 0)) or 1700000000,
+        "model": model,
+        "choices": [
+            {
+                "index": 0,
+                "message": message_obj,
+                "finish_reason": finish_reason,
+            }
+        ],
+        "usage": {
+            "prompt_tokens": usage.get("input_tokens", 0),
+            "completion_tokens": usage.get("output_tokens", 0),
+            "total_tokens": usage.get("input_tokens", 0) + usage.get("output_tokens", 0),
+        },
+    }
+
+
+async def stream_anthropic_to_openai(client: httpx.AsyncClient, url: str, body: dict, headers: dict, model: str):
+    async with client.stream("POST", url, json=body, headers=headers) as res:
+        if not res.is_success:
+            err_body = await res.aread()
+            yield f"data: {json.dumps({'error': err_body.decode('utf-8')})}\n\n"
+            yield "data: [DONE]\n\n"
+            return
+
+        current_tool_id = None
+        current_tool_name = None
+        tool_arg_buf = ""
+
+        async for line in res.aiter_lines():
+            if not line.startswith("data: "):
+                continue
+            raw_data = line[6:].strip()
+            if raw_data == "[DONE]":
+                break
+            try:
+                event = json.loads(raw_data)
+            except Exception:
+                continue
+
+            event_type = event.get("type")
+
+            if event_type == "content_block_start":
+                block = event.get("content_block", {})
+                if block.get("type") == "tool_use":
+                    current_tool_id = block.get("id")
+                    current_tool_name = block.get("name")
+                    tool_arg_buf = ""
+                    chunk = {
+                        "id": f"chatcmpl-chunk-{uuid.uuid4().hex[:12]}",
+                        "object": "chat.completion.chunk",
+                        "model": model,
+                        "choices": [{
+                            "index": 0,
+                            "delta": {
+                                "role": "assistant",
+                                "tool_calls": [{
+                                    "index": 0,
+                                    "id": current_tool_id,
+                                    "type": "function",
+                                    "function": {"name": current_tool_name, "arguments": ""},
+                                }],
+                            },
+                            "finish_reason": None,
+                        }],
+                    }
+                    yield f"data: {json.dumps(chunk)}\n\n"
+
+            elif event_type == "content_block_delta":
+                delta = event.get("delta", {})
+                if delta.get("type") == "text_delta":
+                    text = delta.get("text", "")
+                    chunk = {
+                        "id": f"chatcmpl-chunk-{uuid.uuid4().hex[:12]}",
+                        "object": "chat.completion.chunk",
+                        "model": model,
+                        "choices": [{"index": 0, "delta": {"content": text}, "finish_reason": None}],
+                    }
+                    yield f"data: {json.dumps(chunk)}\n\n"
+                elif delta.get("type") == "input_json_delta":
+                    partial_json = delta.get("partial_json", "")
+                    tool_arg_buf += partial_json
+                    chunk = {
+                        "id": f"chatcmpl-chunk-{uuid.uuid4().hex[:12]}",
+                        "object": "chat.completion.chunk",
+                        "model": model,
+                        "choices": [{
+                            "index": 0,
+                            "delta": {
+                                "tool_calls": [{
+                                    "index": 0,
+                                    "function": {"arguments": partial_json},
+                                }],
+                            },
+                            "finish_reason": None,
+                        }],
+                    }
+                    yield f"data: {json.dumps(chunk)}\n\n"
+
+            elif event_type == "message_delta":
+                stop_reason = event.get("delta", {}).get("stop_reason")
+                finish = "tool_calls" if current_tool_id else ("stop" if stop_reason == "end_turn" else stop_reason)
+                chunk = {
+                    "id": f"chatcmpl-chunk-{uuid.uuid4().hex[:12]}",
+                    "object": "chat.completion.chunk",
+                    "model": model,
+                    "choices": [{"index": 0, "delta": {}, "finish_reason": finish}],
+                }
+                yield f"data: {json.dumps(chunk)}\n\n"
+
+        yield "data: [DONE]\n\n"
 
 
 @app.get("/health")

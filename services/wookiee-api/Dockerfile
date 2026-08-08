@@ -1,5 +1,9 @@
 FROM node:20-alpine
 
+# ca-certificates ensures Node.js can verify TLS chains for all external APIs
+# (Anthropic uses roots not bundled in Alpine's default minimal CA set)
+RUN apk add --no-cache ca-certificates
+
 WORKDIR /app
 
 COPY package.json ./

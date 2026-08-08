@@ -130,20 +130,29 @@ const PROVIDERS = {
   },
   google: {
     label: 'Google Gemini',
+    // Completions go through the OpenAI-compat layer:
     base_url: 'https://generativelanguage.googleapis.com/v1beta/openai',
     key_setting: 'llm_google_api_key',
+    // Model listing uses the native Gemini REST endpoint (key in query string)
+    // because the OpenAI-compat /models only returns a subset of available models.
     listPath: '/models',
-    authStyle: 'bearer',
-    normalize: (body) => (body && Array.isArray(body.data) ? body.data : []).map((m) => ({
-      // The OpenAI-compat layer returns ids like "models/gemini-2.5-flash";
-      // the chat endpoint accepts them either way, but the bare name is what
-      // the operator recognises.
-      model: String(m.id || '').replace(/^models\//, ''),
-      label: String(m.id || '').replace(/^models\//, ''),
-      in: null,
-      out: null,
-      context: null,
-    })),
+    listUrlOverride: (apiKey) =>
+      `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(apiKey)}&pageSize=200`,
+    authStyle: 'google_native',
+    normalize: (body) => {
+      // Native response: { models: [{ name, displayName, supportedGenerationMethods, ... }] }
+      const items = (body && Array.isArray(body.models) ? body.models : []);
+      return items
+        .filter((m) => (m.supportedGenerationMethods || []).includes('generateContent'))
+        .map((m) => ({
+          // name is like "models/gemini-2.5-flash" — strip the prefix
+          model: String(m.name || '').replace(/^models\//, ''),
+          label: m.displayName || String(m.name || '').replace(/^models\//, ''),
+          in: null,
+          out: null,
+          context: m.inputTokenLimit || null,
+        }));
+    },
   },
   deepseek: {
     label: 'DeepSeek',
@@ -235,6 +244,10 @@ function buildHeaders(provider, apiKey) {
   if (provider.authStyle === 'anthropic_bearer') {
     return { 'Authorization': `Bearer ${apiKey}`, 'anthropic-version': '2023-06-01' };
   }
+  if (provider.authStyle === 'google_native') {
+    // Key is passed in the query string via listUrlOverride; no auth header needed.
+    return {};
+  }
   return { Authorization: `Bearer ${apiKey}` };
 }
 
@@ -266,7 +279,11 @@ async function fetchProviderModels(providerKey, apiKey, { force = false, baseUrl
     return { models: cached.models, cached: true, fetchedAt: cached.fetchedAt };
   }
 
-  const url = effectiveBase.replace(/\/+$/, '') + provider.listPath;
+  // Use listUrlOverride when the provider needs a different URL shape for listing
+  // (e.g. Google native endpoint passes the key as a query param, not a header).
+  const url = provider.listUrlOverride
+    ? provider.listUrlOverride(apiKey)
+    : effectiveBase.replace(/\/+$/, '') + provider.listPath;
 
   let response;
   try {

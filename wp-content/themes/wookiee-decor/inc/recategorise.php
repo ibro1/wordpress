@@ -113,9 +113,19 @@ function wookiee_suggest_categories_handler() {
 		wp_send_json_error( array( 'message' => 'There are no products to categorise yet.' ) );
 	}
 
+	/*
+	 * One JSON assignment ({"id": 12345, "category": "Wash Bags"},) runs
+	 * roughly 20-30 tokens. A fixed cap sized for a small catalogue leaves
+	 * a full one - up to the 200 products fetched above - truncated
+	 * mid-array, which does not degrade gracefully: it fails json_decode
+	 * outright and reports as "the model did not return a usable plan"
+	 * with no hint that the real cause was running out of room.
+	 */
+	$max_tokens = min( 16000, max( 2000, count( $products ) * 40 + 500 ) );
+
 	$text = wookiee_call_llm(
 		wookiee_build_recategorise_prompt( wookiee_recategorise_product_lines( $products ), count( $products ), $brief ),
-		2000
+		$max_tokens
 	);
 	if ( is_wp_error( $text ) ) {
 		wp_send_json_error( array( 'message' => $text->get_error_message() ) );

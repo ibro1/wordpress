@@ -114,6 +114,55 @@ function resolveTarget(requestedModel, licenseEntry) {
   };
 }
 
+/**
+ * Accumulates an OpenAI-compatible SSE chat-completion stream into the
+ * final completion text: repeated "data: {...}\n\n" events carrying
+ * choices[0].delta.content pieces, terminated by "data: [DONE]".
+ */
+async function readSseCompletion(body) {
+  const reader = body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let text = '';
+
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) {
+      break;
+    }
+    buffer += decoder.decode(value, { stream: true });
+
+    let sepIndex;
+    while ((sepIndex = buffer.indexOf('\n\n')) !== -1) {
+      const rawEvent = buffer.slice(0, sepIndex);
+      buffer = buffer.slice(sepIndex + 2);
+
+      for (const line of rawEvent.split('\n')) {
+        const trimmed = line.trim();
+        if (!trimmed.startsWith('data:')) {
+          continue;
+        }
+        const payload = trimmed.slice(5).trim();
+        if (!payload || payload === '[DONE]') {
+          continue;
+        }
+        let parsed;
+        try {
+          parsed = JSON.parse(payload);
+        } catch (err) {
+          continue; // A malformed one-off chunk shouldn't drop the whole completion.
+        }
+        const delta = parsed && parsed.choices && parsed.choices[0] && parsed.choices[0].delta;
+        if (delta && typeof delta.content === 'string') {
+          text += delta.content;
+        }
+      }
+    }
+  }
+
+  return text.trim();
+}
+
 router.post('/generate', async (req, res) => {
   const prompt = req.body && req.body.prompt;
   const maxTokens = req.body && req.body.max_tokens ? parseInt(req.body.max_tokens, 10) : 2048;
@@ -141,21 +190,48 @@ router.post('/generate', async (req, res) => {
         model: target.model,
         max_tokens: maxTokens,
         messages: [{ role: 'user', content: prompt }],
+        /*
+         * Some gateways enforce a much shorter timeout on a fully-buffered
+         * response than on a stream - confirmed directly against
+         * AgentRouter, where a slow non-streaming completion for a long
+         * policy page came back as a bare HTTP 504 well before this
+         * request's own timeout was anywhere close. Streaming keeps the
+         * connection actively receiving data instead of sitting idle
+         * waiting for one big response, which is what a gateway's own
+         * timeout is actually watching for. The text is still accumulated
+         * server-side and returned as one response below - the caller's
+         * contract with this endpoint doesn't change.
+         */
+        stream: true,
       }),
     });
   } catch (err) {
     return res.status(502).json({ error: err.message });
   }
 
-  const data = await response.json().catch(() => null);
   if (!response.ok) {
-    const msg = data && data.error && data.error.message ? data.error.message : `HTTP ${response.status}`;
+    const errBody = await response.json().catch(() => null);
+    const msg = errBody && errBody.error && errBody.error.message ? errBody.error.message : `HTTP ${response.status}`;
     return res.status(502).json({ error: `LLM API error: ${msg}` });
   }
 
-  const text = data && data.choices && data.choices[0] && data.choices[0].message
-    ? String(data.choices[0].message.content || '').trim()
-    : '';
+  const contentType = response.headers.get('content-type') || '';
+  let text;
+  try {
+    if (contentType.includes('text/event-stream') && response.body) {
+      text = await readSseCompletion(response.body);
+    } else {
+      // The provider accepted the request but ignored stream:true (or this
+      // endpoint just never streams) - handled exactly as a plain,
+      // non-streaming response always was.
+      const data = await response.json().catch(() => null);
+      text = data && data.choices && data.choices[0] && data.choices[0].message
+        ? String(data.choices[0].message.content || '').trim()
+        : '';
+    }
+  } catch (err) {
+    return res.status(502).json({ error: `Stream reading failed: ${err.message}` });
+  }
 
   if (!text) {
     return res.status(502).json({ error: 'The LLM returned an empty response.' });

@@ -102,7 +102,7 @@ function wookiee_call_llm( $prompt, $max_tokens = 2048 ) {
 	 * reachability. Suppressed because some hosts disable it entirely.
 	 */
 	if ( function_exists( 'set_time_limit' ) ) {
-		@set_time_limit( 150 ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+		@set_time_limit( 280 ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
 	}
 
 	if ( wookiee_central_api_configured() ) {
@@ -121,7 +121,7 @@ function wookiee_call_llm( $prompt, $max_tokens = 2048 ) {
 			$body['model'] = $model;
 		}
 
-		$result = wookiee_central_api_request( 'POST', '/llm/generate', $body, 120 );
+		$result = wookiee_central_api_request( 'POST', '/llm/generate', $body, 240 );
 		if ( is_wp_error( $result ) ) {
 			return $result;
 		}
@@ -150,7 +150,7 @@ function wookiee_call_llm( $prompt, $max_tokens = 2048 ) {
 					array( 'role' => 'user', 'content' => $prompt ),
 				),
 			) ),
-			'timeout' => 120,
+			'timeout' => 240,
 		)
 	);
 

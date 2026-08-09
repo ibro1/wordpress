@@ -585,6 +585,16 @@ function wookiee_generate_content_handler() {
 		) ) );
 	}
 
+	if ( wookiee_text_looks_truncated( $text ) ) {
+		wp_send_json_success( array( 'page' => array(
+			'title'        => esc_html( $piece['title'] ),
+			'error'        => 'The model\'s answer was cut off before the page was finished, so nothing was published. Try again - a shorter, more focused page (or a stronger model) may fit within its limit.',
+			'post_id'      => 0,
+			'edit_link'    => '',
+			'preview_link' => '',
+		) ) );
+	}
+
 	$post_id = wookiee_update_real_static_page( $piece['slug'], $piece['title'], $text );
 
 	wp_send_json_success( array( 'page' => array(
@@ -755,10 +765,25 @@ function wookiee_business_details_block() {
  * will (correctly) flag as an "incomplete" issue.
  */
 function wookiee_content_piece_max_tokens( $key ) {
-	// Every piece this generator handles is now a full policy page (see
-	// wookiee_content_generator_pieces()) - these can run well past 2048
-	// tokens and get cut off mid-sentence otherwise.
-	return 4096;
+	/*
+	 * Every piece this generator handles is now a full policy page (see
+	 * wookiee_content_generator_pieces()), built from a prompt that stacks
+	 * several pages' worth of mandatory content on top of a 1000-1500 word
+	 * target - and 4096 tokens still wasn't enough: a live Privacy Policy
+	 * generation cut off mid-sentence in the middle of the payment section,
+	 * before any of the UK GDPR Article 13/14 disclosures the prompt below
+	 * requires (lawful bases, named recipients, international transfers,
+	 * the ICO complaint route, a full rights section) ever got written.
+	 * Privacy and Cookie carry the most of that extra weight - the added
+	 * GDPR/PECR requirements in wookiee_build_content_prompt() below are
+	 * substantially longer than the other pages' - so they get more room.
+	 * A truncated policy page isn't a shorter one, it's a broken one, so
+	 * this errs high rather than trimming close to the expected length.
+	 */
+	if ( in_array( $key, array( 'privacy', 'cookies' ), true ) ) {
+		return 8192;
+	}
+	return 6144;
 }
 
 /**
@@ -1167,7 +1192,7 @@ function wookiee_audit_policy_page_handler() {
 		wp_send_json_error( array( 'message' => 'Select a valid policy draft first.' ) );
 	}
 
-	$prompt = wookiee_build_policy_audit_prompt( $post->post_title, wp_strip_all_tags( $post->post_content ), wookiee_policy_key_for_post( $post ) );
+	$prompt = wookiee_build_policy_audit_prompt( $post->post_title, wookiee_policy_current_text( $post ), wookiee_policy_key_for_post( $post ) );
 	$report = wookiee_call_llm( $prompt, 3000 );
 
 	if ( is_wp_error( $report ) ) {
@@ -1421,11 +1446,18 @@ function wookiee_apply_audit_fixes_handler() {
 		wp_send_json_error( array( 'message' => 'Run the compliance audit first.' ) );
 	}
 
-	$prompt = wookiee_build_policy_fix_prompt( $post->post_title, wp_strip_all_tags( $post->post_content ), $audit_report );
-	$text   = wookiee_call_llm( $prompt, 4096 );
+	$prompt = wookiee_build_policy_fix_prompt( $post->post_title, wookiee_policy_current_text( $post ), $audit_report );
+	// Same reasoning as wookiee_content_piece_max_tokens(): a fix pass is
+	// actively adding the sections an audit found missing, so it needs at
+	// least as much room as the original generation did, not less.
+	$text   = wookiee_call_llm( $prompt, wookiee_content_piece_max_tokens( wookiee_policy_key_for_post( $post ) ) );
 
 	if ( is_wp_error( $text ) ) {
 		wp_send_json_error( array( 'message' => $text->get_error_message() ) );
+	}
+
+	if ( wookiee_text_looks_truncated( $text ) ) {
+		wp_send_json_error( array( 'message' => 'The model\'s answer was cut off before the rewrite was finished, so the live page was left untouched. Try again.' ) );
 	}
 
 	wp_update_post( array(
@@ -1435,6 +1467,41 @@ function wookiee_apply_audit_fixes_handler() {
 	wookiee_clear_audit_result( $post->ID );
 
 	wp_send_json_success( array( 'edit_link' => get_edit_post_link( $post->ID, 'raw' ) ) );
+}
+
+/**
+ * Whether a generated policy looks like it was cut off before the model
+ * finished - the failure mode a token budget that's merely close to enough
+ * produces, rather than an outright error. A raised max_tokens (see
+ * wookiee_content_piece_max_tokens()) makes this rare, not impossible, and
+ * a truncated legal policy silently published to a live page is worse than
+ * a failed generation the admin can simply retry - so this is checked
+ * before every save, not just relied on as a one-off fix.
+ *
+ * Deliberately a narrow, cheap heuristic - genuine prose overwhelmingly
+ * ends a paragraph on terminal punctuation - rather than anything that
+ * needs the provider's own finish_reason plumbed through every layer
+ * between here and the LLM call.
+ */
+function wookiee_text_looks_truncated( $text ) {
+	return ! (bool) preg_match( '/[.!?"\'\x{2019}\x{201D})]\s*$/u', trim( (string) $text ) );
+}
+
+/**
+ * The plain text of a live policy page, for feeding back into a prompt
+ * (an audit, a fix pass, a custom instruction).
+ *
+ * wp_strip_all_tags() alone is not enough here: wookiee_policy_text_to_html()
+ * runs the text through esc_html() before saving, so every quote mark in the
+ * live page is already the literal entity &quot;, not a " character. Reading
+ * that back with only the tags stripped hands the model &quot; as text it
+ * then reproduces in its rewrite - which esc_html() escapes AGAIN on the way
+ * back out, turning it into the literal, visible string "&quot;" on the
+ * page. Decoding entities here is what stops that compounding on every
+ * audit-fix pass.
+ */
+function wookiee_policy_current_text( $post ) {
+	return wp_specialchars_decode( wp_strip_all_tags( $post->post_content ), ENT_QUOTES );
 }
 
 /**
@@ -1610,7 +1677,7 @@ function wookiee_apply_custom_policy_prompt_handler() {
 
 	$prompt = "You previously drafted a UK ecommerce policy page. Below is its CURRENT text, followed by an instruction from the store owner on what to change. Apply that instruction while keeping everything else accurate and intact.\n\n"
 		. "Policy page: {$post->post_title}\n\n"
-		. "--- CURRENT POLICY TEXT ---\n" . wp_strip_all_tags( $post->post_content ) . "\n--- END CURRENT POLICY TEXT ---\n\n"
+		. "--- CURRENT POLICY TEXT ---\n" . wookiee_policy_current_text( $post ) . "\n--- END CURRENT POLICY TEXT ---\n\n"
 		. "--- OWNER'S INSTRUCTION ---\n{$instruction}\n--- END INSTRUCTION ---\n\n"
 		. "Real business details (do not invent anything beyond this list):\n" . wookiee_business_details_block() . "\n\n"
 		. "Rules:\n"
@@ -1634,9 +1701,13 @@ function wookiee_apply_custom_policy_prompt_handler() {
 		$prompt .= "\n\nThis policy must explicitly explain the data subject's rights under UK GDPR: the right to access, rectify, erase, restrict processing of, and port their personal data, the right to object, and the right to withdraw consent at any time.";
 	}
 
-	$text = wookiee_call_llm( $prompt, 4096 );
+	$text = wookiee_call_llm( $prompt, wookiee_content_piece_max_tokens( wookiee_policy_key_for_post( $post ) ) );
 	if ( is_wp_error( $text ) ) {
 		wp_send_json_error( array( 'message' => $text->get_error_message() ) );
+	}
+
+	if ( wookiee_text_looks_truncated( $text ) ) {
+		wp_send_json_error( array( 'message' => 'The model\'s answer was cut off before the rewrite was finished, so the live page was left untouched. Try again.' ) );
 	}
 
 	wp_update_post( array(

@@ -412,22 +412,49 @@ function wookiee_render_content_generator_page() {
 				? document.getElementById( 'wookiee-cg-custom-prompt' ).value.trim()
 				: '';
 
+			var screenSwitched = false;
+			function showAuditScreen() {
+				if ( screenSwitched ) { return; }
+				screenSwitched = true;
+				generateScreen.hidden = true;
+				auditScreen.hidden = false;
+				cardsContainer.innerHTML = '';
+			}
+
+			// The button/checkbox labels reflect server-render-time state and
+			// won't know a generation just happened without this - otherwise
+			// "Generate" would still show for a page just written.
+			function markAlreadyGenerated( key ) {
+				var checkbox = document.querySelector( '.wookiee-content-piece[value="' + key + '"]' );
+				var label    = checkbox ? checkbox.closest( 'label' ) : null;
+				if ( label && ! label.querySelector( '.wookiee-cg-already-generated' ) ) {
+					var span = document.createElement( 'span' );
+					span.className = 'description wookiee-cg-already-generated';
+					span.textContent = ' — already generated';
+					label.appendChild( span );
+				}
+				genBtn.textContent = 'Regenerate selected pages';
+				var policyTh = document.getElementById( 'wookiee-cg-policy-th' );
+				if ( policyTh ) { policyTh.textContent = 'Policy pages to regenerate'; }
+			}
+
 			/*
-			 * One request per page, chained sequentially rather than sent as
-			 * one request for the whole selection. A slow model can take the
-			 * better part of a minute per page on its own; bundling several
-			 * into a single blocking request stacks those minutes into one
-			 * connection that a browser, proxy or PHP's own execution limit
-			 * will give up on well before the model is done - which is what
-			 * "could not reach the server" actually was here. This way each
-			 * request is only ever as slow as one page, and pages still land
-			 * one at a time instead of arriving as a single burst.
+			 * Generation and analysis run as two independent chains rather
+			 * than strictly generate-everything-then-audit-everything: the
+			 * moment a page finishes generating, its card appears and its
+			 * audit is queued immediately, while the NEXT page's generation
+			 * is already under way - so the model is never sitting idle
+			 * waiting for an audit call to finish before starting the next
+			 * page. Each chain still runs one call at a time within itself
+			 * (one generation, one audit) - it's the two chains running
+			 * alongside each other that's new, not an unbounded burst.
 			 */
-			var pages = [];
-			var chain = Promise.resolve();
+			var genChain   = Promise.resolve();
+			var auditChain = Promise.resolve();
+			var doneCount  = 0;
 
 			checked.forEach( function( key, i ) {
-				chain = chain.then( function() {
+				genChain = genChain.then( function() {
 					status.textContent = 'Generating ' + ( i + 1 ) + ' of ' + checked.length + '… some models take the better part of a minute per page.';
 
 					var data = new FormData();
@@ -440,75 +467,46 @@ function wookiee_render_content_generator_page() {
 					return fetch( ajaxurl, { method: 'POST', credentials: 'same-origin', body: data } )
 						.then( function( r ) { return r.json(); } )
 						.then( function( res ) {
-							if ( res.success && res.data.page ) {
-								pages.push( res.data.page );
-							} else {
-								pages.push( {
-									title: key,
-									error: res.data && res.data.message ? res.data.message : 'Generation failed.',
-									post_id: 0, edit_link: '', preview_link: '',
-								} );
-							}
+							if ( res.success && res.data.page ) { return res.data.page; }
+							return {
+								title: key,
+								error: res.data && res.data.message ? res.data.message : 'Generation failed.',
+								post_id: 0, edit_link: '', preview_link: '',
+							};
 						} )
 						.catch( function() {
 							var checkboxEl = document.querySelector( '.wookiee-content-piece[value="' + key + '"]' );
 							var titleText  = checkboxEl ? checkboxEl.closest( 'label' ).textContent.trim() : key;
-							pages.push( { title: titleText, error: 'Could not reach the server.', post_id: 0, edit_link: '', preview_link: '' } );
+							return { title: titleText, error: 'Could not reach the server.', post_id: 0, edit_link: '', preview_link: '' };
+						} )
+						.then( function( page ) {
+							showAuditScreen();
+
+							if ( page.error || ! page.post_id ) {
+								var card = document.createElement( 'div' );
+								card.className = 'wookiee-audit-card';
+								card.innerHTML = '<div class="wookiee-audit-card-head"><h3></h3></div><div class="wookiee-audit-card-body"></div>';
+								card.querySelector( 'h3' ).textContent = page.title;
+								card.querySelector( '.wookiee-audit-card-body' ).textContent = page.error;
+								cardsContainer.appendChild( card );
+							} else {
+								markAlreadyGenerated( key );
+								var card = buildCard( page );
+								cardsContainer.appendChild( card );
+								wireCardActions( card, page.post_id );
+								// Queued onto the audit chain rather than
+								// awaited here, so it runs alongside the
+								// next page's generation instead of
+								// blocking it.
+								auditChain = auditChain.then( function() { return runAudit( card, page.post_id ); } );
+							}
+
+							doneCount++;
+							if ( doneCount === checked.length ) {
+								genBtn.disabled = false;
+								status.textContent = '';
+							}
 						} );
-				} );
-			} );
-
-			chain.then( function() {
-				genBtn.disabled = false;
-				status.textContent = '';
-
-				// The button/checkbox labels reflect server-render-time
-				// state and won't know a generation just happened without
-				// this - otherwise "Back to generate" would still show
-				// "Generate" for pages that were just written.
-				checked.forEach( function( key, i ) {
-					var result = pages[ i ];
-					if ( ! result || result.error ) { return; }
-					var checkbox = document.querySelector( '.wookiee-content-piece[value="' + key + '"]' );
-					var label    = checkbox ? checkbox.closest( 'label' ) : null;
-					if ( label && ! label.querySelector( '.wookiee-cg-already-generated' ) ) {
-						var span = document.createElement( 'span' );
-						span.className = 'description wookiee-cg-already-generated';
-						span.textContent = ' — already generated';
-						label.appendChild( span );
-					}
-				} );
-				if ( pages.some( function( p ) { return ! p.error; } ) ) {
-					genBtn.textContent = 'Regenerate selected pages';
-					var policyTh = document.getElementById( 'wookiee-cg-policy-th' );
-					if ( policyTh ) { policyTh.textContent = 'Policy pages to regenerate'; }
-				}
-
-				generateScreen.hidden = true;
-				auditScreen.hidden = false;
-				cardsContainer.innerHTML = '';
-
-				var validPages = pages.filter( function( p ) { return p.post_id && ! p.error; } );
-				var errorPages = pages.filter( function( p ) { return p.error; } );
-
-				errorPages.forEach( function( p ) {
-					var card = document.createElement( 'div' );
-					card.className = 'wookiee-audit-card';
-					card.innerHTML = '<div class="wookiee-audit-card-head"><h3></h3></div><div class="wookiee-audit-card-body"></div>';
-					card.querySelector( 'h3' ).textContent = p.title;
-					card.querySelector( '.wookiee-audit-card-body' ).textContent = p.error;
-					cardsContainer.appendChild( card );
-				} );
-
-				// Sequential, not parallel - avoids firing a dozen
-				// concurrent LLM calls at once when several pages are
-				// generated together.
-				var auditChain = Promise.resolve();
-				validPages.forEach( function( p ) {
-					var card = buildCard( p );
-					cardsContainer.appendChild( card );
-					wireCardActions( card, p.post_id );
-					auditChain = auditChain.then( function() { return runAudit( card, p.post_id ); } );
 				} );
 			} );
 		} );

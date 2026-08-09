@@ -163,6 +163,45 @@ async function readSseCompletion(body) {
   return text.trim();
 }
 
+/**
+ * OpenAI's own newer "reasoning" models (the GPT-5/o-series family) reject
+ * max_tokens outright and require max_completion_tokens instead - the two
+ * aren't interchangeable across every model this registry can point at, so
+ * whichever one a given model wants is discovered from its own rejection
+ * rather than guessed per model name up front.
+ */
+function isUnsupportedMaxTokensError(errBody) {
+  const err = errBody && errBody.error;
+  if (!err) {
+    return false;
+  }
+  if (err.param === 'max_tokens') {
+    return true;
+  }
+  return typeof err.message === 'string' && err.message.includes('max_completion_tokens');
+}
+
+function buildCompletionRequestBody(model, prompt, maxTokens, useMaxCompletionTokens) {
+  const body = {
+    model,
+    messages: [{ role: 'user', content: prompt }],
+    /*
+     * Some gateways enforce a much shorter timeout on a fully-buffered
+     * response than on a stream - confirmed directly against AgentRouter,
+     * where a slow non-streaming completion for a long policy page came
+     * back as a bare HTTP 504 well before this request's own timeout was
+     * anywhere close. Streaming keeps the connection actively receiving
+     * data instead of sitting idle waiting for one big response, which is
+     * what a gateway's own timeout is actually watching for. The text is
+     * still accumulated server-side and returned as one response below -
+     * the caller's contract with this endpoint doesn't change.
+     */
+    stream: true,
+  };
+  body[useMaxCompletionTokens ? 'max_completion_tokens' : 'max_tokens'] = maxTokens;
+  return body;
+}
+
 router.post('/generate', async (req, res) => {
   const prompt = req.body && req.body.prompt;
   const maxTokens = req.body && req.body.max_tokens ? parseInt(req.body.max_tokens, 10) : 2048;
@@ -177,42 +216,43 @@ router.post('/generate', async (req, res) => {
     return res.status(target.status).json({ error: target.error });
   }
 
-  let response;
-  try {
-    response = await fetch(`${target.baseUrl}/chat/completions`, {
+  async function attempt(useMaxCompletionTokens) {
+    return fetch(`${target.baseUrl}/chat/completions`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${target.apiKey}`,
         'Content-Type': 'application/json',
         ...target.extraHeaders,
       },
-      body: JSON.stringify({
-        model: target.model,
-        max_tokens: maxTokens,
-        messages: [{ role: 'user', content: prompt }],
-        /*
-         * Some gateways enforce a much shorter timeout on a fully-buffered
-         * response than on a stream - confirmed directly against
-         * AgentRouter, where a slow non-streaming completion for a long
-         * policy page came back as a bare HTTP 504 well before this
-         * request's own timeout was anywhere close. Streaming keeps the
-         * connection actively receiving data instead of sitting idle
-         * waiting for one big response, which is what a gateway's own
-         * timeout is actually watching for. The text is still accumulated
-         * server-side and returned as one response below - the caller's
-         * contract with this endpoint doesn't change.
-         */
-        stream: true,
-      }),
+      body: JSON.stringify(buildCompletionRequestBody(target.model, prompt, maxTokens, useMaxCompletionTokens)),
     });
+  }
+
+  let response;
+  try {
+    response = await attempt(false);
   } catch (err) {
     return res.status(502).json({ error: err.message });
   }
 
   if (!response.ok) {
-    const errBody = await response.json().catch(() => null);
-    const msg = errBody && errBody.error && errBody.error.message ? errBody.error.message : `HTTP ${response.status}`;
-    return res.status(502).json({ error: `LLM API error: ${msg}` });
+    let errBody = await response.json().catch(() => null);
+
+    if (isUnsupportedMaxTokensError(errBody)) {
+      try {
+        response = await attempt(true);
+      } catch (err) {
+        return res.status(502).json({ error: err.message });
+      }
+      if (!response.ok) {
+        errBody = await response.json().catch(() => null);
+        const msg = errBody && errBody.error && errBody.error.message ? errBody.error.message : `HTTP ${response.status}`;
+        return res.status(502).json({ error: `LLM API error: ${msg}` });
+      }
+    } else {
+      const msg = errBody && errBody.error && errBody.error.message ? errBody.error.message : `HTTP ${response.status}`;
+      return res.status(502).json({ error: `LLM API error: ${msg}` });
+    }
   }
 
   const contentType = response.headers.get('content-type') || '';

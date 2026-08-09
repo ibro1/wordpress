@@ -405,91 +405,130 @@ function wookiee_render_content_generator_page() {
 			}
 
 			genBtn.disabled = true;
-			status.textContent = 'Generating ' + checked.length + ' item(s) with the LLM… this can take a minute or two.';
-
-			var data = new FormData();
-			data.append( 'action', 'wookiee_generate_content' );
-			data.append( 'nonce', NONCE );
-			data.append( 'brief', brief );
-			checked.forEach( function( key ) { data.append( 'pieces[]', key ); } );
+			status.classList.remove( 'wookiee-cg-status-error' );
 
 			var customToggle = document.getElementById( 'wookiee-cg-custom-toggle' );
-			if ( customToggle && customToggle.checked ) {
-				var customPrompt = document.getElementById( 'wookiee-cg-custom-prompt' ).value.trim();
-				if ( customPrompt ) { data.append( 'custom_prompt', customPrompt ); }
-			}
+			var customPrompt = ( customToggle && customToggle.checked )
+				? document.getElementById( 'wookiee-cg-custom-prompt' ).value.trim()
+				: '';
 
-			fetch( ajaxurl, { method: 'POST', credentials: 'same-origin', body: data } )
-				.then( function( r ) { return r.json(); } )
-				.then( function( res ) {
-					genBtn.disabled = false;
-					if ( ! res.success ) {
-						status.innerHTML = res.data && res.data.message ? res.data.message : 'Generation failed.';
-						status.classList.add( 'wookiee-cg-status-error' );
-						return;
-					}
-					status.classList.remove( 'wookiee-cg-status-error' );
-					status.textContent = '';
+			/*
+			 * One request per page, chained sequentially rather than sent as
+			 * one request for the whole selection. A slow model can take the
+			 * better part of a minute per page on its own; bundling several
+			 * into a single blocking request stacks those minutes into one
+			 * connection that a browser, proxy or PHP's own execution limit
+			 * will give up on well before the model is done - which is what
+			 * "could not reach the server" actually was here. This way each
+			 * request is only ever as slow as one page, and pages still land
+			 * one at a time instead of arriving as a single burst.
+			 */
+			var pages = [];
+			var chain = Promise.resolve();
 
-					// The button/checkbox labels reflect server-render-time
-					// state and won't know a generation just happened without
-					// this - otherwise "Back to generate" would still show
-					// "Generate" for pages that were just written.
-					checked.forEach( function( key, i ) {
-						var result = res.data.pages[ i ];
-						if ( ! result || result.error ) { return; }
-						var checkbox = document.querySelector( '.wookiee-content-piece[value="' + key + '"]' );
-						var label    = checkbox ? checkbox.closest( 'label' ) : null;
-						if ( label && ! label.querySelector( '.wookiee-cg-already-generated' ) ) {
-							var span = document.createElement( 'span' );
-							span.className = 'description wookiee-cg-already-generated';
-							span.textContent = ' — already generated';
-							label.appendChild( span );
-						}
-					} );
-					if ( res.data.pages.some( function( p ) { return ! p.error; } ) ) {
-						genBtn.textContent = 'Regenerate selected pages';
-						var policyTh = document.getElementById( 'wookiee-cg-policy-th' );
-						if ( policyTh ) { policyTh.textContent = 'Policy pages to regenerate'; }
-					}
+			checked.forEach( function( key, i ) {
+				chain = chain.then( function() {
+					status.textContent = 'Generating ' + ( i + 1 ) + ' of ' + checked.length + '… some models take the better part of a minute per page.';
 
-					generateScreen.hidden = true;
-					auditScreen.hidden = false;
-					cardsContainer.innerHTML = '';
+					var data = new FormData();
+					data.append( 'action', 'wookiee_generate_content' );
+					data.append( 'nonce', NONCE );
+					data.append( 'brief', brief );
+					data.append( 'piece', key );
+					if ( customPrompt ) { data.append( 'custom_prompt', customPrompt ); }
 
-					var validPages = res.data.pages.filter( function( p ) { return p.post_id && ! p.error; } );
-					var errorPages = res.data.pages.filter( function( p ) { return p.error; } );
-
-					errorPages.forEach( function( p ) {
-						var card = document.createElement( 'div' );
-						card.className = 'wookiee-audit-card';
-						card.innerHTML = '<div class="wookiee-audit-card-head"><h3></h3></div><div class="wookiee-audit-card-body"></div>';
-						card.querySelector( 'h3' ).textContent = p.title;
-						card.querySelector( '.wookiee-audit-card-body' ).textContent = p.error;
-						cardsContainer.appendChild( card );
-					} );
-
-					// Sequential, not parallel - avoids firing a dozen
-					// concurrent LLM calls at once when several pages are
-					// generated together.
-					var chain = Promise.resolve();
-					validPages.forEach( function( p ) {
-						var card = buildCard( p );
-						cardsContainer.appendChild( card );
-						wireCardActions( card, p.post_id );
-						chain = chain.then( function() { return runAudit( card, p.post_id ); } );
-					} );
-				} )
-				.catch( function() {
-					genBtn.disabled = false;
-					status.textContent = 'Generation failed — could not reach the server.';
+					return fetch( ajaxurl, { method: 'POST', credentials: 'same-origin', body: data } )
+						.then( function( r ) { return r.json(); } )
+						.then( function( res ) {
+							if ( res.success && res.data.page ) {
+								pages.push( res.data.page );
+							} else {
+								pages.push( {
+									title: key,
+									error: res.data && res.data.message ? res.data.message : 'Generation failed.',
+									post_id: 0, edit_link: '', preview_link: '',
+								} );
+							}
+						} )
+						.catch( function() {
+							var checkboxEl = document.querySelector( '.wookiee-content-piece[value="' + key + '"]' );
+							var titleText  = checkboxEl ? checkboxEl.closest( 'label' ).textContent.trim() : key;
+							pages.push( { title: titleText, error: 'Could not reach the server.', post_id: 0, edit_link: '', preview_link: '' } );
+						} );
 				} );
+			} );
+
+			chain.then( function() {
+				genBtn.disabled = false;
+				status.textContent = '';
+
+				// The button/checkbox labels reflect server-render-time
+				// state and won't know a generation just happened without
+				// this - otherwise "Back to generate" would still show
+				// "Generate" for pages that were just written.
+				checked.forEach( function( key, i ) {
+					var result = pages[ i ];
+					if ( ! result || result.error ) { return; }
+					var checkbox = document.querySelector( '.wookiee-content-piece[value="' + key + '"]' );
+					var label    = checkbox ? checkbox.closest( 'label' ) : null;
+					if ( label && ! label.querySelector( '.wookiee-cg-already-generated' ) ) {
+						var span = document.createElement( 'span' );
+						span.className = 'description wookiee-cg-already-generated';
+						span.textContent = ' — already generated';
+						label.appendChild( span );
+					}
+				} );
+				if ( pages.some( function( p ) { return ! p.error; } ) ) {
+					genBtn.textContent = 'Regenerate selected pages';
+					var policyTh = document.getElementById( 'wookiee-cg-policy-th' );
+					if ( policyTh ) { policyTh.textContent = 'Policy pages to regenerate'; }
+				}
+
+				generateScreen.hidden = true;
+				auditScreen.hidden = false;
+				cardsContainer.innerHTML = '';
+
+				var validPages = pages.filter( function( p ) { return p.post_id && ! p.error; } );
+				var errorPages = pages.filter( function( p ) { return p.error; } );
+
+				errorPages.forEach( function( p ) {
+					var card = document.createElement( 'div' );
+					card.className = 'wookiee-audit-card';
+					card.innerHTML = '<div class="wookiee-audit-card-head"><h3></h3></div><div class="wookiee-audit-card-body"></div>';
+					card.querySelector( 'h3' ).textContent = p.title;
+					card.querySelector( '.wookiee-audit-card-body' ).textContent = p.error;
+					cardsContainer.appendChild( card );
+				} );
+
+				// Sequential, not parallel - avoids firing a dozen
+				// concurrent LLM calls at once when several pages are
+				// generated together.
+				var auditChain = Promise.resolve();
+				validPages.forEach( function( p ) {
+					var card = buildCard( p );
+					cardsContainer.appendChild( card );
+					wireCardActions( card, p.post_id );
+					auditChain = auditChain.then( function() { return runAudit( card, p.post_id ); } );
+				} );
+			} );
 		} );
 	} )();
 	</script>
 	<?php
 }
 
+/*
+ * One page per request, not the whole selection in one call.
+ *
+ * A handful of policy pages, each a genuine LLM generation, adds up to
+ * several minutes when run back to back inside a single blocking PHP
+ * request - well past what a browser, a reverse proxy, or PHP's own
+ * execution limit will hold a connection open for, even once those are
+ * individually raised (see wookiee_call_llm()). None of that headroom
+ * helps a request that is really N requests wearing one connection. The
+ * JS below calls this once per selected piece instead, chained
+ * sequentially so pages still land one at a time rather than as a burst.
+ */
 add_action( 'wp_ajax_wookiee_generate_content', 'wookiee_generate_content_handler' );
 function wookiee_generate_content_handler() {
 	if ( ! current_user_can( 'manage_options' ) ) {
@@ -498,13 +537,15 @@ function wookiee_generate_content_handler() {
 	check_ajax_referer( 'wookiee_generate_content', 'nonce' );
 
 	$brief         = isset( $_POST['brief'] ) ? sanitize_textarea_field( wp_unslash( $_POST['brief'] ) ) : '';
-	$pieces        = isset( $_POST['pieces'] ) && is_array( $_POST['pieces'] ) ? array_map( 'sanitize_key', wp_unslash( $_POST['pieces'] ) ) : array();
+	$key           = isset( $_POST['piece'] ) ? sanitize_key( wp_unslash( $_POST['piece'] ) ) : '';
 	$custom_prompt = isset( $_POST['custom_prompt'] ) ? sanitize_textarea_field( wp_unslash( $_POST['custom_prompt'] ) ) : '';
 
 	if ( '' === trim( $brief ) ) {
 		wp_send_json_error( array( 'message' => 'Set the niche in Setup › Business identity first.' ) );
 	}
-	if ( empty( $pieces ) ) {
+
+	$available = wookiee_content_generator_pieces();
+	if ( '' === $key || ! isset( $available[ $key ] ) ) {
 		wp_send_json_error( array( 'message' => 'Select at least one item to generate.' ) );
 	}
 
@@ -515,54 +556,44 @@ function wookiee_generate_content_handler() {
 
 	update_option( 'wookiee_niche_brief', $brief );
 
-	$available = wookiee_content_generator_pieces();
-	$results   = array();
+	$piece = $available[ $key ];
 
-	foreach ( $pieces as $key ) {
-		if ( ! isset( $available[ $key ] ) ) {
-			continue;
-		}
-		$piece = $available[ $key ];
+	/*
+	 * Feed the previous audit back in on a regeneration.
+	 *
+	 * Without this, "Regenerate" rebuilt the identical prompt from the
+	 * identical brief, so the model had no idea the last attempt had
+	 * already been reviewed and found wanting - it would produce
+	 * essentially the same page and score the same again, which is
+	 * exactly what regenerating was supposed to fix. The report is read
+	 * here, before wookiee_update_real_static_page() clears it as stale.
+	 */
+	$previous_audit = wookiee_previous_audit_for_piece( $piece );
 
-		/*
-		 * Feed the previous audit back in on a regeneration.
-		 *
-		 * Without this, "Regenerate" rebuilt the identical prompt from the
-		 * identical brief, so the model had no idea the last attempt had
-		 * already been reviewed and found wanting - it would produce
-		 * essentially the same page and score the same again, which is
-		 * exactly what regenerating was supposed to fix. The report is read
-		 * here, before wookiee_update_real_static_page() clears it as stale.
-		 */
-		$previous_audit = wookiee_previous_audit_for_piece( $piece );
+	$prompt = '' !== trim( $custom_prompt )
+		? wookiee_build_custom_policy_prompt( $piece['title'], $custom_prompt )
+		: wookiee_build_content_prompt( $key, $brief, $previous_audit );
+	$text   = wookiee_call_llm( $prompt, wookiee_content_piece_max_tokens( $key ) );
 
-		$prompt = '' !== trim( $custom_prompt )
-			? wookiee_build_custom_policy_prompt( $piece['title'], $custom_prompt )
-			: wookiee_build_content_prompt( $key, $brief, $previous_audit );
-		$text   = wookiee_call_llm( $prompt, wookiee_content_piece_max_tokens( $key ) );
-
-		if ( is_wp_error( $text ) ) {
-			$results[] = array(
-				'title'        => esc_html( $piece['title'] ),
-				'error'        => esc_html( $text->get_error_message() ),
-				'post_id'      => 0,
-				'edit_link'    => '',
-				'preview_link' => '',
-			);
-			continue;
-		}
-
-		$post_id = wookiee_update_real_static_page( $piece['slug'], $piece['title'], $text );
-		$results[] = array(
+	if ( is_wp_error( $text ) ) {
+		wp_send_json_success( array( 'page' => array(
 			'title'        => esc_html( $piece['title'] ),
-			'error'        => '',
-			'post_id'      => $post_id,
-			'edit_link'    => $post_id ? get_edit_post_link( $post_id, 'raw' ) : '',
-			'preview_link' => $post_id ? get_permalink( $post_id ) : '',
-		);
+			'error'        => esc_html( $text->get_error_message() ),
+			'post_id'      => 0,
+			'edit_link'    => '',
+			'preview_link' => '',
+		) ) );
 	}
 
-	wp_send_json_success( array( 'pages' => $results ) );
+	$post_id = wookiee_update_real_static_page( $piece['slug'], $piece['title'], $text );
+
+	wp_send_json_success( array( 'page' => array(
+		'title'        => esc_html( $piece['title'] ),
+		'error'        => '',
+		'post_id'      => $post_id,
+		'edit_link'    => $post_id ? get_edit_post_link( $post_id, 'raw' ) : '',
+		'preview_link' => $post_id ? get_permalink( $post_id ) : '',
+	) ) );
 }
 
 /**

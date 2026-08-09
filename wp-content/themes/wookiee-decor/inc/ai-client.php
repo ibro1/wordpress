@@ -92,6 +92,19 @@ function wookiee_generation_available() {
 }
 
 function wookiee_call_llm( $prompt, $max_tokens = 2048 ) {
+	/*
+	 * A non-streaming generation call can legitimately run past a minute -
+	 * some configured providers (routed gateways in particular) are simply
+	 * slower than others for the same model name, and a long policy page
+	 * can be a few thousand tokens. Left at PHP's usual 30s default, the
+	 * request gets killed mid-generation and reports as a network failure
+	 * ("could not reach the server") that has nothing to do with
+	 * reachability. Suppressed because some hosts disable it entirely.
+	 */
+	if ( function_exists( 'set_time_limit' ) ) {
+		@set_time_limit( 150 ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+	}
+
 	if ( wookiee_central_api_configured() ) {
 		$body = array( 'prompt' => $prompt, 'max_tokens' => $max_tokens );
 
@@ -108,7 +121,7 @@ function wookiee_call_llm( $prompt, $max_tokens = 2048 ) {
 			$body['model'] = $model;
 		}
 
-		$result = wookiee_central_api_request( 'POST', '/llm/generate', $body );
+		$result = wookiee_central_api_request( 'POST', '/llm/generate', $body, 120 );
 		if ( is_wp_error( $result ) ) {
 			return $result;
 		}
@@ -137,7 +150,7 @@ function wookiee_call_llm( $prompt, $max_tokens = 2048 ) {
 					array( 'role' => 'user', 'content' => $prompt ),
 				),
 			) ),
-			'timeout' => 60,
+			'timeout' => 120,
 		)
 	);
 

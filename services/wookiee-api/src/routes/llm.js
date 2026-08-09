@@ -216,7 +216,7 @@ router.post('/generate', async (req, res) => {
     return res.status(target.status).json({ error: target.error });
   }
 
-  async function attempt(useMaxCompletionTokens) {
+  async function attempt(useMaxCompletionTokens, tokenBudget) {
     return fetch(`${target.baseUrl}/chat/completions`, {
       method: 'POST',
       headers: {
@@ -224,13 +224,13 @@ router.post('/generate', async (req, res) => {
         'Content-Type': 'application/json',
         ...target.extraHeaders,
       },
-      body: JSON.stringify(buildCompletionRequestBody(target.model, prompt, maxTokens, useMaxCompletionTokens)),
+      body: JSON.stringify(buildCompletionRequestBody(target.model, prompt, tokenBudget, useMaxCompletionTokens)),
     });
   }
 
   let response;
   try {
-    response = await attempt(false);
+    response = await attempt(false, maxTokens);
   } catch (err) {
     return res.status(502).json({ error: err.message });
   }
@@ -240,7 +240,18 @@ router.post('/generate', async (req, res) => {
 
     if (isUnsupportedMaxTokensError(errBody)) {
       try {
-        response = await attempt(true);
+        /*
+         * A model that rejects max_tokens in favour of max_completion_tokens
+         * is, by that same rejection, a reasoning-family model (GPT-5/
+         * o-series) - and those spend part of that budget on hidden
+         * internal reasoning before writing anything visible. A budget
+         * sized only for the plain output can be consumed entirely by
+         * reasoning and return zero visible text, which surfaces as "the
+         * LLM returned an empty response" rather than as a token-limit
+         * error - so this retry asks for real headroom on top of what was
+         * actually requested, not the same number under a different name.
+         */
+        response = await attempt(true, Math.max(maxTokens * 3, 16000));
       } catch (err) {
         return res.status(502).json({ error: err.message });
       }

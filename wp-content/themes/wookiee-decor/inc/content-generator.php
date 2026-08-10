@@ -168,6 +168,87 @@ function wookiee_render_content_generator_page() {
 		var NONCE = <?php echo wp_json_encode( wp_create_nonce( 'wookiee_generate_content' ) ); ?>;
 		var PERSISTED_PAGES = <?php echo wp_json_encode( $persisted_pages ); ?>;
 
+		var JOB_POLL_INTERVAL_MS = 4000;
+		var JOB_POLL_TIMEOUT_MS  = 10 * 60 * 1000;
+
+		/*
+		 * Starts a background job (see inc/background-jobs.php) and polls
+		 * until it finishes, resolving to { ok:true, ...result } or
+		 * { ok:false, message }. Every caller below used to fire one fetch()
+		 * and wait on it directly - that single request was the one
+		 * Cloudflare's own ~100s edge timeout kept cutting for anything
+		 * genuinely slow. No request made here, start or poll, is ever open
+		 * longer than one poll interval, so none of them can hit that wall -
+		 * the actual generation runs server-side, decoupled from any one
+		 * browser connection, for as long as it needs to.
+		 */
+		function runJob( action, fields ) {
+			var data = new FormData();
+			data.append( 'action', action );
+			data.append( 'nonce', NONCE );
+			Object.keys( fields ).forEach( function( key ) { data.append( key, fields[ key ] ); } );
+
+			return fetch( ajaxurl, { method: 'POST', credentials: 'same-origin', body: data } )
+				.then( function( r ) { return r.json(); } )
+				.then( function( res ) {
+					if ( ! res.success || ! res.data || ! res.data.job_id ) {
+						return { ok: false, message: res.data && res.data.message ? res.data.message : 'Could not start.' };
+					}
+					return pollJob( res.data.job_id );
+				} )
+				.catch( function() {
+					return { ok: false, message: 'Could not reach the server.' };
+				} );
+		}
+
+		function pollJob( jobId ) {
+			var deadline = Date.now() + JOB_POLL_TIMEOUT_MS;
+
+			function wait() {
+				return new Promise( function( resolve ) { setTimeout( resolve, JOB_POLL_INTERVAL_MS ); } );
+			}
+
+			function check() {
+				var data = new FormData();
+				data.append( 'action', 'wookiee_poll_job' );
+				data.append( 'nonce', NONCE );
+				data.append( 'job_id', jobId );
+
+				return fetch( ajaxurl, { method: 'POST', credentials: 'same-origin', body: data } )
+					.then( function( r ) { return r.json(); } )
+					.then( function( res ) {
+						if ( ! res.success ) {
+							return { ok: false, message: res.data && res.data.message ? res.data.message : 'Lost track of the job.' };
+						}
+						if ( 'done' === res.data.status ) {
+							var out = { ok: true };
+							var result = res.data.result || {};
+							for ( var key in result ) { out[ key ] = result[ key ]; }
+							return out;
+						}
+						if ( 'error' === res.data.status ) {
+							return { ok: false, message: res.data.message || 'Failed.' };
+						}
+						// pending or running.
+						if ( Date.now() > deadline ) {
+							return { ok: false, message: 'Timed out waiting for a response.' };
+						}
+						return wait().then( check );
+					} )
+					.catch( function() {
+						// A hiccup on a POLL request, not the job itself -
+						// worth trying again rather than giving up, since
+						// the job may well still be running server-side.
+						if ( Date.now() > deadline ) {
+							return { ok: false, message: 'Timed out waiting for a response.' };
+						}
+						return wait().then( check );
+					} );
+			}
+
+			return check();
+		}
+
 		var generateScreen = document.getElementById( 'wookiee-cg-generate-screen' );
 		var auditScreen    = document.getElementById( 'wookiee-cg-audit-screen' );
 		var cardsContainer = document.getElementById( 'wookiee-cg-audit-cards' );
@@ -222,28 +303,18 @@ function wookiee_render_content_generator_page() {
 			setCardOpen( card, true );
 			badge.textContent = 'Analysing…';
 			badge.className = 'wookiee-audit-card-badge';
-			body.textContent = 'Analysing…';
+			body.textContent = 'Analysing… a thorough report can take a couple of minutes.';
 			actions.hidden = true;
-			var data = new FormData();
-			data.append( 'action', 'wookiee_audit_policy_page' );
-			data.append( 'nonce', NONCE );
-			data.append( 'post_id', postId );
-			return fetch( ajaxurl, { method: 'POST', credentials: 'same-origin', body: data } )
-				.then( function( r ) { return r.json(); } )
+			return runJob( 'wookiee_audit_policy_page', { post_id: postId } )
 				.then( function( res ) {
-					if ( ! res.success ) {
-						body.innerHTML = res.data && res.data.message ? res.data.message : 'Audit failed.';
+					if ( ! res.ok ) {
+						body.innerHTML = res.message || 'Audit failed.';
 						badge.textContent = 'Failed';
 						actions.hidden = false;
 						return;
 					}
-					applyReportToCard( card, res.data.report );
+					applyReportToCard( card, res.report );
 					if ( ! keepOpenAfter ) { setCardOpen( card, false ); }
-				} )
-				.catch( function() {
-					body.textContent = 'Audit failed — could not reach the server.';
-					badge.textContent = 'Failed';
-					actions.hidden = false;
 				} );
 		}
 
@@ -300,28 +371,18 @@ function wookiee_render_content_generator_page() {
 			fixBtn.addEventListener( 'click', function() {
 				var report = card.getAttribute( 'data-report' ) || '';
 				fixBtn.disabled = true;
-				status.textContent = 'Rewriting…';
-				var data = new FormData();
-				data.append( 'action', 'wookiee_apply_audit_fixes' );
-				data.append( 'nonce', NONCE );
-				data.append( 'post_id', postId );
-				data.append( 'audit_report', report );
-				fetch( ajaxurl, { method: 'POST', credentials: 'same-origin', body: data } )
-					.then( function( r ) { return r.json(); } )
+				status.classList.remove( 'wookiee-cg-status-error' );
+				status.textContent = 'Rewriting… this can take a minute or two.';
+				runJob( 'wookiee_apply_audit_fixes', { post_id: postId, audit_report: report } )
 					.then( function( res ) {
 						fixBtn.disabled = false;
-						if ( ! res.success ) {
-							status.innerHTML = res.data && res.data.message ? res.data.message : 'Failed to apply fixes.';
+						if ( ! res.ok ) {
+							status.innerHTML = res.message || 'Failed to apply fixes.';
 							status.classList.add( 'wookiee-cg-status-error' );
 							return;
 						}
-						status.classList.remove( 'wookiee-cg-status-error' );
 						status.textContent = 'Updated.';
 						reanalyzeBtn.hidden = false;
-					} )
-					.catch( function() {
-						fixBtn.disabled = false;
-						status.textContent = 'Failed — could not reach the server.';
 					} );
 			} );
 
@@ -332,28 +393,18 @@ function wookiee_render_content_generator_page() {
 					return;
 				}
 				customBtn.disabled = true;
-				status.textContent = 'Rewriting…';
-				var data = new FormData();
-				data.append( 'action', 'wookiee_apply_custom_policy_prompt' );
-				data.append( 'nonce', NONCE );
-				data.append( 'post_id', postId );
-				data.append( 'instruction', instruction );
-				fetch( ajaxurl, { method: 'POST', credentials: 'same-origin', body: data } )
-					.then( function( r ) { return r.json(); } )
+				status.classList.remove( 'wookiee-cg-status-error' );
+				status.textContent = 'Rewriting… this can take a minute or two.';
+				runJob( 'wookiee_apply_custom_policy_prompt', { post_id: postId, instruction: instruction } )
 					.then( function( res ) {
 						customBtn.disabled = false;
-						if ( ! res.success ) {
-							status.innerHTML = res.data && res.data.message ? res.data.message : 'Failed to apply.';
+						if ( ! res.ok ) {
+							status.innerHTML = res.message || 'Failed to apply.';
 							status.classList.add( 'wookiee-cg-status-error' );
 							return;
 						}
-						status.classList.remove( 'wookiee-cg-status-error' );
 						status.textContent = 'Updated.';
 						reanalyzeBtn.hidden = false;
-					} )
-					.catch( function() {
-						customBtn.disabled = false;
-						status.textContent = 'Failed — could not reach the server.';
 					} );
 			} );
 
@@ -457,27 +508,15 @@ function wookiee_render_content_generator_page() {
 				genChain = genChain.then( function() {
 					status.textContent = 'Generating ' + ( i + 1 ) + ' of ' + checked.length + '… some models take the better part of a minute per page.';
 
-					var data = new FormData();
-					data.append( 'action', 'wookiee_generate_content' );
-					data.append( 'nonce', NONCE );
-					data.append( 'brief', brief );
-					data.append( 'piece', key );
-					if ( customPrompt ) { data.append( 'custom_prompt', customPrompt ); }
+					var fields = { brief: brief, piece: key };
+					if ( customPrompt ) { fields.custom_prompt = customPrompt; }
 
-					return fetch( ajaxurl, { method: 'POST', credentials: 'same-origin', body: data } )
-						.then( function( r ) { return r.json(); } )
+					return runJob( 'wookiee_generate_content', fields )
 						.then( function( res ) {
-							if ( res.success && res.data.page ) { return res.data.page; }
-							return {
-								title: key,
-								error: res.data && res.data.message ? res.data.message : 'Generation failed.',
-								post_id: 0, edit_link: '', preview_link: '',
-							};
-						} )
-						.catch( function() {
+							if ( res.ok && res.page ) { return res.page; }
 							var checkboxEl = document.querySelector( '.wookiee-content-piece[value="' + key + '"]' );
 							var titleText  = checkboxEl ? checkboxEl.closest( 'label' ).textContent.trim() : key;
-							return { title: titleText, error: 'Could not reach the server.', post_id: 0, edit_link: '', preview_link: '' };
+							return { title: titleText, error: res.message || 'Generation failed.', post_id: 0, edit_link: '', preview_link: '' };
 						} )
 						.then( function( page ) {
 							showAuditScreen();
@@ -516,16 +555,17 @@ function wookiee_render_content_generator_page() {
 }
 
 /*
- * One page per request, not the whole selection in one call.
- *
- * A handful of policy pages, each a genuine LLM generation, adds up to
- * several minutes when run back to back inside a single blocking PHP
- * request - well past what a browser, a reverse proxy, or PHP's own
- * execution limit will hold a connection open for, even once those are
- * individually raised (see wookiee_call_llm()). None of that headroom
- * helps a request that is really N requests wearing one connection. The
- * JS below calls this once per selected piece instead, chained
- * sequentially so pages still land one at a time rather than as a burst.
+ * One page per request, not the whole selection in one call - AND that one
+ * request returns almost immediately rather than blocking on the
+ * generation itself. A genuine LLM generation for a full policy page
+ * routinely runs past a minute, and this site sits behind Cloudflare,
+ * whose own proxy timeout (~100s) kills the browser-to-WordPress
+ * connection independently of anything configured in PHP or in the LLM
+ * backend - raising wookiee_call_llm()'s own timeouts doesn't touch that
+ * layer at all. So the actual generation now runs as a background job
+ * (see inc/background-jobs.php): this handler validates input, starts the
+ * job, and returns a job id in well under a second: the JS below polls
+ * for the result instead of waiting on this connection for it.
  */
 add_action( 'wp_ajax_wookiee_generate_content', 'wookiee_generate_content_handler' );
 function wookiee_generate_content_handler() {
@@ -554,7 +594,29 @@ function wookiee_generate_content_handler() {
 
 	update_option( 'wookiee_niche_brief', $brief );
 
-	$piece = $available[ $key ];
+	list( $job_id, $secret ) = wookiee_create_job( 'generate_content', array(
+		'brief'         => $brief,
+		'piece'         => $key,
+		'custom_prompt' => $custom_prompt,
+	) );
+	wookiee_dispatch_job( $job_id, $secret );
+
+	wp_send_json_success( array( 'job_id' => $job_id ) );
+}
+
+/**
+ * The actual generation work, run by inc/background-jobs.php outside any
+ * browser-facing request. Same logic that used to live directly in
+ * wookiee_generate_content_handler() above - only the input/output shape
+ * changed, from $_POST/wp_send_json_* to a plain array in, array out.
+ */
+function wookiee_run_generate_content_job( $input ) {
+	$brief         = $input['brief'];
+	$key           = $input['piece'];
+	$custom_prompt = $input['custom_prompt'];
+
+	$available = wookiee_content_generator_pieces();
+	$piece     = $available[ $key ];
 
 	/*
 	 * Feed the previous audit back in on a regeneration.
@@ -574,34 +636,34 @@ function wookiee_generate_content_handler() {
 	$text   = wookiee_call_llm( $prompt, wookiee_content_piece_max_tokens( $key ) );
 
 	if ( is_wp_error( $text ) ) {
-		wp_send_json_success( array( 'page' => array(
+		return array( 'page' => array(
 			'title'        => esc_html( $piece['title'] ),
 			'error'        => esc_html( $text->get_error_message() ),
 			'post_id'      => 0,
 			'edit_link'    => '',
 			'preview_link' => '',
-		) ) );
+		) );
 	}
 
 	if ( wookiee_text_looks_truncated( $text ) ) {
-		wp_send_json_success( array( 'page' => array(
+		return array( 'page' => array(
 			'title'        => esc_html( $piece['title'] ),
 			'error'        => 'The model\'s answer was cut off before the page was finished, so nothing was published. Try again - a shorter, more focused page (or a stronger model) may fit within its limit.',
 			'post_id'      => 0,
 			'edit_link'    => '',
 			'preview_link' => '',
-		) ) );
+		) );
 	}
 
 	$post_id = wookiee_update_real_static_page( $piece['slug'], $piece['title'], $text );
 
-	wp_send_json_success( array( 'page' => array(
+	return array( 'page' => array(
 		'title'        => esc_html( $piece['title'] ),
 		'error'        => '',
 		'post_id'      => $post_id,
 		'edit_link'    => $post_id ? get_edit_post_link( $post_id, 'raw' ) : '',
 		'preview_link' => $post_id ? get_permalink( $post_id ) : '',
-	) ) );
+	) );
 }
 
 /**
@@ -1201,6 +1263,8 @@ function wookiee_build_custom_policy_prompt( $title, $custom_instruction ) {
  * rigor (scored risk, itemised issues, missing-information callouts)
  * rather than reserving the US original for a future non-UK site.
  */
+// See the comment on wookiee_generate_content_handler() above for why this
+// starts a background job instead of calling wookiee_call_llm() directly.
 add_action( 'wp_ajax_wookiee_audit_policy_page', 'wookiee_audit_policy_page_handler' );
 function wookiee_audit_policy_page_handler() {
 	if ( ! current_user_can( 'manage_options' ) ) {
@@ -1208,11 +1272,32 @@ function wookiee_audit_policy_page_handler() {
 	}
 	check_ajax_referer( 'wookiee_generate_content', 'nonce' );
 
-
 	$post_id = isset( $_POST['post_id'] ) ? intval( $_POST['post_id'] ) : 0;
 	$post    = $post_id ? get_post( $post_id ) : null;
 	if ( ! $post || 'page' !== $post->post_type ) {
 		wp_send_json_error( array( 'message' => 'Select a valid policy draft first.' ) );
+	}
+
+	list( $job_id, $secret ) = wookiee_create_job( 'audit_policy', array( 'post_id' => $post_id ) );
+	wookiee_dispatch_job( $job_id, $secret );
+
+	wp_send_json_success( array( 'job_id' => $job_id ) );
+}
+
+/*
+ * Throws rather than returning an error-shaped array on failure - the job
+ * harness in inc/background-jobs.php already catches Throwable and stores
+ * it as job status "error" with that message, which is exactly the
+ * success/failure distinction the polling JS needs (status "done" only
+ * ever means a real report). Returning an ambiguous array here instead
+ * would leave the poller unable to tell a failed audit from a successful
+ * one without inspecting which keys happen to be present.
+ */
+function wookiee_run_audit_policy_job( $input ) {
+	$post_id = $input['post_id'];
+	$post    = get_post( $post_id );
+	if ( ! $post ) {
+		throw new \Exception( 'The page no longer exists.' );
 	}
 
 	$prompt = wookiee_build_policy_audit_prompt( $post->post_title, wookiee_policy_current_text( $post ), wookiee_policy_key_for_post( $post ) );
@@ -1229,12 +1314,12 @@ function wookiee_audit_policy_page_handler() {
 	$report = wookiee_call_llm( $prompt, 8192 );
 
 	if ( is_wp_error( $report ) ) {
-		wp_send_json_error( array( 'message' => $report->get_error_message() ) );
+		throw new \Exception( $report->get_error_message() );
 	}
 
 	wookiee_store_audit_result( $post_id, $report );
 
-	wp_send_json_success( array( 'report' => $report ) );
+	return array( 'report' => $report );
 }
 
 /**
@@ -1455,13 +1540,14 @@ function wookiee_build_policy_audit_prompt( $title, $policy_text, $key = '' ) {
  * already itemised. Writes directly to the same real page (preserving
  * its status) - there's no draft copy in between.
  */
+// See the comment on wookiee_generate_content_handler() for why this
+// starts a background job instead of calling wookiee_call_llm() directly.
 add_action( 'wp_ajax_wookiee_apply_audit_fixes', 'wookiee_apply_audit_fixes_handler' );
 function wookiee_apply_audit_fixes_handler() {
 	if ( ! current_user_can( 'manage_options' ) ) {
 		wp_send_json_error( array( 'message' => 'Not allowed.' ), 403 );
 	}
 	check_ajax_referer( 'wookiee_generate_content', 'nonce' );
-
 
 	$missing_fields = wookiee_missing_critical_business_fields();
 	if ( ! empty( $missing_fields ) ) {
@@ -1479,18 +1565,33 @@ function wookiee_apply_audit_fixes_handler() {
 		wp_send_json_error( array( 'message' => 'Run the compliance audit first.' ) );
 	}
 
-	$prompt = wookiee_build_policy_fix_prompt( $post->post_title, wookiee_policy_current_text( $post ), $audit_report );
+	list( $job_id, $secret ) = wookiee_create_job( 'apply_audit_fixes', array(
+		'post_id'      => $post_id,
+		'audit_report' => $audit_report,
+	) );
+	wookiee_dispatch_job( $job_id, $secret );
+
+	wp_send_json_success( array( 'job_id' => $job_id ) );
+}
+
+function wookiee_run_apply_audit_fixes_job( $input ) {
+	$post = get_post( $input['post_id'] );
+	if ( ! $post ) {
+		throw new \Exception( 'The page no longer exists.' );
+	}
+
+	$prompt = wookiee_build_policy_fix_prompt( $post->post_title, wookiee_policy_current_text( $post ), $input['audit_report'] );
 	// Same reasoning as wookiee_content_piece_max_tokens(): a fix pass is
 	// actively adding the sections an audit found missing, so it needs at
 	// least as much room as the original generation did, not less.
-	$text   = wookiee_call_llm( $prompt, wookiee_content_piece_max_tokens( wookiee_policy_key_for_post( $post ) ) );
+	$text = wookiee_call_llm( $prompt, wookiee_content_piece_max_tokens( wookiee_policy_key_for_post( $post ) ) );
 
 	if ( is_wp_error( $text ) ) {
-		wp_send_json_error( array( 'message' => $text->get_error_message() ) );
+		throw new \Exception( $text->get_error_message() );
 	}
 
 	if ( wookiee_text_looks_truncated( $text ) ) {
-		wp_send_json_error( array( 'message' => 'The model\'s answer was cut off before the rewrite was finished, so the live page was left untouched. Try again.' ) );
+		throw new \Exception( 'The model\'s answer was cut off before the rewrite was finished, so the live page was left untouched. Try again.' );
 	}
 
 	wp_update_post( array(
@@ -1499,7 +1600,7 @@ function wookiee_apply_audit_fixes_handler() {
 	) );
 	wookiee_clear_audit_result( $post->ID );
 
-	wp_send_json_success( array( 'edit_link' => get_edit_post_link( $post->ID, 'raw' ) ) );
+	return array( 'edit_link' => get_edit_post_link( $post->ID, 'raw' ) );
 }
 
 /**
@@ -1684,13 +1785,14 @@ function wookiee_build_policy_fix_prompt( $title, $current_text, $audit_report )
  * too") - same real-business-details guardrails as every other policy
  * prompt, just driven by open intent instead of an audit report.
  */
+// See the comment on wookiee_generate_content_handler() for why this
+// starts a background job instead of calling wookiee_call_llm() directly.
 add_action( 'wp_ajax_wookiee_apply_custom_policy_prompt', 'wookiee_apply_custom_policy_prompt_handler' );
 function wookiee_apply_custom_policy_prompt_handler() {
 	if ( ! current_user_can( 'manage_options' ) ) {
 		wp_send_json_error( array( 'message' => 'Not allowed.' ), 403 );
 	}
 	check_ajax_referer( 'wookiee_generate_content', 'nonce' );
-
 
 	$missing_fields = wookiee_missing_critical_business_fields();
 	if ( ! empty( $missing_fields ) ) {
@@ -1707,6 +1809,22 @@ function wookiee_apply_custom_policy_prompt_handler() {
 	if ( '' === trim( $instruction ) ) {
 		wp_send_json_error( array( 'message' => 'Describe what you want changed first.' ) );
 	}
+
+	list( $job_id, $secret ) = wookiee_create_job( 'apply_custom_prompt', array(
+		'post_id'     => $post_id,
+		'instruction' => $instruction,
+	) );
+	wookiee_dispatch_job( $job_id, $secret );
+
+	wp_send_json_success( array( 'job_id' => $job_id ) );
+}
+
+function wookiee_run_apply_custom_prompt_job( $input ) {
+	$post = get_post( $input['post_id'] );
+	if ( ! $post ) {
+		throw new \Exception( 'The page no longer exists.' );
+	}
+	$instruction = $input['instruction'];
 
 	$prompt = "You previously drafted a UK ecommerce policy page. Below is its CURRENT text, followed by an instruction from the store owner on what to change. Apply that instruction while keeping everything else accurate and intact.\n\n"
 		. "Policy page: {$post->post_title}\n\n"
@@ -1736,11 +1854,11 @@ function wookiee_apply_custom_policy_prompt_handler() {
 
 	$text = wookiee_call_llm( $prompt, wookiee_content_piece_max_tokens( wookiee_policy_key_for_post( $post ) ) );
 	if ( is_wp_error( $text ) ) {
-		wp_send_json_error( array( 'message' => $text->get_error_message() ) );
+		throw new \Exception( $text->get_error_message() );
 	}
 
 	if ( wookiee_text_looks_truncated( $text ) ) {
-		wp_send_json_error( array( 'message' => 'The model\'s answer was cut off before the rewrite was finished, so the live page was left untouched. Try again.' ) );
+		throw new \Exception( 'The model\'s answer was cut off before the rewrite was finished, so the live page was left untouched. Try again.' );
 	}
 
 	wp_update_post( array(
@@ -1750,7 +1868,7 @@ function wookiee_apply_custom_policy_prompt_handler() {
 	update_post_meta( $post->ID, '_wookiee_ai_generated', 1 );
 	wookiee_clear_audit_result( $post->ID );
 
-	wp_send_json_success( array( 'edit_link' => get_edit_post_link( $post->ID, 'raw' ) ) );
+	return array( 'edit_link' => get_edit_post_link( $post->ID, 'raw' ) );
 }
 
 /**

@@ -707,6 +707,16 @@ function wookiee_business_details_block() {
 		'Business/trading name: ' . wookiee_get_setting( 'business_name' ),
 		'Registered address: ' . str_replace( "\n", ', ', wookiee_get_setting( 'registered_address' ) ),
 		'Company number: ' . wookiee_get_setting( 'company_number' ),
+		/*
+		 * "Not VAT registered" is a complete, safe answer that needs no
+		 * placeholder - it is the normal position for a small UK company
+		 * below the registration threshold. Only the number itself, when
+		 * the business says it IS registered but hasn't supplied one yet,
+		 * is the kind of fact a placeholder is actually for.
+		 */
+		( 'yes' === wookiee_get_setting( 'vat_registered' )
+			? 'VAT: registered' . ( '' !== trim( (string) wookiee_get_setting( 'vat_number' ) ) ? ', VAT registration number ' . wookiee_get_setting( 'vat_number' ) : ' (registration number not yet supplied - use a placeholder for the number only, not for VAT status)' )
+			: 'VAT: not VAT registered - state this plainly where relevant, do not use a placeholder' ),
 		'Contact email: ' . wookiee_get_setting( 'contact_email' ),
 		'Contact phone: ' . wookiee_get_setting( 'contact_phone' ),
 		'Support hours: ' . wookiee_get_setting( 'support_hours' ),
@@ -954,6 +964,21 @@ function wookiee_build_content_prompt( $key, $brief, $previous_audit = '' ) {
 				. "State whether the delivery charge is per order or per item, and whether collection in person is available - a registered office is not a shop, and customers do turn up.\n"
 				. "Commit to updating this page if the fulfilment arrangements materially change.\n\n"
 				. "State the delivery timings EXPLICITLY and separately, using the real values given in the business details above: how long before an order is dispatched (handling time), how long it then takes in transit, and the total a customer should expect from order to doorstep. This is the single thing most people open a shipping page to find, and a policy that describes dispatch without ever saying when the parcel arrives has not answered it.\n"
+				/*
+				 * The handling/transit/total figures and the storefront's own
+				 * free-text summary are two independently-set business-detail
+				 * fields describing the same real-world timing, and nothing
+				 * stops an operator setting them to different numbers. A
+				 * previous run, faced with that mismatch, quoted both and
+				 * tried to reconcile them inline ("a rounded summary of the
+				 * same timeframe") - which read as internally contradictory
+				 * to a reviewer, because it is one: two different day-counts
+				 * on the same page with no way to tell which governs. The
+				 * handling/transit/total figures are the ones this page is
+				 * actually sourced from; the storefront summary is a
+				 * separate marketing line this page does not control.
+				 */
+				. "The handling time, transit time and total figures above are this page's OWN authoritative figures - use only those for the timings you state here. The storefront's separate delivery summary line is shown elsewhere on the site and is not this page's source of truth; if it happens to state a different number, do not quote it, compare it, or attempt to reconcile the two in the text - a policy that visibly argues with another part of the same site reads as broken, not as thorough. State the handling/transit/total figures plainly, once, as fact.\n"
 				. "Also cover what happens when delivery goes wrong - a parcel that is late, lost, damaged in transit, or returned as undeliverable because nobody was in or the address was wrong - and say what the customer should do in each case.\n"
 				. "Name the carriers given on the 'Delivery carriers used' line above. If that line says none were specified, describe the service in general terms instead (e.g. \"a tracked UK courier service\") - that is a complete and accurate answer, so do NOT write a placeholder asking the owner to name a carrier, and do not omit the topic either. Confirm that tracking information is provided once an order is dispatched.\n"
 				. "If shipping costs are non-refundable in some circumstances, state clearly that this does not apply where the goods are faulty, not as described, or the order was cancelled under the customer's statutory rights - do not state a blanket non-refundable shipping rule without that carve-out.\n"

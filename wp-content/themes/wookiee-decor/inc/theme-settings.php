@@ -285,6 +285,17 @@ function wookiee_settings_fields() {
 		'registered_address'  => array( 'label' => 'Registered office address', 'default' => $registered_address_default, 'type' => 'textarea' ),
 		'company_number'     => array( 'label' => 'Company number or name', 'default' => 'SC769264 or Netlinko Ltd', 'type' => 'text' ),
 		/*
+		 * VAT status has no safe default either way, but unlike most
+		 * business facts it does have a safe ANSWER when left unset - "not
+		 * VAT registered" is a completely normal, statable position for a
+		 * small UK company below the registration threshold, not a gap
+		 * that needs a placeholder. Only the registration NUMBER, when the
+		 * business says it is registered, is the kind of fact that
+		 * genuinely has no safe default and earns one.
+		 */
+		'vat_registered'     => array( 'label' => 'VAT registered', 'default' => 'no', 'type' => 'select', 'options' => array( 'no' => 'No', 'yes' => 'Yes' ) ),
+		'vat_number'         => array( 'label' => 'VAT registration number', 'default' => '', 'type' => 'text' ),
+		/*
 		 * Filled by the Companies House lookup, not typed. Kept as a real
 		 * saved field rather than a transient value because the niche
 		 * suggester reads it long after setup, to propose a niche in the
@@ -497,7 +508,7 @@ function wookiee_settings_tabs() {
 	return array(
 		'business' => array(
 			'label'  => 'Business Identity',
-			'fields' => array( 'company_number', 'companies_house_api_key', 'business_name', 'registered_address', 'sic_codes', 'countries_served', 'product_markup_percent', 'product_min_price', 'supplier_price_rate' ),
+			'fields' => array( 'company_number', 'companies_house_api_key', 'business_name', 'registered_address', 'vat_registered', 'vat_number', 'sic_codes', 'countries_served', 'product_markup_percent', 'product_min_price', 'supplier_price_rate' ),
 		),
 		'contact' => array(
 			'label'  => 'Contact & Support',
@@ -660,6 +671,9 @@ function wookiee_render_settings_field_row( $key, $field ) {
 			<?php endif; ?>
 			<?php if ( 'supplier_price_rate' === $key ) : ?>
 				<p class="description">Supplier catalog prices are quoted in US dollars. This converts them before your markup is applied, so a product costing $10 at a rate of 0.79 starts from £7.90. Check it against the current rate now and then &mdash; it is deliberately fixed rather than live, so your prices do not move on their own.</p>
+			<?php endif; ?>
+			<?php if ( 'shipping_dispatch' === $key ) : ?>
+				<p class="description">The short version shown to customers on the storefront. Keep this in agreement with <strong>Handling time</strong> + <strong>Transit time</strong> below &mdash; they describe the same real timing to two different audiences, and a compliance audit will flag it as an inconsistency if they disagree (e.g. this says &ldquo;2&ndash;3 days&rdquo; while Handling time says &ldquo;1&ndash;2 business days&rdquo;). There's no automatic link between these fields, so it's on you to update both when either changes.</p>
 			<?php endif; ?>
 			<?php if ( 'sic_codes' === $key ) : ?>
 				<p class="description">The official classification of what this company does, filled in by the lookup above. The AI niche suggester uses it to propose a niche in your company's own line of business rather than an unrelated category. Safe to leave as it comes.</p>

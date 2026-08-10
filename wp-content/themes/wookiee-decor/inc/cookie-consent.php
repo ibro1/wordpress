@@ -25,7 +25,18 @@ defined( 'ABSPATH' ) || exit;
  * the real mechanism rather than inventing or omitting one.
  */
 function wookiee_cookie_consent_mechanism_description() {
-	return 'This site shows a cookie consent banner to first-time visitors, offering three choices: Accept All, Reject Non-Essential, or Manage Preferences. Manage Preferences opens a dialog listing the three categories with a checkbox each, and that dialog itself offers Decline All, Accept All and Save My Choices - so a visitor can refuse everything in one click from the dialog exactly as easily as accepting everything. Non-essential categories are off until the visitor allows them. Strictly Necessary cookies - the ones required to run the shopping cart, checkout, and basic site security - cannot be disabled since the site cannot function without them; this is the "essential" category. Analytics and Marketing cookies are the "non-essential" categories a visitor can freely accept or reject. The visitor\'s choice is remembered for 6 months, after which the banner appears again and consent is asked for afresh. It can be changed at any time from the "Cookie preferences" link in the site footer, which opens the same dialog directly. This site does not currently have any third-party analytics or advertising scripts (e.g. Google Analytics, ad networks) actually installed - state this plainly rather than describing hypothetical third-party cookies.';
+	return 'This site shows a cookie consent banner to first-time visitors, offering three choices: Accept All, Reject Non-Essential, or Manage Preferences. Manage Preferences opens a dialog listing the three categories with a checkbox each, and that dialog itself offers Decline All, Accept All and Save My Choices - so a visitor can refuse everything in one click from the dialog exactly as easily as accepting everything. Non-essential categories are off until the visitor allows them. Strictly Necessary cookies - the ones required to run the shopping cart, checkout, and basic site security - cannot be disabled since the site cannot function without them; this is the "essential" category. Analytics and Marketing cookies are the "non-essential" categories a visitor can freely accept or reject. The visitor\'s choice is remembered for 6 months (182 days), after which the banner appears again and consent is asked for afresh. It can be changed at any time from the "Cookie preferences" link in the site footer, which opens the same dialog directly. This site does not currently have any third-party analytics or advertising scripts (e.g. Google Analytics, ad networks) actually installed - state this plainly rather than describing hypothetical third-party cookies.'
+		. ' The consent choice itself is stored in a genuine first-party cookie named exactly "wookiee_cookie_consent", holding the three category choices, first-party, set for 182 days, path /. State this exact name - do not describe it as unnamed, as local storage, or under any other name.'
+		/*
+		 * The WooCommerce session cookie's name genuinely does carry a
+		 * per-site hash suffix - that's accurate, not a gap - but writing
+		 * it with a bracketed placeholder ("wp_woocommerce_session_[site
+		 * identifier]") is visually indistinguishable from an unresolved
+		 * "[Business input required: ...]" placeholder, and a compliance
+		 * audit correctly has no way to tell the two apart. Prose instead
+		 * of brackets says the same true thing without reading as unfinished.
+		 */
+		. ' WooCommerce itself also sets "wp_woocommerce_session_" followed by a unique code generated for this site (not a placeholder - describe it in prose, e.g. "wp_woocommerce_session_ followed by a unique code for this site", never inside square brackets, which would read as an unfinished placeholder) to remember the visitor\'s cart, and a session cookie for logged-in customer accounts where applicable.';
 }
 
 add_action( 'wp_footer', 'wookiee_render_cookie_consent_banner' );

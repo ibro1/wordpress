@@ -259,6 +259,77 @@ function buildCompletionRequestBody(model, prompt, maxTokens, useMaxCompletionTo
   return body;
 }
 
+/*
+ * A completion that stopped for hitting its length ceiling but produced
+ * next to no visible text is not "a short answer" - it's the budget
+ * having been spent on something other than the visible completion before
+ * the model got to write it (an OpenAI reasoning model's hidden reasoning
+ * tokens; Claude Opus via at least one gateway observed doing the
+ * equivalent). Confirmed directly in production logs: a 8192-token budget
+ * finishing with finish_reason "max_tokens" and 629 characters of visible
+ * text - roughly 100 words out of a budget sized for several thousand.
+ * 800 characters is a generous floor for "real content, just short" (a
+ * short policy section still clears it easily); below that, at a
+ * length-type finish reason, this is the same failure mode regardless of
+ * which provider or which mechanism produced it.
+ */
+const MIN_PLAUSIBLE_COMPLETION_CHARS = 800;
+function looksReasoningTruncated(text, finishReason) {
+  return (finishReason === 'max_tokens' || finishReason === 'length')
+    && (!text || text.length < MIN_PLAUSIBLE_COMPLETION_CHARS);
+}
+
+/**
+ * One full attempt against the provider: request, ok-check, and body
+ * parsing (stream or buffered), collapsed into one outcome shape so the
+ * route below can retry without duplicating any of this.
+ */
+async function sendCompletionRequest(target, prompt, tokenBudget, useMaxCompletionTokens) {
+  let response;
+  try {
+    response = await fetch(`${target.baseUrl}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${target.apiKey}`,
+        'Content-Type': 'application/json',
+        ...target.extraHeaders,
+      },
+      body: JSON.stringify(buildCompletionRequestBody(target.model, prompt, tokenBudget, useMaxCompletionTokens)),
+    });
+  } catch (err) {
+    return { networkError: err.message };
+  }
+
+  if (!response.ok) {
+    const errBody = await response.json().catch(() => null);
+    return { status: response.status, errBody };
+  }
+
+  const contentType = response.headers.get('content-type') || '';
+  try {
+    if (contentType.includes('text/event-stream') && response.body) {
+      const sse = await readSseCompletion(response.body);
+      return { text: sse.text, diagnostics: { mode: 'stream', eventCount: sse.eventCount, parseFailures: sse.parseFailures, finishReason: sse.finishReason } };
+    }
+    // The provider accepted the request but ignored stream:true (or this
+    // endpoint just never streams) - handled exactly as a plain,
+    // non-streaming response always was.
+    const data = await response.json().catch(() => null);
+    const choice = data && data.choices && data.choices[0];
+    const text = choice && choice.message ? String(choice.message.content || '').trim() : '';
+    return {
+      text,
+      diagnostics: {
+        mode: 'buffered',
+        hadChoices: Boolean(data && Array.isArray(data.choices) && data.choices.length),
+        finishReason: choice && choice.finish_reason,
+      },
+    };
+  } catch (err) {
+    return { readError: err.message };
+  }
+}
+
 router.post('/generate', async (req, res) => {
   const requestId = crypto.randomUUID();
   const startedAt = Date.now();
@@ -286,101 +357,98 @@ router.post('/generate', async (req, res) => {
     license: req.license ? req.license.code : null,
   });
 
-  async function attempt(useMaxCompletionTokens, tokenBudget) {
-    return fetch(`${target.baseUrl}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${target.apiKey}`,
-        'Content-Type': 'application/json',
-        ...target.extraHeaders,
-      },
-      body: JSON.stringify(buildCompletionRequestBody(target.model, prompt, tokenBudget, useMaxCompletionTokens)),
-    });
+  let result = await sendCompletionRequest(target, prompt, maxTokens, false);
+
+  if (result.networkError) {
+    logGenerate(requestId, 'fetch_failed', { error: result.networkError });
+    return res.status(502).json({ error: result.networkError });
   }
 
-  let response;
-  try {
-    response = await attempt(false, maxTokens);
-  } catch (err) {
-    logGenerate(requestId, 'fetch_failed', { error: err.message });
-    return res.status(502).json({ error: err.message });
-  }
-
-  if (!response.ok) {
-    let errBody = await response.json().catch(() => null);
+  if (result.status) {
+    // A hard rejection - not a completion that came back too short, but the
+    // request itself refused. Two known causes retried here, at most once
+    // each so a genuinely bad request can't loop: the model wants
+    // max_completion_tokens instead of max_tokens, or the same request is
+    // simply worth one more try (a 429/5xx can be transient).
     logGenerate(requestId, 'first_attempt_failed', {
-      status: response.status,
-      errorType: errBody && errBody.error && errBody.error.type,
-      errorParam: errBody && errBody.error && errBody.error.param,
-      errorMessage: truncate(errBody && errBody.error && errBody.error.message),
+      status: result.status,
+      errorType: result.errBody && result.errBody.error && result.errBody.error.type,
+      errorParam: result.errBody && result.errBody.error && result.errBody.error.param,
+      errorMessage: truncate(result.errBody && result.errBody.error && result.errBody.error.message),
     });
 
-    if (isUnsupportedMaxTokensError(errBody)) {
+    if (isUnsupportedMaxTokensError(result.errBody)) {
       const retryBudget = Math.max(maxTokens * 3, 16000);
       logGenerate(requestId, 'retrying_with_max_completion_tokens', { retryBudget });
-      try {
-        /*
-         * A model that rejects max_tokens in favour of max_completion_tokens
-         * is, by that same rejection, a reasoning-family model (GPT-5/
-         * o-series) - and those spend part of that budget on hidden
-         * internal reasoning before writing anything visible. A budget
-         * sized only for the plain output can be consumed entirely by
-         * reasoning and return zero visible text, which surfaces as "the
-         * LLM returned an empty response" rather than as a token-limit
-         * error - so this retry asks for real headroom on top of what was
-         * actually requested, not the same number under a different name.
-         */
-        response = await attempt(true, retryBudget);
-      } catch (err) {
-        logGenerate(requestId, 'retry_fetch_failed', { error: err.message });
-        return res.status(502).json({ error: err.message });
+      /*
+       * A model that rejects max_tokens in favour of max_completion_tokens
+       * is, by that same rejection, a reasoning-family model (GPT-5/
+       * o-series) - and those spend part of that budget on hidden internal
+       * reasoning before writing anything visible. A budget sized only for
+       * the plain output can be consumed entirely by reasoning and return
+       * zero visible text, so this retry asks for real headroom on top of
+       * what was actually requested, not the same number under a
+       * different name.
+       */
+      result = await sendCompletionRequest(target, prompt, retryBudget, true);
+      if (result.networkError) {
+        logGenerate(requestId, 'retry_fetch_failed', { error: result.networkError });
+        return res.status(502).json({ error: result.networkError });
       }
-      if (!response.ok) {
-        errBody = await response.json().catch(() => null);
-        const msg = errBody && errBody.error && errBody.error.message ? errBody.error.message : `HTTP ${response.status}`;
-        logGenerate(requestId, 'retry_attempt_failed', { status: response.status, errorMessage: truncate(msg) });
+      if (result.status) {
+        const msg = result.errBody && result.errBody.error && result.errBody.error.message ? result.errBody.error.message : `HTTP ${result.status}`;
+        logGenerate(requestId, 'retry_attempt_failed', { status: result.status, errorMessage: truncate(msg) });
         return res.status(502).json({ error: `LLM API error: ${msg}` });
       }
     } else {
-      const msg = errBody && errBody.error && errBody.error.message ? errBody.error.message : `HTTP ${response.status}`;
+      const msg = result.errBody && result.errBody.error && result.errBody.error.message ? result.errBody.error.message : `HTTP ${result.status}`;
       return res.status(502).json({ error: `LLM API error: ${msg}` });
+    }
+  } else if (looksReasoningTruncated(result.text, result.diagnostics && result.diagnostics.finishReason)) {
+    /*
+     * The request succeeded and the provider considers this a complete
+     * response - it just spent almost the whole budget on something other
+     * than the visible completion. Confirmed live: an 8192-token budget
+     * that finished with finish_reason "max_tokens" and 629 characters of
+     * output. Retrying at max_tokens*4 (floor 24000) rather than the
+     * smaller floor above - this has already been seen to survive one
+     * ordinary headroom bump and still come back this short.
+     */
+    const retryBudget = Math.max(maxTokens * 4, 24000);
+    logGenerate(requestId, 'retrying_reasoning_truncated', {
+      firstAttemptTextLength: result.text ? result.text.length : 0,
+      finishReason: result.diagnostics && result.diagnostics.finishReason,
+      retryBudget,
+    });
+    const retryResult = await sendCompletionRequest(target, prompt, retryBudget, false);
+    if (!retryResult.networkError && !retryResult.status) {
+      result = retryResult;
+    } else {
+      logGenerate(requestId, 'reasoning_retry_failed', {
+        networkError: retryResult.networkError,
+        status: retryResult.status,
+      });
+      // Fall through with whatever the first attempt produced - a short
+      // answer (or none) beats discarding it for a retry that also failed.
     }
   }
 
-  const contentType = response.headers.get('content-type') || '';
-  let text;
-  let diagnostics = {};
-  try {
-    if (contentType.includes('text/event-stream') && response.body) {
-      const sse = await readSseCompletion(response.body);
-      text = sse.text;
-      diagnostics = { mode: 'stream', eventCount: sse.eventCount, parseFailures: sse.parseFailures, finishReason: sse.finishReason };
-    } else {
-      // The provider accepted the request but ignored stream:true (or this
-      // endpoint just never streams) - handled exactly as a plain,
-      // non-streaming response always was.
-      const data = await response.json().catch(() => null);
-      const choice = data && data.choices && data.choices[0];
-      text = choice && choice.message ? String(choice.message.content || '').trim() : '';
-      diagnostics = {
-        mode: 'buffered',
-        hadChoices: Boolean(data && Array.isArray(data.choices) && data.choices.length),
-        finishReason: choice && choice.finish_reason,
-      };
-    }
-  } catch (err) {
-    logGenerate(requestId, 'body_read_failed', { error: err.message });
-    return res.status(502).json({ error: `Stream reading failed: ${err.message}` });
+  if (result.readError) {
+    logGenerate(requestId, 'body_read_failed', { error: result.readError });
+    return res.status(502).json({ error: `Stream reading failed: ${result.readError}` });
   }
+
+  const text = result.text;
+  const diagnostics = result.diagnostics || {};
 
   if (!text) {
     // This is the one outcome that reaches WordPress as a flat, unhelpful
     // "empty response" - the diagnostics logged here (finish_reason above
-    // all) are what actually explain it: "length" means the token budget
-    // ran out before any visible text was written (see the reasoning-model
-    // retry above), "content_filter" means the provider itself refused the
-    // prompt, and neither looks like "the model returned nothing" from the
-    // caller's side.
+    // all) are what actually explain it: "length"/"max_tokens" means the
+    // token budget ran out before any visible text was written (see the
+    // retries above), "content_filter" means the provider itself refused
+    // the prompt, and neither looks like "the model returned nothing" from
+    // the caller's side.
     logGenerate(requestId, 'empty_completion', { ...diagnostics, elapsedMs: Date.now() - startedAt });
     return res.status(502).json({ error: 'The LLM returned an empty response.' });
   }

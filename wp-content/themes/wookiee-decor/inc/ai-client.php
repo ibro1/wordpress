@@ -100,9 +100,17 @@ function wookiee_call_llm( $prompt, $max_tokens = 2048 ) {
 	 * request gets killed mid-generation and reports as a network failure
 	 * ("could not reach the server") that has nothing to do with
 	 * reachability. Suppressed because some hosts disable it entirely.
+	 *
+	 * The backend can now also retry once internally - a reasoning model
+	 * that spent its budget on hidden thinking rather than the visible
+	 * answer gets one more attempt with a larger budget before this ever
+	 * sees a response - so a single call from here can legitimately be two
+	 * provider round trips back to back. Individual attempts have been
+	 * observed taking upwards of 120s each, so the ceiling here needs room
+	 * for two of those, not one.
 	 */
 	if ( function_exists( 'set_time_limit' ) ) {
-		@set_time_limit( 280 ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+		@set_time_limit( 400 ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
 	}
 
 	if ( wookiee_central_api_configured() ) {
@@ -121,7 +129,7 @@ function wookiee_call_llm( $prompt, $max_tokens = 2048 ) {
 			$body['model'] = $model;
 		}
 
-		$result = wookiee_central_api_request( 'POST', '/llm/generate', $body, 240 );
+		$result = wookiee_central_api_request( 'POST', '/llm/generate', $body, 380 );
 		if ( is_wp_error( $result ) ) {
 			return $result;
 		}

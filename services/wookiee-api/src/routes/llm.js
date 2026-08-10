@@ -273,23 +273,25 @@ function buildCompletionRequestBody(model, prompt, maxTokens, useMaxCompletionTo
 }
 
 /*
- * A completion that stopped for hitting its length ceiling but produced
- * next to no visible text is not "a short answer" - it's the budget
- * having been spent on something other than the visible completion before
- * the model got to write it (an OpenAI reasoning model's hidden reasoning
- * tokens; Claude Opus via at least one gateway observed doing the
- * equivalent). Confirmed directly in production logs: a 8192-token budget
- * finishing with finish_reason "max_tokens" and 629 characters of visible
- * text - roughly 100 words out of a budget sized for several thousand.
- * 800 characters is a generous floor for "real content, just short" (a
- * short policy section still clears it easily); below that, at a
- * length-type finish reason, this is the same failure mode regardless of
- * which provider or which mechanism produced it.
+ * finish_reason "max_tokens"/"length" means the model was cut off before
+ * IT chose to stop - full stop, regardless of how much text came out
+ * before that happened. The earlier version of this check only retried
+ * when the output was suspiciously short (under ~800 characters), on the
+ * theory that this was specifically about hidden reasoning tokens eating
+ * the whole budget. That undersold the problem: production logs show
+ * plenty of max_tokens completions in the 4,000-14,000 character range -
+ * long enough to clear that floor, still genuinely incomplete (a policy
+ * document cut off mid-clause, not a short one that happened to finish).
+ * Those were logged as "success" here and only caught afterward by
+ * WordPress's own truncation guard - wasting a full generation round trip
+ * on a result that was always going to be rejected. Retrying on ANY
+ * length-ceiling finish, not just short ones, catches it at the source
+ * instead. Safe to do unconditionally now: nothing here is racing a
+ * browser-facing timeout (see inc/background-jobs.php on the WordPress
+ * side), so the extra attempt costs time, never correctness.
  */
-const MIN_PLAUSIBLE_COMPLETION_CHARS = 800;
 function looksReasoningTruncated(text, finishReason) {
-  return (finishReason === 'max_tokens' || finishReason === 'length')
-    && (!text || text.length < MIN_PLAUSIBLE_COMPLETION_CHARS);
+  return finishReason === 'max_tokens' || finishReason === 'length';
 }
 
 /**

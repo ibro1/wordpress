@@ -1216,7 +1216,17 @@ function wookiee_audit_policy_page_handler() {
 	}
 
 	$prompt = wookiee_build_policy_audit_prompt( $post->post_title, wookiee_policy_current_text( $post ), wookiee_policy_key_for_post( $post ) );
-	$report = wookiee_call_llm( $prompt, 3000 );
+	/*
+	 * 3000 was sized for a short verdict, not for the kind of report this
+	 * prompt actually asks for - a numbered issues list with a fix for
+	 * each, missing-information list and recommendation, easily several
+	 * thousand words on a page with a lot wrong with it. Confirmed live:
+	 * a real audit call hit this cap with finish_reason "max_tokens" and
+	 * zero visible output, which reached the admin as "The LLM returned
+	 * an empty response" - indistinguishable from the request having
+	 * failed outright. Matches the budget already used for generation.
+	 */
+	$report = wookiee_call_llm( $prompt, 8192 );
 
 	if ( is_wp_error( $report ) ) {
 		wp_send_json_error( array( 'message' => $report->get_error_message() ) );

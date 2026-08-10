@@ -227,6 +227,19 @@ async function readSseCompletion(body) {
  * whichever one a given model wants is discovered from its own rejection
  * rather than guessed per model name up front.
  */
+// 429 (rate limited), 500/502/503/504 (upstream having a bad moment) -
+// worth one retry rather than failing outright. Confirmed directly against
+// AgentRouter: a plain "Upstream request failed" 500 on one attempt,
+// nothing wrong with the request itself. Anything else (400, 401, 403...)
+// is the request being genuinely rejected and retrying it changes nothing.
+function isTransientError(status) {
+  return status === 429 || (status >= 500 && status <= 504);
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 function isUnsupportedMaxTokensError(errBody) {
   const err = errBody && errBody.error;
   if (!err) {
@@ -391,6 +404,19 @@ router.post('/generate', async (req, res) => {
        * different name.
        */
       result = await sendCompletionRequest(target, prompt, retryBudget, true);
+      if (result.networkError) {
+        logGenerate(requestId, 'retry_fetch_failed', { error: result.networkError });
+        return res.status(502).json({ error: result.networkError });
+      }
+      if (result.status) {
+        const msg = result.errBody && result.errBody.error && result.errBody.error.message ? result.errBody.error.message : `HTTP ${result.status}`;
+        logGenerate(requestId, 'retry_attempt_failed', { status: result.status, errorMessage: truncate(msg) });
+        return res.status(502).json({ error: `LLM API error: ${msg}` });
+      }
+    } else if (isTransientError(result.status)) {
+      logGenerate(requestId, 'retrying_transient_error', { status: result.status });
+      await sleep(3000);
+      result = await sendCompletionRequest(target, prompt, maxTokens, false);
       if (result.networkError) {
         logGenerate(requestId, 'retry_fetch_failed', { error: result.networkError });
         return res.status(502).json({ error: result.networkError });

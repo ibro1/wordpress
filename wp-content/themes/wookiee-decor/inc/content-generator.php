@@ -911,6 +911,20 @@ function wookiee_build_content_prompt( $key, $brief, $previous_audit = '' ) {
 			. "- Check against UK GDPR, the Data Protection Act 2018, the Consumer Rights Act 2015, the Consumer Contracts Regulations, the Electronic Commerce Regulations, and PECR, wherever relevant to this specific policy.\n"
 			. "- Do not invent any business fact beyond the details given above. If something relevant is missing, write a clear inline placeholder like \"[Business input required: X]\" instead of guessing.\n"
 			. "- A placeholder is a LAST RESORT, not a way to acknowledge a topic. Before writing one, check three things: is the fact already in the business details above under a different label; does the topic have an accepted general formulation that is true without it (carriers are the standard example - \"a tracked UK courier service\" is a complete answer); and is it something only the owner can supply at all. Statutory templates and standard wording are NEVER a business input - a model cancellation form, for instance, is a fixed form filled in from the business name and address given above, so write it out rather than asking the owner for it. Only a genuine, owner-only, un-generalisable fact earns a placeholder. Every placeholder published is a visible gap on a live page, and a reviewer counts it as missing information rather than as honesty.\n"
+			/*
+			 * A separate, narrower failure mode from a missing fact: two of
+			 * the business-detail lines above (the delivery timing figures,
+			 * and the separately-set storefront summary of the same thing)
+			 * can legitimately disagree with each other, since nothing keeps
+			 * them in sync on the operator's side. A run on the Shipping
+			 * page, told to prefer its own figures, still surfaced the
+			 * disagreement on the TERMS page instead - as a placeholder
+			 * telling the OPERATOR to go edit the storefront copy, published
+			 * straight onto a live customer-facing page. This rule has to
+			 * live here, in the shared instructions every page reads, not
+			 * only on the one page the fix was first written for.
+			 */
+			. "- If two lines in the business details above describe the same real-world fact and appear to disagree (most likely the delivery timing figures versus the separate storefront summary of them), state only the more specific, itemised figures - never the storefront summary line, never both, and never a note pointing out that they differ. Reconciling two of the operator's own settings is not this page's job and is not something a customer should ever see discussed; picking the more precise source silently is enough.\n"
 			. "- Do not copy another company's policy text.\n"
 			. "- Write in plain, professional, customer-friendly English - not robotic or generic-sounding boilerplate.\n"
 			. "- " . wookiee_british_english_rule() . "\n"
@@ -1101,7 +1115,18 @@ function wookiee_build_content_prompt( $key, $brief, $previous_audit = '' ) {
 				. "2. This store's own voluntary returns period (the number of days given in the business details above), which EXTENDS the statutory minimum rather than replacing or shortening it.\n"
 				. "State plainly that the voluntary period is in addition to, not instead of, the statutory 14-day right, and explain in plain terms how the two interact (e.g. the statutory right always applies even if it were shorter than the store's own policy).\n"
 				. "Also state that refunds (including the original standard delivery charge, where the entire order is returned) will be processed within 14 days of the business receiving the returned goods or evidence that they've been sent back, matching the Consumer Contracts Regulations - do not leave the refund timeframe unstated.\n"
-				. "Present the returns address as a clearly separated block, one line each for: business/trading name, street address, city, postcode, country - not as a single flowing sentence.";
+				. "Present the returns address as a clearly separated block, one line each for: business/trading name, street address, city, postcode, country - not as a single flowing sentence.\n"
+				/*
+				 * Not something asked for anywhere else in this prompt - a
+				 * live audit caught the model reasoning its own way to this
+				 * exemption from "personalised" appearing in the niche brief,
+				 * then applying it to the WHOLE catalogue without knowing
+				 * that's actually true of every line in it. The regulation is
+				 * real and the model's legal instinct was right; the
+				 * catalogue-wide scope of the claim was not something
+				 * anyone confirmed.
+				 */
+				. "If the niche brief describes personalised, bespoke or made-to-order goods, note that genuinely personalised items - goods made or clearly customised to the customer's own specification - are excluded from the 14-day statutory cancellation right under regulation 28(1)(b) of the Consumer Contracts Regulations. Phrase this as applying TO ITEMS THAT ARE GENUINELY PERSONALISED, not as a blanket statement that the store's entire catalogue is exempt - the business details above do not confirm every line the store sells is made to order, and a store description mentioning personalisation is not proof every product qualifies. If in doubt, say the exemption applies to personalised or made-to-order items specifically, and that the standard 14-day right applies to anything else in the catalogue.";
 		}
 
 		/*

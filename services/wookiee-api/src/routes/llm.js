@@ -19,11 +19,52 @@
  */
 
 const express = require('express');
+const crypto = require('crypto');
 const store = require('../secretsStore');
 const licenseStore = require('../licenseStore');
 const modelCatalog = require('../modelCatalog');
 
 const router = express.Router();
+
+/**
+ * Structured, single-line JSON logs for the /generate path - this is the
+ * one endpoint whose failures are otherwise invisible: WordPress only ever
+ * sees "The LLM returned an empty response" or "could not reach the
+ * server", with nothing in between to say WHICH provider, WHICH model, or
+ * why a response that reached us successfully came back with nothing in
+ * it. Every log line carries the same requestId so a single generation's
+ * whole path - request, retry, stream stats, outcome - can be grepped out
+ * of a container's log stream as one unit. Never logs the API key or the
+ * full prompt/completion text (only bounded snippets of error bodies),
+ * since this is a normal application log, not a debug capture of customer
+ * content.
+ */
+function logGenerate(requestId, event, fields) {
+  try {
+    console.log(JSON.stringify({ at: 'llm.generate', requestId, event, ...fields }));
+  } catch (err) {
+    console.log('llm.generate log failed to serialise', event);
+  }
+}
+
+// Host only, e.g. "agentrouter.org" - enough to tell providers apart in a
+// log line without printing a full URL that might carry a query-string key
+// on a custom endpoint.
+function safeHost(url) {
+  try {
+    return new URL(url).host;
+  } catch (err) {
+    return null;
+  }
+}
+
+// Bounds an error message before it goes into a log line - provider error
+// bodies are occasionally huge (a full stack trace, an echoed prompt), and
+// this is a log line, not a capture of the whole response.
+function truncate(value, max = 300) {
+  const str = String(value == null ? '' : value);
+  return str.length > max ? `${str.slice(0, max)}…` : str;
+}
 
 /**
  * Which catalog models the caller may use, and which one they get by
@@ -118,12 +159,22 @@ function resolveTarget(requestedModel, licenseEntry) {
  * Accumulates an OpenAI-compatible SSE chat-completion stream into the
  * final completion text: repeated "data: {...}\n\n" events carrying
  * choices[0].delta.content pieces, terminated by "data: [DONE]".
+ *
+ * Also returns the stats that actually explain an empty result -
+ * finish_reason ("length" means the budget ran out before any visible
+ * text was written, "content_filter" means the provider refused it,
+ * "stop" means the model just produced nothing to say) and how many
+ * events/parse failures were seen - rather than leaving a silent, empty
+ * string as the only trace of what happened on the wire.
  */
 async function readSseCompletion(body) {
   const reader = body.getReader();
   const decoder = new TextDecoder();
   let buffer = '';
   let text = '';
+  let eventCount = 0;
+  let parseFailures = 0;
+  let finishReason = null;
 
   for (;;) {
     const { done, value } = await reader.read();
@@ -146,13 +197,19 @@ async function readSseCompletion(body) {
         if (!payload || payload === '[DONE]') {
           continue;
         }
+        eventCount++;
         let parsed;
         try {
           parsed = JSON.parse(payload);
         } catch (err) {
+          parseFailures++;
           continue; // A malformed one-off chunk shouldn't drop the whole completion.
         }
-        const delta = parsed && parsed.choices && parsed.choices[0] && parsed.choices[0].delta;
+        const choice = parsed && parsed.choices && parsed.choices[0];
+        if (choice && typeof choice.finish_reason === 'string' && choice.finish_reason) {
+          finishReason = choice.finish_reason;
+        }
+        const delta = choice && choice.delta;
         if (delta && typeof delta.content === 'string') {
           text += delta.content;
         }
@@ -160,7 +217,7 @@ async function readSseCompletion(body) {
     }
   }
 
-  return text.trim();
+  return { text: text.trim(), eventCount, parseFailures, finishReason };
 }
 
 /**
@@ -203,6 +260,8 @@ function buildCompletionRequestBody(model, prompt, maxTokens, useMaxCompletionTo
 }
 
 router.post('/generate', async (req, res) => {
+  const requestId = crypto.randomUUID();
+  const startedAt = Date.now();
   const prompt = req.body && req.body.prompt;
   const maxTokens = req.body && req.body.max_tokens ? parseInt(req.body.max_tokens, 10) : 2048;
 
@@ -213,8 +272,19 @@ router.post('/generate', async (req, res) => {
   const licenseEntry = req.license ? req.license.entry : null;
   const target = resolveTarget(req.body && req.body.model, licenseEntry);
   if (target.error) {
+    logGenerate(requestId, 'resolve_target_failed', { error: target.error });
     return res.status(target.status).json({ error: target.error });
   }
+
+  logGenerate(requestId, 'start', {
+    // baseUrl's host only - never the key, and the path/query on some
+    // custom endpoints could itself be operator-identifying.
+    providerHost: safeHost(target.baseUrl),
+    model: target.model,
+    maxTokens,
+    promptLength: String(prompt).length,
+    license: req.license ? req.license.code : null,
+  });
 
   async function attempt(useMaxCompletionTokens, tokenBudget) {
     return fetch(`${target.baseUrl}/chat/completions`, {
@@ -232,13 +302,22 @@ router.post('/generate', async (req, res) => {
   try {
     response = await attempt(false, maxTokens);
   } catch (err) {
+    logGenerate(requestId, 'fetch_failed', { error: err.message });
     return res.status(502).json({ error: err.message });
   }
 
   if (!response.ok) {
     let errBody = await response.json().catch(() => null);
+    logGenerate(requestId, 'first_attempt_failed', {
+      status: response.status,
+      errorType: errBody && errBody.error && errBody.error.type,
+      errorParam: errBody && errBody.error && errBody.error.param,
+      errorMessage: truncate(errBody && errBody.error && errBody.error.message),
+    });
 
     if (isUnsupportedMaxTokensError(errBody)) {
+      const retryBudget = Math.max(maxTokens * 3, 16000);
+      logGenerate(requestId, 'retrying_with_max_completion_tokens', { retryBudget });
       try {
         /*
          * A model that rejects max_tokens in favour of max_completion_tokens
@@ -251,13 +330,15 @@ router.post('/generate', async (req, res) => {
          * error - so this retry asks for real headroom on top of what was
          * actually requested, not the same number under a different name.
          */
-        response = await attempt(true, Math.max(maxTokens * 3, 16000));
+        response = await attempt(true, retryBudget);
       } catch (err) {
+        logGenerate(requestId, 'retry_fetch_failed', { error: err.message });
         return res.status(502).json({ error: err.message });
       }
       if (!response.ok) {
         errBody = await response.json().catch(() => null);
         const msg = errBody && errBody.error && errBody.error.message ? errBody.error.message : `HTTP ${response.status}`;
+        logGenerate(requestId, 'retry_attempt_failed', { status: response.status, errorMessage: truncate(msg) });
         return res.status(502).json({ error: `LLM API error: ${msg}` });
       }
     } else {
@@ -268,25 +349,43 @@ router.post('/generate', async (req, res) => {
 
   const contentType = response.headers.get('content-type') || '';
   let text;
+  let diagnostics = {};
   try {
     if (contentType.includes('text/event-stream') && response.body) {
-      text = await readSseCompletion(response.body);
+      const sse = await readSseCompletion(response.body);
+      text = sse.text;
+      diagnostics = { mode: 'stream', eventCount: sse.eventCount, parseFailures: sse.parseFailures, finishReason: sse.finishReason };
     } else {
       // The provider accepted the request but ignored stream:true (or this
       // endpoint just never streams) - handled exactly as a plain,
       // non-streaming response always was.
       const data = await response.json().catch(() => null);
-      text = data && data.choices && data.choices[0] && data.choices[0].message
-        ? String(data.choices[0].message.content || '').trim()
-        : '';
+      const choice = data && data.choices && data.choices[0];
+      text = choice && choice.message ? String(choice.message.content || '').trim() : '';
+      diagnostics = {
+        mode: 'buffered',
+        hadChoices: Boolean(data && Array.isArray(data.choices) && data.choices.length),
+        finishReason: choice && choice.finish_reason,
+      };
     }
   } catch (err) {
+    logGenerate(requestId, 'body_read_failed', { error: err.message });
     return res.status(502).json({ error: `Stream reading failed: ${err.message}` });
   }
 
   if (!text) {
+    // This is the one outcome that reaches WordPress as a flat, unhelpful
+    // "empty response" - the diagnostics logged here (finish_reason above
+    // all) are what actually explain it: "length" means the token budget
+    // ran out before any visible text was written (see the reasoning-model
+    // retry above), "content_filter" means the provider itself refused the
+    // prompt, and neither looks like "the model returned nothing" from the
+    // caller's side.
+    logGenerate(requestId, 'empty_completion', { ...diagnostics, elapsedMs: Date.now() - startedAt });
     return res.status(502).json({ error: 'The LLM returned an empty response.' });
   }
+
+  logGenerate(requestId, 'success', { ...diagnostics, textLength: text.length, elapsedMs: Date.now() - startedAt });
 
   // Echoed back so the caller can log/display which model actually served
   // the request - it may have come from the license default rather than

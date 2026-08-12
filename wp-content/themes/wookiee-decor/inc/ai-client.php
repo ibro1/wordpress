@@ -101,16 +101,19 @@ function wookiee_call_llm( $prompt, $max_tokens = 2048 ) {
 	 * ("could not reach the server") that has nothing to do with
 	 * reachability. Suppressed because some hosts disable it entirely.
 	 *
-	 * The backend can now also retry once internally - a reasoning model
-	 * that spent its budget on hidden thinking rather than the visible
-	 * answer gets one more attempt with a larger budget before this ever
-	 * sees a response - so a single call from here can legitimately be two
-	 * provider round trips back to back. Individual attempts have been
-	 * observed taking upwards of 120s each, so the ceiling here needs room
-	 * for two of those, not one.
+	 * The backend now retries several times with backoff on its own before
+	 * giving up on a model, and - if a fallback model is configured - tries
+	 * that too, so a single call from here can legitimately be many
+	 * provider round trips back to back rather than one or two. Individual
+	 * attempts have been observed taking upwards of 120s each, so the
+	 * ceiling here needs enough room for a full retry+fallback sequence,
+	 * not just a couple of attempts. Uncomfortably long, but nothing is
+	 * waiting on this specific connection any more (see
+	 * inc/background-jobs.php) so there is no user-facing cost to it being
+	 * generous.
 	 */
 	if ( function_exists( 'set_time_limit' ) ) {
-		@set_time_limit( 400 ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+		@set_time_limit( 600 ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
 	}
 
 	if ( wookiee_central_api_configured() ) {
@@ -129,7 +132,28 @@ function wookiee_call_llm( $prompt, $max_tokens = 2048 ) {
 			$body['model'] = $model;
 		}
 
-		$result = wookiee_central_api_request( 'POST', '/llm/generate', $body, 380 );
+		$fallback_model = trim( (string) wookiee_get_setting( 'llm_fallback_model' ) );
+		if ( '' !== $fallback_model ) {
+			$body['fallback_model'] = $fallback_model;
+		}
+
+		// Lets the backend post live "attempt 2/4, retrying..." status back
+		// onto this job while it's still working, instead of the browser
+		// staring at a static message for however long generation takes -
+		// see wookiee_update_job_progress_handler() in background-jobs.php.
+		// Only present when this call is running inside a background job
+		// (i.e. everything on the generator screens); a direct/legacy
+		// caller simply gets no progress updates, exactly as before.
+		$job_context = function_exists( 'wookiee_current_job_context' ) ? wookiee_current_job_context() : null;
+		if ( $job_context ) {
+			$body['progress_callback'] = array(
+				'url'    => admin_url( 'admin-ajax.php' ),
+				'job_id' => $job_context['job_id'],
+				'secret' => $job_context['secret'],
+			);
+		}
+
+		$result = wookiee_central_api_request( 'POST', '/llm/generate', $body, 580 );
 		if ( is_wp_error( $result ) ) {
 			return $result;
 		}

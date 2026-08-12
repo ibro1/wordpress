@@ -40,6 +40,18 @@ function wookiee_llm_model_options() {
 }
 
 /**
+ * Same list as wookiee_llm_model_options(), but for the fallback picker -
+ * where "Automatic" doesn't make sense (there's nothing to fall back to
+ * automatically) so the leading entry is relabelled to make clear that
+ * leaving it unset means no fallback happens at all.
+ */
+function wookiee_llm_fallback_model_options() {
+	$options = wookiee_llm_model_options();
+	$options[''] = 'None (fail if the primary model errors)';
+	return $options;
+}
+
+/**
  * The image models this activation code may use. Separate catalogue from the
  * text models - a licence can be granted one and not the other, since the
  * providers and keys differ.
@@ -306,6 +318,7 @@ function wookiee_settings_fields() {
 		'spaceship_api_key'    => array( 'label' => 'Spaceship API key', 'default' => '', 'type' => 'password' ),
 		'spaceship_api_secret' => array( 'label' => 'Spaceship API secret', 'default' => '', 'type' => 'password' ),
 		'llm_model'          => array( 'label' => 'AI model', 'default' => '', 'type' => 'select', 'options' => wookiee_llm_model_options(), 'grouped' => true ),
+		'llm_fallback_model' => array( 'label' => 'AI fallback model', 'default' => '', 'type' => 'select', 'options' => wookiee_llm_fallback_model_options(), 'grouped' => true ),
 		'image_model'        => array( 'label' => 'AI image model', 'default' => '', 'type' => 'select', 'options' => wookiee_image_model_options(), 'grouped' => true ),
 		'llm_api_key'        => array( 'label' => 'LLM API key', 'default' => '', 'type' => 'password' ),
 		'llm_base_url'       => array( 'label' => 'LLM base URL', 'default' => 'https://api.openai.com/v1', 'type' => 'text' ),
@@ -555,7 +568,7 @@ function wookiee_settings_tabs() {
 		),
 		'integrations' => array(
 			'label'  => 'Activation',
-			'fields' => array( 'llm_model', 'image_model', 'llm_api_key', 'llm_base_url', 'llm_default_model', 'cj_email', 'cj_api_key', 'bg_removal_provider', 'cloudinary_cloud_name', 'cloudinary_api_key', 'cloudinary_api_secret', 'rembg_endpoint_url', 'google_ads_developer_token', 'google_ads_client_id', 'google_ads_client_secret', 'google_ads_refresh_token', 'google_ads_customer_id', 'google_ads_login_customer_id', 'spaceship_api_key', 'spaceship_api_secret' ),
+			'fields' => array( 'llm_model', 'llm_fallback_model', 'image_model', 'llm_api_key', 'llm_base_url', 'llm_default_model', 'cj_email', 'cj_api_key', 'bg_removal_provider', 'cloudinary_cloud_name', 'cloudinary_api_key', 'cloudinary_api_secret', 'rembg_endpoint_url', 'google_ads_developer_token', 'google_ads_client_id', 'google_ads_client_secret', 'google_ads_refresh_token', 'google_ads_customer_id', 'google_ads_login_customer_id', 'spaceship_api_key', 'spaceship_api_secret' ),
 		),
 	);
 }
@@ -730,6 +743,9 @@ function wookiee_render_settings_field_row( $key, $field ) {
 				<?php endif; ?>
 			<?php endif; ?>
 
+			<?php if ( 'llm_fallback_model' === $key ) : ?>
+				<p class="description">Tried automatically if the model above keeps failing (rate-limited, no capacity, or an outage on the provider's end) — cheap insurance against one AI provider having a bad day. Pick a model from a <em>different</em> vendor than the one above for this to actually help (e.g. GPT as a fallback for Claude), since an outage usually affects every model from the same provider at once. Leave on None to fail outright instead of switching models mid-generation.</p>
+			<?php endif; ?>
 			<?php if ( 'image_model' === $key ) : ?>
 				<?php $wookiee_image_count = count( wookiee_image_model_options() ) - 1; ?>
 				<?php if ( ! wookiee_central_api_configured() ) : ?>

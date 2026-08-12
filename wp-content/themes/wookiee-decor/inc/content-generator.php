@@ -182,7 +182,14 @@ function wookiee_render_content_generator_page() {
 		 * the actual generation runs server-side, decoupled from any one
 		 * browser connection, for as long as it needs to.
 		 */
-		function runJob( action, fields ) {
+		// onProgress, if given, is called with the latest human-readable
+		// status line the backend has posted (see
+		// wookiee_update_job_progress_handler() in inc/background-jobs.php)
+		// every time a poll sees a new one - "attempt 2/4, rate limited,
+		// retrying in 8s..." instead of a static "Generating..." message
+		// that never changes for however long a slow or flaky provider
+		// takes.
+		function runJob( action, fields, onProgress ) {
 			var data = new FormData();
 			data.append( 'action', action );
 			data.append( 'nonce', NONCE );
@@ -194,15 +201,16 @@ function wookiee_render_content_generator_page() {
 					if ( ! res.success || ! res.data || ! res.data.job_id ) {
 						return { ok: false, message: res.data && res.data.message ? res.data.message : 'Could not start.' };
 					}
-					return pollJob( res.data.job_id );
+					return pollJob( res.data.job_id, onProgress );
 				} )
 				.catch( function() {
 					return { ok: false, message: 'Could not reach the server.' };
 				} );
 		}
 
-		function pollJob( jobId ) {
+		function pollJob( jobId, onProgress ) {
 			var deadline = Date.now() + JOB_POLL_TIMEOUT_MS;
+			var lastProgressMessage = '';
 
 			function wait() {
 				return new Promise( function( resolve ) { setTimeout( resolve, JOB_POLL_INTERVAL_MS ); } );
@@ -229,7 +237,13 @@ function wookiee_render_content_generator_page() {
 						if ( 'error' === res.data.status ) {
 							return { ok: false, message: res.data.message || 'Failed.' };
 						}
-						// pending or running.
+						// pending or running - surface any progress update
+						// that arrived since the last poll before deciding
+						// whether to keep waiting.
+						if ( onProgress && res.data.progress && res.data.progress.message && res.data.progress.message !== lastProgressMessage ) {
+							lastProgressMessage = res.data.progress.message;
+							onProgress( lastProgressMessage );
+						}
 						if ( Date.now() > deadline ) {
 							return { ok: false, message: 'Timed out waiting for a response.' };
 						}
@@ -305,7 +319,9 @@ function wookiee_render_content_generator_page() {
 			badge.className = 'wookiee-audit-card-badge';
 			body.textContent = 'Analysing… a thorough report can take a couple of minutes.';
 			actions.hidden = true;
-			return runJob( 'wookiee_audit_policy_page', { post_id: postId } )
+			return runJob( 'wookiee_audit_policy_page', { post_id: postId }, function( message ) {
+					body.textContent = message;
+				} )
 				.then( function( res ) {
 					if ( ! res.ok ) {
 						body.innerHTML = res.message || 'Audit failed.';
@@ -373,7 +389,9 @@ function wookiee_render_content_generator_page() {
 				fixBtn.disabled = true;
 				status.classList.remove( 'wookiee-cg-status-error' );
 				status.textContent = 'Rewriting… this can take a minute or two.';
-				runJob( 'wookiee_apply_audit_fixes', { post_id: postId, audit_report: report } )
+				runJob( 'wookiee_apply_audit_fixes', { post_id: postId, audit_report: report }, function( message ) {
+						status.textContent = message;
+					} )
 					.then( function( res ) {
 						fixBtn.disabled = false;
 						if ( ! res.ok ) {
@@ -395,7 +413,9 @@ function wookiee_render_content_generator_page() {
 				customBtn.disabled = true;
 				status.classList.remove( 'wookiee-cg-status-error' );
 				status.textContent = 'Rewriting… this can take a minute or two.';
-				runJob( 'wookiee_apply_custom_policy_prompt', { post_id: postId, instruction: instruction } )
+				runJob( 'wookiee_apply_custom_policy_prompt', { post_id: postId, instruction: instruction }, function( message ) {
+						status.textContent = message;
+					} )
 					.then( function( res ) {
 						customBtn.disabled = false;
 						if ( ! res.ok ) {
@@ -506,12 +526,15 @@ function wookiee_render_content_generator_page() {
 
 			checked.forEach( function( key, i ) {
 				genChain = genChain.then( function() {
-					status.textContent = 'Generating ' + ( i + 1 ) + ' of ' + checked.length + '… some models take the better part of a minute per page.';
+					var pagePrefix = 'Generating ' + ( i + 1 ) + ' of ' + checked.length + '… ';
+					status.textContent = pagePrefix + 'some models take the better part of a minute per page.';
 
 					var fields = { brief: brief, piece: key };
 					if ( customPrompt ) { fields.custom_prompt = customPrompt; }
 
-					return runJob( 'wookiee_generate_content', fields )
+					return runJob( 'wookiee_generate_content', fields, function( message ) {
+							status.textContent = pagePrefix + message;
+						} )
 						.then( function( res ) {
 							if ( res.ok && res.page ) { return res.page; }
 							var checkboxEl = document.querySelector( '.wookiee-content-piece[value="' + key + '"]' );

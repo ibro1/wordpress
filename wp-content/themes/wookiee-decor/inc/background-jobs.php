@@ -89,6 +89,28 @@ function wookiee_update_job( $job_id, array $patch ) {
 }
 
 /**
+ * Which job (if any) the runner currently executing belongs to - set once by
+ * wookiee_run_job_handler() right before it calls the runner, read by
+ * wookiee_call_llm() so it can tell the backend where to post live progress
+ * updates (see wookiee_update_job_progress_handler() below).
+ *
+ * A request-scoped global rather than a parameter threaded through every
+ * runner and wookiee_call_llm() call site, for the same reason as
+ * wookiee_llm_model_override() in ai-client.php: there are many nested call
+ * sites and only one of them (the top-level runner dispatch) actually knows
+ * the job id.
+ */
+function wookiee_current_job_context( $job_id = null, $secret = null ) {
+	static $context = null;
+
+	if ( null !== $job_id ) {
+		$context = array( 'job_id' => $job_id, 'secret' => $secret );
+	}
+
+	return $context;
+}
+
+/**
  * Fires the job's real work as a separate request this function does not
  * wait for. `blocking => false` is what makes this non-blocking: WordPress
  * still actually sends the request and a new PHP process picks it up, but
@@ -139,6 +161,7 @@ function wookiee_run_job_handler() {
 	}
 
 	wookiee_update_job( $job_id, array( 'status' => 'running' ) );
+	wookiee_current_job_context( $job_id, $job['secret'] );
 
 	$runners = wookiee_job_runners();
 	if ( ! isset( $runners[ $job['type'] ] ) || ! is_callable( $runners[ $job['type'] ] ) ) {
@@ -185,6 +208,41 @@ function wookiee_poll_job_handler() {
 		) );
 	}
 
-	// pending or running - nothing to report yet.
-	wp_send_json_success( array( 'status' => $job['status'] ) );
+	// pending or running - progress (if the backend has posted any yet, see
+	// wookiee_update_job_progress_handler() below) is the one thing worth
+	// reporting here; there is no result to send until the job finishes.
+	wp_send_json_success( array(
+		'status'   => $job['status'],
+		'progress' => isset( $job['progress'] ) ? $job['progress'] : null,
+	) );
+}
+
+/**
+ * Where the Node backend (services/wookiee-api/src/routes/llm.js) posts a
+ * one-line human-readable status ("attempt 2/4, rate limited, retrying in
+ * 6s...") while a generation is still in flight, so the browser can show
+ * what's actually happening server-side instead of a static "Generating..."
+ * message for however many minutes a slow/flaky provider takes.
+ *
+ * Registered nopriv and secret-authenticated for the same reason as
+ * wookiee_run_job_handler() above: this call originates from the Node
+ * service, not a logged-in browser, so there is no session for a capability
+ * check to run against. Deliberately a no-op on anything other than a clean
+ * secret match against a job that still exists - a stray or late callback
+ * (e.g. from a request WordPress itself already gave up polling) should
+ * never surface an error of its own.
+ */
+add_action( 'wp_ajax_wookiee_update_job_progress', 'wookiee_update_job_progress_handler' );
+add_action( 'wp_ajax_nopriv_wookiee_update_job_progress', 'wookiee_update_job_progress_handler' );
+function wookiee_update_job_progress_handler() {
+	$job_id  = isset( $_POST['job_id'] ) ? sanitize_text_field( wp_unslash( $_POST['job_id'] ) ) : '';
+	$secret  = isset( $_POST['secret'] ) ? sanitize_text_field( wp_unslash( $_POST['secret'] ) ) : '';
+	$message = isset( $_POST['message'] ) ? sanitize_text_field( wp_unslash( $_POST['message'] ) ) : '';
+	$job     = $job_id ? wookiee_get_job( $job_id ) : null;
+
+	if ( $job && hash_equals( $job['secret'], $secret ) && $message ) {
+		wookiee_update_job( $job_id, array( 'progress' => array( 'message' => $message, 'at' => time() ) ) );
+	}
+
+	wp_die();
 }

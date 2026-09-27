@@ -11,35 +11,7 @@ defined( 'ABSPATH' ) || exit;
 
 get_header();
 
-$wa = function ( $text ) {
-	return 'https://wa.me/' . DBT_WHATSAPP . '?text=' . rawurlencode( $text );
-};
 $trial_msg = 'Salam, I want the 3 free clips. Here is my lecture/video link: ';
-
-$plans = array(
-	array(
-		'name'  => 'Starter',
-		'price' => '₦50,000',
-		'per'   => '/ month',
-		'items' => array( '12 clips a month (3 a week)', 'Captions in Hausa or English', 'Vertical 9:16 for TikTok, Reels and Shorts', 'You approve each clip on WhatsApp' ),
-		'msg'   => 'Salam, I am interested in the Starter plan (₦50,000/month).',
-	),
-	array(
-		'name'  => 'Standard',
-		'price' => '₦100,000',
-		'per'   => '/ month',
-		'items' => array( '30 clips a month (1 a day)', 'Captions in Hausa or English, or both', 'We post to TikTok, Facebook and YouTube Shorts for you', 'Monthly report: views and new followers' ),
-		'msg'   => 'Salam, I am interested in the Standard plan (₦100,000/month).',
-		'featured' => true,
-	),
-	array(
-		'name'  => 'Ramadan & events',
-		'price' => 'Custom',
-		'per'   => '',
-		'items' => array( 'Daily tafsir or a full event, clipped the same day', 'Any number of clips', 'Priced per series' ),
-		'msg'   => 'Salam, I want a quote for a Ramadan/event series.',
-	),
-);
 ?>
 
 <section class="hero hero--lite hero--single">
@@ -50,7 +22,7 @@ $plans = array(
 			<p class="hero__lede" lang="ha">Daga dogon karatu zuwa gajerun bidiyo.</p>
 			<p class="hero__lede">You already record hours of tafsir, lectures and podcasts. We cut the strongest moments into captioned vertical clips for TikTok, Facebook Reels and YouTube Shorts — every month, without you editing anything.</p>
 			<div class="hero__actions">
-				<a class="btn btn--primary" href="<?php echo esc_url( $wa( $trial_msg ) ); ?>" target="_blank" rel="noopener">Get 3 clips free on WhatsApp</a>
+				<a class="btn btn--primary" href="<?php echo esc_url( dbt_wa_link( $trial_msg ) ); ?>" target="_blank" rel="noopener">Get 3 clips free on WhatsApp</a>
 				<a class="btn btn--outline" href="#plans">See prices</a>
 			</div>
 			<p class="hero__fine">Send one video link. You get 3 finished clips within 48 hours, free. Pay only if you want more.</p>
@@ -107,20 +79,7 @@ $plans = array(
 
 <section class="plans reveal" id="plans" aria-label="Prices">
 	<h2 class="plans__title">Prices</h2>
-	<div class="plans__grid">
-		<?php foreach ( $plans as $plan ) : ?>
-			<article class="plan<?php echo empty( $plan['featured'] ) ? '' : ' plan--featured'; ?>">
-				<p class="cell__label"><?php echo esc_html( $plan['name'] ); ?></p>
-				<p class="plan__price"><?php echo esc_html( $plan['price'] ); ?> <span><?php echo esc_html( $plan['per'] ); ?></span></p>
-				<ul class="plan__items">
-					<?php foreach ( $plan['items'] as $item ) : ?>
-						<li><?php echo esc_html( $item ); ?></li>
-					<?php endforeach; ?>
-				</ul>
-				<a class="btn <?php echo empty( $plan['featured'] ) ? 'btn--outline' : 'btn--primary'; ?>" href="<?php echo esc_url( $wa( $plan['msg'] ) ); ?>" target="_blank" rel="noopener">Chat on WhatsApp</a>
-			</article>
-		<?php endforeach; ?>
-	</div>
+	<?php dbt_render_clips_plans(); ?>
 	<p class="work__note">No contract. Pay monthly by bank transfer; stop any month. You keep full rights to every clip.</p>
 </section>
 
@@ -128,7 +87,7 @@ $plans = array(
 	<div class="cta__inner">
 		<h2 class="cta__title">Start with 3 free clips.</h2>
 		<div class="cta__actions">
-			<a class="btn btn--primary" href="<?php echo esc_url( $wa( $trial_msg ) ); ?>" target="_blank" rel="noopener">WhatsApp us</a>
+			<a class="btn btn--primary" href="<?php echo esc_url( dbt_wa_link( $trial_msg ) ); ?>" target="_blank" rel="noopener">WhatsApp us</a>
 			<a class="cta__email" href="tel:+<?php echo esc_attr( DBT_WHATSAPP ); ?>">+<?php echo esc_html( DBT_WHATSAPP ); ?></a>
 		</div>
 	</div>

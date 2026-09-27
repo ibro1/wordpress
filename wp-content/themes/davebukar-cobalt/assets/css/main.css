@@ -743,6 +743,17 @@ body.admin-bar .nav { top: 32px; }
 .plan__items li::before { content: ""; position: absolute; left: 0; top: 0.62em; width: 0.5rem; height: 2px; background: var(--color-accent); }
 .plan .btn { margin-top: auto; justify-content: center; }
 
+/* ---------- Earn page: payback calculator ---------- */
+.payback { max-width: var(--container-w); margin-inline: auto; padding: var(--space-xl) var(--space-md) var(--space-3xl); }
+.payback__inner { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-xl); align-items: start; border: 1px solid var(--color-rule); border-radius: var(--radius-lg); padding: var(--space-xl); background: var(--color-paper-2); }
+.payback__lede { margin-top: var(--space-sm); color: var(--color-ink-2); max-width: 44ch; }
+.payback__calc { display: flex; flex-direction: column; gap: var(--space-md); }
+.payback__out { display: flex; flex-direction: column; gap: var(--space-2xs); }
+.payback__out li { font-size: 1rem; color: var(--color-ink-2); }
+.payback__out strong { color: var(--color-accent); font-family: var(--font-display); font-size: 1.15rem; }
+.payback__fine { font-size: 0.82rem; color: var(--color-muted); }
+.work__note a { color: var(--color-accent); border-bottom: 1px solid currentColor; }
+
 /* ---------- Responsive — 768 / 414 / 375 / 320 ---------- */
 @media (max-width: 1000px) {
 	.band__steps--4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -760,7 +771,8 @@ body.admin-bar .nav { top: 32px; }
 	.span-2x2, .span-2x1, .span-1x2, .span-1x1 { grid-column: span 1; grid-row: span 1; }
 	.band__steps, .band__steps--4 { grid-template-columns: minmax(0, 1fr); gap: var(--space-lg); }
 	.case { grid-template-columns: minmax(0, 1fr); gap: var(--space-md); }
-	.products, .plans__grid { grid-template-columns: minmax(0, 1fr); }
+	.products, .plans__grid, .payback__inner { grid-template-columns: minmax(0, 1fr); }
+	.payback__inner { padding: var(--space-lg); }
 	.cta__inner { flex-direction: column; align-items: flex-start; }
 	.site-footer__copyright { margin-inline-start: 0; }
 }
@@ -768,5 +780,5 @@ body.admin-bar .nav { top: 32px; }
 	.nav__inner { padding-inline: var(--space-sm); gap: var(--space-sm); }
 	.hero { padding: var(--space-2xl) var(--space-sm) var(--space-xl); }
 	.bento, .bento--detail { padding: var(--space-xl) var(--space-sm) var(--space-2xl); }
-	.cta, .band, .site-footer, .work, .plans { padding-inline: var(--space-sm); }
+	.cta, .band, .site-footer, .work, .plans, .payback { padding-inline: var(--space-sm); }
 }

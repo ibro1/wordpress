@@ -125,7 +125,7 @@ body.admin-bar .nav { top: 32px; }
 	color: var(--color-ink);
 	white-space: nowrap;
 }
-.nav__brand, .drawer__brand { display: inline-flex; align-items: center; }
+.nav__brand, .drawer__brand, .site-footer__brand { display: inline-flex; align-items: center; }
 .brand-mark { width: 28px; height: 28px; margin-inline-end: 0.55rem; flex-shrink: 0; border-radius: 7px; }
 .nav__brand-mono { font-family: var(--font-mono); color: var(--color-accent); font-weight: 500; }
 

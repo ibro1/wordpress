@@ -5,7 +5,7 @@
 		<p class="site-footer__statement">We build the software, run the infrastructure, and stay reachable after launch.</p>
 
 		<div class="site-footer__meta">
-			<a class="site-footer__brand" href="<?php echo esc_url( home_url( '/' ) ); ?>">Dave Bukar<span class="nav__brand-mono">.tech</span></a>
+			<a class="site-footer__brand" href="<?php echo esc_url( home_url( '/' ) ); ?>"><?php echo dbt_brand_mark(); // phpcs:ignore WordPress.Security.EscapeOutput -- built from escaped parts ?>Dave Bukar<span class="nav__brand-mono">.tech</span></a>
 
 			<nav class="site-footer__links" aria-label="Footer">
 				<?php foreach ( dbt_services() as $slug => $service ) : $page = get_page_by_path( $slug, OBJECT, 'page' ); ?>

@@ -33,7 +33,7 @@ $svc_url = function ( $slug ) {
 			<p class="hero__lede">Custom web, mobile and desktop apps. DevOps that ships without downtime. Advertising that gets found. AI agents that handle the repetitive part.</p>
 			<div class="hero__actions">
 				<button type="button" class="btn btn--primary js-book-call">Book a call</button>
-				<a class="btn btn--outline" href="#services">See what we build</a>
+				<a class="btn btn--outline" href="<?php echo esc_url( dbt_page_url( 'work' ) ); ?>">See what we’ve built</a>
 			</div>
 		</div>
 

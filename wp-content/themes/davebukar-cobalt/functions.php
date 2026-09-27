@@ -5,13 +5,15 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'DBT_VERSION', '1.3.1' );
+define( 'DBT_VERSION', '1.4.0' );
 define( 'DBT_DIR', trailingslashit( get_template_directory() ) );
 define( 'DBT_URI', trailingslashit( get_template_directory_uri() ) );
 define( 'DBT_CONTACT_EMAIL', 'hello@davebukartechnologies.com' );
+define( 'DBT_WHATSAPP', '2348113235992' ); // digits only, for wa.me links
 
 require_once DBT_DIR . 'inc/site-content.php';
 require_once DBT_DIR . 'inc/lead-capture.php';
+require_once DBT_DIR . 'inc/work-content.php';
 
 add_action( 'after_setup_theme', 'dbt_setup' );
 function dbt_setup() {
@@ -153,6 +155,19 @@ function dbt_starter_pages() {
 		);
 	}
 
+	$pages['work'] = array(
+		'title'    => 'Work',
+		'menu'     => 'Work',
+		'template' => 'template-work.php',
+		'content'  => '',
+	);
+	$pages['clips'] = array(
+		'title'    => 'Short Clips for Lectures & Podcasts',
+		'menu'     => 'Clips',
+		'template' => 'template-clips.php',
+		'content'  => '',
+	);
+
 	return $pages;
 }
 
@@ -258,6 +273,10 @@ function dbt_cmdk_destinations() {
 		);
 	}
 
+	foreach ( array( 'work' => 'Work', 'clips' => 'Short clips service' ) as $slug => $label ) {
+		$destinations[] = array( 'label' => $label, 'url' => dbt_page_url( $slug ), 'group' => 'Pages' );
+	}
+
 	foreach ( dbt_legal_pages() as $slug => $legal ) {
 		$page = get_page_by_path( $slug, OBJECT, 'page' );
 		$destinations[] = array(
@@ -268,4 +287,9 @@ function dbt_cmdk_destinations() {
 	}
 
 	return $destinations;
+}
+
+function dbt_page_url( $slug ) {
+	$page = get_page_by_path( $slug, OBJECT, 'page' );
+	return $page ? get_permalink( $page ) : home_url( '/' . $slug . '/' );
 }

@@ -11,6 +11,8 @@
 				<?php foreach ( dbt_services() as $slug => $service ) : $page = get_page_by_path( $slug, OBJECT, 'page' ); ?>
 					<a href="<?php echo esc_url( $page ? get_permalink( $page ) : home_url( '/' . $slug . '/' ) ); ?>"><?php echo esc_html( $service['nav_label'] ); ?></a>
 				<?php endforeach; ?>
+				<a href="<?php echo esc_url( dbt_page_url( 'work' ) ); ?>">Work</a>
+				<a href="<?php echo esc_url( dbt_page_url( 'clips' ) ); ?>">Clips</a>
 				<?php $privacy = get_page_by_path( 'privacy-policy', OBJECT, 'page' ); ?>
 				<a href="<?php echo esc_url( $privacy ? get_permalink( $privacy ) : home_url( '/privacy-policy/' ) ); ?>">Privacy</a>
 				<?php $terms = get_page_by_path( 'terms-of-service', OBJECT, 'page' ); ?>

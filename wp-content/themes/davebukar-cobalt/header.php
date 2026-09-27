@@ -28,6 +28,7 @@ defined( 'ABSPATH' ) || exit;
 		<nav class="nav__right" aria-label="Primary">
 			<div class="nav__links">
 				<a class="nav__link" href="<?php echo esc_url( home_url( '/#services' ) ); ?>">Services</a>
+				<a class="nav__link" href="<?php echo esc_url( dbt_page_url( 'work' ) ); ?>">Work</a>
 				<a class="nav__link" href="<?php echo esc_url( home_url( '/#how-we-work' ) ); ?>">How we work</a>
 			</div>
 			<button type="button" class="btn btn--primary btn--sm js-book-call nav__cta-desktop">Book a call</button>
@@ -50,6 +51,7 @@ defined( 'ABSPATH' ) || exit;
 
 		<div class="drawer__section">
 			<a class="drawer__link" href="<?php echo esc_url( home_url( '/#services' ) ); ?>"><span>Services</span><span class="drawer__link-arrow" aria-hidden="true">→</span></a>
+			<a class="drawer__link" href="<?php echo esc_url( dbt_page_url( 'work' ) ); ?>"><span>Work</span><span class="drawer__link-arrow" aria-hidden="true">→</span></a>
 			<a class="drawer__link" href="<?php echo esc_url( home_url( '/#how-we-work' ) ); ?>"><span>How we work</span><span class="drawer__link-arrow" aria-hidden="true">→</span></a>
 		</div>
 

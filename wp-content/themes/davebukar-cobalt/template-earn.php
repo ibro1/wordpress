@@ -13,9 +13,9 @@ defined( 'ABSPATH' ) || exit;
 get_header();
 
 $src       = ' (from the earn page)';
-$trial_msg = 'Salam, I want the 3 free clips. Here is my video or product link: ';
+$order_msg = 'Salam, I want the 3-advert pack (₦15,000). What do I send you?';
 $amounts   = array();
-foreach ( dbt_clips_plans() as $plan ) {
+foreach ( dbt_business_packs() as $plan ) {
 	if ( $plan['amount'] ) {
 		$amounts[ $plan['name'] ] = $plan['amount'];
 	}
@@ -25,14 +25,14 @@ foreach ( dbt_clips_plans() as $plan ) {
 <section class="hero hero--lite hero--single">
 	<div class="hero__inner">
 		<div class="hero__copy reveal">
-			<p class="mono-label">CLIPS THAT BRING CUSTOMERS</p>
+			<p class="mono-label">ADVERTS THAT BRING CUSTOMERS</p>
 			<h1 class="hero__title">Short videos that bring you students, buyers and sales.</h1>
-			<p class="hero__lede">People scroll TikTok, Facebook and WhatsApp status all day. We turn what you already have — your lectures, your classes, your products — into short clips that send those people to you. You pay for the work, monthly. Nothing else.</p>
+			<p class="hero__lede">People scroll TikTok, Facebook and WhatsApp status all day. We turn what you already have — your lectures, your classes, your products — into short clips that send those people to you. You pay for the adverts. Nothing else.</p>
 			<div class="hero__actions">
-				<a class="btn btn--primary" href="<?php echo esc_url( dbt_wa_link( $trial_msg . $src ) ); ?>" target="_blank" rel="noopener">Get 3 clips free on WhatsApp</a>
+				<a class="btn btn--primary" href="<?php echo esc_url( dbt_wa_link( $order_msg . $src ) ); ?>" target="_blank" rel="noopener">Order 3 adverts — ₦15,000</a>
 				<a class="btn btn--outline" href="#payback">Will it pay for itself?</a>
 			</div>
-			<p class="hero__fine">3 finished clips within 48 hours, free. See them before you spend anything.</p>
+			<p class="hero__fine">We make the first advert, you see it, then you pay. Record long lectures or classes instead? <a href="<?php echo esc_url( dbt_page_url( 'clips' ) ); ?>">Monthly clips are here.</a></p>
 		</div>
 	</div>
 </section>
@@ -54,9 +54,9 @@ foreach ( dbt_clips_plans() as $plan ) {
 		<p class="cell__body">One strong minute of your lecture, ending with where to buy your book or join your paid class.</p>
 	</article>
 	<article class="cell span-1x1">
-		<p class="cell__label">Channels</p>
-		<h3 class="cell__title">Grow toward being paid</h3>
-		<p class="cell__body">YouTube pays creators in Nigeria once a channel qualifies. Regular Shorts are how most channels get there.</p>
+		<p class="cell__label">Services</p>
+		<h3 class="cell__title">Show the work, get the job</h3>
+		<p class="cell__body">Tailors, mechanics, caterers, event halls: a before-and-after clip does the convincing before the customer calls.</p>
 	</article>
 </section>
 
@@ -82,7 +82,7 @@ foreach ( dbt_clips_plans() as $plan ) {
 		<li class="band__step">
 			<span class="band__step-no">04</span>
 			<h3 class="band__step-title">Post them everywhere</h3>
-			<p class="band__step-body">Your WhatsApp status, TikTok and Facebook — or we post them for you on the Standard plan.</p>
+			<p class="band__step-body">Your WhatsApp status, TikTok and Facebook. Post one a day and they keep working.</p>
 		</li>
 	</ol>
 </section>
@@ -91,12 +91,12 @@ foreach ( dbt_clips_plans() as $plan ) {
 	<div class="payback__inner">
 		<div>
 			<h2 class="plans__title">Will it pay for itself?</h2>
-			<p class="payback__lede">Type what one new customer, student or sale brings you in a month. We’ll show how many the clips need to bring in to cover their cost.</p>
+			<p class="payback__lede">Type what one sale or one new customer brings you. We’ll show how many the adverts need to bring in to cover their cost.</p>
 		</div>
 		<div class="payback__calc" data-payback='<?php echo esc_attr( wp_json_encode( $amounts ) ); ?>'>
 			<div class="field">
 				<label for="payback-value">One customer brings me (₦)</label>
-				<input id="payback-value" type="number" inputmode="numeric" min="1" step="500" value="10000">
+				<input id="payback-value" type="number" inputmode="numeric" min="1" step="500" value="5000">
 			</div>
 			<ul class="payback__out" aria-live="polite"></ul>
 			<p class="payback__fine">This is arithmetic, not a promise. Nobody can promise you sales — anyone who does is selling something else.</p>
@@ -110,18 +110,18 @@ foreach ( dbt_clips_plans() as $plan ) {
 		<ol class="band__steps">
 			<li class="band__step">
 				<span class="band__step-no">IT IS</span>
-				<h3 class="band__step-title">Work, done every month</h3>
-				<p class="band__step-body">Finished clips you can see, approve and keep. You own every one of them.</p>
+				<h3 class="band__step-title">Adverts you can see</h3>
+				<p class="band__step-body">Finished adverts you approve and keep. You own every one of them.</p>
 			</li>
 			<li class="band__step">
 				<span class="band__step-no">IT IS NOT</span>
 				<h3 class="band__step-title">An investment</h3>
-				<p class="band__step-body">No deposit, no returns, no “bring two people”. You pay for clips, like you pay a tailor for clothes.</p>
+				<p class="band__step-body">No deposit, no returns, no “bring two people”. You pay for adverts, like you pay a tailor for clothes.</p>
 			</li>
 			<li class="band__step">
 				<span class="band__step-no">YOU CAN</span>
-				<h3 class="band__step-title">Stop any month</h3>
-				<p class="band__step-body">No contract. Try 3 clips free first, then pay month by month only while it works for you.</p>
+				<h3 class="band__step-title">Pay when you’ve seen it</h3>
+				<p class="band__step-body">No subscription. We make your first advert, you see it, then you pay. Come back when you have new stock or a sale.</p>
 			</li>
 		</ol>
 	</div>
@@ -129,15 +129,15 @@ foreach ( dbt_clips_plans() as $plan ) {
 
 <section class="plans reveal" id="plans" aria-label="Prices">
 	<h2 class="plans__title">Prices</h2>
-	<?php dbt_render_clips_plans( $src ); ?>
-	<p class="work__note">Pay monthly by bank transfer. Clips are made with <a href="https://klipara.linkfa.de" target="_blank" rel="noopener">Klipara</a>, our own clipping engine, and checked by a person before you see them.</p>
+	<div class="plans--two"><?php dbt_render_clips_plans( $src, dbt_business_packs() ); ?></div>
+	<p class="work__note">Pay by bank transfer. Adverts are made with <a href="https://klipara.linkfa.de" target="_blank" rel="noopener">Klipara</a>, our own clipping engine, and checked by a person before you see them.</p>
 </section>
 
 <section class="cta reveal">
 	<div class="cta__inner">
-		<h2 class="cta__title">See 3 clips before you pay anything.</h2>
+		<h2 class="cta__title">See your first advert before you pay.</h2>
 		<div class="cta__actions">
-			<a class="btn btn--primary" href="<?php echo esc_url( dbt_wa_link( $trial_msg . $src ) ); ?>" target="_blank" rel="noopener">WhatsApp us</a>
+			<a class="btn btn--primary" href="<?php echo esc_url( dbt_wa_link( $order_msg . $src ) ); ?>" target="_blank" rel="noopener">WhatsApp us</a>
 			<a class="cta__email" href="tel:+<?php echo esc_attr( DBT_WHATSAPP ); ?>">+<?php echo esc_html( DBT_WHATSAPP ); ?></a>
 		</div>
 	</div>
@@ -164,7 +164,7 @@ foreach ( dbt_clips_plans() as $plan ) {
 			var n = Math.ceil( plans[ name ] / v );
 			var li = document.createElement( 'li' );
 			var strong = document.createElement( 'strong' );
-			strong.textContent = n + ( 1 === n ? ' customer' : ' customers' ) + ' a month';
+			strong.textContent = n + ( 1 === n ? ' sale' : ' sales' );
 			li.appendChild( document.createTextNode( name + ' (₦' + naira.format( plans[ name ] ) + '): ' ) );
 			li.appendChild( strong );
 			out.appendChild( li );

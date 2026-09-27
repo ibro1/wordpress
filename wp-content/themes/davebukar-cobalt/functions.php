@@ -5,7 +5,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'DBT_VERSION', '1.6.0' );
+define( 'DBT_VERSION', '1.7.0' );
 define( 'DBT_DIR', trailingslashit( get_template_directory() ) );
 define( 'DBT_URI', trailingslashit( get_template_directory_uri() ) );
 define( 'DBT_CONTACT_EMAIL', 'hello@davebukartechnologies.com' );
@@ -301,3 +301,24 @@ function dbt_page_url( $slug ) {
 	$page = get_page_by_path( $slug, OBJECT, 'page' );
 	return $page ? get_permalink( $page ) : home_url( '/' . $slug . '/' );
 }
+
+/**
+ * Favicon and app icons from assets/brand. A Site Icon set in the
+ * Customizer takes precedence, so this never prints a second set.
+ */
+add_action( 'wp_head', 'dbt_brand_icons', 2 );
+function dbt_brand_icons() {
+	if ( has_site_icon() ) {
+		return;
+	}
+	$b = DBT_URI . 'assets/brand/';
+	printf( '<link rel="icon" href="%s" sizes="any">' . "\n", esc_url( $b . 'favicon.ico' ) );
+	printf( '<link rel="icon" href="%s" type="image/svg+xml">' . "\n", esc_url( $b . 'favicon.svg' ) );
+	printf( '<link rel="apple-touch-icon" href="%s">' . "\n", esc_url( $b . 'apple-touch-icon.png' ) );
+	printf( '<meta name="theme-color" content="#161B22">' . "\n" );
+}
+
+function dbt_brand_mark() {
+	return '<img class="brand-mark" src="' . esc_url( DBT_URI . 'assets/brand/davebukar-mark.svg' ) . '" alt="" width="28" height="28">';
+}
+

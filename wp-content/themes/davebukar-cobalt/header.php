@@ -17,7 +17,7 @@ defined( 'ABSPATH' ) || exit;
 
 <header class="nav" id="nav">
 	<div class="nav__inner">
-		<a class="nav__brand" href="<?php echo esc_url( home_url( '/' ) ); ?>">Dave Bukar<span class="nav__brand-mono">.tech</span></a>
+		<a class="nav__brand" href="<?php echo esc_url( home_url( '/' ) ); ?>"><?php echo dbt_brand_mark(); // phpcs:ignore WordPress.Security.EscapeOutput -- built from escaped parts ?>Dave Bukar<span class="nav__brand-mono">.tech</span></a>
 
 		<button class="searchpill" id="searchpill" aria-label="Jump to a page (⌘K)">
 			<span class="searchpill__ico" aria-hidden="true"></span>
@@ -45,7 +45,7 @@ defined( 'ABSPATH' ) || exit;
 	<div class="drawer__backdrop" data-drawer-close></div>
 	<div class="drawer__panel" role="dialog" aria-modal="true" aria-label="Menu">
 		<div class="drawer__head">
-			<a class="drawer__brand" href="<?php echo esc_url( home_url( '/' ) ); ?>">Dave Bukar<span class="nav__brand-mono">.tech</span></a>
+			<a class="drawer__brand" href="<?php echo esc_url( home_url( '/' ) ); ?>"><?php echo dbt_brand_mark(); // phpcs:ignore WordPress.Security.EscapeOutput -- built from escaped parts ?>Dave Bukar<span class="nav__brand-mono">.tech</span></a>
 			<button type="button" class="drawer__close" data-drawer-close aria-label="Close menu">×</button>
 		</div>
 

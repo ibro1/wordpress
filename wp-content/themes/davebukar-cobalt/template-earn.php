@@ -60,6 +60,33 @@ foreach ( dbt_clips_plans() as $plan ) {
 	</article>
 </section>
 
+<section class="plans reveal" aria-label="No videos yet">
+	<h2 class="plans__title">Not a creator? You don’t need to be.</h2>
+	<p class="payback__lede">You don’t need a special camera, a channel or followers — just your phone and ten minutes.</p>
+	<ol class="band__steps band__steps--4 steps--light">
+		<li class="band__step">
+			<span class="band__step-no">01</span>
+			<h3 class="band__step-title">Film what you sell</h3>
+			<p class="band__step-body">Walk through your shop, show your products, or talk about your school or service for 5–10 minutes. No script needed.</p>
+		</li>
+		<li class="band__step">
+			<span class="band__step-no">02</span>
+			<h3 class="band__step-title">Or send what you have</h3>
+			<p class="band__step-body">WhatsApp status videos, a live you did, customer testimonies — anything already on your phone.</p>
+		</li>
+		<li class="band__step">
+			<span class="band__step-no">03</span>
+			<h3 class="band__step-title">We make the adverts</h3>
+			<p class="band__step-body">Short clips with captions, your price and your WhatsApp number on screen.</p>
+		</li>
+		<li class="band__step">
+			<span class="band__step-no">04</span>
+			<h3 class="band__step-title">Post them everywhere</h3>
+			<p class="band__step-body">Your WhatsApp status, TikTok and Facebook — or we post them for you on the Standard plan.</p>
+		</li>
+	</ol>
+</section>
+
 <section class="payback reveal" id="payback" aria-label="Will it pay for itself?">
 	<div class="payback__inner">
 		<div>

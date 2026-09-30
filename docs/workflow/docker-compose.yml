@@ -82,6 +82,25 @@ services:
       # priority, which is the opposite of what that change was for. Ordered
       # most specific to least: exact main domain, exact external hosts,
       # subdomain wildcard, then everything else.
+      #
+      # The two catch-alls sit at 2 and 1, BELOW every ordinary router rather
+      # than above them. That inversion is the point. An app deployed on a
+      # subdomain gets `Host(`thing.linkfa.de`)` with no priority of its own,
+      # so Traefik scores it by rule length - around 26 - and it now outranks
+      # this wildcard automatically, on the day it is deployed, with nothing
+      # to change here.
+      #
+      # The wildcard used to sit at 50. Fifty beats twenty-six, so WordPress
+      # captured every new subdomain the moment it appeared, and the only cure
+      # was to name that host in EXCLUDED_DOMAINS - which is why that list grew
+      # to twenty-two entries while the list of sites WordPress actually serves
+      # has five. The list was never the design; it was the bill for this
+      # number being too high.
+      #
+      # EXCLUDED_DOMAINS still works and should normally be empty. It is kept
+      # as an override for the one case priority cannot settle: a service whose
+      # own router is broken or absent, where WordPress would otherwise answer
+      # for it via the catch-all below.
 
       # --- Router 1: Main Domain (dynamic) ---
       - "traefik.http.routers.wp-main.rule=Host(`${MAIN_DOMAIN}`)"
@@ -103,7 +122,7 @@ services:
       - "traefik.http.routers.wp-wildcard.entrypoints=websecure"
       - "traefik.http.routers.wp-wildcard.tls=true"
       - "traefik.http.routers.wp-wildcard.service=wp-service"
-      - "traefik.http.routers.wp-wildcard.priority=50"
+      - "traefik.http.routers.wp-wildcard.priority=2"
 
       # --- Router 3: External Domains (single dynamic rule, holds full Traefik rule syntax) ---
       # Keep this a list of EXACT hosts - Host(`a.com`) || Host(`b.com`).

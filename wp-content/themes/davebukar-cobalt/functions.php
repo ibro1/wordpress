@@ -8,7 +8,7 @@ defined( 'ABSPATH' ) || exit;
 define( 'DBT_VERSION', '1.7.2' );
 define( 'DBT_DIR', trailingslashit( get_template_directory() ) );
 define( 'DBT_URI', trailingslashit( get_template_directory_uri() ) );
-define( 'DBT_CONTACT_EMAIL', 'hello@davebukartechnologies.com' );
+define( 'DBT_CONTACT_EMAIL', 'info@linkfa.de' );
 define( 'DBT_WHATSAPP', '2348113235992' ); // digits only, for wa.me links
 
 require_once DBT_DIR . 'inc/site-content.php';

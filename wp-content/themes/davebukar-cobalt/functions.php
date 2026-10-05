@@ -5,7 +5,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'DBT_VERSION', '1.7.1' );
+define( 'DBT_VERSION', '1.7.2' );
 define( 'DBT_DIR', trailingslashit( get_template_directory() ) );
 define( 'DBT_URI', trailingslashit( get_template_directory_uri() ) );
 define( 'DBT_CONTACT_EMAIL', 'hello@davebukartechnologies.com' );
@@ -187,6 +187,14 @@ function dbt_create_starter_content() {
 		$existing = get_page_by_path( $slug, OBJECT, 'page' );
 		if ( $existing instanceof WP_Post ) {
 			$page_ids[ $slug ] = (int) $existing->ID;
+			// A page WordPress made under the same slug (its own sample Privacy Policy) is put on the theme's template and
+			// published, so the theme's text shows.
+			if ( 'template-legal.php' === $page['template'] ) {
+				update_post_meta( $existing->ID, '_wp_page_template', 'template-legal.php' );
+				if ( 'publish' !== $existing->post_status ) {
+					wp_update_post( array( 'ID' => $existing->ID, 'post_status' => 'publish' ) );
+				}
+			}
 			continue;
 		}
 

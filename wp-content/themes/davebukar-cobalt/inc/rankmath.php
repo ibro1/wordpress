@@ -45,6 +45,11 @@ add_filter( 'rank_math/frontend/robots', function ( $robots ) {
 	return $robots;
 } );
 
+/** The intake page keeps its own title under Rank Math. */
+add_filter( 'rank_math/frontend/title', function ( $title ) {
+	return is_page( 'register' ) ? 'Start a project - ' . DBT_ORG_NAME : $title;
+} );
+
 /** Curated descriptions for the front page and fixed pages beat Rank Math's auto text. */
 add_filter( 'rank_math/frontend/description', function ( $description ) {
 	if ( is_front_page() || ( is_page() && ! get_post_meta( get_the_ID(), 'rank_math_description', true ) ) ) {

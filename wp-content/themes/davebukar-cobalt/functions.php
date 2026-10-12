@@ -1,11 +1,11 @@
 <?php
 /**
- * Dave Bukar Technologies theme functions.
+ * Linkfa theme functions.
  */
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'DBT_VERSION', '1.9.1' );
+define( 'DBT_VERSION', '1.10.0' );
 define( 'DBT_DIR', trailingslashit( get_template_directory() ) );
 define( 'DBT_URI', trailingslashit( get_template_directory_uri() ) );
 define( 'DBT_CONTACT_EMAIL', 'info@linkfa.de' );
@@ -340,11 +340,11 @@ function dbt_brand_icons() {
 	printf( '<link rel="icon" href="%s" sizes="any">' . "\n", esc_url( $b . 'favicon.ico' ) );
 	printf( '<link rel="icon" href="%s" type="image/svg+xml">' . "\n", esc_url( $b . 'favicon.svg' ) );
 	printf( '<link rel="apple-touch-icon" href="%s">' . "\n", esc_url( $b . 'apple-touch-icon.png' ) );
-	printf( '<meta name="theme-color" content="#161B22">' . "\n" );
+	printf( '<meta name="theme-color" content="#1B1E24">' . "\n" );
 }
 
 function dbt_brand_mark() {
-	return '<img class="brand-mark" src="' . esc_url( DBT_URI . 'assets/brand/davebukar-mark.svg' ) . '" alt="" width="28" height="28">';
+	return '<img class="brand-mark" src="' . esc_url( DBT_URI . 'assets/brand/linkfa-mark.svg' ) . '" alt="" width="28" height="28">';
 }
 
 

@@ -100,7 +100,7 @@ function dbt_maybe_configure_rank_math() {
 		'website_name'              => DBT_ORG_NAME,
 		'email'                     => DBT_CONTACT_EMAIL,
 		'organization_description'  => 'Web, mobile and desktop apps, DevOps and infrastructure, SEO and Google Ads management, online advertising, and AI agents.',
-		'open_graph_image'          => $logo,
+		'open_graph_image'          => DBT_URI . 'assets/brand/og-default.png',
 		'homepage_title'            => DBT_ORG_NAME . ' — software, DevOps, ads and AI agents',
 		'homepage_description'      => 'We build web, mobile and desktop apps, run zero-downtime DevOps, do SEO and Google Ads management, and ship AI agents — and stay reachable after launch.',
 		'author_custom_robots'      => 'on',

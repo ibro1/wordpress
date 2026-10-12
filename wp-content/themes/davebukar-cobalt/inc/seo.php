@@ -105,14 +105,14 @@ function dbt_head_meta() {
 	}
 	printf( '<meta property="og:url" content="%s">' . "\n", esc_url( $url ) );
 	$image = ( is_singular() && has_post_thumbnail() ) ? get_the_post_thumbnail_url( null, 'large' ) : '';
-	printf( '<meta property="og:image" content="%s">' . "\n", esc_url( $image ? $image : DBT_URI . 'assets/brand/icon-512.png' ) );
-	echo '<meta name="twitter:card" content="' . ( $image ? 'summary_large_image' : 'summary' ) . '">' . "\n";
+	printf( '<meta property="og:image" content="%s">' . "\n", esc_url( $image ? $image : DBT_URI . 'assets/brand/og-default.png' ) );
+	echo '<meta name="twitter:card" content="summary_large_image">' . "\n";
 }
 
 /** Article schema on published posts (no plugin needed). */
 function dbt_article_jsonld() {
 	$post  = get_post();
-	$image = has_post_thumbnail( $post ) ? get_the_post_thumbnail_url( $post, 'large' ) : DBT_URI . 'assets/brand/icon-512.png';
+	$image = has_post_thumbnail( $post ) ? get_the_post_thumbnail_url( $post, 'large' ) : DBT_URI . 'assets/brand/og-default.png';
 	$data  = array(
 		'@context'         => 'https://schema.org',
 		'@type'            => 'Article',

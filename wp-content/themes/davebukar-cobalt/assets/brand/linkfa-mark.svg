@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="c01_cobalt_dark" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2196F3"/>
+      <stop offset="100%" stop-color="#0066D6"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="108" fill="#1B1E24"/>
+  <rect x="2" y="2" width="508" height="508" rx="106" fill="none" stroke="#2B3240" stroke-width="2"/>
+  <!-- Chevron > -->
+  <path d="M 120 176 L 202 256 L 120 336" fill="none" stroke="url(#c01_cobalt_dark)" stroke-width="52" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Letter L -->
+  <path d="M 276 176 L 276 336 L 392 336" fill="none" stroke="#FFFFFF" stroke-width="52" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

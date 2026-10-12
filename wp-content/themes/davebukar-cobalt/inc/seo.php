@@ -211,6 +211,7 @@ function dbt_robots_txt( $output, $public ) {
 		. "Disallow: /wp-admin/\n"
 		. "Allow: /wp-admin/admin-ajax.php\n"
 		. "Disallow: /*?s=\n"
+		. "Disallow: /talk\n"
 		. "\n"
 		. 'Sitemap: ' . home_url( '/wp-sitemap.xml' ) . "\n";
 }

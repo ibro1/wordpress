@@ -62,6 +62,14 @@ function dbt_meta_description() {
 		return $fixed[ $slug ];
 	}
 
+	// Description written by an SEO plugin or the SEO employee, when present.
+	foreach ( array( '_yoast_wpseo_metadesc', 'rank_math_description', '_dbt_meta_description' ) as $key ) {
+		$custom = trim( (string) get_post_meta( get_the_ID(), $key, true ) );
+		if ( '' !== $custom ) {
+			return $custom;
+		}
+	}
+
 	$text = has_excerpt() ? get_the_excerpt() : wp_strip_all_tags( strip_shortcodes( get_post_field( 'post_content', get_the_ID() ) ) );
 	return wp_html_excerpt( trim( preg_replace( '/\s+/', ' ', $text ) ), 155, '…' );
 }
@@ -94,13 +102,71 @@ function dbt_head_meta() {
 		printf( '<meta property="og:description" content="%s">' . "\n", esc_attr( $desc ) );
 	}
 	printf( '<meta property="og:url" content="%s">' . "\n", esc_url( $url ) );
-	printf( '<meta property="og:image" content="%s">' . "\n", esc_url( DBT_URI . 'assets/brand/icon-512.png' ) );
-	echo '<meta name="twitter:card" content="summary">' . "\n";
+	$image = ( is_singular() && has_post_thumbnail() ) ? get_the_post_thumbnail_url( null, 'large' ) : '';
+	printf( '<meta property="og:image" content="%s">' . "\n", esc_url( $image ? $image : DBT_URI . 'assets/brand/icon-512.png' ) );
+	echo '<meta name="twitter:card" content="' . ( $image ? 'summary_large_image' : 'summary' ) . '">' . "\n";
+}
+
+/** Article schema on published posts (no plugin needed). */
+function dbt_article_jsonld() {
+	$post  = get_post();
+	$image = has_post_thumbnail( $post ) ? get_the_post_thumbnail_url( $post, 'large' ) : DBT_URI . 'assets/brand/icon-512.png';
+	$data  = array(
+		'@context'         => 'https://schema.org',
+		'@type'            => 'Article',
+		'headline'         => wp_strip_all_tags( get_the_title( $post ) ),
+		'description'      => dbt_meta_description(),
+		'datePublished'    => get_the_date( 'c', $post ),
+		'dateModified'     => get_the_modified_date( 'c', $post ),
+		'image'            => array( $image ),
+		'mainEntityOfPage' => get_permalink( $post ),
+		'author'           => array( '@type' => 'Organization', 'name' => DBT_ORG_NAME, 'url' => home_url( '/' ) ),
+		'publisher'        => array(
+			'@type' => 'Organization',
+			'name'  => DBT_ORG_NAME,
+			'logo'  => array( '@type' => 'ImageObject', 'url' => DBT_URI . 'assets/brand/icon-512.png' ),
+		),
+	);
+	echo '<script type="application/ld+json">' . wp_json_encode( $data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE ) . '</script>' . "\n";
+}
+
+/** Let REST writers set SEO title/description even with no SEO plugin installed. */
+add_action( 'init', 'dbt_register_seo_meta' );
+function dbt_register_seo_meta() {
+	foreach ( array( '_yoast_wpseo_title', '_yoast_wpseo_metadesc', 'rank_math_title', 'rank_math_description', '_dbt_meta_description' ) as $key ) {
+		register_post_meta( 'post', $key, array(
+			'type'          => 'string',
+			'single'        => true,
+			'show_in_rest'  => true,
+			'auth_callback' => function () {
+				return current_user_can( 'edit_posts' );
+			},
+		) );
+	}
+}
+
+/** Use a custom SEO title when one is set on the post. */
+add_filter( 'pre_get_document_title', 'dbt_custom_post_title', 20 );
+function dbt_custom_post_title( $title ) {
+	if ( ! is_singular( 'post' ) ) {
+		return $title;
+	}
+	foreach ( array( '_yoast_wpseo_title', 'rank_math_title' ) as $key ) {
+		$custom = trim( (string) get_post_meta( get_the_ID(), $key, true ) );
+		if ( '' !== $custom && false === strpos( $custom, '%%' ) && false === strpos( $custom, '%' ) ) {
+			return $custom;
+		}
+	}
+	return $title;
 }
 
 /** Organization + WebSite schema on the front page only. */
 add_action( 'wp_head', 'dbt_jsonld', 4 );
 function dbt_jsonld() {
+	if ( is_singular( 'post' ) && ! dbt_is_noindex_page() ) {
+		dbt_article_jsonld();
+		return;
+	}
 	if ( ! is_front_page() ) {
 		return;
 	}

@@ -5,7 +5,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'DBT_VERSION', '1.7.5' );
+define( 'DBT_VERSION', '1.7.6' );
 define( 'DBT_DIR', trailingslashit( get_template_directory() ) );
 define( 'DBT_URI', trailingslashit( get_template_directory_uri() ) );
 define( 'DBT_CONTACT_EMAIL', 'info@linkfa.de' );
@@ -365,4 +365,27 @@ function dbt_unpublish_targets() {
 		array( 'page', 'sample-page' ),
 		array( 'post', 'hello-world' ),
 	);
+}
+
+
+/**
+ * One-off site settings per DBT_VERSION: site title and tagline match the brand,
+ * and posts live at /<slug>/ on the root.
+ */
+add_action( 'init', 'dbt_maybe_apply_site_settings', 40 );
+function dbt_maybe_apply_site_settings() {
+	if ( wp_installing() || get_option( 'dbt_settings_version', '' ) === DBT_VERSION ) {
+		return;
+	}
+
+	update_option( 'blogname', 'Linkfa' );
+	update_option( 'blogdescription', 'Software, DevOps, ads and AI agents' );
+
+	if ( '/%postname%/' !== get_option( 'permalink_structure' ) ) {
+		global $wp_rewrite;
+		$wp_rewrite->set_permalink_structure( '/%postname%/' );
+	}
+
+	update_option( 'dbt_settings_version', DBT_VERSION );
+	flush_rewrite_rules( false );
 }

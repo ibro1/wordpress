@@ -68,7 +68,7 @@ defined( 'ABSPATH' ) || exit;
 				<?php $privacy = get_page_by_path( 'privacy-policy', OBJECT, 'page' ); ?>
 				<a href="<?php echo esc_url( $privacy ? get_permalink( $privacy ) : home_url( '/privacy-policy/' ) ); ?>">Privacy</a>
 				<?php $terms = get_page_by_path( 'terms-of-service', OBJECT, 'page' ); ?>
-				<a href="<?php echo esc_url( $terms ? get_permalink( $terms ) : home_url( '/terms-of-service/' ) ); ?>">Terms</a>
+				<?php if ( $terms && 'publish' === $terms->post_status ) : ?><a href="<?php echo esc_url( get_permalink( $terms ) ); ?>">Terms</a><?php endif; ?>
 			</div>
 		</div>
 	</div>
@@ -115,7 +115,7 @@ defined( 'ABSPATH' ) || exit;
 			<div class="leadform__body" data-leadform-step="form">
 				<div class="leadform__head-row">
 					<h2 id="leadform-title" class="leadform__title">Book a call</h2>
-					<span class="status status--chip" id="leadform-status">DRAFT</span>
+					<span class="status status--chip" id="leadform-status" hidden>DRAFT</span>
 				</div>
 				<p class="leadform__lede">Tell us what you’re building — a founder replies personally.</p>
 

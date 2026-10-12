@@ -90,7 +90,8 @@ function dbt_services() {
 }
 
 function dbt_legal_pages() {
-	$updated     = date( 'F j, Y' );
+	// Fixed on purpose: change this date only when the legal text itself changes.
+	$updated     = 'October 5, 2026';
 	$contact_row = sprintf( '<p>Questions: <a href="mailto:%1$s">%1$s</a>.</p>', esc_html( DBT_CONTACT_EMAIL ) );
 
 	$privacy = array(
@@ -152,7 +153,9 @@ function dbt_legal_pages() {
 			'title'   => 'Privacy Policy',
 			'content' => implode( '', $privacy ),
 		),
+		// Held back (not published, not linked) until the owner supplies the legal facts: governing jurisdiction and company details.
 		'terms-of-service' => array(
+			'hidden'  => true,
 			'title'   => 'Terms of Service',
 			'content' => implode( '', $terms ),
 		),

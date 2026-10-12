@@ -244,12 +244,13 @@
 		lfError.textContent = "";
 	}
 
-	// The chip always shows the real state of the request — DRAFT before
-	// send, then the actual HTTP-style status the endpoint returned. Never
+	// The chip is hidden before send, then shows the actual HTTP-style status the endpoint returned. Never
 	// a decorative label disconnected from what's actually happening.
 	function lfSetStatus(text, state) {
 		if (!lfStatus) return;
 		lfStatus.textContent = text;
+		// Idle (no request yet) shows nothing; the chip appears only for a real request state.
+		lfStatus.hidden = !state;
 		if (state) {
 			lfStatus.dataset.state = state;
 		} else {

@@ -5,7 +5,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'DBT_VERSION', '1.7.2' );
+define( 'DBT_VERSION', '1.7.3' );
 define( 'DBT_DIR', trailingslashit( get_template_directory() ) );
 define( 'DBT_URI', trailingslashit( get_template_directory_uri() ) );
 define( 'DBT_CONTACT_EMAIL', 'info@linkfa.de' );
@@ -148,6 +148,9 @@ function dbt_starter_pages() {
 	}
 
 	foreach ( dbt_legal_pages() as $slug => $legal ) {
+		if ( ! empty( $legal['hidden'] ) ) {
+			continue;
+		}
 		$pages[ $slug ] = array(
 			'title'    => $legal['title'],
 			'menu'     => $legal['title'],
@@ -294,6 +297,9 @@ function dbt_cmdk_destinations() {
 	}
 
 	foreach ( dbt_legal_pages() as $slug => $legal ) {
+		if ( ! empty( $legal['hidden'] ) ) {
+			continue;
+		}
 		$page = get_page_by_path( $slug, OBJECT, 'page' );
 		$destinations[] = array(
 			'label' => $legal['title'],
@@ -330,3 +336,30 @@ function dbt_brand_mark() {
 	return '<img class="brand-mark" src="' . esc_url( DBT_URI . 'assets/brand/davebukar-mark.svg' ) . '" alt="" width="28" height="28">';
 }
 
+
+/**
+ * One-off cleanup of pages and posts that must not be public. Runs once per
+ * DBT_VERSION. It only moves content to draft (reversible from wp-admin); it never deletes.
+ */
+add_action( 'init', 'dbt_maybe_unpublish_leftovers', 30 );
+function dbt_maybe_unpublish_leftovers() {
+	if ( wp_installing() || get_option( 'dbt_cleanup_version', '' ) === DBT_VERSION ) {
+		return;
+	}
+
+	foreach ( dbt_unpublish_targets() as $target ) {
+		$post = get_page_by_path( $target[1], OBJECT, $target[0] );
+		if ( $post instanceof WP_Post && 'publish' === $post->post_status ) {
+			wp_update_post( array( 'ID' => $post->ID, 'post_status' => 'draft' ) );
+		}
+	}
+
+	update_option( 'dbt_cleanup_version', DBT_VERSION );
+}
+
+/** Held back until the owner gives the facts they need (post type, slug). */
+function dbt_unpublish_targets() {
+	return array(
+		array( 'page', 'terms-of-service' ),
+	);
+}

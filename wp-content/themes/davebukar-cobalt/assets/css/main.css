@@ -807,3 +807,18 @@ html { scroll-padding-top: 88px; }
 .article__cta h2 { margin-top: 0; font-family: var(--font-display); font-size: 1.25rem; }
 .article__cta .btn { margin: var(--space-xs) var(--space-xs) 0 0; border-bottom-width: 1px; }
 .article__cta a.btn { display: inline-block; }
+
+/* Answer-ready blocks: at a glance + FAQ */
+.glance, .faq { max-width: 860px; margin-inline: auto; padding: var(--space-2xl) var(--space-md) 0; }
+.glance__title, .faq__title { font-size: clamp(1.4rem, 2vw + 0.5rem, 1.9rem); margin-bottom: var(--space-md); }
+.glance__row { display: grid; grid-template-columns: 11rem minmax(0, 1fr); gap: var(--space-sm); padding: var(--space-sm) 0; border-top: 1px solid var(--color-rule); }
+.glance__row dt { font-family: var(--font-display); font-weight: 600; color: var(--color-ink); }
+.glance__row dd { color: var(--color-ink-2); }
+.faq__item { border-top: 1px solid var(--color-rule); padding: var(--space-sm) 0; }
+.faq__item:last-child { border-bottom: 1px solid var(--color-rule); }
+.faq__item summary { cursor: pointer; font-family: var(--font-display); font-weight: 600; color: var(--color-ink); }
+.faq__item p { margin-top: var(--space-xs); color: var(--color-ink-2); }
+@media (max-width: 640px) {
+	.glance, .faq { padding-inline: var(--space-sm); }
+	.glance__row { grid-template-columns: minmax(0, 1fr); gap: var(--space-2xs); }
+}

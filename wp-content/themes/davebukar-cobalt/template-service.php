@@ -53,6 +53,17 @@ $service  = isset( $services[ $slug ] ) ? $services[ $slug ] : null;
 		<?php endforeach; ?>
 	</section>
 
+	<?php $dbt_answers = dbt_service_answers(); if ( isset( $dbt_answers[ $slug ] ) ) : ?>
+	<section class="glance reveal" aria-label="At a glance">
+		<h2 class="glance__title">At a glance</h2>
+		<dl class="glance__list">
+			<?php foreach ( $dbt_answers[ $slug ]['glance'] as $label => $text ) : ?>
+				<div class="glance__row"><dt><?php echo esc_html( $label ); ?></dt><dd><?php echo esc_html( $text ); ?></dd></div>
+			<?php endforeach; ?>
+		</dl>
+	</section>
+	<?php dbt_render_faq( $dbt_answers[ $slug ]['faq'] ); endif; ?>
+
 	<section class="cta reveal">
 		<div class="cta__inner">
 			<h2 class="cta__title">Tell us what you’re building.</h2>

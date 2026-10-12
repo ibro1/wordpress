@@ -133,3 +133,126 @@ function dbt_indexnow_ping( $urls ) {
 		) ),
 	) );
 }
+
+/**
+ * Answer-ready copy per service page: an "at a glance" block and FAQs.
+ * Prices and timelines are "on request" until the owner sets them.
+ */
+function dbt_service_answers() {
+	$price    = 'On request. We quote after a short scoping call, and offer fixed pricing where possible.';
+	$timeline = 'Depends on scope. We put the timeline in writing after a scoping call.';
+	$q_price  = array( 'q' => 'How much does it cost?', 'a' => $price );
+	$q_time   = array( 'q' => 'How long does it take?', 'a' => $timeline );
+
+	return array(
+		'software-development' => array(
+			'glance' => array(
+				'What it is'       => 'Custom web, mobile and desktop applications, built, deployed and maintained by the same engineers.',
+				'Who it is for'    => 'Founders and teams in Nigeria and the UK who need a product or internal system built.',
+				'How it works'     => 'A scoping call, a written proposal, then build, test and deploy. We stay reachable after launch.',
+				'Typical timeline' => $timeline,
+				'Price'            => $price,
+			),
+			'faq'    => array(
+				array( 'q' => 'What kinds of software do you build?', 'a' => 'Web apps (React, Next.js, Node, Python), mobile apps for iOS and Android (native or React Native), and desktop software and admin tools (Electron and native tooling).' ),
+				array( 'q' => 'Can you connect my app to payments and other services?', 'a' => 'Yes. Payments and third-party API integrations are part of the work.' ),
+				array( 'q' => 'Do you support the software after launch?', 'a' => 'Yes. We stay reachable after launch, and several of the systems on our Work page are ones we still keep running.' ),
+				$q_price,
+				$q_time,
+			),
+		),
+		'devops' => array(
+			'glance' => array(
+				'What it is'       => 'Server provisioning, deployment pipelines, CI/CD, monitoring and hardening, run for you.',
+				'Who it is for'    => 'Teams whose releases are manual or risky, or who have no one to run their servers.',
+				'How it works'     => 'We provision it, script it, document it and hand it over, and we keep it running after launch.',
+				'Typical timeline' => $timeline,
+				'Price'            => $price,
+			),
+			'faq'    => array(
+				array( 'q' => 'What does DevOps and infrastructure cover?', 'a' => 'cPanel and WHM setup, domains, DNS and SSL, deployment scripts, GitHub Actions or GitLab CI, uptime monitoring, log aggregation, firewall rules and backups.' ),
+				array( 'q' => 'Can you deploy without downtime?', 'a' => 'Yes. We build zero-downtime deploy pipelines with staging environments and rollbacks.' ),
+				array( 'q' => 'Do you keep the servers running after setup?', 'a' => 'Yes. We provision the infrastructure and keep it running after launch.' ),
+				$q_price,
+				$q_time,
+			),
+		),
+		'advertising' => array(
+			'glance' => array(
+				'What it is'       => 'SEO, to get your website ranking on Google, and management of your Google Ads and Meta ads campaigns.',
+				'Who it is for'    => 'Businesses in Nigeria and the UK that want customers to find them online.',
+				'How it works'     => 'We tie the work to real conversion tracking and report in plain language.',
+				'Typical timeline' => 'SEO is gradual. We put a plan and timeline in writing after a scoping call.',
+				'Price'            => $price,
+			),
+			'faq'    => array(
+				array( 'q' => 'What is SEO?', 'a' => 'Search engine optimisation: getting your website to rank on Google through the pages, structure and content that search engines and customers look for.' ),
+				array( 'q' => 'Do you manage Google Ads?', 'a' => 'Yes. We run Google Ads campaigns for clients (Search, Shopping and Performance Max), tied to conversion tracking.' ),
+				array( 'q' => 'Do you run Facebook and Instagram ads?', 'a' => 'Yes. We manage Meta ads, including campaign structure, audience testing and creative rotation.' ),
+				array( 'q' => 'Do you promise rankings or results?', 'a' => 'No. We do not promise specific rankings or results. We report what happened in plain language.' ),
+				$q_price,
+			),
+		),
+		'ai-agents' => array(
+			'glance' => array(
+				'What it is'       => 'LLM-backed agents connected to the systems you already run: support, internal tools and workflow automation.',
+				'Who it is for'    => 'Teams that want routine work automated while a person keeps the final say.',
+				'How it works'     => 'We train the agent on your docs and policies, connect it to your tools, test it, and set when it hands over to a human.',
+				'Typical timeline' => $timeline,
+				'Price'            => $price,
+			),
+			'faq'    => array(
+				array( 'q' => 'What can an AI agent do for my business?', 'a' => 'Answer support questions from your docs and policies, read your database and draft reports, and automate work across a CRM, helpdesk, inventory or billing system.' ),
+				array( 'q' => 'Which AI models do you use?', 'a' => 'Claude, GPT or open-weight models, chosen per task on cost and accuracy.' ),
+				array( 'q' => 'Will it hand over to a human?', 'a' => 'Yes. We set an escalation path so it hands over when it should, and decisions stay with a person.' ),
+				$q_price,
+				$q_time,
+			),
+		),
+	);
+}
+
+/** Visible FAQ list (details/summary, works without JavaScript). */
+function dbt_render_faq( $faq, $heading = 'Frequently asked questions' ) {
+	?>
+	<section class="faq reveal" aria-label="<?php echo esc_attr( $heading ); ?>">
+		<h2 class="faq__title"><?php echo esc_html( $heading ); ?></h2>
+		<?php foreach ( $faq as $i => $item ) : ?>
+			<details class="faq__item"<?php echo 0 === $i ? ' open' : ''; ?>>
+				<summary><?php echo esc_html( $item['q'] ); ?></summary>
+				<p><?php echo esc_html( $item['a'] ); ?></p>
+			</details>
+		<?php endforeach; ?>
+	</section>
+	<?php
+}
+
+function dbt_current_faq() {
+	if ( ! is_singular( 'page' ) ) {
+		return array();
+	}
+	$slug = get_post_field( 'post_name', get_the_ID() );
+	if ( 'pricing-faq' === $slug && function_exists( 'dbt_pricing_faq' ) ) {
+		return dbt_pricing_faq();
+	}
+	$all = dbt_service_answers();
+	return isset( $all[ $slug ] ) ? $all[ $slug ]['faq'] : array();
+}
+
+/** FAQPage schema that mirrors the visible FAQ exactly. */
+add_action( 'wp_head', 'dbt_faq_jsonld', 5 );
+function dbt_faq_jsonld() {
+	$faq = dbt_current_faq();
+	if ( ! $faq ) {
+		return;
+	}
+	$entities = array();
+	foreach ( $faq as $item ) {
+		$entities[] = array(
+			'@type'          => 'Question',
+			'name'           => $item['q'],
+			'acceptedAnswer' => array( '@type' => 'Answer', 'text' => $item['a'] ),
+		);
+	}
+	echo '<script type="application/ld+json">' . wp_json_encode( array( '@context' => 'https://schema.org', '@type' => 'FAQPage', 'mainEntity' => $entities ), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE ) . '</script>' . "\n";
+}

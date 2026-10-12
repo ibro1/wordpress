@@ -85,7 +85,67 @@ function dbt_handle_book_call() {
 	$headers   = array( sprintf( 'Reply-To: %s <%s>', $name, $email ) );
 	wp_mail( $recipient, $subject, $body, $headers );
 
+	dbt_push_lead( $post_id, array(
+		'name'    => $name,
+		'email'   => $email,
+		'company' => $company,
+		'service' => $service,
+		'message' => $message,
+	) );
+
 	set_transient( $limit_key, $submissions + 1, 10 * MINUTE_IN_SECONDS );
 
 	wp_send_json_success( array( 'message' => 'We read every one ourselves — expect a reply within one business day.' ) );
+}
+
+/**
+ * Push a saved lead to the harness as a signed JSON POST.
+ *
+ * Inert unless DBT_LEAD_WEBHOOK_URL and DBT_LEAD_WEBHOOK_SECRET are defined
+ * (wp-config.php constants or environment variables). The dbt_lead post and
+ * the email stay the fallback: a failed push only marks the lead, never the
+ * visitor's submission.
+ *
+ * Signature: X-Linkfa-Signature = hex HMAC-SHA256( secret, timestamp . "." . body ),
+ * with X-Linkfa-Timestamp (unix seconds) so the receiver can reject replays.
+ */
+function dbt_lead_webhook_setting( $name ) {
+	if ( defined( $name ) ) {
+		return (string) constant( $name );
+	}
+	$env = getenv( $name );
+	return false === $env ? '' : (string) $env;
+}
+
+function dbt_push_lead( $post_id, array $lead ) {
+	$url    = dbt_lead_webhook_setting( 'DBT_LEAD_WEBHOOK_URL' );
+	$secret = dbt_lead_webhook_setting( 'DBT_LEAD_WEBHOOK_SECRET' );
+	if ( '' === $url || '' === $secret ) {
+		return;
+	}
+
+	$body = wp_json_encode( array(
+		'source'     => 'linkfa.de/contact-form',
+		'lead_id'    => (int) $post_id,
+		'created_at' => gmdate( 'c' ),
+		'name'       => $lead['name'],
+		'email'      => $lead['email'],
+		'company'    => $lead['company'],
+		'service'    => $lead['service'],
+		'message'    => $lead['message'],
+	) );
+	$ts   = (string) time();
+	$resp = wp_remote_post( $url, array(
+		'timeout'  => 4,
+		'blocking' => true,
+		'headers'  => array(
+			'Content-Type'        => 'application/json',
+			'X-Linkfa-Timestamp'  => $ts,
+			'X-Linkfa-Signature'  => hash_hmac( 'sha256', $ts . '.' . $body, $secret ),
+		),
+		'body'     => $body,
+	) );
+
+	$ok = ! is_wp_error( $resp ) && (int) wp_remote_retrieve_response_code( $resp ) >= 200 && (int) wp_remote_retrieve_response_code( $resp ) < 300;
+	update_post_meta( $post_id, 'dbt_lead_pushed', $ok ? 'ok' : 'failed' );
 }

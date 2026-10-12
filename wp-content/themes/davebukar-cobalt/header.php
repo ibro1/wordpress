@@ -67,6 +67,7 @@ defined( 'ABSPATH' ) || exit;
 			<div class="drawer__legal">
 				<?php $privacy = get_page_by_path( 'privacy-policy', OBJECT, 'page' ); ?>
 				<a href="<?php echo esc_url( $privacy ? get_permalink( $privacy ) : home_url( '/privacy-policy/' ) ); ?>">Privacy</a>
+				<a href="<?php echo esc_url( dbt_page_url( 'refund' ) ); ?>">Refunds</a>
 				<?php $terms = get_page_by_path( 'terms-of-service', OBJECT, 'page' ); ?>
 				<?php if ( $terms && 'publish' === $terms->post_status ) : ?><a href="<?php echo esc_url( get_permalink( $terms ) ); ?>">Terms</a><?php endif; ?>
 			</div>

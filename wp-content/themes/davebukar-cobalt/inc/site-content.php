@@ -128,6 +128,42 @@ function dbt_legal_pages() {
 		$contact_row,
 	);
 
+	$refund_updated = 'October 12, 2026';
+	$refund = array(
+		'<p><em>Last updated: ' . $refund_updated . '</em></p>',
+		'<p>This policy covers what you buy from Linkfa, a service of DaveBukar Technologies. If anything is unclear, message us on WhatsApp (+234 811 323 5992) or email <a href="mailto:' . esc_attr( DBT_CONTACT_EMAIL ) . '">' . esc_html( DBT_CONTACT_EMAIL ) . '</a> before you pay.</p>',
+		'<h2>1. Free clip sample</h2>',
+		'<p>Send one video link and we make 3 finished clips within 48 hours, free. You pay nothing, so there is nothing to refund.</p>',
+		'<h2>2. Short-clips subscription (Starter ₦50,000 / Standard ₦100,000 per month)</h2>',
+		'<ul>',
+		'<li>You pay month by month. There is no contract, and you can stop in any month.</li>',
+		'<li><strong>Delivery guarantee:</strong> if we do not deliver the clips included in your plan within 48 hours of receiving your video link and payment, you can ask for a full refund of that month\'s payment.</li>',
+		'<li><strong>Quality:</strong> if delivered clips do not match what you asked for, tell us within 7 days of delivery. We re-edit them free. If we still cannot fix it, we refund that month\'s payment in full.</li>',
+		'<li><strong>No refund</strong> once you have approved and used the clips, or for a month in which you sent no videos.</li>',
+		'<li><strong>Cancelling:</strong> tell us before your next payment date and you will not be charged again. We do not refund a month already paid, except under the guarantees above.</li>',
+		'</ul>',
+		'<h2>3. Three-advert pack (₦15,000)</h2>',
+		'<ul>',
+		'<li>If we do not deliver the 3 adverts within 3 working days, you get a full refund.</li>',
+		'<li>If you are unhappy with the finished adverts, tell us within 7 days. We revise them free. If we cannot fix it, we refund you in full.</li>',
+		'<li>No refund after you approve and publish the adverts.</li>',
+		'</ul>',
+		'<h2>4. Websites, apps, DevOps, SEO, Google Ads management and AI agents (custom work)</h2>',
+		'<ul>',
+		'<li>Custom work is agreed in writing with a scope, a price and payment milestones.</li>',
+		'<li>A milestone is refundable only if we have not started it, or if we fail to deliver what the written scope describes.</li>',
+		'<li>Work already delivered and accepted is not refundable.</li>',
+		'<li>Third-party costs paid on your behalf (domains, hosting, API fees) are passed on at cost and are not refundable by us.</li>',
+		'<li>Ad spend you pay directly to Google, Meta or other platforms is governed by their terms, not ours.</li>',
+		'</ul>',
+		'<h2>5. How to ask for a refund</h2>',
+		'<p>Message us on WhatsApp or email with your name, what you bought, the date and the reason. We reply within 2 working days. Approved refunds are paid back by the method you paid with, or by bank transfer, within 7 working days. Refunds are made in the currency you paid in; we are not responsible for bank or exchange-rate charges.</p>',
+		'<h2>6. Governing law</h2>',
+		'<p>This policy is governed by the laws of the Federal Republic of Nigeria. Nothing in it limits rights you have under those laws.</p>',
+		'<h2>7. Company</h2>',
+		'<p>Linkfa is a service of DaveBukar Technologies.</p>',
+	);
+
 	$terms = array(
 		'<p><em>Last updated: ' . $updated . '</em></p>',
 		'<p>These terms govern engagements with Linkfa, operated by DaveBukar Technologies, for software development, DevOps, advertising and AI-agent services.</p>',
@@ -152,6 +188,10 @@ function dbt_legal_pages() {
 		'privacy-policy'   => array(
 			'title'   => 'Privacy Policy',
 			'content' => implode( '', $privacy ),
+		),
+		'refund'           => array(
+			'title'   => 'Refund Policy',
+			'content' => implode( '', $refund ),
 		),
 		// Held back (not published, not linked) until the owner supplies the legal facts: governing jurisdiction and company details.
 		'terms-of-service' => array(

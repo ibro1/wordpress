@@ -35,7 +35,11 @@ function dbt_robots_txt( $output, $public ) {
 
 /** Profiles that really exist. Empty until the owner supplies URLs; never guessed. */
 function dbt_same_as() {
-	return array_values( array_filter( (array) apply_filters( 'dbt_same_as', array() ) ) );
+	$profiles = array(
+		'https://www.linkedin.com/in/abubakaribro1',
+		'https://github.com/ibro1',
+	);
+	return array_values( array_filter( (array) apply_filters( 'dbt_same_as', $profiles ) ) );
 }
 
 /** Serve /llms.txt and the IndexNow key file without needing real files. */
@@ -71,6 +75,7 @@ function dbt_llms_txt() {
 	$lines[] = '## Key pages';
 	$lines[] = '- [Work](' . home_url( '/work/' ) . '): Logistics, government, transport, healthcare and AI systems we built and keep running. No client names.';
 	$lines[] = '- [Pricing & FAQ](' . home_url( '/pricing-faq/' ) . '): Published prices where we have them, and "on request" where scope decides the price.';
+	$lines[] = '- [Refund policy](' . home_url( '/refund/' ) . ')';
 	$lines[] = '- [Privacy policy](' . home_url( '/privacy-policy/' ) . ')';
 	$lines[] = '';
 	$lines[] = '## Contact';
@@ -111,7 +116,7 @@ function dbt_indexnow_release() {
 		return;
 	}
 	update_option( 'dbt_indexnow_version', DBT_VERSION );
-	$urls = array( home_url( '/' ), home_url( '/work/' ), home_url( '/clips/' ), home_url( '/earn/' ), home_url( '/privacy-policy/' ), home_url( '/pricing-faq/' ), home_url( '/llms.txt' ) );
+	$urls = array( home_url( '/' ), home_url( '/work/' ), home_url( '/clips/' ), home_url( '/earn/' ), home_url( '/privacy-policy/' ), home_url( '/refund/' ), home_url( '/pricing-faq/' ), home_url( '/llms.txt' ) );
 	foreach ( array_keys( dbt_services() ) as $slug ) {
 		$urls[] = home_url( '/' . $slug . '/' );
 	}

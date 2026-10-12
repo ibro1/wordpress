@@ -180,6 +180,10 @@ function dbt_jsonld() {
 		'logo'         => DBT_URI . 'assets/brand/icon-512.png',
 		'email'        => DBT_CONTACT_EMAIL,
 		'telephone'    => '+' . DBT_WHATSAPP,
+		'areaServed'   => array(
+			array( '@type' => 'Country', 'name' => 'Nigeria' ),
+			array( '@type' => 'Country', 'name' => 'United Kingdom' ),
+		),
 		'description'  => 'Web, mobile and desktop apps, DevOps and infrastructure, SEO and Google Ads management, online advertising, and AI agents.',
 		'contactPoint' => array(
 			array(
@@ -190,6 +194,9 @@ function dbt_jsonld() {
 			),
 		),
 	);
+	if ( dbt_same_as() ) {
+		$org['sameAs'] = dbt_same_as();
+	}
 	$site = array(
 		'@type'     => 'WebSite',
 		'@id'       => home_url( '/#website' ),
@@ -199,21 +206,6 @@ function dbt_jsonld() {
 	);
 
 	echo '<script type="application/ld+json">' . wp_json_encode( array( '@context' => 'https://schema.org', '@graph' => array( $org, $site ) ), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE ) . '</script>' . "\n";
-}
-
-/** robots.txt: drop the WooCommerce rules, keep it to what this site needs. */
-add_filter( 'robots_txt', 'dbt_robots_txt', 99, 2 );
-function dbt_robots_txt( $output, $public ) {
-	if ( ! $public ) {
-		return $output;
-	}
-	return "User-agent: *\n"
-		. "Disallow: /wp-admin/\n"
-		. "Allow: /wp-admin/admin-ajax.php\n"
-		. "Disallow: /*?s=\n"
-		. "Disallow: /talk\n"
-		. "\n"
-		. 'Sitemap: ' . home_url( '/wp-sitemap.xml' ) . "\n";
 }
 
 /** Sitemap: no user list, and none of the noindex pages or the sample post. */

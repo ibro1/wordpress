@@ -80,6 +80,34 @@ add_filter( 'rank_math/json_ld', function ( $data ) {
 }, 99 );
 
 /**
+ * Rank Math reads its logo and default social image from the media library, so
+ * copy a theme brand file in once (per file name + content hash) and return its ID.
+ */
+function dbt_brand_attachment_id( $file ) {
+	$path = DBT_DIR . 'assets/brand/' . $file;
+	if ( ! file_exists( $path ) ) {
+		return 0;
+	}
+	$key = 'dbt_att_' . md5( $file . filesize( $path ) . md5_file( $path ) );
+	$id  = (int) get_option( $key, 0 );
+	if ( $id && get_post( $id ) ) {
+		return $id;
+	}
+	require_once ABSPATH . 'wp-admin/includes/file.php';
+	require_once ABSPATH . 'wp-admin/includes/media.php';
+	require_once ABSPATH . 'wp-admin/includes/image.php';
+	$tmp = wp_tempnam( $file );
+	copy( $path, $tmp );
+	$id = media_handle_sideload( array( 'name' => 'linkfa-' . $file, 'tmp_name' => $tmp ), 0, 'Linkfa brand: ' . $file );
+	if ( is_wp_error( $id ) ) {
+		@unlink( $tmp );
+		return 0;
+	}
+	update_option( $key, (int) $id );
+	return (int) $id;
+}
+
+/**
  * One-off Rank Math settings per DBT_VERSION (no paid modules): Organization identity,
  * homepage title and description, noindex for tags, author archives and attachments,
  * and noindex on the pages the theme keeps out of search so the sitemap drops them.
@@ -91,16 +119,19 @@ function dbt_maybe_configure_rank_math() {
 	}
 
 	$logo   = DBT_URI . 'assets/brand/icon-512.png';
+	$logo_id = dbt_brand_attachment_id( 'icon-512.png' );
+	$og_id   = dbt_brand_attachment_id( 'og-default.png' );
 	$titles = (array) get_option( 'rank-math-options-titles', array() );
 	$titles = array_merge( $titles, array(
 		'knowledgegraph_type'       => 'company',
 		'knowledgegraph_name'       => DBT_ORG_NAME,
 		'knowledgegraph_logo'       => $logo,
-		'knowledgegraph_logo_id'    => 0,
+		'knowledgegraph_logo_id'    => $logo_id,
 		'website_name'              => DBT_ORG_NAME,
 		'email'                     => DBT_CONTACT_EMAIL,
 		'organization_description'  => 'Web, mobile and desktop apps, DevOps and infrastructure, SEO and Google Ads management, online advertising, and AI agents.',
 		'open_graph_image'          => DBT_URI . 'assets/brand/og-default.png',
+		'open_graph_image_id'       => $og_id,
 		'homepage_title'            => DBT_ORG_NAME . ' — software, DevOps, ads and AI agents',
 		'homepage_description'      => 'We build web, mobile and desktop apps, run zero-downtime DevOps, do SEO and Google Ads management, and ship AI agents — and stay reachable after launch.',
 		'author_custom_robots'      => 'on',

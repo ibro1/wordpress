@@ -5,7 +5,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'DBT_VERSION', '1.8.1' );
+define( 'DBT_VERSION', '1.8.2' );
 define( 'DBT_DIR', trailingslashit( get_template_directory() ) );
 define( 'DBT_URI', trailingslashit( get_template_directory_uri() ) );
 define( 'DBT_CONTACT_EMAIL', 'info@linkfa.de' );
@@ -172,6 +172,13 @@ function dbt_starter_pages() {
 		'title'    => 'Short Clips for Lectures & Podcasts',
 		'menu'     => 'Clips',
 		'template' => 'template-clips.php',
+		'content'  => '',
+	);
+
+	$pages['pricing-faq'] = array(
+		'title'    => 'Pricing & FAQ',
+		'menu'     => 'Pricing',
+		'template' => 'template-pricing.php',
 		'content'  => '',
 	);
 

@@ -70,6 +70,7 @@ function dbt_llms_txt() {
 	$lines[] = '';
 	$lines[] = '## Key pages';
 	$lines[] = '- [Work](' . home_url( '/work/' ) . '): Logistics, government, transport, healthcare and AI systems we built and keep running. No client names.';
+	$lines[] = '- [Pricing & FAQ](' . home_url( '/pricing-faq/' ) . '): Published prices where we have them, and "on request" where scope decides the price.';
 	$lines[] = '- [Privacy policy](' . home_url( '/privacy-policy/' ) . ')';
 	$lines[] = '';
 	$lines[] = '## Contact';
@@ -110,7 +111,7 @@ function dbt_indexnow_release() {
 		return;
 	}
 	update_option( 'dbt_indexnow_version', DBT_VERSION );
-	$urls = array( home_url( '/' ), home_url( '/work/' ), home_url( '/clips/' ), home_url( '/earn/' ), home_url( '/privacy-policy/' ), home_url( '/llms.txt' ) );
+	$urls = array( home_url( '/' ), home_url( '/work/' ), home_url( '/clips/' ), home_url( '/earn/' ), home_url( '/privacy-policy/' ), home_url( '/pricing-faq/' ), home_url( '/llms.txt' ) );
 	foreach ( array_keys( dbt_services() ) as $slug ) {
 		$urls[] = home_url( '/' . $slug . '/' );
 	}
@@ -255,4 +256,17 @@ function dbt_faq_jsonld() {
 		);
 	}
 	echo '<script type="application/ld+json">' . wp_json_encode( array( '@context' => 'https://schema.org', '@type' => 'FAQPage', 'mainEntity' => $entities ), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE ) . '</script>' . "\n";
+}
+
+/** Pricing & FAQ page: published prices only where the site already states them. */
+function dbt_pricing_faq() {
+	return array(
+		array( 'q' => 'Who is Linkfa?', 'a' => 'Linkfa is a service of ' . DBT_COMPANY_NAME . '. We build web, mobile and desktop apps, run DevOps and infrastructure, do SEO and Google Ads management, ship AI agents, and make short video clips.' ),
+		array( 'q' => 'Which countries do you work in?', 'a' => 'We work with clients in Nigeria and the United Kingdom.' ),
+		array( 'q' => 'How do I get a price for a software, DevOps, SEO, Google Ads or AI agent project?', 'a' => 'Book a call or message us on WhatsApp. We scope the work first, then quote. We offer fixed pricing where possible.' ),
+		array( 'q' => 'How much do the short clips cost?', 'a' => 'Starter is ₦50,000 a month for 12 clips. Standard is ₦100,000 a month for 30 clips. Ramadan and event series are priced per series. The first 3 clips are free.' ),
+		array( 'q' => 'How much does the 3-advert pack cost?', 'a' => 'The pack is ₦15,000 for 3 short adverts, with one round of changes included. You pay after you see the first advert.' ),
+		array( 'q' => 'Is there a contract for the clips?', 'a' => 'No. You can stop in any month.' ),
+		array( 'q' => 'How do I contact you?', 'a' => 'Email ' . DBT_CONTACT_EMAIL . ' or message +' . DBT_WHATSAPP . ' on WhatsApp.' ),
+	);
 }

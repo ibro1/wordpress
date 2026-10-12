@@ -79,9 +79,9 @@ $svc_url = function ( $slug ) {
 
 	<article class="cell span-1x1">
 		<p class="cell__label">Advertising</p>
-		<h3 class="cell__title">Online Advertising</h3>
-		<p class="cell__body">Meta and Google Ads campaigns tied to analytics that are actually wired up correctly.</p>
-		<a class="cell__link" href="<?php echo esc_url( $svc_url( 'advertising' ) ); ?>">Explore advertising →</a>
+		<h3 class="cell__title">SEO &amp; Online Advertising</h3>
+		<p class="cell__body">SEO to rank your site on Google, plus Google and Meta Ads that we manage, tied to analytics that are actually wired up correctly.</p>
+		<a class="cell__link" href="<?php echo esc_url( $svc_url( 'advertising' ) ); ?>">Explore SEO &amp; ads →</a>
 	</article>
 
 	<article class="cell span-1x2">

@@ -5,7 +5,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'DBT_VERSION', '1.7.7' );
+define( 'DBT_VERSION', '1.7.8' );
 define( 'DBT_DIR', trailingslashit( get_template_directory() ) );
 define( 'DBT_URI', trailingslashit( get_template_directory_uri() ) );
 define( 'DBT_CONTACT_EMAIL', 'info@linkfa.de' );

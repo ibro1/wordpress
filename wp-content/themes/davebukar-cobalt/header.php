@@ -145,7 +145,7 @@ defined( 'ABSPATH' ) || exit;
 						<select id="lf-service" name="service">
 							<option>Software Development</option>
 							<option>DevOps &amp; Infrastructure</option>
-							<option>Online Advertising</option>
+							<option>SEO &amp; Online Advertising</option>
 							<option>AI Agents &amp; Bots</option>
 							<option selected>Not sure yet</option>
 						</select>

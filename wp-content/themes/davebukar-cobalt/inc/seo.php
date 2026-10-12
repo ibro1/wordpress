@@ -40,7 +40,7 @@ function dbt_home_title( $parts ) {
 
 function dbt_meta_description() {
 	if ( is_front_page() ) {
-		return 'We build web, mobile and desktop apps, run zero-downtime DevOps, and ship online advertising and AI agents — and stay reachable after launch.';
+		return 'We build web, mobile and desktop apps, run zero-downtime DevOps, do SEO and Google Ads management, and ship AI agents — and stay reachable after launch.';
 	}
 	if ( ! is_singular() ) {
 		return '';
@@ -180,7 +180,7 @@ function dbt_jsonld() {
 		'logo'         => DBT_URI . 'assets/brand/icon-512.png',
 		'email'        => DBT_CONTACT_EMAIL,
 		'telephone'    => '+' . DBT_WHATSAPP,
-		'description'  => 'Web, mobile and desktop apps, DevOps and infrastructure, online advertising, and AI agents.',
+		'description'  => 'Web, mobile and desktop apps, DevOps and infrastructure, SEO and Google Ads management, online advertising, and AI agents.',
 		'contactPoint' => array(
 			array(
 				'@type'       => 'ContactPoint',

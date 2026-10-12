@@ -55,7 +55,7 @@ function dbt_handle_book_call() {
 	$service = isset( $_POST['service'] ) ? sanitize_text_field( wp_unslash( $_POST['service'] ) ) : '';
 	$message = isset( $_POST['message'] ) ? sanitize_textarea_field( wp_unslash( $_POST['message'] ) ) : '';
 
-	$allowed_services = array( 'Software Development', 'DevOps & Infrastructure', 'Online Advertising', 'AI Agents & Bots', 'Not sure yet' );
+	$allowed_services = array( 'Software Development', 'DevOps & Infrastructure', 'SEO & Online Advertising', 'AI Agents & Bots', 'Not sure yet' );
 	if ( '' === $service || ! in_array( $service, $allowed_services, true ) ) {
 		$service = 'Not sure yet';
 	}

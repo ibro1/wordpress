@@ -51,9 +51,9 @@ function dbt_services() {
 			),
 		),
 		'advertising' => array(
-			'nav_label' => 'Advertising',
-			'title'     => 'Online Advertising',
-			'lede'      => 'Getting the software found. Campaign structure, creative testing, and reporting you can actually read.',
+			'nav_label' => 'SEO & Ads',
+			'title'     => 'SEO & Online Advertising',
+			'lede'      => 'Getting your business found. We do SEO to get your website ranking on Google, and we manage your Google and Meta ads, with reporting you can actually read.',
 			'terminal'  => array(
 				'$ dbt-ads report --campaign=q3-search',
 				'==> Pulling GA4 conversions… done',
@@ -62,10 +62,10 @@ function dbt_services() {
 				'PASS',
 			),
 			'points' => array(
+				array( 'heading' => 'SEO', 'body' => 'Getting your website to rank on Google: the pages, the structure and the content that search engines and your customers look for.' ),
+				array( 'heading' => 'Google Ads management', 'body' => 'We run your Google Ads campaigns for you: Search, Shopping and Performance Max, tied to real conversion tracking, not vanity clicks.' ),
 				array( 'heading' => 'Meta Ads', 'body' => 'Campaign structure, audience testing, and creative rotation across Facebook and Instagram.' ),
-				array( 'heading' => 'Google Ads', 'body' => 'Search, Shopping and Performance Max campaigns tied to real conversion tracking, not vanity clicks.' ),
-				array( 'heading' => 'Analytics', 'body' => 'GA4 and conversion pixels wired in correctly, so the numbers you see are the numbers that are true.' ),
-				array( 'heading' => 'Landing pages', 'body' => 'Pages built to convert the traffic we send, not just to look good in a portfolio.' ),
+				array( 'heading' => 'Analytics & landing pages', 'body' => 'GA4 and conversion pixels wired in correctly, and pages built to convert the traffic we send.' ),
 			),
 		),
 		'ai-agents' => array(

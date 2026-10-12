@@ -117,15 +117,15 @@ function dbt_lead_webhook_setting( $name ) {
 	return false === $env ? '' : (string) $env;
 }
 
-function dbt_push_lead( $post_id, array $lead ) {
+function dbt_push_lead( $post_id, array $lead, $source = 'linkfa.de/contact-form', array $extra = array() ) {
 	$url    = dbt_lead_webhook_setting( 'DBT_LEAD_WEBHOOK_URL' );
 	$secret = dbt_lead_webhook_setting( 'DBT_LEAD_WEBHOOK_SECRET' );
 	if ( '' === $url || '' === $secret ) {
 		return;
 	}
 
-	$body = wp_json_encode( array(
-		'source'     => 'linkfa.de/contact-form',
+	$body = wp_json_encode( $extra + array(
+		'source'     => $source,
 		'lead_id'    => (int) $post_id,
 		'created_at' => gmdate( 'c' ),
 		'name'       => $lead['name'],
@@ -148,4 +148,85 @@ function dbt_push_lead( $post_id, array $lead ) {
 
 	$ok = ! is_wp_error( $resp ) && (int) wp_remote_retrieve_response_code( $resp ) >= 200 && (int) wp_remote_retrieve_response_code( $resp ) < 300;
 	update_post_meta( $post_id, 'dbt_lead_pushed', $ok ? 'ok' : 'failed' );
+}
+
+/**
+ * "Start a project" intake on /register/. Same storage, email and signed push as
+ * the Book-a-call form, with the WhatsApp number, budget range and timeline added.
+ */
+add_action( 'wp_ajax_dbt_intake', 'dbt_handle_intake' );
+add_action( 'wp_ajax_nopriv_dbt_intake', 'dbt_handle_intake' );
+function dbt_handle_intake() {
+	$done = 'Thanks. We reply within 2 working hours on WhatsApp.';
+	if ( ! check_ajax_referer( 'dbt_intake', 'nonce', false ) ) {
+		wp_send_json_error( array( 'message' => 'Your session expired. Please reload the page and try again.' ), 403 );
+	}
+	if ( '' !== trim( isset( $_POST['website'] ) ? sanitize_text_field( wp_unslash( $_POST['website'] ) ) : '' ) ) {
+		wp_send_json_success( array( 'message' => $done ) );
+	}
+
+	$ip          = isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : 'unknown';
+	$limit_key   = 'dbt_lead_rl_' . md5( $ip );
+	$submissions = (int) get_transient( $limit_key );
+	if ( $submissions >= 5 ) {
+		wp_send_json_error( array( 'message' => 'Too many requests. Please try again in a few minutes.' ), 429 );
+	}
+
+	$field = function ( $key ) {
+		return isset( $_POST[ $key ] ) ? sanitize_text_field( wp_unslash( $_POST[ $key ] ) ) : '';
+	};
+	$name     = $field( 'name' );
+	$email    = isset( $_POST['email'] ) ? sanitize_email( wp_unslash( $_POST['email'] ) ) : '';
+	$whatsapp = preg_replace( '/[^0-9+]/', '', $field( 'whatsapp' ) );
+	$need     = $field( 'need' );
+	$budget   = $field( 'budget' );
+	$timeline = $field( 'timeline' );
+	$message  = isset( $_POST['message'] ) ? sanitize_textarea_field( wp_unslash( $_POST['message'] ) ) : '';
+
+	$needs     = array( 'Software Development', 'DevOps & Infrastructure', 'SEO & Online Advertising', 'AI Agents & Bots', 'Short clips', 'Not sure yet' );
+	$timelines = array( 'As soon as possible', 'Within a month', 'In 1 to 3 months', 'Just exploring' );
+	if ( ! in_array( $need, $needs, true ) ) {
+		$need = 'Not sure yet';
+	}
+	if ( ! in_array( $timeline, $timelines, true ) ) {
+		$timeline = '';
+	}
+
+	if ( '' === $name || '' === $message || ! is_email( $email ) || strlen( preg_replace( '/\D/', '', $whatsapp ) ) < 7 ) {
+		wp_send_json_error( array( 'message' => 'Please fill in your name, WhatsApp number, a valid email and what you need.' ), 400 );
+	}
+
+	$post_id = wp_insert_post( array(
+		'post_type'    => 'dbt_lead',
+		'post_status'  => 'private',
+		'post_title'   => sprintf( '%s (%s)', $name, $email ),
+		'post_content' => $message,
+	), true );
+	if ( is_wp_error( $post_id ) ) {
+		wp_send_json_error( array( 'message' => 'Something went wrong saving your request. Please message us on WhatsApp instead.' ), 500 );
+	}
+	update_post_meta( $post_id, 'dbt_lead_email', $email );
+	update_post_meta( $post_id, 'dbt_lead_service', $need );
+	update_post_meta( $post_id, 'dbt_lead_whatsapp', $whatsapp );
+	update_post_meta( $post_id, 'dbt_lead_budget', $budget );
+	update_post_meta( $post_id, 'dbt_lead_timeline', $timeline );
+	update_post_meta( $post_id, 'dbt_lead_source', 'start-a-project' );
+
+	$body = "Name: {$name}\nWhatsApp: {$whatsapp}\nEmail: {$email}\nNeed: {$need}\nBudget: " . ( $budget ? $budget : 'not given' ) . "\nTimeline: " . ( $timeline ? $timeline : 'not given' ) . "\n\n{$message}";
+	wp_mail( DBT_CONTACT_EMAIL, sprintf( 'New project request: %s', $name ), $body, array( sprintf( 'Reply-To: %s <%s>', $name, $email ) ) );
+
+	dbt_push_lead( $post_id, array(
+		'name'    => $name,
+		'email'   => $email,
+		'company' => '',
+		'service' => $need,
+		'message' => $message,
+	), 'linkfa.de/start-a-project', array(
+		'whatsapp' => $whatsapp,
+		'budget'   => $budget,
+		'timeline' => $timeline,
+	) );
+
+	set_transient( $limit_key, $submissions + 1, 10 * MINUTE_IN_SECONDS );
+	wp_send_json_success( array( 'message' => $done ) );
 }

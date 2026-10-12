@@ -822,3 +822,12 @@ html { scroll-padding-top: 88px; }
 	.glance, .faq { padding-inline: var(--space-sm); }
 	.glance__row { grid-template-columns: minmax(0, 1fr); gap: var(--space-2xs); }
 }
+
+/* Start a project intake (/register/) */
+.intake { max-width: 40rem; margin: 0 auto; padding: var(--space-xl) var(--space-md) var(--space-3xl); }
+.intake__form { display: flex; flex-direction: column; gap: var(--space-sm); }
+.intake__submit { align-self: flex-start; }
+.intake__submit:disabled { opacity: 0.6; cursor: not-allowed; }
+.intake__status { min-height: 1.4em; color: var(--color-ink-2); }
+.intake__note { color: var(--color-ink-2); font-size: 0.9rem; }
+.intake__note a { color: var(--color-accent); border-bottom: 1px solid currentColor; }

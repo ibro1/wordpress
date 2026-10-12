@@ -5,7 +5,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'DBT_VERSION', '1.8.7' );
+define( 'DBT_VERSION', '1.9.0' );
 define( 'DBT_DIR', trailingslashit( get_template_directory() ) );
 define( 'DBT_URI', trailingslashit( get_template_directory_uri() ) );
 define( 'DBT_CONTACT_EMAIL', 'info@linkfa.de' );
@@ -398,4 +398,22 @@ function dbt_maybe_apply_site_settings() {
 
 	update_option( 'dbt_settings_version', DBT_VERSION );
 	flush_rewrite_rules( false );
+}
+
+
+/** /register/ shows the "Start a project" intake; the old multisite checkout is no longer rendered there. */
+add_filter( 'template_include', 'dbt_register_intake_template', 99 );
+function dbt_register_intake_template( $template ) {
+	if ( is_page( 'register' ) ) {
+		return DBT_DIR . 'template-intake.php';
+	}
+	return $template;
+}
+
+add_filter( 'document_title_parts', 'dbt_register_title', 20 );
+function dbt_register_title( $parts ) {
+	if ( is_page( 'register' ) ) {
+		$parts['title'] = 'Start a project';
+	}
+	return $parts;
 }

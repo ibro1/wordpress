@@ -5,7 +5,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'DBT_VERSION', '1.7.3' );
+define( 'DBT_VERSION', '1.7.4' );
 define( 'DBT_DIR', trailingslashit( get_template_directory() ) );
 define( 'DBT_URI', trailingslashit( get_template_directory_uri() ) );
 define( 'DBT_CONTACT_EMAIL', 'info@linkfa.de' );
@@ -15,6 +15,7 @@ require_once DBT_DIR . 'inc/site-content.php';
 require_once DBT_DIR . 'inc/lead-capture.php';
 require_once DBT_DIR . 'inc/work-content.php';
 require_once DBT_DIR . 'inc/clips-content.php';
+require_once DBT_DIR . 'inc/seo.php';
 
 add_action( 'after_setup_theme', 'dbt_setup' );
 function dbt_setup() {
@@ -361,5 +362,7 @@ function dbt_maybe_unpublish_leftovers() {
 function dbt_unpublish_targets() {
 	return array(
 		array( 'page', 'terms-of-service' ),
+		array( 'page', 'sample-page' ),
+		array( 'post', 'hello-world' ),
 	);
 }

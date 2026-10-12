@@ -30,7 +30,7 @@ function dbt_robots_txt( $output, $public ) {
 	foreach ( dbt_ai_crawlers() as $bot ) {
 		$out .= 'User-agent: ' . $bot . "\n";
 	}
-	return $out . "Allow: /\n" . $rules . "\nSitemap: " . home_url( '/wp-sitemap.xml' ) . "\n";
+	return $out . "Allow: /\n" . $rules . "\nSitemap: " . home_url( function_exists( 'dbt_rank_math_active' ) && dbt_rank_math_active() ? '/sitemap_index.xml' : '/wp-sitemap.xml' ) . "\n";
 }
 
 /** Profiles that really exist. Empty until the owner supplies URLs; never guessed. */

@@ -1,0 +1,118 @@
+<?php
+/**
+ * Rank Math (free features only): when it is active the theme's own meta, canonical,
+ * Open Graph and JSON-LD step aside so nothing prints twice, and the theme's facts
+ * are fed to Rank Math instead. Without Rank Math the theme output in seo.php is the fallback.
+ */
+
+defined( 'ABSPATH' ) || exit;
+
+function dbt_rank_math_active() {
+	return defined( 'RANK_MATH_VERSION' ) || class_exists( 'RankMath' );
+}
+
+/** Remove the theme's duplicates once Rank Math is loaded. */
+add_action( 'wp', 'dbt_rank_math_step_aside' );
+function dbt_rank_math_step_aside() {
+	if ( ! dbt_rank_math_active() ) {
+		return;
+	}
+	remove_action( 'wp_head', 'dbt_head_meta', 3 );
+	remove_action( 'wp_head', 'dbt_jsonld', 4 );
+	remove_filter( 'pre_get_document_title', 'dbt_custom_post_title', 20 );
+}
+
+/** Rank Math serves the only sitemap; the core one stays off. */
+add_filter( 'wp_sitemaps_enabled', function ( $enabled ) {
+	return dbt_rank_math_active() ? false : $enabled;
+} );
+
+/** Pages the theme keeps out of search stay out when Rank Math prints the robots tag. */
+add_filter( 'rank_math/frontend/robots', function ( $robots ) {
+	if ( dbt_is_noindex_page() ) {
+		$robots['index']  = 'noindex';
+		$robots['follow'] = 'follow';
+	}
+	return $robots;
+} );
+
+/** Curated descriptions for the front page and fixed pages beat Rank Math's auto text. */
+add_filter( 'rank_math/frontend/description', function ( $description ) {
+	if ( is_front_page() || ( is_page() && ! get_post_meta( get_the_ID(), 'rank_math_description', true ) ) ) {
+		$mine = dbt_meta_description();
+		if ( $mine ) {
+			return $mine;
+		}
+	}
+	return $description;
+} );
+
+/** Organization schema: add the legal name and the markets. sameAs only when real URLs exist. */
+add_filter( 'rank_math/json_ld', function ( $data ) {
+	foreach ( array( 'publisher', 'organization' ) as $key ) {
+		if ( isset( $data[ $key ] ) && is_array( $data[ $key ] ) ) {
+			$data[ $key ]['name']       = DBT_ORG_NAME;
+			$data[ $key ]['legalName']  = DBT_COMPANY_NAME;
+			$data[ $key ]['areaServed'] = array(
+				array( '@type' => 'Country', 'name' => 'Nigeria' ),
+				array( '@type' => 'Country', 'name' => 'United Kingdom' ),
+			);
+			if ( dbt_same_as() ) {
+				$data[ $key ]['sameAs'] = dbt_same_as();
+			}
+		}
+	}
+	return $data;
+}, 99 );
+
+/**
+ * One-off Rank Math settings per DBT_VERSION (no paid modules): Organization identity,
+ * homepage title and description, noindex for tags, author archives and attachments,
+ * and noindex on the pages the theme keeps out of search so the sitemap drops them.
+ */
+add_action( 'init', 'dbt_maybe_configure_rank_math', 50 );
+function dbt_maybe_configure_rank_math() {
+	if ( wp_installing() || ! dbt_rank_math_active() || get_option( 'dbt_rankmath_version', '' ) === DBT_VERSION ) {
+		return;
+	}
+
+	$logo   = DBT_URI . 'assets/brand/icon-512.png';
+	$titles = (array) get_option( 'rank-math-options-titles', array() );
+	$titles = array_merge( $titles, array(
+		'knowledgegraph_type'       => 'company',
+		'knowledgegraph_name'       => DBT_ORG_NAME,
+		'knowledgegraph_logo'       => $logo,
+		'knowledgegraph_logo_id'    => 0,
+		'website_name'              => DBT_ORG_NAME,
+		'email'                     => DBT_CONTACT_EMAIL,
+		'organization_description'  => 'Web, mobile and desktop apps, DevOps and infrastructure, SEO and Google Ads management, online advertising, and AI agents.',
+		'open_graph_image'          => $logo,
+		'homepage_title'            => DBT_ORG_NAME . ' — software, DevOps, ads and AI agents',
+		'homepage_description'      => 'We build web, mobile and desktop apps, run zero-downtime DevOps, do SEO and Google Ads management, and ship AI agents — and stay reachable after launch.',
+		'author_custom_robots'      => 'on',
+		'author_robots'             => array( 'noindex' ),
+		'tax_post_tag_custom_robots' => 'on',
+		'tax_post_tag_robots'       => array( 'noindex' ),
+		'pt_attachment_custom_robots' => 'on',
+		'pt_attachment_robots'      => array( 'noindex' ),
+	) );
+	update_option( 'rank-math-options-titles', $titles );
+
+	$general = (array) get_option( 'rank-math-options-general', array() );
+	$general['attachment_redirect_urls'] = 'on';
+	update_option( 'rank-math-options-general', $general );
+
+	$sitemap = (array) get_option( 'rank-math-options-sitemap', array() );
+	$sitemap['pt_attachment_sitemap'] = 'off';
+	$sitemap['tax_post_tag_sitemap']  = 'off';
+	update_option( 'rank-math-options-sitemap', $sitemap );
+
+	foreach ( dbt_noindex_slugs() as $slug ) {
+		$page = get_page_by_path( $slug, OBJECT, 'page' );
+		if ( $page ) {
+			update_post_meta( $page->ID, 'rank_math_robots', array( 'noindex' ) );
+		}
+	}
+
+	update_option( 'dbt_rankmath_version', DBT_VERSION );
+}

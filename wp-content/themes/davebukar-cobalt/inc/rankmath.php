@@ -27,6 +27,15 @@ add_filter( 'wp_sitemaps_enabled', function ( $enabled ) {
 	return dbt_rank_math_active() ? false : $enabled;
 } );
 
+/** Keep noindex pages out of Rank Math's sitemap even when its cached copy or exclude list lags. */
+add_filter( 'rank_math/sitemap/enable_caching', '__return_false' );
+add_filter( 'rank_math/sitemap/entry', function ( $url, $type, $object ) {
+	if ( 'post' === $type && is_object( $object ) && isset( $object->post_name ) && in_array( $object->post_name, dbt_noindex_slugs(), true ) ) {
+		return false;
+	}
+	return $url;
+}, 10, 3 );
+
 /** Pages the theme keeps out of search stay out when Rank Math prints the robots tag. */
 add_filter( 'rank_math/frontend/robots', function ( $robots ) {
 	if ( dbt_is_noindex_page() ) {

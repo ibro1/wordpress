@@ -107,12 +107,17 @@ function dbt_maybe_configure_rank_math() {
 	$sitemap['tax_post_tag_sitemap']  = 'off';
 	update_option( 'rank-math-options-sitemap', $sitemap );
 
+	$exclude = array();
 	foreach ( dbt_noindex_slugs() as $slug ) {
 		$page = get_page_by_path( $slug, OBJECT, 'page' );
 		if ( $page ) {
 			update_post_meta( $page->ID, 'rank_math_robots', array( 'noindex' ) );
+			$exclude[] = $page->ID;
 		}
 	}
+	// Rank Math's sitemap keeps listing pages unless they are in its own exclude list.
+	$sitemap['exclude_posts'] = implode( ',', $exclude );
+	update_option( 'rank-math-options-sitemap', $sitemap );
 
 	update_option( 'dbt_rankmath_version', DBT_VERSION );
 }

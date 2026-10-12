@@ -96,7 +96,7 @@ function dbt_legal_pages() {
 
 	$privacy = array(
 		'<p><em>Last updated: ' . $updated . '</em></p>',
-		'<p>Dave Bukar Technologies ("we", "us") builds software, DevOps, advertising and AI-agent services. This policy covers this website (linkfa.de) and the automation software we run for our own business and channels at harness.linkfa.de, including the parts that connect to Google, YouTube and Meta accounts.</p>',
+		'<p>Linkfa is operated by DaveBukar Technologies ("we", "us"). We build software, DevOps, advertising and AI-agent services. This policy covers this website (linkfa.de) and the automation software we run for our own business and channels at harness.linkfa.de, including the parts that connect to Google, YouTube and Meta accounts.</p>',
 		'<h2>What we collect on this website</h2>',
 		'<p>Information you submit through contact or quote forms (name, email, company, project details) and standard server logs (IP address, browser, pages visited). If you accept cookies, analytics or advertising identifiers may also be collected (see "Cookies and analytics").</p>',
 		'<h2>Our automation software and Google user data</h2>',
@@ -130,7 +130,7 @@ function dbt_legal_pages() {
 
 	$terms = array(
 		'<p><em>Last updated: ' . $updated . '</em></p>',
-		'<p>These terms govern engagements with Dave Bukar Technologies for software development, DevOps, advertising and AI-agent services.</p>',
+		'<p>These terms govern engagements with Linkfa, operated by DaveBukar Technologies, for software development, DevOps, advertising and AI-agent services.</p>',
 		'<h2>Scope of work</h2>',
 		'<p>Each project is scoped in writing (proposal, statement of work, or quote) before work begins. Verbal agreements are not binding until confirmed in writing.</p>',
 		'<h2>Payment</h2>',

@@ -7,7 +7,8 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'DBT_ORG_NAME', 'DaveBukar Technologies' );
+define( 'DBT_ORG_NAME', 'Linkfa' );
+define( 'DBT_COMPANY_NAME', 'DaveBukar Technologies' );
 
 /** Pages that must stay out of search results and the sitemap. */
 function dbt_noindex_slugs() {
@@ -108,6 +109,7 @@ function dbt_jsonld() {
 		'@type'        => 'Organization',
 		'@id'          => home_url( '/#organization' ),
 		'name'         => DBT_ORG_NAME,
+		'legalName'    => DBT_COMPANY_NAME,
 		'url'          => home_url( '/' ),
 		'logo'         => DBT_URI . 'assets/brand/icon-512.png',
 		'email'        => DBT_CONTACT_EMAIL,

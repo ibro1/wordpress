@@ -67,6 +67,12 @@ add_filter( 'rank_math/json_ld', function ( $data ) {
 		if ( isset( $data[ $key ] ) && is_array( $data[ $key ] ) ) {
 			$data[ $key ]['name']       = DBT_ORG_NAME;
 			$data[ $key ]['legalName']  = DBT_COMPANY_NAME;
+			$data[ $key ]['logo']       = array(
+				'@type'  => 'ImageObject',
+				'url'    => DBT_URI . 'assets/brand/icon-512.png',
+				'width'  => 512,
+				'height' => 512,
+			);
 			$data[ $key ]['areaServed'] = array(
 				array( '@type' => 'Country', 'name' => 'Nigeria' ),
 				array( '@type' => 'Country', 'name' => 'United Kingdom' ),

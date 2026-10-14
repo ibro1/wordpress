@@ -5,7 +5,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'DBT_VERSION', '1.10.2' );
+define( 'DBT_VERSION', '1.10.3' );
 define( 'DBT_DIR', trailingslashit( get_template_directory() ) );
 define( 'DBT_URI', trailingslashit( get_template_directory_uri() ) );
 define( 'DBT_CONTACT_EMAIL', 'info@linkfa.de' );
@@ -416,4 +416,31 @@ function dbt_register_title( $parts ) {
 		$parts['title'] = 'Start a project';
 	}
 	return $parts;
+}
+
+/**
+ * Browsers and search engines ask for /favicon.ico and /apple-touch-icon.png at the
+ * site root. WordPress would 302 these to its own logo, so serve the Linkfa files.
+ */
+add_action( 'init', 'dbt_root_icons', 1 );
+function dbt_root_icons() {
+	$path = isset( $_SERVER['REQUEST_URI'] ) ? wp_parse_url( wp_unslash( $_SERVER['REQUEST_URI'] ), PHP_URL_PATH ) : '';
+	$map  = array(
+		'/favicon.ico'                    => array( 'favicon.ico', 'image/x-icon' ),
+		'/apple-touch-icon.png'           => array( 'apple-touch-icon.png', 'image/png' ),
+		'/apple-touch-icon-precomposed.png' => array( 'apple-touch-icon.png', 'image/png' ),
+	);
+	if ( ! isset( $map[ $path ] ) ) {
+		return;
+	}
+	$file = DBT_DIR . 'assets/brand/' . $map[ $path ][0];
+	if ( ! is_readable( $file ) ) {
+		return;
+	}
+	status_header( 200 );
+	header( 'Content-Type: ' . $map[ $path ][1] );
+	header( 'Content-Length: ' . filesize( $file ) );
+	header( 'Cache-Control: public, max-age=86400' );
+	readfile( $file );
+	exit;
 }

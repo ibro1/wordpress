@@ -157,7 +157,7 @@ function dbt_push_lead( $post_id, array $lead, $source = 'linkfa.de/contact-form
 add_action( 'wp_ajax_dbt_intake', 'dbt_handle_intake' );
 add_action( 'wp_ajax_nopriv_dbt_intake', 'dbt_handle_intake' );
 function dbt_handle_intake() {
-	$done = 'Thanks. We reply within 2 working hours on WhatsApp.';
+	$done = 'Thanks. We reply within one business day on WhatsApp.';
 	if ( ! check_ajax_referer( 'dbt_intake', 'nonce', false ) ) {
 		wp_send_json_error( array( 'message' => 'Your session expired. Please reload the page and try again.' ), 403 );
 	}

@@ -16,7 +16,7 @@ get_header();
 		<div class="hero__copy reveal">
 			<p class="mono-label">START A PROJECT</p>
 			<h1 class="hero__title">Start a project</h1>
-			<p class="hero__lede">Tell us what you need. We reply within 2 working hours on WhatsApp, and we quote after a short scoping call.</p>
+			<p class="hero__lede">Tell us what you need. We reply within one business day on WhatsApp, and we quote after a short scoping call.</p>
 		</div>
 	</div>
 </section>

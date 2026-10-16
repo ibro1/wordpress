@@ -5,13 +5,14 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'DBT_VERSION', '1.10.3' );
+define( 'DBT_VERSION', '1.10.4' );
 define( 'DBT_DIR', trailingslashit( get_template_directory() ) );
 define( 'DBT_URI', trailingslashit( get_template_directory_uri() ) );
 define( 'DBT_CONTACT_EMAIL', 'info@linkfa.de' );
 define( 'DBT_WHATSAPP', '2348113235992' ); // digits only, for wa.me links
 
 require_once DBT_DIR . 'inc/site-content.php';
+require_once DBT_DIR . 'inc/mail.php';
 require_once DBT_DIR . 'inc/lead-capture.php';
 require_once DBT_DIR . 'inc/work-content.php';
 require_once DBT_DIR . 'inc/clips-content.php';

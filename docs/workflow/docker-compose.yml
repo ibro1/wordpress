@@ -22,6 +22,12 @@ services:
       WORDPRESS_DB_NAME: ${DB_NAME}
       WORDPRESS_DEBUG: ${WORDPRESS_DEBUG}
       WOOKIEE_API_INTERNAL_URL: ${WOOKIEE_API_INTERNAL_URL:-http://wookiee_api:3000}
+      # linkfa.de leads: the signed push to the harness (WhatsApp + Chief alert)
+      # and outgoing mail through ZeptoMail. Each is inert while unset.
+      DBT_LEAD_WEBHOOK_URL: ${DBT_LEAD_WEBHOOK_URL:-}
+      DBT_LEAD_WEBHOOK_SECRET: ${DBT_LEAD_WEBHOOK_SECRET:-}
+      DBT_ZEPTOMAIL_TOKEN: ${DBT_ZEPTOMAIL_TOKEN:-}
+      DBT_MAIL_FROM: ${DBT_MAIL_FROM:-noreply@linkfa.de}
       # Using $$ for PHP variables inside the Docker env string
       # ${MAIN_DOMAIN} here is substituted at compose-parse time by Dokploy
       WORDPRESS_CONFIG_EXTRA: |

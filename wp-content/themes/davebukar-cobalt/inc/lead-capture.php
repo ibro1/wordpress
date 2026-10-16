@@ -83,7 +83,9 @@ function dbt_handle_book_call() {
 	$subject   = sprintf( 'New call request — %s', $name );
 	$body      = "Name: {$name}\nEmail: {$email}\n" . ( $company ? "Company: {$company}\n" : '' ) . "Interested in: {$service}\n\nWhat they're building:\n{$message}";
 	$headers   = array( sprintf( 'Reply-To: %s <%s>', $name, $email ) );
-	wp_mail( $recipient, $subject, $body, $headers );
+	$notified = wp_mail( $recipient, $subject, $body, $headers );
+	update_post_meta( $post_id, 'dbt_lead_emailed', $notified ? 'sent' : 'failed' );
+	dbt_send_confirmation( $post_id, $name, $email, $service, $message, 'within one business day' );
 
 	dbt_push_lead( $post_id, array(
 		'name'    => $name,
@@ -213,7 +215,9 @@ function dbt_handle_intake() {
 	update_post_meta( $post_id, 'dbt_lead_source', 'start-a-project' );
 
 	$body = "Name: {$name}\nWhatsApp: {$whatsapp}\nEmail: {$email}\nNeed: {$need}\nBudget: " . ( $budget ? $budget : 'not given' ) . "\nTimeline: " . ( $timeline ? $timeline : 'not given' ) . "\n\n{$message}";
-	wp_mail( DBT_CONTACT_EMAIL, sprintf( 'New project request: %s', $name ), $body, array( sprintf( 'Reply-To: %s <%s>', $name, $email ) ) );
+	$notified = wp_mail( DBT_CONTACT_EMAIL, sprintf( 'New project request: %s', $name ), $body, array( sprintf( 'Reply-To: %s <%s>', $name, $email ) ) );
+	update_post_meta( $post_id, 'dbt_lead_emailed', $notified ? 'sent' : 'failed' );
+	dbt_send_confirmation( $post_id, $name, $email, $need, $message, 'within one business day on WhatsApp' );
 
 	dbt_push_lead( $post_id, array(
 		'name'    => $name,

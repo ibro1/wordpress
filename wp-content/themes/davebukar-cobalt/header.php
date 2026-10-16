@@ -105,7 +105,7 @@ defined( 'ABSPATH' ) || exit;
 			<p class="mono-label mono-label--dark">After you send</p>
 			<p class="leadform__context-title">A person reads this. Not a bot.</p>
 			<ol class="leadform__context-steps">
-				<li><span class="leadform__context-no">01</span>Received — logged instantly, no auto-reply spam</li>
+				<li><span class="leadform__context-no">01</span>Received — logged instantly, one confirmation email, no spam</li>
 				<li><span class="leadform__context-no">02</span>Reviewed — a founder reads it, same day</li>
 				<li><span class="leadform__context-no">03</span>Reply — you hear back within one business day</li>
 			</ol>

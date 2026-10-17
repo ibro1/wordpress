@@ -142,18 +142,16 @@ services:
       - "traefik.http.routers.wp-ext.service=wp-service"
       - "traefik.http.routers.wp-ext.priority=90"
 
-      # --- Router 4: Catch-All Fallback (Priority 1) ---
-      # Catches any other domain pointed here, but might have SSL delay.
-      # Carries the same EXCLUDED_DOMAINS negation as Router 2 - without it
-      # this router simply re-catches whatever the wildcard just let go.
-      - "traefik.http.routers.wp-catchall.rule=HostRegexp(`^.+$$`) && !(${EXCLUDED_DOMAINS:-Host(`excluded.invalid`)})"
-      - "traefik.http.routers.wp-catchall.entrypoints=websecure"
-      - "traefik.http.routers.wp-catchall.tls=true"
-      # The only router that was not naming its service. Traefik falls back to
-      # the container's single defined service, so it worked - but it worked by
-      # inference, and it would stop the day a second service is defined here.
-      - "traefik.http.routers.wp-catchall.service=wp-service"
-      - "traefik.http.routers.wp-catchall.priority=1"
+      # --- Router 4 REMOVED: the HostRegexp(`^.+$`) catch-all ---
+      # Deleted on purpose. This rule matched EVERY host on the shared Traefik,
+      # so any OTHER app whose own router was momentarily absent — e.g.
+      # frontstaff.ai during a failed/half deploy — was answered, and redirected,
+      # by WordPress. A WordPress multisite must not claim domains that are not
+      # its own. WordPress now serves ONLY its explicit domains: the main domain
+      # (Router 1), its `*.MAIN_DOMAIN` subdomains (Router 2) and the exact hosts
+      # in EXTERNAL_DOMAINS (Router 3). Any host not in those now gets a clean
+      # Traefik 404 instead of being hijacked. To serve a NEW external domain
+      # through WordPress, add its exact host to EXTERNAL_DOMAINS (Router 3).
 
     entrypoint: |
       bash -c '

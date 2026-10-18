@@ -14,6 +14,7 @@
 				<a href="<?php echo esc_url( dbt_page_url( 'work' ) ); ?>">Work</a>
 				<a href="<?php echo esc_url( dbt_page_url( 'clips' ) ); ?>">Clips</a>
 				<a href="<?php echo esc_url( dbt_page_url( 'pricing-faq' ) ); ?>">Pricing</a>
+				<a href="<?php echo esc_url( dbt_page_url( 'blog' ) ); ?>">Blog</a>
 				<?php $privacy = get_page_by_path( 'privacy-policy', OBJECT, 'page' ); ?>
 				<a href="<?php echo esc_url( $privacy ? get_permalink( $privacy ) : home_url( '/privacy-policy/' ) ); ?>">Privacy</a>
 				<a href="<?php echo esc_url( dbt_page_url( 'refund' ) ); ?>">Refunds</a>

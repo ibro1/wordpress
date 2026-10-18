@@ -5,7 +5,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'DBT_VERSION', '1.10.4' );
+define( 'DBT_VERSION', '1.11.0' );
 define( 'DBT_DIR', trailingslashit( get_template_directory() ) );
 define( 'DBT_URI', trailingslashit( get_template_directory_uri() ) );
 define( 'DBT_CONTACT_EMAIL', 'info@linkfa.de' );
@@ -20,6 +20,7 @@ require_once DBT_DIR . 'inc/seo.php';
 require_once DBT_DIR . 'inc/talk.php';
 require_once DBT_DIR . 'inc/aeo.php';
 require_once DBT_DIR . 'inc/rankmath.php';
+require_once DBT_DIR . 'inc/blog.php';
 
 add_action( 'after_setup_theme', 'dbt_setup' );
 function dbt_setup() {
@@ -184,6 +185,13 @@ function dbt_starter_pages() {
 		'content'  => '',
 	);
 
+	$pages['blog'] = array(
+		'title'    => 'Blog',
+		'menu'     => 'Blog',
+		'template' => 'template-blog.php',
+		'content'  => '',
+	);
+
 	$pages['earn'] = array(
 		'title'    => 'Short Videos That Bring Customers',
 		'menu'     => 'Earn',
@@ -304,7 +312,7 @@ function dbt_cmdk_destinations() {
 		);
 	}
 
-	foreach ( array( 'work' => 'Work', 'clips' => 'Short clips service', 'earn' => 'Clips that bring customers' ) as $slug => $label ) {
+	foreach ( array( 'work' => 'Work', 'clips' => 'Short clips service', 'earn' => 'Clips that bring customers', 'blog' => 'Blog' ) as $slug => $label ) {
 		$destinations[] = array( 'label' => $label, 'url' => dbt_page_url( $slug ), 'group' => 'Pages' );
 	}
 

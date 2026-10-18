@@ -30,6 +30,7 @@ defined( 'ABSPATH' ) || exit;
 				<a class="nav__link" href="<?php echo esc_url( home_url( '/#services' ) ); ?>">Services</a>
 				<a class="nav__link" href="<?php echo esc_url( dbt_page_url( 'work' ) ); ?>">Work</a>
 				<a class="nav__link" href="<?php echo esc_url( home_url( '/#how-we-work' ) ); ?>">How we work</a>
+				<a class="nav__link" href="<?php echo esc_url( dbt_page_url( 'blog' ) ); ?>">Blog</a>
 			</div>
 			<button type="button" class="btn btn--primary btn--sm js-book-call nav__cta-desktop">Book a call</button>
 			<button type="button" class="nav__toggle" id="navToggle" aria-label="Open menu" aria-expanded="false" aria-controls="navDrawer">
@@ -53,6 +54,7 @@ defined( 'ABSPATH' ) || exit;
 			<a class="drawer__link" href="<?php echo esc_url( home_url( '/#services' ) ); ?>"><span>Services</span><span class="drawer__link-arrow" aria-hidden="true">→</span></a>
 			<a class="drawer__link" href="<?php echo esc_url( dbt_page_url( 'work' ) ); ?>"><span>Work</span><span class="drawer__link-arrow" aria-hidden="true">→</span></a>
 			<a class="drawer__link" href="<?php echo esc_url( home_url( '/#how-we-work' ) ); ?>"><span>How we work</span><span class="drawer__link-arrow" aria-hidden="true">→</span></a>
+			<a class="drawer__link" href="<?php echo esc_url( dbt_page_url( 'blog' ) ); ?>"><span>Blog</span><span class="drawer__link-arrow" aria-hidden="true">→</span></a>
 		</div>
 
 		<p class="drawer__label">Explore</p>

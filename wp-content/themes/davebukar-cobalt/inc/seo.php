@@ -56,6 +56,7 @@ function dbt_meta_description() {
 		'work'             => 'Logistics, government, transport, healthcare and AI systems we designed, built and still keep running — from empty repo to production, including the servers.',
 		'clips'            => 'Done-for-you short clips from your lectures, tafsir and podcasts, captioned for TikTok, Facebook Reels and YouTube Shorts. Get 3 free clips on WhatsApp.',
 		'pricing-faq'      => 'Linkfa prices: short clips from ₦50,000 a month, the 3-advert pack at ₦15,000, and software, DevOps, SEO, Google Ads and AI agent work quoted after a scoping call. Plus answers to common questions.',
+		'blog'             => DBT_BLOG_DESCRIPTION,
 		'earn'             => 'Short videos that bring you students, buyers and sales. We make the first advert, you see it, then you pay.',
 		'refund'           => 'Refund policy for Linkfa short clips, the 3-advert pack and custom work: what is refunded, when, and how to ask.',
 		'privacy-policy'   => 'How ' . DBT_ORG_NAME . ' handles personal data, Google and YouTube API data, and cookies.',

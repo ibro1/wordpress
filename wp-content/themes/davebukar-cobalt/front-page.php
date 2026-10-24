@@ -97,6 +97,13 @@ $svc_url = function ( $slug ) {
 		<a class="cell__link" href="<?php echo esc_url( $svc_url( 'ai-agents' ) ); ?>">Explore AI agents →</a>
 	</article>
 
+	<article class="cell span-1x1">
+		<p class="cell__label">YouTube</p>
+		<h3 class="cell__title">YouTube Channel Manager</h3>
+		<p class="cell__body">Titles, descriptions, chapters and thumbnails rewritten around what people search. Nothing changes until you approve it.</p>
+		<a class="cell__link" href="<?php echo esc_url( $svc_url( 'channel-manager' ) ); ?>">Explore Channel Manager →</a>
+	</article>
+
 	<article class="cell span-1x1 cell--accent">
 		<h3 class="cell__title">Not sure where to start?</h3>
 		<p class="cell__body">Tell us what you’re building. We’ll scope it on a call — no deck, no pitch.</p>

@@ -294,7 +294,7 @@ function dbt_cm_legal_pages() {
 
 	$terms = array(
 		'<p><em>Last updated: ' . $updated . '</em></p>',
-		'<p>These terms cover the YouTube Channel Manager service from Linkfa, a service of DaveBukar Technologies ("we", "us"). They apply to you, the owner of the YouTube channel ("your channel"), from the day you connect your channel or accept a free audit.</p>',
+		'<p>These terms cover the YouTube Channel Manager service from Linkfa, a service of DaveBukar Technologies ("we", "us"). They apply to you, the owner of the YouTube channel ("your channel"), from the day you connect your channel or accept a free audit. ' . dbt_company_identity_html() . '</p>',
 		'<h2>1. What the service does</h2>',
 		'<p>Our AI employee reviews your channel and, for each video we work on (a "makeover"), proposes a new title, description with chapters, tags and thumbnail, based on a transcript of the video. A person at Linkfa reviews every proposal before it reaches you. We also send a channel audit and a monthly report.</p>',
 		'<h2>2. What it never does</h2>',
@@ -330,7 +330,7 @@ function dbt_cm_legal_pages() {
 
 	$privacy = array(
 		'<p><em>Last updated: ' . $updated . '</em></p>',
-		'<p>This notice explains what the Linkfa YouTube Channel Manager, a service of DaveBukar Technologies, does with data from your YouTube channel. It adds to our general <a href="' . esc_url( home_url( '/privacy-policy/' ) ) . '">Privacy Policy</a>. The service terms are on the <a href="' . esc_url( $terms_url ) . '">Channel Manager Terms</a> page.</p>',
+		'<p>This notice explains what the Linkfa YouTube Channel Manager, a service of DaveBukar Technologies, does with data from your YouTube channel. DaveBukar Technologies is the controller of that data. ' . dbt_company_identity_html() . ' It adds to our general <a href="' . esc_url( home_url( '/privacy-policy/' ) ) . '">Privacy Policy</a>. The service terms are on the <a href="' . esc_url( $terms_url ) . '">Channel Manager Terms</a> page.</p>',
 		'<h2>YouTube API Services</h2>',
 		'<p>The Channel Manager uses YouTube API Services. By connecting your channel you agree to be bound by the <a href="https://www.youtube.com/t/terms">YouTube Terms of Service</a>. Google\'s use of your data is described in the <a href="https://policies.google.com/privacy">Google Privacy Policy</a>. Our use and transfer of information received from Google APIs adheres to the <a href="https://developers.google.com/terms/api-services-user-data-policy">Google API Services User Data Policy</a>, including the Limited Use requirements.</p>',
 		'<h2>What we access</h2>',

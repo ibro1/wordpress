@@ -89,14 +89,20 @@ function dbt_services() {
 	);
 }
 
+/** The registered business behind Linkfa, from its CAC certificate. One sentence, reused by every legal page. */
+function dbt_company_identity_html() {
+	return 'Linkfa is a trading name of DaveBukar Technologies, a business name registered with the Corporate Affairs Commission of the Federal Republic of Nigeria under CAMA 2020 (Business Name Registration No. 8527446). Principal place of business: Suite B57, EFAB Mall, Area 11, Garki, FCT Abuja, Nigeria.';
+}
+
 function dbt_legal_pages() {
-	// Fixed on purpose: change this date only when the legal text itself changes.
-	$updated     = 'October 5, 2026';
+	// Fixed on purpose: change these dates only when that page's legal text itself changes.
+	$updated     = 'October 24, 2026';
+	$company     = dbt_company_identity_html();
 	$contact_row = sprintf( '<p>Questions: <a href="mailto:%1$s">%1$s</a>.</p>', esc_html( DBT_CONTACT_EMAIL ) );
 
 	$privacy = array(
 		'<p><em>Last updated: ' . $updated . '</em></p>',
-		'<p>Linkfa is operated by DaveBukar Technologies ("we", "us"). We build software, DevOps, advertising and AI-agent services. This policy covers this website (linkfa.de) and the automation software we run for our own business and channels at harness.linkfa.de, including the parts that connect to Google, YouTube and Meta accounts.</p>',
+		'<p>Linkfa is operated by DaveBukar Technologies ("we", "us"), which is the controller of the personal data this policy describes. ' . $company . ' We build software, DevOps, advertising and AI-agent services. This policy covers this website (linkfa.de) and the automation software we run for our own business and channels at harness.linkfa.de, including the parts that connect to Google, YouTube and Meta accounts.</p>',
 		'<h2>What we collect on this website</h2>',
 		'<p>Information you submit through contact or quote forms (name, email, company, project details) and standard server logs (IP address, browser, pages visited). If you accept cookies, analytics or advertising identifiers may also be collected (see "Cookies and analytics").</p>',
 		'<h2>Our automation software and Google user data</h2>',
@@ -128,7 +134,7 @@ function dbt_legal_pages() {
 		$contact_row,
 	);
 
-	$refund_updated = 'October 12, 2026';
+	$refund_updated = 'October 24, 2026';
 	$refund = array(
 		'<p><em>Last updated: ' . $refund_updated . '</em></p>',
 		'<p>This policy covers what you buy from Linkfa, a service of DaveBukar Technologies. If anything is unclear, message us on WhatsApp (+234 811 323 5992) or email <a href="mailto:' . esc_attr( DBT_CONTACT_EMAIL ) . '">' . esc_html( DBT_CONTACT_EMAIL ) . '</a> before you pay.</p>',
@@ -161,12 +167,14 @@ function dbt_legal_pages() {
 		'<h2>6. Governing law</h2>',
 		'<p>This policy is governed by the laws of the Federal Republic of Nigeria. Nothing in it limits rights you have under those laws.</p>',
 		'<h2>7. Company</h2>',
-		'<p>Linkfa is a service of DaveBukar Technologies.</p>',
+		'<p>' . $company . '</p>',
 	);
 
 	$terms = array(
 		'<p><em>Last updated: ' . $updated . '</em></p>',
-		'<p>These terms govern engagements with Linkfa, operated by DaveBukar Technologies, for software development, DevOps, advertising and AI-agent services.</p>',
+		'<p>These terms govern engagements with Linkfa, operated by DaveBukar Technologies ("we", "us"), for software development, DevOps, advertising and AI-agent services.</p>',
+		'<h2>Who we are</h2>',
+		'<p>' . $company . '</p>',
 		'<h2>Scope of work</h2>',
 		'<p>Each project is scoped in writing (proposal, statement of work, or quote) before work begins. Verbal agreements are not binding until confirmed in writing.</p>',
 		'<h2>Payment</h2>',
@@ -178,10 +186,9 @@ function dbt_legal_pages() {
 		'<h2>Liability</h2>',
 		'<p>We are not liable for indirect or consequential losses. Our total liability for any engagement is limited to the fees paid for that engagement.</p>',
 		'<h2>Governing law</h2>',
-		'<p>[Insert governing jurisdiction] — to be confirmed by Dave Bukar Technologies before publishing.</p>',
+		'<p>These terms are governed by the laws of the Federal Republic of Nigeria. Any dispute arising from them is subject to the jurisdiction of the courts of the Federal Capital Territory, Abuja.</p>',
 		'<h2>Contact</h2>',
 		$contact_row,
-		'<p><em>This is a draft terms template — have it reviewed by a lawyer before publishing.</em></p>',
 	);
 
 	return array(
@@ -193,9 +200,7 @@ function dbt_legal_pages() {
 			'title'   => 'Refund Policy',
 			'content' => implode( '', $refund ),
 		),
-		// Held back (not published, not linked) until the owner supplies the legal facts: governing jurisdiction and company details.
 		'terms-of-service' => array(
-			'hidden'  => true,
 			'title'   => 'Terms of Service',
 			'content' => implode( '', $terms ),
 		),

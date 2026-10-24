@@ -12,7 +12,7 @@ define( 'DBT_COMPANY_NAME', 'DaveBukar Technologies' );
 
 /** Pages that must stay out of search results and the sitemap. */
 function dbt_noindex_slugs() {
-	return array( 'shop', 'cart', 'checkout', 'my-account', 'login', 'sample-page', 'register', 'terms-of-service' );
+	return array( 'shop', 'cart', 'checkout', 'my-account', 'login', 'sample-page', 'register' );
 }
 
 function dbt_is_noindex_page() {

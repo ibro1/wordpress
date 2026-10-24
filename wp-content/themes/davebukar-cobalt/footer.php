@@ -68,7 +68,9 @@ $dbt_footer_legal = array_filter( array(
 		</nav>
 
 		<div class="site-footer__bottom">
-			<p class="site-footer__copyright">© <?php echo esc_html( date( 'Y' ) ); ?> Linkfa, by DaveBukar Technologies.</p>
+			<p class="site-footer__copyright">
+				<span class="site-footer__copyright-line">© <?php echo esc_html( date( 'Y' ) ); ?> Linkfa · DaveBukar Technologies (BN 8527446)</span><span class="site-footer__copyright-sep" aria-hidden="true"> · </span><span class="site-footer__copyright-line">Suite B57 EFAB Mall, Area 11, Garki, Abuja</span>
+			</p>
 		</div>
 	</div>
 </footer>

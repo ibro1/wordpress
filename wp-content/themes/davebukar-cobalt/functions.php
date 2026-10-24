@@ -5,7 +5,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'DBT_VERSION', '1.12.2' );
+define( 'DBT_VERSION', '1.12.3' );
 define( 'DBT_DIR', trailingslashit( get_template_directory() ) );
 define( 'DBT_URI', trailingslashit( get_template_directory_uri() ) );
 define( 'DBT_CONTACT_EMAIL', 'info@linkfa.de' );
@@ -381,7 +381,6 @@ function dbt_maybe_unpublish_leftovers() {
 /** Held back until the owner gives the facts they need (post type, slug). */
 function dbt_unpublish_targets() {
 	return array(
-		array( 'page', 'terms-of-service' ),
 		array( 'page', 'sample-page' ),
 		array( 'post', 'hello-world' ),
 	);

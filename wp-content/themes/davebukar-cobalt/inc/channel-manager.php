@@ -6,7 +6,8 @@
  * (DBT_CM_OFFERS_URL), which the owner edits in the Chief app, and kept for 5 minutes in a transient.
  * When the list cannot be read, the last good copy is used, and failing that the bundled copy in
  * assets/data/channel-manager-offers.json, so a price is never blank. A tier whose live price is
- * missing or not a number takes the bundled price of the same tier.
+ * missing or not a number takes the bundled price of the same tier. A USD price of null is deliberate (the offer
+ * has no dollar price) and renders as an "Ask for USD price" link; only NGN must always be a number.
  *
  * The three pages are provisioned as drafts and never published by the theme; the owner publishes
  * them from wp-admin. While a page is not published it is noindex (see dbt_is_noindex_page()).
@@ -47,6 +48,17 @@ function dbt_cm_pick_offer( $doc ) {
 		}
 	}
 	return $by_name;
+}
+
+/**
+ * The USD price of a tier or setup fee: an explicit null stays null (no dollar price), a usable number is kept, and
+ * anything else (missing, empty, not a number) takes the bundled value.
+ */
+function dbt_cm_usd( $source, $bundled ) {
+	if ( is_array( $source ) && array_key_exists( 'usd', $source ) && null === $source['usd'] ) {
+		return null;
+	}
+	return dbt_cm_price( $source['usd'] ?? null ) ?? ( is_array( $bundled ) ? dbt_cm_price( $bundled['usd'] ?? null ) : null );
 }
 
 /** The bundled offer, read once per request. */
@@ -95,8 +107,8 @@ function dbt_cm_normalize( $offer ) {
 		}
 		$twin = $twins[ $tier['id'] ] ?? null;
 		$ngn  = dbt_cm_price( $tier['ngn'] ?? null ) ?? ( $twin ? dbt_cm_price( $twin['ngn'] ) : null );
-		$usd  = dbt_cm_price( $tier['usd'] ?? null ) ?? ( $twin ? dbt_cm_price( $twin['usd'] ) : null );
-		if ( null === $ngn || null === $usd ) {
+		$usd  = dbt_cm_usd( $tier, $twin );
+		if ( null === $ngn ) {
 			continue;
 		}
 		$name     = isset( $tier['name'] ) && is_string( $tier['name'] ) && '' !== trim( $tier['name'] ) ? trim( $tier['name'] ) : (string) ( $twin['name'] ?? $tier['id'] );
@@ -120,8 +132,8 @@ function dbt_cm_normalize( $offer ) {
 		$live  = is_array( $offer['setup'] ?? null ) ? $offer['setup'] : array();
 		$base  = is_array( $bundled['setup'] ?? null ) ? $bundled['setup'] : array();
 		$ngn   = dbt_cm_price( $live['ngn'] ?? null ) ?? dbt_cm_price( $base['ngn'] ?? null );
-		$usd   = dbt_cm_price( $live['usd'] ?? null ) ?? dbt_cm_price( $base['usd'] ?? null );
-		$setup = null !== $ngn && null !== $usd ? array( 'ngn' => $ngn, 'usd' => $usd ) : null;
+		$usd   = dbt_cm_usd( $live, $base );
+		$setup = null !== $ngn ? array( 'ngn' => $ngn, 'usd' => $usd ) : null;
 	}
 
 	return array(
@@ -178,10 +190,21 @@ function dbt_cm_money( $amount, $currency ) {
 	return ( 'usd' === $currency ? '$' : '₦' ) . number_format( $amount, $decimals );
 }
 
-/** Both prices, one shown at a time by the currency switch; NGN shows without JavaScript. */
-function dbt_cm_amount_html( $ngn, $usd ) {
-	return '<span class="cm-cur" data-cur="ngn">' . esc_html( dbt_cm_money( $ngn, 'ngn' ) ) . '</span>'
-		. '<span class="cm-cur" data-cur="usd">' . esc_html( dbt_cm_money( $usd, 'usd' ) ) . '</span>';
+/**
+ * Both prices, one shown at a time by the currency switch; NGN shows without JavaScript. With no USD price the USD
+ * side is an "Ask for USD price" link through /talk, never a blank or $0.
+ * @param float      $ngn    the naira price.
+ * @param float|null $usd    the dollar price, or null when the offer has none.
+ * @param string     $suffix plain text after each price, such as " / month".
+ * @param string     $ref    the /talk source for the ask link.
+ */
+function dbt_cm_amount_html( $ngn, $usd, $suffix = '', $ref = 'usd' ) {
+	$small = '' === $suffix ? '' : '<small>' . esc_html( $suffix ) . '</small>';
+	$dollar = null === $usd
+		? '<a class="cm-ask" href="' . esc_url( dbt_cm_talk( 'usd-' . $ref ) ) . '">Ask for USD price</a>'
+		: esc_html( dbt_cm_money( $usd, 'usd' ) ) . $small;
+	return '<span class="cm-cur" data-cur="ngn">' . esc_html( dbt_cm_money( $ngn, 'ngn' ) ) . $small . '</span>'
+		. '<span class="cm-cur" data-cur="usd">' . $dollar . '</span>';
 }
 
 /** The /talk redirect for one call to action, so the click is logged with its source. */

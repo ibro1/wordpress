@@ -151,7 +151,7 @@ get_header();
 							<?php if ( ! $tier['available'] ) : ?><span class="cm-badge cm-badge--grey">Coming later</span><?php elseif ( $is_pick ) : ?><span class="cm-badge">Recommended</span><?php endif; ?>
 						</h3>
 						<?php if ( isset( $cm_for[ $tier['id'] ] ) ) : ?><p class="cm-for"><?php echo esc_html( $cm_for[ $tier['id'] ] ); ?></p><?php endif; ?>
-						<div class="cm-price"><?php echo dbt_cm_amount_html( $tier['ngn'], $tier['usd'] ); // phpcs:ignore WordPress.Security.EscapeOutput -- escaped inside ?><small> / month</small></div>
+						<div class="cm-price"><?php echo dbt_cm_amount_html( $tier['ngn'], $tier['usd'], ' / month', $tier['id'] ); // phpcs:ignore WordPress.Security.EscapeOutput -- escaped inside ?></div>
 						<ul>
 							<?php foreach ( $includes as $line ) : ?><li><?php echo esc_html( $line ); ?></li><?php endforeach; ?>
 							<li>You approve each change on WhatsApp</li>
@@ -166,7 +166,7 @@ get_header();
 			</div>
 			<p class="cm-terms">
 				<?php if ( null !== $offer['setup'] ) : ?>
-					One-off setup fee per channel: <strong><?php echo dbt_cm_amount_html( $offer['setup']['ngn'], $offer['setup']['usd'] ); // phpcs:ignore WordPress.Security.EscapeOutput -- escaped inside ?></strong>, covering connection, the full audit and your thumbnail brand kit.
+					One-off setup fee per channel: <strong><?php echo dbt_cm_amount_html( $offer['setup']['ngn'], $offer['setup']['usd'], '', 'setup' ); // phpcs:ignore WordPress.Security.EscapeOutput -- escaped inside ?></strong>, covering connection, the full audit and your thumbnail brand kit.
 				<?php else : ?>
 					No setup fee.
 				<?php endif; ?>

@@ -701,7 +701,7 @@ body.admin-bar .nav { top: 32px; }
 
 /* ---------- Footer (Ft5 statement) ---------- */
 /* Footer: brand + statement + WhatsApp CTA, four link columns, copyright bar. Mobile first. */
-.site-footer { border-top: 1px solid var(--color-rule); background: var(--color-paper-2); padding: var(--space-2xl) var(--space-md) var(--space-lg); }
+.site-footer { border-top: 1px solid var(--color-rule); padding: var(--space-2xl) var(--space-md) var(--space-lg); }
 .site-footer__inner { max-width: var(--container-w); margin-inline: auto; }
 .site-footer__top { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-md); padding-bottom: var(--space-xl); border-bottom: 1px solid var(--color-rule); }
 .site-footer__intro { display: flex; flex-direction: column; gap: var(--space-sm); }

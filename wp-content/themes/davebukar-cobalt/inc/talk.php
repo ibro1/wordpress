@@ -67,7 +67,9 @@ function dbt_talk_redirect() {
 		}
 	}
 
-	$msg = DBT_TALK_MSG . ( 'direct' !== $ref ? ' (ref: ' . $ref . ')' : '' );
+	// Channel Manager buttons ask for the free audit instead of naming an article.
+	$base = 0 === strpos( $ref, 'channel-manager' ) ? 'Hi Linkfa, I\'d like the free YouTube channel audit' : DBT_TALK_MSG;
+	$msg  = $base . ( 'direct' !== $ref ? ' (ref: ' . $ref . ')' : '' );
 	nocache_headers();
 	header( 'X-Robots-Tag: noindex, nofollow' );
 	wp_redirect( DBT_TALK_WA . '?text=' . rawurlencode( $msg ), 302 ); // phpcs:ignore WordPress.Security.SafeRedirect

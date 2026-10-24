@@ -16,7 +16,7 @@ function dbt_noindex_slugs() {
 }
 
 function dbt_is_noindex_page() {
-	return is_page( dbt_noindex_slugs() ) || is_search() || is_404() || is_attachment();
+	return is_page( dbt_noindex_slugs() ) || is_search() || is_404() || is_attachment() || dbt_cm_is_unpublished_page();
 }
 
 add_filter( 'wp_robots', 'dbt_robots_meta' );

@@ -5,7 +5,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'DBT_VERSION', '1.11.0' );
+define( 'DBT_VERSION', '1.12.0' );
 define( 'DBT_DIR', trailingslashit( get_template_directory() ) );
 define( 'DBT_URI', trailingslashit( get_template_directory_uri() ) );
 define( 'DBT_CONTACT_EMAIL', 'info@linkfa.de' );
@@ -21,6 +21,7 @@ require_once DBT_DIR . 'inc/talk.php';
 require_once DBT_DIR . 'inc/aeo.php';
 require_once DBT_DIR . 'inc/rankmath.php';
 require_once DBT_DIR . 'inc/blog.php';
+require_once DBT_DIR . 'inc/channel-manager.php';
 
 add_action( 'after_setup_theme', 'dbt_setup' );
 function dbt_setup() {

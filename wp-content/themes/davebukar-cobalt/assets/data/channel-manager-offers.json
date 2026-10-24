@@ -1,0 +1,59 @@
+{
+  "updatedAt": "2026-10-24T00:00:00.000Z",
+  "offers": [
+    {
+      "id": "channel-manager",
+      "name": "YouTube Channel Manager",
+      "pitch": "An AI employee rewrites your YouTube titles, descriptions, chapters, tags and thumbnails. A person at Linkfa checks every change, and nothing changes on your channel until you reply YES.",
+      "currency": ["NGN", "USD"],
+      "setup": { "ngn": 30000, "usd": 39 },
+      "freeHook": "A free channel audit summary plus 1 free video makeover, applied only after you say YES.",
+      "tiers": [
+        {
+          "id": "tune-up",
+          "name": "Tune-up",
+          "ngn": 60000,
+          "usd": 59,
+          "period": "month",
+          "includes": [
+            "Up to 8 video makeovers a month",
+            "Title, description with chapters, tags and thumbnail for each video",
+            "Back catalogue first, highest reach first",
+            "Channel audit at the start and every month",
+            "Monthly report"
+          ],
+          "available": true
+        },
+        {
+          "id": "growth",
+          "name": "Growth",
+          "ngn": 120000,
+          "usd": 129,
+          "period": "month",
+          "includes": [
+            "Up to 20 video makeovers a month",
+            "Every new upload made over, within that cap",
+            "4 designed thumbnails a month in your brand",
+            "Channel audit at the start and every month",
+            "Monthly report and a short weekly WhatsApp update"
+          ],
+          "available": true
+        },
+        {
+          "id": "studio",
+          "name": "Studio",
+          "ngn": 250000,
+          "usd": 279,
+          "period": "month",
+          "includes": [
+            "Up to 40 video makeovers a month",
+            "A designed thumbnail for every makeover",
+            "Monthly 30-minute call with Ibrahim",
+            "Coming later"
+          ],
+          "available": false
+        }
+      ]
+    }
+  ]
+}

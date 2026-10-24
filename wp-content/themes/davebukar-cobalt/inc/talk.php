@@ -68,7 +68,14 @@ function dbt_talk_redirect() {
 	}
 
 	// Channel Manager buttons ask for the free audit instead of naming an article.
-	$base = 0 === strpos( $ref, 'channel-manager' ) ? 'Hi Linkfa, I\'d like the free YouTube channel audit' : DBT_TALK_MSG;
+	if ( 0 === strpos( $ref, 'channel-manager' ) ) {
+		$base = 'Hi Linkfa, I\'d like the free YouTube channel audit';
+	} elseif ( 0 === strpos( $ref, 'footer' ) || 0 === strpos( $ref, 'home' ) ) {
+		// Site-wide buttons name no article.
+		$base = 'Hi Linkfa, I\'d like to talk about a project';
+	} else {
+		$base = DBT_TALK_MSG;
+	}
 	$msg  = $base . ( 'direct' !== $ref ? ' (ref: ' . $ref . ')' : '' );
 	nocache_headers();
 	header( 'X-Robots-Tag: noindex, nofollow' );
